@@ -24,12 +24,18 @@
 
 <div style="max-width:880px; margin:0 auto; padding:56px 40px 64px;">
 
-  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:24px;">
-    <div style="display:flex; align-items:baseline; gap:14px;">
-      <span class="serif" style="font-size:19px; font-weight:700; letter-spacing:2.5px;">TRACE</span>
-      <span class="label">창작 과정 검증</span>
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:24px;">
+    <div>
+      <div style="display:flex; align-items:baseline; gap:14px;">
+        <span class="serif" style="font-size:19px; font-weight:700; letter-spacing:2.5px;">TRACE</span>
+        <span class="label">창작 과정 검증</span>
+      </div>
+      <p style="margin:6px 0 0; font-size:12.5px; color:#8f8a83;">증명서 <span class="mono" style="color:#171717;">TR-20260912-0001</span> 의 검증 화면입니다</p>
     </div>
-    <span class="label mono">TR-20260912-0001</span>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:7px;">
+      <button style="font-family:inherit; font-size:13.5px; padding:9px 18px; border:1px solid #171717; background:#171717; color:#ffffff; border-radius:4px; cursor:pointer;">다시 검증</button>
+      <span style="font-size:11.5px; color:#8f8a83;">방금 확인 · <span class="mono">2026-09-14 14:35:11</span></span>
+    </div>
   </div>
 
   <!-- 헤드라인 : 무결성이 깨지면 그것이 먼저다 -->
@@ -97,10 +103,21 @@
   </div>
 
   <div style="margin-top:52px; border-top:1px solid #e6e3de;">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 2px; border-bottom:1px solid #e6e3de; cursor:pointer;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 2px; cursor:pointer;">
       <span style="font-size:14.5px; color:#a32020;">스냅샷 체인 15개</span>
-      <span style="font-size:13px; color:#a32020;">4번에서 끊김 &nbsp;›</span>
+      <span style="font-size:13px; color:#a32020;">4번에서 끊김 &nbsp;⌄</span>
     </div>
+
+    <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:8px;">
+      <tbody>
+        <tr><td style="padding:7px 2px; width:26px; color:#8f8a83;">3</td><td class="mono" style="padding:7px 8px; color:#8f8a83;">14:03:30</td><td style="padding:7px 8px; color:#8f8a83;">입력 160</td><td class="mono" style="padding:7px 2px; text-align:right; color:#8f8a83;">e17ffc1d31de</td></tr>
+        <tr style="background:#fdf2f2;"><td style="padding:9px 2px; color:#a32020; font-weight:600;">4</td><td class="mono" style="padding:9px 8px; color:#a32020;">14:04:00</td><td style="padding:9px 8px; color:#a32020;">삭제 53 · 되돌리기 2</td><td class="mono" style="padding:9px 2px; text-align:right; color:#a32020;">d8c7dbd1e71b</td></tr>
+        <tr><td colspan="4" style="padding:11px 12px; background:#fdf2f2; color:#a32020; font-size:12.5px; line-height:1.7;">다시 계산한 값 <span class="mono">a7c31e05b4d2</span> 와 파일에 적힌 값 <span class="mono">d8c7dbd1e71b</span> 가 다릅니다. 이 스냅샷의 내용 해시가 기록된 뒤에 바뀌었습니다.</td></tr>
+        <tr><td style="padding:7px 2px; width:26px; color:#8f8a83;">5</td><td class="mono" style="padding:7px 8px; color:#8f8a83;">14:16:00</td><td style="padding:7px 8px; color:#8f8a83;">입력 175</td><td class="mono" style="padding:7px 2px; text-align:right; color:#8f8a83;">360a9b493115</td></tr>
+      </tbody>
+    </table>
+
+    <div style="border-top:1px solid #e6e3de;"></div>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 2px; border-bottom:1px solid #e6e3de; cursor:pointer;">
       <span style="font-size:14.5px;">외부 앵커</span>
       <span class="mono" style="font-size:12.5px; color:#8f8a83;">앵커된 루트 해시와 불일치 &nbsp;›</span>
