@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>자국 — 창작 과정 증명</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>자국</h1>
+      <p class="sub">창작 과정 증명 · 검증 화면</p>
+    </div>
+    <button id="verifyBtn">다시 검증</button>
+  </header>
+
+  <!-- ① 판정 — 검증자가 맨 먼저 보는 것 -->
+  <section id="verdict" class="verdict"></section>
+
+  <!-- ② 한 줄 요약 -->
+  <section id="overview"></section>
+
+  <!-- ③ 세션별 곡선 + ④ 근거 -->
+  <section id="sessions"></section>
+
+  <!-- ⑤ 작성 영역 — 작가만 쓴다. 접혀 있다. -->
+  <section class="writer">
+    <button id="toggleWriter" class="toggle">▸ 작성 영역 열기</button>
+
+    <div id="writerBody" hidden>
+      <div class="btns">
+        <button id="startBtn">기록 시작</button>
+        <button id="saveBtn" class="ghost" disabled>지금 저장</button>
+        <button id="stopBtn" class="ghost" disabled>기록 종료</button>
+      </div>
+
+      <textarea id="editor" placeholder="기록을 시작하면 여기에 쓸 수 있습니다." disabled></textarea>
+
+      <div class="status">
+        <span id="statusText" class="muted">대기 중</span>
+        <span id="counters" class="muted"></span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>이 화면이 보증하는 것</strong> — 기록이 작성된 뒤 고쳐지지 않았다는 사실.</p>
+    <p><strong>보증하지 않는 것</strong> — 본인이 직접 작업했는지 여부. AI 사용 여부를 판정하지 않습니다.
+       해석은 보는 사람의 몫입니다.</p>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

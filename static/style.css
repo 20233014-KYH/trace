@@ -1,0 +1,214 @@
+/* =============================================
+   자국 - 검증 화면
+   원칙 : 결론이 맨 위, 근거는 아래. 색은 판정에만 쓴다.
+   ============================================= */
+
+:root {
+  --ink:      #1a1a1a;
+  --muted:    #8a8a8a;
+  --line:     #e4e4e4;
+  --bg:       #ffffff;
+  --panel:    #fafafa;
+
+  --ok:       #2c6e49;
+  --ok-bg:    #f0f6f2;
+  --ok-line:  #cfe3d7;
+
+  --bad:      #a32020;
+  --bad-bg:   #fdf2f2;
+  --bad-line: #f0cccc;
+
+  --type:     #5b7fa6;
+  --paste:    #c0603f;
+  --gap:      #dcdcdc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Pretendard", "Malgun Gothic", -apple-system,
+               BlinkMacSystemFont, sans-serif;
+  max-width: 860px;
+  margin: 0 auto 100px;
+  padding: 0 24px;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 머리말 ---------- */
+header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 40px 0 18px;
+  border-bottom: 2px solid var(--ink);
+}
+h1 { margin: 0; font-size: 30px; letter-spacing: -1.2px; }
+.sub { color: var(--muted); margin: 2px 0 0; font-size: 13px; }
+
+button {
+  font-family: inherit; font-size: 13px;
+  padding: 8px 18px;
+  border: 1px solid var(--ink); background: var(--ink); color: #fff;
+  border-radius: 3px; cursor: pointer;
+}
+button:hover { opacity: .85; }
+button.ghost { background: #fff; color: var(--ink); }
+button:disabled {
+  background: #f5f5f5; color: #c0c0c0;
+  border-color: var(--line); cursor: default; opacity: 1;
+}
+
+/* ---------- ① 판정 ---------- */
+.verdict {
+  margin-top: 28px; padding: 26px 28px;
+  border-radius: 8px; border: 1px solid var(--line);
+}
+.verdict h2 {
+  margin: 0 0 4px; font-size: 23px; letter-spacing: -.7px; line-height: 1.35;
+}
+.verdict p { margin: 0; font-size: 14px; color: var(--muted); }
+
+.verdict.ok   { background: var(--ok-bg);  border-color: var(--ok-line); }
+.verdict.ok h2   { color: var(--ok); }
+.verdict.bad  { background: var(--bad-bg); border-color: var(--bad-line); }
+.verdict.bad h2  { color: var(--bad); }
+.verdict.none { background: var(--panel); }
+.verdict.none h2 { color: var(--muted); }
+
+/* ---------- ② 한 줄 요약 ---------- */
+.stats {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 6px;
+  margin-top: 14px; overflow: hidden;
+}
+.stat {
+  background: #fff; padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.stat .k { font-size: 11px; color: var(--muted); letter-spacing: .2px; }
+.stat .v { font-size: 16px; font-weight: 600; letter-spacing: -.3px; }
+
+@media (max-width: 680px) {
+  .stats { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---------- ③ 세션 카드 ---------- */
+.card {
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 20px 22px; margin-top: 16px;
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.card-head h3 { margin: 0; font-size: 16px; letter-spacing: -.3px; }
+.head-right { display: flex; align-items: center; gap: 10px; }
+
+.ok-badge, .fail-badge {
+  font-size: 11px; padding: 4px 10px; border-radius: 3px; white-space: nowrap;
+}
+.ok-badge   { background: var(--ok-bg);  color: var(--ok);  border: 1px solid var(--ok-line); }
+.fail-badge { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-line); }
+
+/* 편집 곡선 */
+.chart {
+  display: flex; align-items: flex-end; justify-content: flex-start; gap: 4px;
+  height: 120px; padding: 10px;
+  background: var(--panel); border-radius: 5px;
+}
+.bar-col {
+  flex: 1; min-height: 2px;
+  /* 스냅샷이 몇 개 안 되는 세션에서 막대 하나가 화면을 뒤덮지 않게 */
+  max-width: 46px;
+  background: var(--type); border-radius: 2px 2px 0 0;
+}
+.bar-col.paste  { background: var(--paste); }
+.bar-col.broken { background: var(--bad); }
+
+/* 공백 구간 - 숨기지 않고 보여준다 */
+.gap {
+  width: 22px; flex: 0 0 22px; height: 100%;
+  background: repeating-linear-gradient(
+    45deg, var(--gap), var(--gap) 3px, transparent 3px, transparent 6px);
+  border-radius: 2px;
+}
+
+.axis {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 6px; font-size: 11px; color: var(--muted);
+}
+.legend { display: flex; align-items: center; gap: 10px; }
+.sw {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 2px; margin-right: 3px; vertical-align: -1px;
+}
+.sw.type    { background: var(--type); }
+.sw.pastesw { background: var(--paste); }
+.sw.gapsw   { background: var(--gap); }
+
+/* ---------- ④ 근거 테이블 ---------- */
+.chain-toggle {
+  margin-top: 14px; padding: 5px 12px;
+  background: #fff; color: var(--muted);
+  border: 1px solid var(--line); font-size: 12px;
+}
+.chain-toggle:hover { color: var(--ink); }
+
+table.chain {
+  width: 100%; border-collapse: collapse;
+  margin-top: 10px; font-size: 12.5px;
+}
+table.chain th {
+  text-align: left; font-weight: 500; color: var(--muted);
+  padding: 6px 8px; border-bottom: 1px solid var(--line); font-size: 11px;
+}
+table.chain td { padding: 6px 8px; border-bottom: 1px solid #f3f3f3; }
+table.chain td:nth-child(3) { text-align: right; }
+.mono {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: var(--muted); font-size: 11.5px;
+}
+tr.row-broken td { background: var(--bad-bg); color: var(--bad); }
+
+/* ---------- ⑤ 작성 영역 ---------- */
+.writer { margin-top: 36px; }
+.toggle {
+  background: #fff; color: var(--muted);
+  border: 1px dashed var(--line); font-size: 13px;
+  padding: 10px 16px; width: 100%; text-align: left;
+}
+.toggle:hover { color: var(--ink); border-color: var(--muted); }
+
+#writerBody {
+  border: 1px solid var(--line); border-top: none;
+  border-radius: 0 0 6px 6px; padding: 18px 20px 20px;
+}
+.btns { display: flex; gap: 8px; }
+
+#editor {
+  width: 100%; height: 190px; margin-top: 12px;
+  padding: 14px 16px;
+  font-family: inherit; font-size: 15px; line-height: 1.75;
+  border: 1px solid #d8d8d8; border-radius: 6px; resize: vertical;
+}
+#editor:disabled { background: var(--panel); color: #b5b5b5; }
+#editor:focus { outline: none; border-color: var(--type); }
+
+.status {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 8px; font-size: 12.5px; flex-wrap: wrap;
+}
+
+/* ---------- 꼬리말 ---------- */
+footer {
+  margin-top: 44px; padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--muted);
+}
+footer p { margin: 0 0 6px; }
+footer strong { color: var(--ink); font-weight: 600; }
+
+.muted { color: var(--muted); }
+.fail  { color: var(--bad); }
