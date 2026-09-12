@@ -10,8 +10,14 @@
 #   실수로 한 번 실행해서 발표 데이터가 날아가는 일이 없어야 한다.
 #
 # 만드는 것 :
-#   작품 1  "기록은 왜 증거가 되는가"  글 · 파일 1개 · 세션 2개
-#   작품 2  "재이 커미션"              그림 · 파일 3개 · 세션 3개 + 뺀 파일 1개
+#   데모 1  처음부터 쓴 글          글 · 파일 1개 · 세션 3개 (사흘)
+#   데모 2  붙여넣기가 많은 글       글 · 파일 1개 · 세션 1개
+#   데모 3  파일 세 개짜리 그림      그림 · 파일 3개 · 세션 3개 + 뺀 파일 1개
+#
+#   데모 1과 2는 일부러 대조되게 만들었다.
+#   같은 에세이.docx 인데 한쪽은 곡선이 오르내리고 한쪽은 직선이다.
+#   기획안 6.2 의 그림 두 개를 데이터로 만든 것이다.
+#   어느 쪽이 AI 인지는 말하지 않는다. 보는 사람이 판단한다.
 #
 # 이벤트 4종(typed / deleted / pasted / undo)은 글과 그림이 같이 쓴다.
 # 그림에서는 이렇게 대응한다 :
@@ -94,7 +100,7 @@ def wobble(seed):
 
 def make_steps(n, interval, per_step, seed,
                gaps=(), paste_at=None, paste_amount=0, undo_rate=0.0,
-               start_amount=0):
+               start_amount=0, dip_rate=0.28):
     """steps = [(경과분, 누적량, typed, deleted, pasted, undo), ...] 를 만든다.
 
     start_amount 시작할 때 이미 있던 양. 같은 파일을 이어서 작업할 때 쓴다
@@ -105,6 +111,9 @@ def make_steps(n, interval, per_step, seed,
     paste_at     몇 번째 캡처에서 밖에서 들어왔는가
     paste_amount 얼마나 들어왔는가
     undo_rate    캡처당 평균 되돌리기 횟수
+    dip_rate     줄어드는(고쳐 쓰는) 캡처의 비율.
+                 높으면 곡선이 오르내리고, 0에 가까우면 직선이 된다.
+                 기획안 6.2 의 "탐색이 있는 과정 / 없는 과정" 이 이 값 차이다.
     """
     r = wobble(seed)
     gap_at = dict(gaps)
@@ -128,7 +137,7 @@ def make_steps(n, interval, per_step, seed,
             amount += paste_amount
         else:
             grow = int(per_step * (0.6 + next(r) * 0.8))
-            if next(r) < 0.28:            # 가끔 줄어든다 - 고쳐 쓴 흔적
+            if next(r) < dip_rate:        # 가끔 줄어든다 - 고쳐 쓴 흔적
                 deleted = int(grow * (0.4 + next(r) * 0.5))
                 amount -= deleted
                 typed = int(deleted * 0.3)
@@ -143,66 +152,98 @@ def make_steps(n, interval, per_step, seed,
     return steps
 
 
-# 작품 1 - 글. 파일 하나짜리 작품.
-#   직접 쓴 세션 : 30초마다, 중간에 12분 자리 비움
-W1_S1 = make_steps(n=33, interval=0.5, per_step=44, seed=11,
-                   gaps=[(18, 12)], undo_rate=0.4)
-#   붙여넣고 편집한 세션 : 한 번에 튀고 그 뒤로 평평하다.
-#   같은 파일을 이어서 쓰는 것이므로 앞 세션이 끝난 글자 수에서 시작한다.
-W1_S2 = make_steps(n=9, interval=0.5, per_step=7, seed=22,
-                   paste_at=3, paste_amount=980, undo_rate=0.1,
-                   start_amount=W1_S1[-1][1])
+# ---------------------------------------------
+# 데모 1 — 처음부터 쓴 글
+#   사흘에 걸쳐 세 번 앉았다. 썼다 지웠다 하고 되돌리기가 많다.
+#   붙여넣기는 0. 곡선이 오르내린다.
+# ---------------------------------------------
+D1_S1 = make_steps(n=41, interval=0.5, per_step=26, seed=101,
+                   gaps=[(22, 9)], undo_rate=0.9, dip_rate=0.38)
+D1_S2 = make_steps(n=52, interval=0.5, per_step=24, seed=102,
+                   gaps=[(19, 14), (38, 7)], undo_rate=1.1, dip_rate=0.42,
+                   start_amount=D1_S1[-1][1])
+D1_S3 = make_steps(n=36, interval=0.5, per_step=18, seed=103,
+                   gaps=[(25, 6)], undo_rate=1.3, dip_rate=0.46,
+                   start_amount=D1_S2[-1][1])
 
-# 작품 2 - 그림. 파일 세 개짜리 작품.
+# ---------------------------------------------
+# 데모 2 — 붙여넣기가 많은 글
+#   한 번 앉아서 끝냈다. 한 번에 튀고 그 뒤로 평평하다.
+#   되돌리기가 거의 없다. 곡선이 직선에 가깝다.
+# ---------------------------------------------
+D2_S1 = make_steps(n=11, interval=0.5, per_step=9, seed=201,
+                   paste_at=2, paste_amount=1180, undo_rate=0.05, dip_rate=0.04)
+
+# ---------------------------------------------
+# 데모 3 — 파일 세 개짜리 그림
 #   2분마다 화면 캡처. typed = 그은 획, pasted = 밖에서 들어온 것.
-W2_ROUGH = make_steps(n=38, interval=2, per_step=45, seed=33,
+# ---------------------------------------------
+D3_ROUGH = make_steps(n=38, interval=2, per_step=45, seed=33,
                       gaps=[(21, 25)], paste_at=14, paste_amount=1,
-                      undo_rate=1.6)
-W2_LINE = make_steps(n=81, interval=2, per_step=52, seed=44,
-                     gaps=[(38, 45)], undo_rate=2.1)
-W2_COLOR = make_steps(n=127, interval=2, per_step=58, seed=55,
-                      gaps=[(46, 30), (92, 55)], undo_rate=1.9)
+                      undo_rate=1.6, dip_rate=0.34)
+D3_LINE = make_steps(n=81, interval=2, per_step=52, seed=44,
+                     gaps=[(38, 45)], undo_rate=2.1, dip_rate=0.30)
+D3_COLOR = make_steps(n=127, interval=2, per_step=58, seed=55,
+                      gaps=[(46, 30), (92, 55)], undo_rate=1.9, dip_rate=0.26)
 #   작품에서 뺀 파일. 이름은 남기지 않고 "뺐다"는 사실만 남는다.
-W2_DROPPED = make_steps(n=4, interval=2, per_step=60, seed=66)
+D3_DROPPED = make_steps(n=4, interval=2, per_step=60, seed=66)
 
 
 def make_work1(work_id):
+    """데모 1 — 처음부터 쓴 글. 사흘 · 세 번 앉음."""
     return {
         "work_id": work_id,
-        "title": "기록은 왜 증거가 되는가",
-        "created_at": "2026-09-12T14:02:00",
-        "files": [{"name": "초고.docx", "first_seen": "2026-09-12T14:02:00"}],
+        "title": "데모 1 — 처음부터 쓴 글",
+        "created_at": "2026-09-10T20:10:00",
+        "files": [{"name": "에세이.docx", "first_seen": "2026-09-10T20:10:00"}],
         "excluded": [],
         "sessions": [
-            build_session(f"{work_id}-s1", "초고.docx", "직접 작성",
-                          datetime(2026, 9, 12, 14, 2, 0), W1_S1),
-            build_session(f"{work_id}-s2", "초고.docx", "붙여넣고 편집",
-                          datetime(2026, 9, 12, 16, 40, 0), W1_S2),
+            build_session(f"{work_id}-s1", "에세이.docx", "첫날",
+                          datetime(2026, 9, 10, 20, 10, 0), D1_S1),
+            build_session(f"{work_id}-s2", "에세이.docx", "둘째날",
+                          datetime(2026, 9, 11, 14, 30, 0), D1_S2),
+            build_session(f"{work_id}-s3", "에세이.docx", "셋째날 · 다듬기",
+                          datetime(2026, 9, 12, 9, 5, 0), D1_S3),
         ],
     }
 
 
 def make_work2(work_id):
+    """데모 2 — 붙여넣기가 많은 글. 한 번 앉아서 끝냄."""
     return {
         "work_id": work_id,
-        "title": "재이 커미션",
+        "title": "데모 2 — 붙여넣기가 많은 글",
+        "created_at": "2026-09-12T16:40:00",
+        "files": [{"name": "에세이.docx", "first_seen": "2026-09-12T16:40:00"}],
+        "excluded": [],
+        "sessions": [
+            build_session(f"{work_id}-s1", "에세이.docx", "한 번에",
+                          datetime(2026, 9, 12, 16, 40, 0), D2_S1),
+        ],
+    }
+
+
+def make_work3(work_id):
+    """데모 3 — 파일 세 개짜리 그림. 뺀 파일 1개 포함."""
+    return {
+        "work_id": work_id,
+        "title": "데모 3 — 파일 세 개짜리 그림",
         "created_at": "2026-09-13T11:20:00",
         "files": [
             {"name": "러프.procreate", "first_seen": "2026-09-13T11:20:00"},
             {"name": "선화.procreate", "first_seen": "2026-09-13T16:10:00"},
             {"name": "채색.procreate", "first_seen": "2026-09-14T10:00:00"},
         ],
-        # 파일 1개를 뺐다는 사실. 이름은 적지 않는다.
         "excluded": [{"at": "2026-09-14T18:32:00"}],
         "sessions": [
             build_session(f"{work_id}-s1", "러프.procreate", "러프",
-                          datetime(2026, 9, 13, 11, 20, 0), W2_ROUGH),
+                          datetime(2026, 9, 13, 11, 20, 0), D3_ROUGH),
             build_session(f"{work_id}-s2", "선화.procreate", "선화",
-                          datetime(2026, 9, 13, 16, 10, 0), W2_LINE),
+                          datetime(2026, 9, 13, 16, 10, 0), D3_LINE),
             build_session(f"{work_id}-s3", "채색.procreate", "채색",
-                          datetime(2026, 9, 14, 10, 0, 0), W2_COLOR),
+                          datetime(2026, 9, 14, 10, 0, 0), D3_COLOR),
             build_session(f"{work_id}-s4", "참고_포즈모음.psd", "뺀 파일",
-                          datetime(2026, 9, 13, 13, 5, 0), W2_DROPPED, excluded=True),
+                          datetime(2026, 9, 13, 13, 5, 0), D3_DROPPED, excluded=True),
         ],
     }
 
@@ -238,10 +279,11 @@ if reset:
 
 taken = {w["work_id"] for w in data["works"]}
 
-w1_id = unique_id("w1", taken); taken.add(w1_id)
-w2_id = unique_id("w2", taken); taken.add(w2_id)
+w1_id = unique_id("d1", taken); taken.add(w1_id)
+w2_id = unique_id("d2", taken); taken.add(w2_id)
+w3_id = unique_id("d3", taken); taken.add(w3_id)
 
-new_works = [make_work1(w1_id), make_work2(w2_id)]
+new_works = [make_work1(w1_id), make_work2(w2_id), make_work3(w3_id)]
 data["works"].extend(new_works)
 
 os.makedirs(os.path.dirname(CHAIN_PATH), exist_ok=True)
