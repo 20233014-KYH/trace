@@ -7,152 +7,111 @@
 <body>
 <x-dc>
 <helmet>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <style>
     *{box-sizing:border-box;}
-    body{margin:0; background:#fafafa; color:#1a1a1a; line-height:1.65; font-size:14px;
+    body{margin:0; background:#faf9f7; color:#171717; line-height:1.6; font-size:15px;
       font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
       -webkit-font-smoothing:antialiased;}
     .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
     .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
     a{color:#2c6e49; text-decoration:none;} a:hover{color:#1f4f34;}
+    .label{font-size:11.5px; letter-spacing:1.3px; color:#8f8a83;}
+    .ticks{background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.32) 0 1px, rgba(0,0,0,0) 1px 34px);}
+    .hatch{background-image:repeating-linear-gradient(45deg,#d6d2cc,#d6d2cc 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 7px);}
   </style>
 </helmet>
 
-<div style="padding:48px 0 56px; display:flex; justify-content:center;">
-  <div style="width:780px; background:#ffffff; border:1px solid #e4e4e4; border-radius:10px; padding:44px 52px 40px;">
+<div style="padding:56px 0 64px; display:flex; justify-content:center;">
+  <div style="width:820px; background:#ffffff; border:1px solid #e6e3de; border-radius:8px; padding:56px 60px 48px;">
 
-    <!-- 인장 + 제목 -->
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:28px; padding-bottom:24px; border-bottom:2px solid #1a1a1a;">
-      <div>
-        <p style="margin:0 0 6px; font-size:12px; color:#8a8a8a; letter-spacing:1.4px;">자국 · TRACE</p>
-        <h1 class="serif" style="margin:0; font-size:32px; letter-spacing:-1.4px; font-weight:600; line-height:1.25;">창작 과정 증명서</h1>
-        <p style="margin:6px 0 0; font-size:13px; color:#8a8a8a;">이 문서는 기록의 무결성만 증명합니다.</p>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:28px;">
+      <div style="display:flex; align-items:baseline; gap:14px;">
+        <span class="serif" style="font-size:19px; font-weight:700; letter-spacing:2.5px;">TRACE</span>
+        <span class="label">창작 과정 증명서</span>
       </div>
-      <div style="flex-grow:0; width:84px; height:84px; border:1.5px solid #1a1a1a; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-        <span class="serif" style="font-size:25px; font-weight:600; letter-spacing:-1px;">자국</span>
+      <span class="label mono">TR-20260912-0001</span>
+    </div>
+
+    <h1 class="serif" style="margin:40px 0 0; font-size:42px; font-weight:600; letter-spacing:-1.8px; line-height:1.36;">
+      1,672자 가운데 <span style="color:#c0603f;">980자</span>가<br>
+      9월 12일 16시 41분에 밖에서<br>
+      들어왔습니다.
+    </h1>
+
+    <div style="margin-top:24px; padding-left:16px; border-left:2px solid #c0603f;">
+      <p style="margin:0; font-size:16px; line-height:1.65;">작성자는 이 980자를 <strong style="font-weight:600;">“AI 초안”</strong>이라고 직접 표시했습니다.</p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:9px; margin-top:20px; font-size:14px; color:#2c6e49;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2c6e49" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <span>기록이 작성된 뒤 고쳐지지 않았습니다.</span>
+    </div>
+
+    <!-- 타임라인 -->
+    <div style="margin-top:40px;">
+      <div style="display:flex; align-items:stretch; height:44px; border-radius:4px; overflow:hidden;">
+        <div class="ticks" style="flex-grow:38; background-color:#171717;"></div>
+        <div class="hatch" style="flex-grow:14; background-color:#f1efec;"></div>
+        <div class="ticks" style="flex-grow:6; background-color:#171717;"></div>
+        <div style="flex-grow:38; background-color:#c0603f;"></div>
+        <div class="ticks" style="flex-grow:4; background-color:#171717;"></div>
+      </div>
+      <div style="display:flex; margin-top:8px; font-size:12px; color:#8f8a83;">
+        <div style="flex-grow:38;">14:02 — 14:17</div>
+        <div style="flex-grow:14; text-align:center;">2시간 23분 공백</div>
+        <div style="flex-grow:48; text-align:right;">16:40 — 16:42</div>
       </div>
     </div>
 
-    <!-- 메타 -->
-    <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px 32px; margin-top:26px;">
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">문서명</span>
-        <span style="font-size:15px; font-weight:600; letter-spacing:-.3px;">기록은 왜 증거가 되는가</span>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">작성자</span>
-        <span style="font-size:15px; font-weight:600; letter-spacing:-.3px; color:#8a8a8a;">[작성자 이름]</span>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">발급 시각</span>
-        <span class="mono" style="font-size:14px;">2026-09-12 17:02:41</span>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">증명서 번호</span>
-        <span class="mono" style="font-size:14px;">TR-20260912-0001</span>
-      </div>
-    </div>
-
-    <!-- 요약 지표 -->
-    <p style="margin:30px 0 10px; font-size:12px; color:#8a8a8a; letter-spacing:.2px;">기록 요약</p>
-    <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1px; background:#e4e4e4; border:1px solid #e4e4e4; border-radius:6px; overflow:hidden;">
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">총 작업 시간</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">20분</span>
-      </div>
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">세션 수 · 간격</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">2개 · 2시간 38분</span>
-      </div>
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">공백 구간</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">1구간 · 12분</span>
-      </div>
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">붙여넣기 비율</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">58%</span>
-      </div>
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">되돌리기</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">6회</span>
-      </div>
-      <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
-        <span style="font-size:11px; color:#8a8a8a;">스냅샷</span>
-        <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">15개</span>
-      </div>
-    </div>
-
-    <!-- 편집 곡선 -->
-    <p style="margin:26px 0 10px; font-size:12px; color:#8a8a8a; letter-spacing:.2px;">편집 곡선</p>
-    <div style="display:flex; gap:16px;">
-      <div style="flex-grow:1; min-width:0;">
-        <div style="display:flex; align-items:flex-end; gap:3px; height:62px; padding:8px; background:#fafafa; border-radius:5px;">
-          <div style="flex-grow:1; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:32%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:27%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:52%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:45%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:0; width:14px; height:100%; border-radius:2px; background-image:repeating-linear-gradient(45deg,#dcdcdc,#dcdcdc 3px,rgba(0,0,0,0) 3px,rgba(0,0,0,0) 6px);"></div>
-          <div style="flex-grow:1; height:71%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:69%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:92%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+    <!-- 두 숫자 -->
+    <div style="display:flex; gap:48px; margin-top:36px;">
+      <div style="flex-grow:1;">
+        <div style="display:flex; align-items:baseline; gap:9px;">
+          <span style="width:11px; height:11px; border-radius:2px; background:#171717; flex-grow:0;"></span>
+          <span class="serif" style="font-size:30px; font-weight:600; letter-spacing:-1.1px;">692자</span>
+          <span style="font-size:14px; color:#8f8a83;">41%</span>
         </div>
-        <p style="margin:6px 0 0; font-size:11.5px; color:#8a8a8a;">세션 1 · 직접 작성 · 14:02–14:17</p>
+        <p style="margin:2px 0 0 20px; font-size:13px; color:#8f8a83;">직접 입력 · 작업 20분 · 되돌리기 6회</p>
       </div>
-      <div style="flex-grow:1; min-width:0;">
-        <div style="display:flex; align-items:flex-end; gap:3px; height:62px; padding:8px; background:#fafafa; border-radius:5px;">
-          <div style="flex-grow:1; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:97%; background:#c0603f; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:97%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
-          <div style="flex-grow:1; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1;">
+        <div style="display:flex; align-items:baseline; gap:9px;">
+          <span style="width:11px; height:11px; border-radius:2px; background:#c0603f; flex-grow:0;"></span>
+          <span class="serif" style="font-size:30px; font-weight:600; letter-spacing:-1.1px; color:#c0603f;">980자</span>
+          <span style="font-size:14px; color:#8f8a83;">59%</span>
         </div>
-        <p style="margin:6px 0 0; font-size:11.5px; color:#8a8a8a;">세션 2 · 붙여넣기 위주 · 16:40–16:42</p>
+        <p style="margin:2px 0 0 20px; font-size:13px; color:#8f8a83;">밖에서 들어옴 · AI 초안으로 표시됨</p>
       </div>
     </div>
 
-    <!-- 앵커 + 공유 -->
-    <div style="display:flex; gap:28px; margin-top:28px; padding-top:26px; border-top:1px solid #e4e4e4; align-items:flex-start;">
-      <div style="flex-grow:1; min-width:0;">
-        <p style="margin:0 0 10px; font-size:12px; color:#8a8a8a; letter-spacing:.2px;">외부 앵커</p>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div style="display:flex; gap:10px; align-items:baseline;">
-            <span style="font-size:12px; color:#8a8a8a; width:64px; flex-grow:0;">루트 해시</span>
-            <span class="mono" style="font-size:11.5px; word-break:break-all; line-height:1.5;">27fb63d9fcf9a41c8e2b7d05f3a9c6104b8ee27a1d93c05f8b2e4a76d1c3908e</span>
-          </div>
-          <div style="display:flex; gap:10px; align-items:baseline;">
-            <span style="font-size:12px; color:#8a8a8a; width:64px; flex-grow:0;">고정 대상</span>
-            <span style="font-size:12.5px;">OpenTimestamps · 비트코인 블록 <span class="mono" style="font-size:11.5px;">#912,4xx</span></span>
-          </div>
-          <div style="display:flex; gap:10px; align-items:baseline;">
-            <span style="font-size:12px; color:#8a8a8a; width:64px; flex-grow:0;">고정 시각</span>
-            <span class="mono" style="font-size:12px;">2026-09-12 17:02</span>
-          </div>
+    <!-- 문서 정보 + 앵커 + QR -->
+    <div style="display:flex; gap:40px; margin-top:44px; padding-top:32px; border-top:1px solid #e6e3de; align-items:flex-start;">
+      <div style="flex-grow:1; min-width:0; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <p class="label" style="margin:0 0 3px;">문서 · 작성자</p>
+          <p style="margin:0; font-size:15px;">기록은 왜 증거가 되는가 · <span style="color:#8f8a83;">[작성자 이름]</span></p>
         </div>
-        <p style="margin:12px 0 0; font-size:12px; color:#8a8a8a; line-height:1.7;">앵커 이후로는 자국 운영자도 이 기록을 고칠 수 없습니다.</p>
-      </div>
-
-      <div style="flex-grow:0; width:200px; display:flex; flex-direction:column; align-items:center; gap:10px;">
-        <div style="padding:8px; border:1px solid #e4e4e4; border-radius:6px; line-height:0;"><svg viewBox="0 0 100 100" width="104" height="104" xmlns="http://www.w3.org/2000/svg" fill="#1a1a1a" role="img" aria-label="공유 링크 QR"><rect x="0" y="0" width="100" height="100" fill="#ffffff"/><rect x="0" y="0" width="4" height="4"/><rect x="4" y="0" width="4" height="4"/><rect x="8" y="0" width="4" height="4"/><rect x="12" y="0" width="4" height="4"/><rect x="16" y="0" width="4" height="4"/><rect x="20" y="0" width="4" height="4"/><rect x="24" y="0" width="4" height="4"/><rect x="32" y="0" width="4" height="4"/><rect x="44" y="0" width="4" height="4"/><rect x="56" y="0" width="4" height="4"/><rect x="60" y="0" width="4" height="4"/><rect x="64" y="0" width="4" height="4"/><rect x="72" y="0" width="4" height="4"/><rect x="76" y="0" width="4" height="4"/><rect x="80" y="0" width="4" height="4"/><rect x="84" y="0" width="4" height="4"/><rect x="88" y="0" width="4" height="4"/><rect x="92" y="0" width="4" height="4"/><rect x="96" y="0" width="4" height="4"/><rect x="0" y="4" width="4" height="4"/><rect x="24" y="4" width="4" height="4"/><rect x="36" y="4" width="4" height="4"/><rect x="44" y="4" width="4" height="4"/><rect x="52" y="4" width="4" height="4"/><rect x="64" y="4" width="4" height="4"/><rect x="72" y="4" width="4" height="4"/><rect x="96" y="4" width="4" height="4"/><rect x="0" y="8" width="4" height="4"/><rect x="8" y="8" width="4" height="4"/><rect x="12" y="8" width="4" height="4"/><rect x="16" y="8" width="4" height="4"/><rect x="24" y="8" width="4" height="4"/><rect x="36" y="8" width="4" height="4"/><rect x="40" y="8" width="4" height="4"/><rect x="44" y="8" width="4" height="4"/><rect x="60" y="8" width="4" height="4"/><rect x="64" y="8" width="4" height="4"/><rect x="72" y="8" width="4" height="4"/><rect x="80" y="8" width="4" height="4"/><rect x="84" y="8" width="4" height="4"/><rect x="88" y="8" width="4" height="4"/><rect x="96" y="8" width="4" height="4"/><rect x="0" y="12" width="4" height="4"/><rect x="8" y="12" width="4" height="4"/><rect x="12" y="12" width="4" height="4"/><rect x="16" y="12" width="4" height="4"/><rect x="24" y="12" width="4" height="4"/><rect x="36" y="12" width="4" height="4"/><rect x="40" y="12" width="4" height="4"/><rect x="48" y="12" width="4" height="4"/><rect x="56" y="12" width="4" height="4"/><rect x="60" y="12" width="4" height="4"/><rect x="72" y="12" width="4" height="4"/><rect x="80" y="12" width="4" height="4"/><rect x="84" y="12" width="4" height="4"/><rect x="88" y="12" width="4" height="4"/><rect x="96" y="12" width="4" height="4"/><rect x="0" y="16" width="4" height="4"/><rect x="8" y="16" width="4" height="4"/><rect x="12" y="16" width="4" height="4"/><rect x="16" y="16" width="4" height="4"/><rect x="24" y="16" width="4" height="4"/><rect x="32" y="16" width="4" height="4"/><rect x="52" y="16" width="4" height="4"/><rect x="64" y="16" width="4" height="4"/><rect x="72" y="16" width="4" height="4"/><rect x="80" y="16" width="4" height="4"/><rect x="84" y="16" width="4" height="4"/><rect x="88" y="16" width="4" height="4"/><rect x="96" y="16" width="4" height="4"/><rect x="0" y="20" width="4" height="4"/><rect x="24" y="20" width="4" height="4"/><rect x="32" y="20" width="4" height="4"/><rect x="36" y="20" width="4" height="4"/><rect x="52" y="20" width="4" height="4"/><rect x="56" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/><rect x="72" y="20" width="4" height="4"/><rect x="96" y="20" width="4" height="4"/><rect x="0" y="24" width="4" height="4"/><rect x="4" y="24" width="4" height="4"/><rect x="8" y="24" width="4" height="4"/><rect x="12" y="24" width="4" height="4"/><rect x="16" y="24" width="4" height="4"/><rect x="20" y="24" width="4" height="4"/><rect x="24" y="24" width="4" height="4"/><rect x="32" y="24" width="4" height="4"/><rect x="40" y="24" width="4" height="4"/><rect x="48" y="24" width="4" height="4"/><rect x="56" y="24" width="4" height="4"/><rect x="64" y="24" width="4" height="4"/><rect x="72" y="24" width="4" height="4"/><rect x="76" y="24" width="4" height="4"/><rect x="80" y="24" width="4" height="4"/><rect x="84" y="24" width="4" height="4"/><rect x="88" y="24" width="4" height="4"/><rect x="92" y="24" width="4" height="4"/><rect x="96" y="24" width="4" height="4"/><rect x="36" y="28" width="4" height="4"/><rect x="44" y="28" width="4" height="4"/><rect x="48" y="28" width="4" height="4"/><rect x="56" y="28" width="4" height="4"/><rect x="60" y="28" width="4" height="4"/><rect x="64" y="28" width="4" height="4"/><rect x="0" y="32" width="4" height="4"/><rect x="24" y="32" width="4" height="4"/><rect x="28" y="32" width="4" height="4"/><rect x="32" y="32" width="4" height="4"/><rect x="36" y="32" width="4" height="4"/><rect x="44" y="32" width="4" height="4"/><rect x="48" y="32" width="4" height="4"/><rect x="52" y="32" width="4" height="4"/><rect x="64" y="32" width="4" height="4"/><rect x="72" y="32" width="4" height="4"/><rect x="4" y="36" width="4" height="4"/><rect x="8" y="36" width="4" height="4"/><rect x="12" y="36" width="4" height="4"/><rect x="28" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="60" y="36" width="4" height="4"/><rect x="64" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="84" y="36" width="4" height="4"/><rect x="8" y="40" width="4" height="4"/><rect x="12" y="40" width="4" height="4"/><rect x="16" y="40" width="4" height="4"/><rect x="20" y="40" width="4" height="4"/><rect x="24" y="40" width="4" height="4"/><rect x="32" y="40" width="4" height="4"/><rect x="52" y="40" width="4" height="4"/><rect x="56" y="40" width="4" height="4"/><rect x="60" y="40" width="4" height="4"/><rect x="64" y="40" width="4" height="4"/><rect x="68" y="40" width="4" height="4"/><rect x="80" y="40" width="4" height="4"/><rect x="84" y="40" width="4" height="4"/><rect x="96" y="40" width="4" height="4"/><rect x="0" y="44" width="4" height="4"/><rect x="12" y="44" width="4" height="4"/><rect x="28" y="44" width="4" height="4"/><rect x="32" y="44" width="4" height="4"/><rect x="44" y="44" width="4" height="4"/><rect x="48" y="44" width="4" height="4"/><rect x="60" y="44" width="4" height="4"/><rect x="80" y="44" width="4" height="4"/><rect x="84" y="44" width="4" height="4"/><rect x="88" y="44" width="4" height="4"/><rect x="8" y="48" width="4" height="4"/><rect x="16" y="48" width="4" height="4"/><rect x="20" y="48" width="4" height="4"/><rect x="24" y="48" width="4" height="4"/><rect x="32" y="48" width="4" height="4"/><rect x="36" y="48" width="4" height="4"/><rect x="44" y="48" width="4" height="4"/><rect x="56" y="48" width="4" height="4"/><rect x="64" y="48" width="4" height="4"/><rect x="68" y="48" width="4" height="4"/><rect x="72" y="48" width="4" height="4"/><rect x="84" y="48" width="4" height="4"/><rect x="92" y="48" width="4" height="4"/><rect x="0" y="52" width="4" height="4"/><rect x="4" y="52" width="4" height="4"/><rect x="8" y="52" width="4" height="4"/><rect x="16" y="52" width="4" height="4"/><rect x="32" y="52" width="4" height="4"/><rect x="40" y="52" width="4" height="4"/><rect x="44" y="52" width="4" height="4"/><rect x="48" y="52" width="4" height="4"/><rect x="52" y="52" width="4" height="4"/><rect x="56" y="52" width="4" height="4"/><rect x="60" y="52" width="4" height="4"/><rect x="64" y="52" width="4" height="4"/><rect x="76" y="52" width="4" height="4"/><rect x="84" y="52" width="4" height="4"/><rect x="88" y="52" width="4" height="4"/><rect x="92" y="52" width="4" height="4"/><rect x="4" y="56" width="4" height="4"/><rect x="16" y="56" width="4" height="4"/><rect x="20" y="56" width="4" height="4"/><rect x="24" y="56" width="4" height="4"/><rect x="28" y="56" width="4" height="4"/><rect x="36" y="56" width="4" height="4"/><rect x="40" y="56" width="4" height="4"/><rect x="52" y="56" width="4" height="4"/><rect x="64" y="56" width="4" height="4"/><rect x="88" y="56" width="4" height="4"/><rect x="0" y="60" width="4" height="4"/><rect x="4" y="60" width="4" height="4"/><rect x="12" y="60" width="4" height="4"/><rect x="28" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="36" y="60" width="4" height="4"/><rect x="48" y="60" width="4" height="4"/><rect x="60" y="60" width="4" height="4"/><rect x="72" y="60" width="4" height="4"/><rect x="76" y="60" width="4" height="4"/><rect x="88" y="60" width="4" height="4"/><rect x="96" y="60" width="4" height="4"/><rect x="0" y="64" width="4" height="4"/><rect x="8" y="64" width="4" height="4"/><rect x="12" y="64" width="4" height="4"/><rect x="16" y="64" width="4" height="4"/><rect x="20" y="64" width="4" height="4"/><rect x="24" y="64" width="4" height="4"/><rect x="28" y="64" width="4" height="4"/><rect x="32" y="64" width="4" height="4"/><rect x="36" y="64" width="4" height="4"/><rect x="40" y="64" width="4" height="4"/><rect x="48" y="64" width="4" height="4"/><rect x="52" y="64" width="4" height="4"/><rect x="68" y="64" width="4" height="4"/><rect x="76" y="64" width="4" height="4"/><rect x="32" y="68" width="4" height="4"/><rect x="88" y="68" width="4" height="4"/><rect x="0" y="72" width="4" height="4"/><rect x="4" y="72" width="4" height="4"/><rect x="8" y="72" width="4" height="4"/><rect x="12" y="72" width="4" height="4"/><rect x="16" y="72" width="4" height="4"/><rect x="20" y="72" width="4" height="4"/><rect x="24" y="72" width="4" height="4"/><rect x="36" y="72" width="4" height="4"/><rect x="44" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="56" y="72" width="4" height="4"/><rect x="60" y="72" width="4" height="4"/><rect x="68" y="72" width="4" height="4"/><rect x="84" y="72" width="4" height="4"/><rect x="88" y="72" width="4" height="4"/><rect x="96" y="72" width="4" height="4"/><rect x="0" y="76" width="4" height="4"/><rect x="24" y="76" width="4" height="4"/><rect x="36" y="76" width="4" height="4"/><rect x="40" y="76" width="4" height="4"/><rect x="44" y="76" width="4" height="4"/><rect x="48" y="76" width="4" height="4"/><rect x="52" y="76" width="4" height="4"/><rect x="60" y="76" width="4" height="4"/><rect x="64" y="76" width="4" height="4"/><rect x="68" y="76" width="4" height="4"/><rect x="88" y="76" width="4" height="4"/><rect x="92" y="76" width="4" height="4"/><rect x="96" y="76" width="4" height="4"/><rect x="0" y="80" width="4" height="4"/><rect x="8" y="80" width="4" height="4"/><rect x="12" y="80" width="4" height="4"/><rect x="16" y="80" width="4" height="4"/><rect x="24" y="80" width="4" height="4"/><rect x="36" y="80" width="4" height="4"/><rect x="40" y="80" width="4" height="4"/><rect x="44" y="80" width="4" height="4"/><rect x="48" y="80" width="4" height="4"/><rect x="52" y="80" width="4" height="4"/><rect x="68" y="80" width="4" height="4"/><rect x="84" y="80" width="4" height="4"/><rect x="88" y="80" width="4" height="4"/><rect x="0" y="84" width="4" height="4"/><rect x="8" y="84" width="4" height="4"/><rect x="12" y="84" width="4" height="4"/><rect x="16" y="84" width="4" height="4"/><rect x="24" y="84" width="4" height="4"/><rect x="40" y="84" width="4" height="4"/><rect x="48" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="64" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="88" y="84" width="4" height="4"/><rect x="96" y="84" width="4" height="4"/><rect x="0" y="88" width="4" height="4"/><rect x="8" y="88" width="4" height="4"/><rect x="12" y="88" width="4" height="4"/><rect x="16" y="88" width="4" height="4"/><rect x="24" y="88" width="4" height="4"/><rect x="32" y="88" width="4" height="4"/><rect x="36" y="88" width="4" height="4"/><rect x="40" y="88" width="4" height="4"/><rect x="44" y="88" width="4" height="4"/><rect x="56" y="88" width="4" height="4"/><rect x="68" y="88" width="4" height="4"/><rect x="72" y="88" width="4" height="4"/><rect x="76" y="88" width="4" height="4"/><rect x="84" y="88" width="4" height="4"/><rect x="0" y="92" width="4" height="4"/><rect x="24" y="92" width="4" height="4"/><rect x="36" y="92" width="4" height="4"/><rect x="40" y="92" width="4" height="4"/><rect x="44" y="92" width="4" height="4"/><rect x="52" y="92" width="4" height="4"/><rect x="56" y="92" width="4" height="4"/><rect x="64" y="92" width="4" height="4"/><rect x="68" y="92" width="4" height="4"/><rect x="72" y="92" width="4" height="4"/><rect x="76" y="92" width="4" height="4"/><rect x="88" y="92" width="4" height="4"/><rect x="96" y="92" width="4" height="4"/><rect x="0" y="96" width="4" height="4"/><rect x="4" y="96" width="4" height="4"/><rect x="8" y="96" width="4" height="4"/><rect x="12" y="96" width="4" height="4"/><rect x="16" y="96" width="4" height="4"/><rect x="20" y="96" width="4" height="4"/><rect x="24" y="96" width="4" height="4"/><rect x="32" y="96" width="4" height="4"/><rect x="36" y="96" width="4" height="4"/><rect x="44" y="96" width="4" height="4"/><rect x="52" y="96" width="4" height="4"/><rect x="56" y="96" width="4" height="4"/><rect x="76" y="96" width="4" height="4"/><rect x="80" y="96" width="4" height="4"/><rect x="88" y="96" width="4" height="4"/><rect x="92" y="96" width="4" height="4"/></svg></div>
-        <p style="margin:0; font-size:11px; color:#8a8a8a; text-align:center;">검증 화면 링크</p>
-        <div style="display:flex; align-items:center; gap:6px; width:100%; border:1px solid #e4e4e4; border-radius:4px; padding:6px 8px;">
-          <span class="mono" style="font-size:10.5px; color:#8a8a8a; flex-grow:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">jaguk.kr/v/TR-20260912-0001</span>
-          <button style="font-family:inherit; font-size:11px; padding:3px 8px; border:1px solid #e4e4e4; background:#ffffff; color:#1a1a1a; border-radius:3px; cursor:pointer;">복사</button>
+        <div>
+          <p class="label" style="margin:0 0 3px;">외부 앵커</p>
+          <p class="mono" style="margin:0; font-size:12px; line-height:1.6; word-break:break-all;">27fb63d9fcf9a41c8e2b7d05f3a9c6104b8ee27a1d93c05f8b2e4a76d1c3908e</p>
+          <p style="margin:4px 0 0; font-size:13px; color:#8f8a83;">OpenTimestamps · 2026-09-12 17:02 고정 이후로는 Trace 운영자도 고칠 수 없습니다.</p>
         </div>
       </div>
+
+      <div style="flex-grow:0; width:150px; display:flex; flex-direction:column; align-items:center; gap:9px;">
+        <div style="line-height:0;"><svg viewBox="0 0 100 100" width="116" height="116" xmlns="http://www.w3.org/2000/svg" fill="#171717" role="img" aria-label="검증 화면 링크 QR"><rect width="100" height="100" fill="#ffffff"/><rect x="0" y="0" width="4" height="4"/><rect x="4" y="0" width="4" height="4"/><rect x="8" y="0" width="4" height="4"/><rect x="12" y="0" width="4" height="4"/><rect x="16" y="0" width="4" height="4"/><rect x="20" y="0" width="4" height="4"/><rect x="24" y="0" width="4" height="4"/><rect x="32" y="0" width="4" height="4"/><rect x="44" y="0" width="4" height="4"/><rect x="56" y="0" width="4" height="4"/><rect x="60" y="0" width="4" height="4"/><rect x="64" y="0" width="4" height="4"/><rect x="72" y="0" width="4" height="4"/><rect x="76" y="0" width="4" height="4"/><rect x="80" y="0" width="4" height="4"/><rect x="84" y="0" width="4" height="4"/><rect x="88" y="0" width="4" height="4"/><rect x="92" y="0" width="4" height="4"/><rect x="96" y="0" width="4" height="4"/><rect x="0" y="4" width="4" height="4"/><rect x="24" y="4" width="4" height="4"/><rect x="36" y="4" width="4" height="4"/><rect x="44" y="4" width="4" height="4"/><rect x="52" y="4" width="4" height="4"/><rect x="64" y="4" width="4" height="4"/><rect x="72" y="4" width="4" height="4"/><rect x="96" y="4" width="4" height="4"/><rect x="0" y="8" width="4" height="4"/><rect x="8" y="8" width="4" height="4"/><rect x="12" y="8" width="4" height="4"/><rect x="16" y="8" width="4" height="4"/><rect x="24" y="8" width="4" height="4"/><rect x="36" y="8" width="4" height="4"/><rect x="40" y="8" width="4" height="4"/><rect x="44" y="8" width="4" height="4"/><rect x="60" y="8" width="4" height="4"/><rect x="64" y="8" width="4" height="4"/><rect x="72" y="8" width="4" height="4"/><rect x="80" y="8" width="4" height="4"/><rect x="84" y="8" width="4" height="4"/><rect x="88" y="8" width="4" height="4"/><rect x="96" y="8" width="4" height="4"/><rect x="0" y="12" width="4" height="4"/><rect x="8" y="12" width="4" height="4"/><rect x="12" y="12" width="4" height="4"/><rect x="16" y="12" width="4" height="4"/><rect x="24" y="12" width="4" height="4"/><rect x="36" y="12" width="4" height="4"/><rect x="40" y="12" width="4" height="4"/><rect x="48" y="12" width="4" height="4"/><rect x="56" y="12" width="4" height="4"/><rect x="60" y="12" width="4" height="4"/><rect x="72" y="12" width="4" height="4"/><rect x="80" y="12" width="4" height="4"/><rect x="84" y="12" width="4" height="4"/><rect x="88" y="12" width="4" height="4"/><rect x="96" y="12" width="4" height="4"/><rect x="0" y="16" width="4" height="4"/><rect x="8" y="16" width="4" height="4"/><rect x="12" y="16" width="4" height="4"/><rect x="16" y="16" width="4" height="4"/><rect x="24" y="16" width="4" height="4"/><rect x="32" y="16" width="4" height="4"/><rect x="52" y="16" width="4" height="4"/><rect x="64" y="16" width="4" height="4"/><rect x="72" y="16" width="4" height="4"/><rect x="80" y="16" width="4" height="4"/><rect x="84" y="16" width="4" height="4"/><rect x="88" y="16" width="4" height="4"/><rect x="96" y="16" width="4" height="4"/><rect x="0" y="20" width="4" height="4"/><rect x="24" y="20" width="4" height="4"/><rect x="32" y="20" width="4" height="4"/><rect x="36" y="20" width="4" height="4"/><rect x="52" y="20" width="4" height="4"/><rect x="56" y="20" width="4" height="4"/><rect x="60" y="20" width="4" height="4"/><rect x="72" y="20" width="4" height="4"/><rect x="96" y="20" width="4" height="4"/><rect x="0" y="24" width="4" height="4"/><rect x="4" y="24" width="4" height="4"/><rect x="8" y="24" width="4" height="4"/><rect x="12" y="24" width="4" height="4"/><rect x="16" y="24" width="4" height="4"/><rect x="20" y="24" width="4" height="4"/><rect x="24" y="24" width="4" height="4"/><rect x="32" y="24" width="4" height="4"/><rect x="40" y="24" width="4" height="4"/><rect x="48" y="24" width="4" height="4"/><rect x="56" y="24" width="4" height="4"/><rect x="64" y="24" width="4" height="4"/><rect x="72" y="24" width="4" height="4"/><rect x="76" y="24" width="4" height="4"/><rect x="80" y="24" width="4" height="4"/><rect x="84" y="24" width="4" height="4"/><rect x="88" y="24" width="4" height="4"/><rect x="92" y="24" width="4" height="4"/><rect x="96" y="24" width="4" height="4"/><rect x="36" y="28" width="4" height="4"/><rect x="44" y="28" width="4" height="4"/><rect x="48" y="28" width="4" height="4"/><rect x="56" y="28" width="4" height="4"/><rect x="60" y="28" width="4" height="4"/><rect x="64" y="28" width="4" height="4"/><rect x="0" y="32" width="4" height="4"/><rect x="24" y="32" width="4" height="4"/><rect x="28" y="32" width="4" height="4"/><rect x="32" y="32" width="4" height="4"/><rect x="36" y="32" width="4" height="4"/><rect x="44" y="32" width="4" height="4"/><rect x="48" y="32" width="4" height="4"/><rect x="52" y="32" width="4" height="4"/><rect x="64" y="32" width="4" height="4"/><rect x="72" y="32" width="4" height="4"/><rect x="4" y="36" width="4" height="4"/><rect x="8" y="36" width="4" height="4"/><rect x="12" y="36" width="4" height="4"/><rect x="28" y="36" width="4" height="4"/><rect x="32" y="36" width="4" height="4"/><rect x="60" y="36" width="4" height="4"/><rect x="64" y="36" width="4" height="4"/><rect x="68" y="36" width="4" height="4"/><rect x="80" y="36" width="4" height="4"/><rect x="84" y="36" width="4" height="4"/><rect x="8" y="40" width="4" height="4"/><rect x="12" y="40" width="4" height="4"/><rect x="16" y="40" width="4" height="4"/><rect x="20" y="40" width="4" height="4"/><rect x="24" y="40" width="4" height="4"/><rect x="32" y="40" width="4" height="4"/><rect x="52" y="40" width="4" height="4"/><rect x="56" y="40" width="4" height="4"/><rect x="60" y="40" width="4" height="4"/><rect x="64" y="40" width="4" height="4"/><rect x="68" y="40" width="4" height="4"/><rect x="80" y="40" width="4" height="4"/><rect x="84" y="40" width="4" height="4"/><rect x="96" y="40" width="4" height="4"/><rect x="0" y="44" width="4" height="4"/><rect x="12" y="44" width="4" height="4"/><rect x="28" y="44" width="4" height="4"/><rect x="32" y="44" width="4" height="4"/><rect x="44" y="44" width="4" height="4"/><rect x="48" y="44" width="4" height="4"/><rect x="60" y="44" width="4" height="4"/><rect x="80" y="44" width="4" height="4"/><rect x="84" y="44" width="4" height="4"/><rect x="88" y="44" width="4" height="4"/><rect x="8" y="48" width="4" height="4"/><rect x="16" y="48" width="4" height="4"/><rect x="20" y="48" width="4" height="4"/><rect x="24" y="48" width="4" height="4"/><rect x="32" y="48" width="4" height="4"/><rect x="36" y="48" width="4" height="4"/><rect x="44" y="48" width="4" height="4"/><rect x="56" y="48" width="4" height="4"/><rect x="64" y="48" width="4" height="4"/><rect x="68" y="48" width="4" height="4"/><rect x="72" y="48" width="4" height="4"/><rect x="84" y="48" width="4" height="4"/><rect x="92" y="48" width="4" height="4"/><rect x="0" y="52" width="4" height="4"/><rect x="4" y="52" width="4" height="4"/><rect x="8" y="52" width="4" height="4"/><rect x="16" y="52" width="4" height="4"/><rect x="32" y="52" width="4" height="4"/><rect x="40" y="52" width="4" height="4"/><rect x="44" y="52" width="4" height="4"/><rect x="48" y="52" width="4" height="4"/><rect x="52" y="52" width="4" height="4"/><rect x="56" y="52" width="4" height="4"/><rect x="60" y="52" width="4" height="4"/><rect x="64" y="52" width="4" height="4"/><rect x="76" y="52" width="4" height="4"/><rect x="84" y="52" width="4" height="4"/><rect x="88" y="52" width="4" height="4"/><rect x="92" y="52" width="4" height="4"/><rect x="4" y="56" width="4" height="4"/><rect x="16" y="56" width="4" height="4"/><rect x="20" y="56" width="4" height="4"/><rect x="24" y="56" width="4" height="4"/><rect x="28" y="56" width="4" height="4"/><rect x="36" y="56" width="4" height="4"/><rect x="40" y="56" width="4" height="4"/><rect x="52" y="56" width="4" height="4"/><rect x="64" y="56" width="4" height="4"/><rect x="88" y="56" width="4" height="4"/><rect x="0" y="60" width="4" height="4"/><rect x="4" y="60" width="4" height="4"/><rect x="12" y="60" width="4" height="4"/><rect x="28" y="60" width="4" height="4"/><rect x="32" y="60" width="4" height="4"/><rect x="36" y="60" width="4" height="4"/><rect x="48" y="60" width="4" height="4"/><rect x="60" y="60" width="4" height="4"/><rect x="72" y="60" width="4" height="4"/><rect x="76" y="60" width="4" height="4"/><rect x="88" y="60" width="4" height="4"/><rect x="96" y="60" width="4" height="4"/><rect x="0" y="64" width="4" height="4"/><rect x="8" y="64" width="4" height="4"/><rect x="12" y="64" width="4" height="4"/><rect x="16" y="64" width="4" height="4"/><rect x="20" y="64" width="4" height="4"/><rect x="24" y="64" width="4" height="4"/><rect x="28" y="64" width="4" height="4"/><rect x="32" y="64" width="4" height="4"/><rect x="36" y="64" width="4" height="4"/><rect x="40" y="64" width="4" height="4"/><rect x="48" y="64" width="4" height="4"/><rect x="52" y="64" width="4" height="4"/><rect x="68" y="64" width="4" height="4"/><rect x="76" y="64" width="4" height="4"/><rect x="32" y="68" width="4" height="4"/><rect x="88" y="68" width="4" height="4"/><rect x="0" y="72" width="4" height="4"/><rect x="4" y="72" width="4" height="4"/><rect x="8" y="72" width="4" height="4"/><rect x="12" y="72" width="4" height="4"/><rect x="16" y="72" width="4" height="4"/><rect x="20" y="72" width="4" height="4"/><rect x="24" y="72" width="4" height="4"/><rect x="36" y="72" width="4" height="4"/><rect x="44" y="72" width="4" height="4"/><rect x="52" y="72" width="4" height="4"/><rect x="56" y="72" width="4" height="4"/><rect x="60" y="72" width="4" height="4"/><rect x="68" y="72" width="4" height="4"/><rect x="84" y="72" width="4" height="4"/><rect x="88" y="72" width="4" height="4"/><rect x="96" y="72" width="4" height="4"/><rect x="0" y="76" width="4" height="4"/><rect x="24" y="76" width="4" height="4"/><rect x="36" y="76" width="4" height="4"/><rect x="40" y="76" width="4" height="4"/><rect x="44" y="76" width="4" height="4"/><rect x="48" y="76" width="4" height="4"/><rect x="52" y="76" width="4" height="4"/><rect x="60" y="76" width="4" height="4"/><rect x="64" y="76" width="4" height="4"/><rect x="68" y="76" width="4" height="4"/><rect x="88" y="76" width="4" height="4"/><rect x="92" y="76" width="4" height="4"/><rect x="96" y="76" width="4" height="4"/><rect x="0" y="80" width="4" height="4"/><rect x="8" y="80" width="4" height="4"/><rect x="12" y="80" width="4" height="4"/><rect x="16" y="80" width="4" height="4"/><rect x="24" y="80" width="4" height="4"/><rect x="36" y="80" width="4" height="4"/><rect x="40" y="80" width="4" height="4"/><rect x="44" y="80" width="4" height="4"/><rect x="48" y="80" width="4" height="4"/><rect x="52" y="80" width="4" height="4"/><rect x="68" y="80" width="4" height="4"/><rect x="84" y="80" width="4" height="4"/><rect x="88" y="80" width="4" height="4"/><rect x="0" y="84" width="4" height="4"/><rect x="8" y="84" width="4" height="4"/><rect x="12" y="84" width="4" height="4"/><rect x="16" y="84" width="4" height="4"/><rect x="24" y="84" width="4" height="4"/><rect x="40" y="84" width="4" height="4"/><rect x="48" y="84" width="4" height="4"/><rect x="56" y="84" width="4" height="4"/><rect x="64" y="84" width="4" height="4"/><rect x="68" y="84" width="4" height="4"/><rect x="88" y="84" width="4" height="4"/><rect x="96" y="84" width="4" height="4"/><rect x="0" y="88" width="4" height="4"/><rect x="8" y="88" width="4" height="4"/><rect x="12" y="88" width="4" height="4"/><rect x="16" y="88" width="4" height="4"/><rect x="24" y="88" width="4" height="4"/><rect x="32" y="88" width="4" height="4"/><rect x="36" y="88" width="4" height="4"/><rect x="40" y="88" width="4" height="4"/><rect x="44" y="88" width="4" height="4"/><rect x="56" y="88" width="4" height="4"/><rect x="68" y="88" width="4" height="4"/><rect x="72" y="88" width="4" height="4"/><rect x="76" y="88" width="4" height="4"/><rect x="84" y="88" width="4" height="4"/><rect x="0" y="92" width="4" height="4"/><rect x="24" y="92" width="4" height="4"/><rect x="36" y="92" width="4" height="4"/><rect x="40" y="92" width="4" height="4"/><rect x="44" y="92" width="4" height="4"/><rect x="52" y="92" width="4" height="4"/><rect x="56" y="92" width="4" height="4"/><rect x="64" y="92" width="4" height="4"/><rect x="68" y="92" width="4" height="4"/><rect x="72" y="92" width="4" height="4"/><rect x="76" y="92" width="4" height="4"/><rect x="88" y="92" width="4" height="4"/><rect x="96" y="92" width="4" height="4"/><rect x="0" y="96" width="4" height="4"/><rect x="4" y="96" width="4" height="4"/><rect x="8" y="96" width="4" height="4"/><rect x="12" y="96" width="4" height="4"/><rect x="16" y="96" width="4" height="4"/><rect x="20" y="96" width="4" height="4"/><rect x="24" y="96" width="4" height="4"/><rect x="32" y="96" width="4" height="4"/><rect x="36" y="96" width="4" height="4"/><rect x="44" y="96" width="4" height="4"/><rect x="52" y="96" width="4" height="4"/><rect x="56" y="96" width="4" height="4"/><rect x="76" y="96" width="4" height="4"/><rect x="80" y="96" width="4" height="4"/><rect x="88" y="96" width="4" height="4"/><rect x="92" y="96" width="4" height="4"/></svg></div>
+        <p class="mono" style="margin:0; font-size:10.5px; color:#8f8a83; text-align:center; word-break:break-all;">trace.kr/v/TR-20260912-0001</p>
+      </div>
     </div>
 
-    <!-- 고지 -->
-    <div style="margin-top:30px; padding:18px 20px; background:#fafafa; border:1px solid #e4e4e4; border-radius:6px;">
-      <p style="margin:0 0 6px; font-size:12.5px; color:#8a8a8a; line-height:1.7;"><span style="color:#1a1a1a; font-weight:600;">이 증명서가 보증하는 것</span> — 위 기록이 작성된 뒤 고쳐지지 않았다는 사실, 그리고 기록된 시각.</p>
-      <p style="margin:0; font-size:12.5px; color:#8a8a8a; line-height:1.7;"><span style="color:#1a1a1a; font-weight:600;">보증하지 않는 것</span> — 본인이 직접 작업했는지 여부. AI 사용 여부를 판정하지 않으며, 결과물의 품질이나 독창성도 다루지 않습니다.</p>
-    </div>
+    <p style="margin:36px 0 0; font-size:13px; color:#8f8a83; line-height:1.8;">
+      이 증명서는 <span style="color:#171717;">위 기록이 작성된 뒤 고쳐지지 않았다는 사실</span>과 기록된 시각만 보증합니다.
+      본인이 직접 작업했는지, 무엇이 AI인지는 판정하지 않습니다 — “AI 초안” 표시는 작성자 본인이 붙인 것입니다.
+    </p>
 
   </div>
 </div>
+
 </x-dc>
 </body>
 </html>

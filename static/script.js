@@ -1,5 +1,5 @@
 // =============================================
-// 자국 - 프런트엔드
+// Trace - 프런트엔드
 //   화면은 "받은 것을 그리기만" 한다.
 //   지표 계산은 전부 서버(app.py 의 summarize)가 한다.
 // =============================================
@@ -11,7 +11,12 @@ const $ = (id) => document.getElementById(id);
 let sessionId = null;
 let timer     = null;
 let lastText  = "";
+
+// events : 지난 스냅샷 이후의 변화량. 서버로 보내고 나면 0으로 되돌린다.
+// totals : 세션을 시작한 뒤의 누적. 화면에 보여주는 값이라 초기화하지 않는다.
+//          (둘을 같이 쓰면 30초마다 화면 숫자가 0으로 돌아가 버린다)
 let events    = blankEvents();
+let totals    = blankEvents();
 
 function blankEvents() {
   return { typed: 0, deleted: 0, pasted: 0, undo: 0 };
@@ -211,12 +216,14 @@ const editor = $("editor");
 editor.addEventListener("paste", (e) => {
   const t = (e.clipboardData || window.clipboardData).getData("text");
   events.pasted += t.length;
+  totals.pasted += t.length;
   updateCounters();
 });
 
 editor.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
     events.undo += 1;
+    totals.undo += 1;
     updateCounters();
   }
 });
@@ -227,9 +234,13 @@ editor.addEventListener("input", (e) => {
 
   if (diff > 0) {
     // 붙여넣기로 늘어난 분량은 위에서 이미 셌다
-    if (e.inputType !== "insertFromPaste") events.typed += diff;
+    if (e.inputType !== "insertFromPaste") {
+      events.typed += diff;
+      totals.typed += diff;
+    }
   } else if (diff < 0) {
     events.deleted += -diff;
+    totals.deleted += -diff;
   }
 
   lastText = now;
@@ -238,8 +249,8 @@ editor.addEventListener("input", (e) => {
 
 function updateCounters() {
   $("counters").textContent =
-    "입력 " + events.typed + " · 삭제 " + events.deleted +
-    " · 붙여넣기 " + events.pasted + " · 되돌리기 " + events.undo;
+    "입력 " + totals.typed + " · 삭제 " + totals.deleted +
+    " · 붙여넣기 " + totals.pasted + " · 되돌리기 " + totals.undo;
 }
 
 $("startBtn").addEventListener("click", () => {
@@ -249,6 +260,7 @@ $("startBtn").addEventListener("click", () => {
   editor.value = "";
   lastText = "";
   events = blankEvents();
+  totals = blankEvents();
 
   $("startBtn").disabled = true;
   $("saveBtn").disabled = false;
@@ -301,7 +313,7 @@ async function sendSnapshot() {
       return;
     }
 
-    events = blankEvents();
+    events = blankEvents();   // totals 는 그대로 둔다
     updateCounters();
     setStatus("스냅샷 " + data.seq + "번 저장 · " + data.hash.slice(0, 12) + "…");
     verify();

@@ -15,4 +15,4 @@ __pycache__/
 .DS_Store
 
 # 디자인 캔버스 빌드 결과물 (2MB). 원본은 design/*.dc.html 이다
-design/jaguk-screens.html
+design/trace-screens.html
