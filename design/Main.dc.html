@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0; background:#ffffff; color:#1a1a1a; line-height:1.65; font-size:14px;
+      font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;}
+    .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
+    .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
+    a{color:#2c6e49; text-decoration:none;} a:hover{color:#1f4f34;}
+    table.chain{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
+    table.chain th{text-align:left; font-weight:500; color:#8a8a8a; padding:6px 8px; border-bottom:1px solid #e4e4e4; font-size:11px;}
+    table.chain td{padding:6px 8px; border-bottom:1px solid #f3f3f3;}
+  </style>
+</helmet>
+
+<div style="max-width:860px; margin:0 auto; padding:40px 24px 44px;">
+
+  <!-- 머리말 -->
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:2px solid #1a1a1a;">
+    <div>
+      <h1 class="serif" style="margin:0; font-size:30px; letter-spacing:-1.2px; font-weight:600;">자국</h1>
+      <p style="margin:2px 0 0; font-size:13px; color:#8a8a8a;">창작 과정 증명 · 검증 화면</p>
+    </div>
+    <button style="font-family:inherit; font-size:13px; padding:8px 18px; border:1px solid #1a1a1a; background:#1a1a1a; color:#ffffff; border-radius:3px; cursor:pointer;">다시 검증</button>
+  </div>
+
+  <!-- ① 판정 -->
+  <div style="margin-top:28px; padding:26px 28px; border-radius:8px; border:1px solid #cfe3d7; background:#f0f6f2;">
+    <h2 style="margin:0 0 4px; font-size:23px; letter-spacing:-.7px; line-height:1.35; color:#2c6e49;">이 기록은 변조되지 않았습니다</h2>
+    <p style="margin:0; font-size:14px; color:#8a8a8a;">2개 세션의 모든 스냅샷이 해시 체인과 일치합니다.</p>
+  </div>
+
+  <!-- ② 한 줄 요약 -->
+  <div style="display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:1px; background:#e4e4e4; border:1px solid #e4e4e4; border-radius:6px; margin-top:14px; overflow:hidden;">
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">기간</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">9/12</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">세션</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">2개</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">작업 시간</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">20분</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">공백</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">1구간 · 12분</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">붙여넣기</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">58%</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 12px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">되돌리기</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">6회</span>
+    </div>
+  </div>
+
+  <!-- ③ 세션 1 -->
+  <div style="border:1px solid #e4e4e4; border-radius:8px; padding:20px 22px; margin-top:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+      <h3 style="margin:0; font-size:16px; letter-spacing:-.3px;">직접 작성</h3>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:12.5px; color:#8a8a8a;">9/12 14:02 · 16분 작업 · 660자</span>
+        <span style="font-size:11px; padding:4px 10px; border-radius:3px; white-space:nowrap; background:#f0f6f2; color:#2c6e49; border:1px solid #cfe3d7;">체인 일치</span>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:flex-end; justify-content:flex-start; gap:4px; height:120px; padding:10px; background:#fafafa; border-radius:5px;">
+      <div style="flex-grow:1; max-width:46px; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:32%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:27%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:52%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:45%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:0; width:22px; height:100%; border-radius:2px; background-image:repeating-linear-gradient(45deg,#dcdcdc,#dcdcdc 3px,rgba(0,0,0,0) 3px,rgba(0,0,0,0) 6px);"></div>
+      <div style="flex-grow:1; max-width:46px; height:71%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:69%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:92%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; color:#8a8a8a;">
+      <span>14:02</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:-1px; background:#5b7fa6;"></span>입력</span>
+        <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:-1px; background:#c0603f;"></span>붙여넣기</span>
+        <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:-1px; background:#dcdcdc;"></span>공백</span>
+      </div>
+      <span>14:17</span>
+    </div>
+
+    <!-- ④ 근거 -->
+    <button style="font-family:inherit; margin-top:14px; padding:5px 12px; background:#ffffff; color:#8a8a8a; border:1px solid #e4e4e4; font-size:12px; border-radius:3px; cursor:pointer;">▾ 스냅샷 체인 접기</button>
+
+    <table class="chain">
+      <thead>
+        <tr><th>#</th><th>시각</th><th style="text-align:right;">글자</th><th>이벤트</th><th>내용 해시</th><th>체인 해시</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0</td><td class="mono">14:02:00</td><td style="text-align:right;">0</td><td style="color:#8a8a8a;">—</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">e3b0c44298fc</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">11347dfd8cfb</td></tr>
+        <tr><td>1</td><td class="mono">14:02:30</td><td style="text-align:right;">212</td><td style="color:#8a8a8a;">입력 212</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">16ff08bbc3a8</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">330bb832982a</td></tr>
+        <tr><td>2</td><td class="mono">14:03:00</td><td style="text-align:right;">180</td><td style="color:#8a8a8a;">삭제 46 · 되돌리기 3</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">3987b81135f2</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">42df5e9f071e</td></tr>
+        <tr><td>3</td><td class="mono">14:03:30</td><td style="text-align:right;">340</td><td style="color:#8a8a8a;">입력 160</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">a3d0bb391b66</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">e17ffc1d31de</td></tr>
+        <tr><td>4</td><td class="mono">14:04:00</td><td style="text-align:right;">295</td><td style="color:#8a8a8a;">삭제 53 · 되돌리기 2</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">72d9015f7185</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">d8c7dbd1e71b</td></tr>
+        <tr><td colspan="6" style="padding:10px 8px; background:#fafafa; color:#8a8a8a; font-size:12px;">12분 공백 — 수집기가 꺼져 있던 구간입니다. 숨기지 않고 그대로 표시합니다.</td></tr>
+        <tr><td>5</td><td class="mono">14:16:00</td><td style="text-align:right;">470</td><td style="color:#8a8a8a;">입력 175</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">c53ceb95810c</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">360a9b493115</td></tr>
+        <tr><td>6</td><td class="mono">14:16:30</td><td style="text-align:right;">455</td><td style="color:#8a8a8a;">삭제 37 · 되돌리기 1</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">ff644034988b</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">b616ead08d58</td></tr>
+        <tr><td>7</td><td class="mono">14:17:00</td><td style="text-align:right;">610</td><td style="color:#8a8a8a;">입력 155</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">a18b3facad49</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">731eb5420f06</td></tr>
+        <tr><td>8</td><td class="mono">14:17:30</td><td style="text-align:right;">660</td><td style="color:#8a8a8a;">입력 50</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">c96b028b389e</td><td class="mono" style="color:#8a8a8a; font-size:11.5px;">27fb63d9fcf9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ③ 세션 2 -->
+  <div style="border:1px solid #e4e4e4; border-radius:8px; padding:20px 22px; margin-top:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+      <h3 style="margin:0; font-size:16px; letter-spacing:-.3px;">붙여넣기 위주</h3>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:12.5px; color:#8a8a8a;">9/12 16:40 · 3분 작업 · 1,012자</span>
+        <span style="font-size:11px; padding:4px 10px; border-radius:3px; white-space:nowrap; background:#f0f6f2; color:#2c6e49; border:1px solid #cfe3d7;">체인 일치</span>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:flex-end; justify-content:flex-start; gap:4px; height:120px; padding:10px; background:#fafafa; border-radius:5px;">
+      <div style="flex-grow:1; max-width:46px; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; min-height:2px; height:2px; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:97%; background:#c0603f; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:97%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+      <div style="flex-grow:1; max-width:46px; height:100%; background:#5b7fa6; border-radius:2px 2px 0 0;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; color:#8a8a8a;">
+      <span>16:40</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:-1px; background:#5b7fa6;"></span>입력</span>
+        <span><span style="display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:-1px; background:#c0603f;"></span>붙여넣기</span>
+      </div>
+      <span>16:42</span>
+    </div>
+
+    <button style="font-family:inherit; margin-top:14px; padding:5px 12px; background:#ffffff; color:#8a8a8a; border:1px solid #e4e4e4; font-size:12px; border-radius:3px; cursor:pointer;">▸ 스냅샷 체인 보기</button>
+  </div>
+
+  <!-- 외부 앵커 -->
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; border:1px solid #e4e4e4; border-radius:8px; padding:16px 22px; margin-top:16px;">
+    <div>
+      <p style="margin:0 0 2px; font-size:13px; font-weight:600;">외부 앵커</p>
+      <p style="margin:0; font-size:12.5px; color:#8a8a8a;">루트 해시 <span class="mono" style="font-size:11.5px;">27fb63d9fcf9…389e</span> · OpenTimestamps · 9/12 17:02 고정</p>
+    </div>
+    <button style="font-family:inherit; font-size:13px; padding:8px 18px; border:1px solid #1a1a1a; background:#ffffff; color:#1a1a1a; border-radius:3px; cursor:pointer;">앵커 확인</button>
+  </div>
+
+  <!-- 꼬리말 : 한계 고지 -->
+  <div style="margin-top:44px; padding-top:18px; border-top:1px solid #e4e4e4; font-size:12.5px; color:#8a8a8a;">
+    <p style="margin:0 0 6px;"><span style="color:#1a1a1a; font-weight:600;">이 화면이 보증하는 것</span> — 기록이 작성된 뒤 고쳐지지 않았다는 사실.</p>
+    <p style="margin:0;"><span style="color:#1a1a1a; font-weight:600;">보증하지 않는 것</span> — 본인이 직접 작업했는지 여부. AI 사용 여부를 판정하지 않습니다. 해석은 보는 사람의 몫입니다.</p>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

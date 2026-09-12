@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    :root{
+      --ink:#1a1a1a; --muted:#8a8a8a; --line:#e4e4e4; --bg:#ffffff; --panel:#fafafa;
+      --ok:#2c6e49; --ok-bg:#f0f6f2; --ok-line:#cfe3d7;
+      --bad:#a32020; --bad-bg:#fdf2f2; --bad-line:#f0cccc;
+      --type:#5b7fa6; --paste:#c0603f; --gapc:#dcdcdc;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0; background:#ffffff; color:#1a1a1a; line-height:1.65; font-size:14px;
+      font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;}
+    .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
+    .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
+    a{color:#2c6e49; text-decoration:none;} a:hover{color:#1f4f34;}
+  </style>
+</helmet>
+
+<div style="padding:40px 60px 44px;">
+
+  <!-- 머리말 -->
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:2px solid #1a1a1a;">
+    <div>
+      <h1 class="serif" style="margin:0; font-size:30px; letter-spacing:-1.2px; font-weight:600;">자국</h1>
+      <p style="margin:2px 0 0; font-size:13px; color:#8a8a8a;">창작 과정 증명 · 작성 화면</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="display:flex; align-items:center; gap:6px; font-size:12px; color:#2c6e49; background:#f0f6f2; border:1px solid #cfe3d7; border-radius:3px; padding:5px 11px;">
+        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#2c6e49;"></span>기록 중
+      </span>
+      <button style="font-family:inherit; font-size:13px; padding:8px 18px; border:1px solid #1a1a1a; background:#ffffff; color:#1a1a1a; border-radius:3px; cursor:pointer;">지금 저장</button>
+      <button style="font-family:inherit; font-size:13px; padding:8px 18px; border:1px solid #1a1a1a; background:#1a1a1a; color:#ffffff; border-radius:3px; cursor:pointer;">기록 종료</button>
+    </div>
+  </div>
+
+  <!-- 세션 상태 4칸 -->
+  <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1px; background:#e4e4e4; border:1px solid #e4e4e4; border-radius:6px; margin-top:20px; overflow:hidden;">
+    <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">이 세션 경과</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">17분 30초</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">기록된 스냅샷</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">9개</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">현재 글자 수</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">660자</span>
+    </div>
+    <div style="background:#ffffff; padding:14px 16px; display:flex; flex-direction:column; gap:2px;">
+      <span style="font-size:11px; color:#8a8a8a; letter-spacing:.2px;">세션 시작</span>
+      <span style="font-size:16px; font-weight:600; letter-spacing:-.3px;">14:02</span>
+    </div>
+  </div>
+
+  <!-- 본문 : 에디터 + 우측 로그 -->
+  <div style="display:flex; gap:24px; margin-top:20px; align-items:flex-start;">
+
+    <!-- 에디터 -->
+    <div style="flex-grow:1; min-width:0;">
+      <div style="border:1px solid #d8d8d8; border-radius:6px; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px; background:#fafafa; border-bottom:1px solid #e4e4e4;">
+          <span style="font-size:13px; font-weight:500;">기록은 왜 증거가 되는가</span>
+          <span style="font-size:11px; color:#8a8a8a;">교양 글쓰기 · 2차 초고</span>
+        </div>
+        <div style="padding:20px 22px; font-size:15px; line-height:1.9; white-space:pre-wrap; min-height:330px;">결과물만 놓고 보면 누가 만들었는지 알 수 없다. 사진 한 장, 글 한 편은 그것이 어떤 시간을 통과해 왔는지 말해주지 않는다. 우리가 어떤 작업을 진짜라고 부를 때 실제로 믿는 것은 결과가 아니라 그 뒤에 쌓인 시간이다.
+
+지난 학기에 나는 과제를 직접 썼지만 탐지기는 그것을 AI로 분류했다. 반박할 방법이 없었다. 초고도, 문단을 통째로 지웠다가 다시 쓴 흔적도 전부 내 노트북 안에만 있었고, 그것을 남에게 보여줄 형식이 없었기 때문이다.
+
+증명은 제출한 뒤에 만들 수 없다. 의심이 제기되는 순간 과정은 이미 지나가 버렸고, 되돌아가 기록할 방법은 없다.<span style="display:inline-block; width:1.5px; height:19px; background:#1a1a1a; vertical-align:-4px; margin-left:1px;"></span></div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:10px; font-size:12.5px; color:#8a8a8a;">
+        <span>마지막 저장 <span style="color:#1a1a1a;">14:17:30</span> · 9번째 스냅샷</span>
+        <span>660자</span>
+      </div>
+
+      <!-- 원칙 고지 -->
+      <div style="margin-top:18px; padding:16px 18px; background:#fafafa; border:1px solid #e4e4e4; border-radius:6px;">
+        <p style="margin:0 0 6px; font-size:13px; font-weight:600;">이 글의 내용은 서버로 전송되지 않습니다.</p>
+        <p style="margin:0; font-size:12.5px; color:#8a8a8a; line-height:1.7;">30초마다 브라우저 안에서 내용의 해시(SHA-256)를 계산해, 해시와 이벤트 개수만 보냅니다. 원본은 이 기기에 남습니다.</p>
+      </div>
+    </div>
+
+    <!-- 우측 : 스냅샷 타이머 + 이벤트 로그 -->
+    <div style="flex-grow:0; width:320px; display:flex; flex-direction:column; gap:16px;">
+
+      <div style="border:1px solid #e4e4e4; border-radius:8px; padding:16px 18px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+          <span style="font-size:12px; color:#8a8a8a;">다음 스냅샷까지</span>
+          <span class="mono" style="font-size:15px; font-weight:500;">00:18</span>
+        </div>
+        <div style="height:4px; border-radius:2px; background:#eeeeee; margin-top:10px; overflow:hidden;">
+          <div style="width:40%; height:100%; background:#5b7fa6;"></div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #e4e4e4; border-radius:8px; padding:16px 18px;">
+        <p style="margin:0 0 12px; font-size:12px; color:#8a8a8a;">이 세션의 이벤트</p>
+        <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;">
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-size:11px; color:#8a8a8a;">입력</span>
+            <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">796</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-size:11px; color:#8a8a8a;">삭제</span>
+            <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">136</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-size:11px; color:#8a8a8a;">붙여넣기</span>
+            <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">0</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-size:11px; color:#8a8a8a;">되돌리기</span>
+            <span style="font-size:17px; font-weight:600; letter-spacing:-.3px;">6</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #e4e4e4; border-radius:8px; padding:16px 18px;">
+        <p style="margin:0 0 10px; font-size:12px; color:#8a8a8a;">최근 스냅샷</p>
+        <div style="display:flex; flex-direction:column; gap:0;">
+
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3;">
+            <span class="mono" style="font-size:11.5px; color:#8a8a8a; width:52px;">14:17:30</span>
+            <span style="font-size:12.5px; flex-grow:1;">+50자</span>
+            <span class="mono" style="font-size:11px; color:#8a8a8a;">27fb63d9</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3;">
+            <span class="mono" style="font-size:11.5px; color:#8a8a8a; width:52px;">14:17:00</span>
+            <span style="font-size:12.5px; flex-grow:1;">+155자</span>
+            <span class="mono" style="font-size:11px; color:#8a8a8a;">731eb542</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3;">
+            <span class="mono" style="font-size:11.5px; color:#8a8a8a; width:52px;">14:16:30</span>
+            <span style="font-size:12.5px; flex-grow:1;">−15자 · 되돌리기 1</span>
+            <span class="mono" style="font-size:11px; color:#8a8a8a;">b616ead0</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f3f3f3;">
+            <span class="mono" style="font-size:11.5px; color:#8a8a8a; width:52px;">14:16:00</span>
+            <span style="font-size:12.5px; flex-grow:1;">+175자</span>
+            <span class="mono" style="font-size:11px; color:#8a8a8a;">360a9b49</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; padding:10px 0 8px;">
+            <span style="flex-grow:0; width:52px; height:14px; border-radius:2px; background-image:repeating-linear-gradient(45deg,#dcdcdc,#dcdcdc 3px,rgba(0,0,0,0) 3px,rgba(0,0,0,0) 6px);"></span>
+            <span style="font-size:12.5px; color:#8a8a8a; flex-grow:1;">12분 공백 — 자리 비움</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 0 0; border-top:1px solid #f3f3f3;">
+            <span class="mono" style="font-size:11.5px; color:#8a8a8a; width:52px;">14:04:00</span>
+            <span style="font-size:12.5px; flex-grow:1;">−45자 · 되돌리기 2</span>
+            <span class="mono" style="font-size:11px; color:#8a8a8a;">d8c7dbd1</span>
+          </div>
+
+        </div>
+        <p style="margin:12px 0 0; font-size:11.5px; color:#8a8a8a; line-height:1.6;">공백은 지우지 않고 그대로 남습니다.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
