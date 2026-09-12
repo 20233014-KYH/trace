@@ -21,14 +21,29 @@
   <!-- ② 한 줄 요약 -->
   <section id="overview"></section>
 
-  <!-- ③ 세션별 곡선 + ④ 근거 -->
-  <section id="sessions"></section>
+  <!-- ③ 작품 > 파일 > 세션 -->
+  <section id="works"></section>
 
-  <!-- ⑤ 작성 영역 — 작가만 쓴다. 접혀 있다. -->
+  <!-- ④ 작성 영역 — 작가만 쓴다. 접혀 있다. -->
   <section class="writer">
     <button id="toggleWriter" class="toggle">▸ 작성 영역 열기</button>
 
     <div id="writerBody" hidden>
+      <div class="fields">
+        <label>
+          작품
+          <input id="workTitle" type="text" value="기록은 왜 증거가 되는가">
+        </label>
+        <label>
+          파일
+          <input id="fileName" type="text" value="초고.docx">
+        </label>
+      </div>
+      <p class="hint">
+        같은 작품 이름으로 다시 시작하면 그 작품에 이어서 쌓입니다.
+        증명서는 작품 하나에 한 장 나옵니다.
+      </p>
+
       <div class="btns">
         <button id="startBtn">기록 시작</button>
         <button id="saveBtn" class="ghost" disabled>지금 저장</button>
@@ -47,7 +62,7 @@
   <footer>
     <p><strong>이 화면이 보증하는 것</strong> — 기록이 작성된 뒤 고쳐지지 않았다는 사실.</p>
     <p><strong>보증하지 않는 것</strong> — 본인이 직접 작업했는지 여부. AI 사용 여부를 판정하지 않습니다.
-       해석은 보는 사람의 몫입니다.</p>
+       어떤 파일을 한 작품으로 묶을지는 작성자가 정합니다. 해석은 보는 사람의 몫입니다.</p>
   </footer>
 
   <script src="/static/script.js"></script>

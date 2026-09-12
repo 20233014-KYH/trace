@@ -212,3 +212,67 @@ footer strong { color: var(--ink); font-weight: 600; }
 
 .muted { color: var(--muted); }
 .fail  { color: var(--bad); }
+
+/* ---------- 작품 ---------- */
+.work {
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 20px 22px; margin-top: 18px;
+}
+.work-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.work-head h2 { margin: 0; font-size: 19px; letter-spacing: -.5px; }
+.work-meta { font-size: 12.5px; color: var(--muted); }
+
+.root {
+  margin-top: 10px; padding: 10px 12px;
+  background: var(--panel); border-radius: 5px;
+  font-size: 11.5px; color: var(--muted); word-break: break-all;
+}
+.root b { color: var(--ink); font-weight: 600; }
+
+/* 파일별 띠 */
+.files { margin-top: 16px; }
+.file-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 5px 0; font-size: 12.5px;
+}
+.file-name {
+  flex: 0 0 140px; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.file-track {
+  flex: 1; height: 18px; border-radius: 3px;
+  background: #f1f1f1; overflow: hidden; display: flex;
+}
+.file-fill { background: var(--ink); height: 100%; }
+.file-fill.has-paste { background: var(--paste); }
+.file-time { flex: 0 0 78px; text-align: right; color: var(--muted); }
+
+.excluded-note {
+  margin-top: 12px; padding: 10px 12px;
+  border-left: 2px solid var(--ink);
+  background: var(--panel); font-size: 12.5px;
+}
+
+.session { margin-top: 18px; }
+.session-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.session-head h3 { margin: 0; font-size: 14px; letter-spacing: -.2px; }
+
+/* 작성 영역 - 작품/파일 입력 */
+.fields { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.fields label {
+  flex: 1 1 220px; display: flex; flex-direction: column;
+  gap: 4px; font-size: 12px; color: var(--muted);
+}
+.fields input {
+  font-family: inherit; font-size: 14px;
+  padding: 8px 11px; border: 1px solid #d8d8d8; border-radius: 5px;
+  color: var(--ink);
+}
+.fields input:focus { outline: none; border-color: var(--type); }
+.hint { margin: 0 0 12px; font-size: 12px; color: var(--muted); line-height: 1.6; }
