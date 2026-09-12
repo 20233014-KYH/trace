@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0; background:#171717; color:#ffffff; line-height:1.6; font-size:15px;
+      font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;}
+    .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
+    .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
+    a{color:#7fc49a; text-decoration:none;} a:hover{color:#5aa87c;}
+    .hatch{background-image:repeating-linear-gradient(45deg,#3a3a3a,#3a3a3a 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 7px);}
+  </style>
+</helmet>
+<div style="padding:40px 44px 44px; background:#171717; min-height:100%;">
+
+  <!-- 머리말 -->
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:24px;">
+    <div style="display:flex; align-items:baseline; gap:14px;">
+      <span class="serif" style="font-size:18px; font-weight:700; letter-spacing:2.5px; color:#ffffff;">TRACE</span>
+      <span style="font-size:11.5px; letter-spacing:1.3px; color:#8b857d;">기록 현황</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <span style="display:flex; align-items:center; gap:8px; font-size:13px; color:#7fc49a;">
+        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#7fc49a;"></span>기록 중
+      </span>
+      <span class="mono" style="font-size:19px; color:#ffffff; letter-spacing:-.3px;">02:14:08</span>
+      <button style="font-family:inherit; font-size:13px; padding:8px 15px; border:1px solid #3a3a3a; background:#171717; color:#ffffff; border-radius:4px; cursor:pointer;">멈춤</button>
+      <button style="font-family:inherit; font-size:13px; padding:8px 15px; border:1px solid #ffffff; background:#ffffff; color:#171717; border-radius:4px; cursor:pointer;">기록 종료</button>
+    </div>
+  </div>
+
+  <p style="margin:7px 0 0; font-size:12.5px; color:#8b857d;">Procreate · 재이_커미션.procreate — 작업은 저쪽에서 하세요. 이 창은 봐도 되고 안 봐도 됩니다.</p>
+
+  <!-- 본문 : 지금 화면 + 실시간 로그 -->
+  <div style="display:flex; gap:22px; margin-top:22px; align-items:stretch;">
+
+    <!-- 방금 캡처 -->
+    <div style="flex-grow:0; width:330px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:10px;">
+        <span style="font-size:11.5px; letter-spacing:1.3px; color:#8b857d;">방금 캡처</span>
+        <span class="mono" style="font-size:12px; color:#ffffff;">15:42:30</span>
+      </div>
+      <div style="aspect-ratio:5/6; background:#fdfbf8; border:1px solid #3a3a3a; border-radius:5px; overflow:hidden;">
+        <svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#fdfbf8"/><ellipse cx="40" cy="89" rx="24" ry="4" fill="#171717" opacity=".12"/><path d="M20 62 H60 L56 88 H24 Z" fill="#c9a887"/><path d="M44 62 H60 L56 88 H41 Z" fill="#171717" opacity=".12"/><path d="M17 58 H63 L60 66 H20 Z" fill="#b8967a"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z" fill="#8fa383"/><path d="M40 39 C50 39 56 33 56 27 C48 25 42 30 40 39Z" fill="#7d9171"/><g fill="none" stroke="#171717" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M17 58 H63 L60 66 H20 Z"/><path d="M40 58 C40 46 40 38 40 29"/></g></svg>
+      </div>
+      <p style="margin:10px 0 0; font-size:12px; color:#8b857d; line-height:1.65;">이 그림은 <span style="color:#ffffff;">이 기기 밖으로 나가지 않습니다.</span> 서버로는 아래 해시만 갑니다.</p>
+    </div>
+
+    <!-- 실시간 로그 -->
+    <div style="flex-grow:1; min-width:0; display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:10px;">
+        <span style="font-size:11.5px; letter-spacing:1.3px; color:#8b857d;">서버로 보낸 것</span>
+        <span style="font-size:12px; color:#8b857d;">268건</span>
+      </div>
+
+      <!-- 방금 들어온 한 건 : 재료 → 해시 -->
+      <div style="background:#1f1f1f; border:1px solid #3a3a3a; border-radius:6px; padding:16px 18px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#7fc49a;"></span>
+          <span class="mono" style="font-size:12.5px; color:#ffffff;">15:42:30</span>
+          <span style="font-size:12.5px; color:#ffffff;">#268</span>
+          <span style="font-size:12px; color:#7fc49a; margin-left:auto;">저장됨</span>
+        </div>
+
+        <div style="margin-top:13px; padding:12px 14px; background:#171717; border-radius:4px;">
+          <p style="margin:0 0 8px; font-size:11px; letter-spacing:1px; color:#6f6a63;">재료</p>
+          <p class="mono" style="margin:0; font-size:11.5px; color:#8b857d; line-height:1.85; word-break:break-all;">
+            이전해시 <span style="color:#d8d3cc;">b616ead08d58…</span><br>
+            시각 <span style="color:#d8d3cc;">2026-09-14T15:42:30</span><br>
+            화면해시 <span style="color:#d8d3cc;">ff644034988b…</span><br>
+            이벤트 <span style="color:#d8d3cc;">{"stroke":412,"undo":9,"import":0}</span>
+          </p>
+          <div style="display:flex; align-items:center; gap:9px; margin:12px 0 8px;">
+            <span style="flex-grow:0; font-size:11px; color:#6f6a63;">SHA-256</span>
+            <span style="flex-grow:1; height:1px; background:#2f2f2f;"></span>
+          </div>
+          <p class="mono" style="margin:0; font-size:12.5px; color:#7fc49a; word-break:break-all;">27fb63d9fcf9a41c8e2b7d05f3a9c6104b8ee27a1d93c05f8b2e4a76d1c3908e</p>
+        </div>
+      </div>
+
+      <!-- 이전 것들 -->
+      <div style="margin-top:10px; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:14px; padding:9px 4px; border-bottom:1px solid #2a2a2a;">
+          <span class="mono" style="font-size:12px; color:#8b857d; width:62px; flex-grow:0;">15:42:00</span>
+          <span style="font-size:12px; color:#8b857d; width:42px; flex-grow:0;">#267</span>
+          <span class="mono" style="font-size:12px; color:#6f6a63; flex-grow:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">b616ead08d58a41c8e2b7d05f3a9c610</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:9px 4px; border-bottom:1px solid #2a2a2a;">
+          <span class="mono" style="font-size:12px; color:#8b857d; width:62px; flex-grow:0;">15:41:30</span>
+          <span style="font-size:12px; color:#8b857d; width:42px; flex-grow:0;">#266</span>
+          <span class="mono" style="font-size:12px; color:#6f6a63; flex-grow:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">360a9b4931157dc2ae09f41b6e83d570</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:9px 4px; border-bottom:1px solid #2a2a2a;">
+          <span class="mono" style="font-size:12px; color:#8b857d; width:62px; flex-grow:0;">15:41:00</span>
+          <span style="font-size:12px; color:#8b857d; width:42px; flex-grow:0;">#265</span>
+          <span class="mono" style="font-size:12px; color:#6f6a63; flex-grow:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">d8c7dbd1e71b04f9c3a8210e7bb45c31</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:9px 4px;">
+          <span class="mono" style="font-size:12px; color:#c0603f; width:62px; flex-grow:0;">15:02:40</span>
+          <span style="font-size:12px; color:#c0603f; width:42px; flex-grow:0;">#183</span>
+          <span style="font-size:12px; color:#c0603f; flex-grow:1;">외부 이미지 1장 — “AI 생성”으로 표시함</span>
+        </div>
+      </div>
+
+      <!-- 다음 캡처 -->
+      <div style="display:flex; align-items:center; gap:12px; margin-top:auto; padding-top:16px;">
+        <span style="font-size:12.5px; color:#8b857d;">다음 캡처</span>
+        <span style="flex-grow:1; height:3px; border-radius:2px; background:#2f2f2f; overflow:hidden; display:inline-block;"><span style="display:block; width:62%; height:100%; background:#ffffff;"></span></span>
+        <span class="mono" style="font-size:13px; color:#ffffff;">00:12</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 쌓인 캡처 스트립 -->
+  <div style="margin-top:24px; padding-top:20px; border-top:1px solid #2a2a2a;">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:11px;">
+      <span style="font-size:11.5px; letter-spacing:1.3px; color:#8b857d;">쌓인 기록 · 11:20부터</span>
+      <span style="font-size:12px; color:#8b857d;">공백 2구간 · 외부 반입 1</span>
+    </div>
+
+    <div style="display:flex; align-items:stretch; gap:6px; height:96px;">
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><g fill="none" stroke="#cdc8c0" stroke-width="2" stroke-linecap="round"><path d="M21 63 L59 61"/><path d="M23 88 L57 87"/><path d="M21 62 L25 89"/><path d="M59 61 L56 88"/><path d="M41 61 C39 48 42 39 40 29"/></g></svg></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><g fill="none" stroke="#b3ada4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M40 62 C40 48 40 40 40 30"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z"/></g></svg></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><g fill="none" stroke="#b3ada4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M40 62 C40 48 40 40 40 30"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z"/><path d="M40 39 C50 39 56 33 56 27 C48 25 42 30 40 39Z"/></g></svg></div>
+      <div class="hatch" style="flex-grow:0; width:30px; background-color:#232323; border-radius:3px;"></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:2px solid #c0603f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><rect x="14" y="26" width="52" height="44" fill="#efe7e1" stroke="#c0603f" stroke-width="1.6"/><circle cx="28" cy="39" r="4.5" fill="#c0603f" opacity=".55"/><path d="M16 64 L33 47 L44 58 L53 50 L64 64 Z" fill="#c0603f" opacity=".38"/></svg></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><g fill="none" stroke="#171717" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M17 58 H63 L60 66 H20 Z"/><path d="M40 58 C40 46 40 38 40 29"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z"/></g></svg></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><g fill="none" stroke="#171717" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M17 58 H63 L60 66 H20 Z"/><path d="M40 58 C40 46 40 38 40 29"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z"/><path d="M40 39 C50 39 56 33 56 27 C48 25 42 30 40 39Z"/></g></svg></div>
+      <div class="hatch" style="flex-grow:0; width:22px; background-color:#232323; border-radius:3px;"></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:1px solid #2f2f2f; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#ffffff"/><path d="M20 62 H60 L56 88 H24 Z" fill="#c9a887"/><path d="M17 58 H63 L60 66 H20 Z" fill="#b8967a"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z" fill="#8fa383"/><path d="M40 39 C50 39 56 33 56 27 C48 25 42 30 40 39Z" fill="#8fa383"/><g fill="none" stroke="#171717" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M17 58 H63 L60 66 H20 Z"/><path d="M40 58 C40 46 40 38 40 29"/></g></svg></div>
+      <div style="flex-grow:1; background:#fdfbf8; border:2px solid #7fc49a; border-radius:3px; overflow:hidden;"><svg viewBox="0 0 80 96" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><rect width="80" height="96" fill="#fdfbf8"/><ellipse cx="40" cy="89" rx="24" ry="4" fill="#171717" opacity=".12"/><path d="M20 62 H60 L56 88 H24 Z" fill="#c9a887"/><path d="M44 62 H60 L56 88 H41 Z" fill="#171717" opacity=".12"/><path d="M17 58 H63 L60 66 H20 Z" fill="#b8967a"/><path d="M40 45 C30 45 24 39 24 33 C32 31 38 36 40 45Z" fill="#8fa383"/><path d="M40 39 C50 39 56 33 56 27 C48 25 42 30 40 39Z" fill="#7d9171"/><g fill="none" stroke="#171717" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 62 H60 L56 88 H24 Z"/><path d="M17 58 H63 L60 66 H20 Z"/><path d="M40 58 C40 46 40 38 40 29"/></g></svg></div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-top:9px; font-size:11.5px; color:#6f6a63;">
+      <span>11:20</span>
+      <span style="color:#7fc49a;">방금 · 15:42</span>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+</body>
+</html>
