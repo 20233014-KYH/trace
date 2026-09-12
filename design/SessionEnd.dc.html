@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0; background:#faf9f7; color:#171717; line-height:1.6; font-size:15px;
+      font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;}
+    .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
+    .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
+    a{color:#2c6e49; text-decoration:none;} a:hover{color:#1f4f34;}
+    .label{font-size:11.5px; letter-spacing:1.3px; color:#8f8a83;}
+    .hatch{background-image:repeating-linear-gradient(45deg,#d6d2cc,#d6d2cc 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 7px);}
+  </style>
+</helmet>
+
+<div style="min-height:100%; display:flex; align-items:center; justify-content:center; padding:48px 40px;">
+  <div style="width:560px; background:#ffffff; border:1px solid #e6e3de; border-radius:10px; padding:40px 44px 36px;">
+
+    <div style="display:flex; align-items:baseline; gap:13px;">
+      <span class="serif" style="font-size:17px; font-weight:700; letter-spacing:2.5px;">TRACE</span>
+      <span class="label">기록 종료</span>
+    </div>
+
+    <h1 class="serif" style="margin:26px 0 0; font-size:30px; font-weight:600; letter-spacing:-1.2px; line-height:1.4;">
+      2시간 14분<br>기록했습니다.
+    </h1>
+
+    <!-- 이번 세션 타임라인 -->
+    <div style="margin-top:26px;">
+      <div style="display:flex; align-items:stretch; height:36px; border-radius:4px; overflow:hidden;">
+        <div style="flex-grow:30; background-color:#171717;"></div>
+        <div class="hatch" style="flex-grow:11; background-color:#f1efec;"></div>
+        <div style="flex-grow:14; background-color:#171717;"></div>
+        <div style="flex-grow:5; background-color:#c0603f;"></div>
+        <div style="flex-grow:26; background-color:#171717;"></div>
+        <div class="hatch" style="flex-grow:5; background-color:#f1efec;"></div>
+        <div style="flex-grow:9; background-color:#171717;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:#8f8a83;">
+        <span>11:20</span><span>18:32</span>
+      </div>
+    </div>
+
+    <!-- 요약 -->
+    <div style="display:flex; gap:0; margin-top:26px; border-top:1px solid #e6e3de;">
+      <div style="flex-grow:1; padding:16px 0;">
+        <p class="serif" style="margin:0; font-size:22px; font-weight:600; letter-spacing:-.7px;">268장</p>
+        <p style="margin:1px 0 0; font-size:12.5px; color:#8f8a83;">캡처</p>
+      </div>
+      <div style="flex-grow:1; padding:16px 0;">
+        <p class="serif" style="margin:0; font-size:22px; font-weight:600; letter-spacing:-.7px;">2구간</p>
+        <p style="margin:1px 0 0; font-size:12.5px; color:#8f8a83;">공백 · 41분</p>
+      </div>
+      <div style="flex-grow:1; padding:16px 0;">
+        <p class="serif" style="margin:0; font-size:22px; font-weight:600; letter-spacing:-.7px; color:#c0603f;">1장</p>
+        <p style="margin:1px 0 0; font-size:12.5px; color:#8f8a83;">외부 반입</p>
+      </div>
+    </div>
+
+    <!-- 표시 확인 -->
+    <div style="margin-top:14px; padding:20px 22px; background:#faf9f7; border:1px solid #e6e3de; border-radius:7px;">
+      <p class="label" style="margin:0 0 13px; color:#171717;">표시한 출처</p>
+
+      <div style="display:flex; align-items:baseline; gap:12px; padding-bottom:12px; border-bottom:1px solid #e6e3de;">
+        <span class="mono" style="font-size:12px; color:#8f8a83; flex-grow:0; width:42px;">15:02</span>
+        <span style="font-size:14px; flex-grow:1;">외부 이미지 1장 — <strong style="font-weight:600; color:#c0603f;">AI 생성</strong></span>
+        <span style="font-size:12.5px; color:#8f8a83; cursor:pointer;">고치기</span>
+      </div>
+
+      <p style="margin:12px 0 0; font-size:13.5px; color:#6f6a63; line-height:1.65;">그 밖의 모든 획은 이 기기에서 직접 그린 것으로 기록됐습니다.</p>
+    </div>
+
+    <p style="margin:16px 0 0; font-size:13px; color:#171717; line-height:1.7;">
+      아래를 누르면 이 표시는 체인에 묶여 <span style="font-weight:600;">더 이상 고칠 수 없습니다.</span>
+    </p>
+
+    <div style="display:flex; gap:8px; margin-top:20px;">
+      <button style="font-family:inherit; flex-grow:2; font-size:15px; font-weight:500; padding:14px 20px; border:1px solid #171717; background:#171717; color:#ffffff; border-radius:5px; cursor:pointer;">증명서 만들기</button>
+      <button style="font-family:inherit; flex-grow:1; font-size:14.5px; padding:14px 20px; border:1px solid #d9d5cf; background:#ffffff; color:#171717; border-radius:5px; cursor:pointer;">보관만</button>
+    </div>
+
+    <p style="margin:16px 0 0; font-size:12.5px; color:#8f8a83; line-height:1.75; text-align:center;">
+      증명서를 만들어도 그림은 공개되지 않습니다. 공개 범위는 언제든 바꿀 수 있습니다.
+    </p>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Noto+Serif+KR:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0; background:#faf9f7; color:#171717; line-height:1.6; font-size:15px;
+      font-family:"IBM Plex Sans KR","Pretendard","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+      -webkit-font-smoothing:antialiased;}
+    .serif{font-family:"Noto Serif KR","Apple Myungjo",Batang,serif;}
+    .mono{font-family:"IBM Plex Mono",SFMono-Regular,Consolas,monospace;}
+    a{color:#2c6e49; text-decoration:none;} a:hover{color:#1f4f34;}
+    .label{font-size:11.5px; letter-spacing:1.3px; color:#8f8a83;}
+    .hatch{background-image:repeating-linear-gradient(45deg,#d6d2cc,#d6d2cc 2px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 7px);}
+  </style>
+</helmet>
+
+<div style="min-height:100%; display:flex; align-items:center; justify-content:center; padding:48px 40px;">
+  <div style="width:560px; background:#ffffff; border:1px solid #e6e3de; border-radius:10px; padding:40px 44px 36px;">
+
+    <div style="display:flex; align-items:baseline; gap:13px;">
+      <span class="serif" style="font-size:17px; font-weight:700; letter-spacing:2.5px;">TRACE</span>
+      <span class="label">기록 시작</span>
+    </div>
+
+    <h1 class="serif" style="margin:26px 0 0; font-size:30px; font-weight:600; letter-spacing:-1.2px; line-height:1.4;">
+      지금부터 만드는 것에<br>알리바이를 남깁니다.
+    </h1>
+    <p style="margin:12px 0 0; font-size:14.5px; color:#6f6a63; line-height:1.75;">
+      Trace는 작업 도구를 바꾸지 않습니다. 쓰던 프로그램에서 그대로 작업하세요.
+    </p>
+
+    <!-- 기록되는 것 / 안 되는 것 -->
+    <div style="display:flex; gap:28px; margin-top:32px;">
+      <div style="flex-grow:1; min-width:0;">
+        <p class="label" style="margin:0 0 11px; color:#171717;">기록됩니다</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <p style="margin:0; font-size:13.5px; line-height:1.55;">작업 중인 창의 이름</p>
+          <p style="margin:0; font-size:13.5px; line-height:1.55;">30초마다 화면의 해시</p>
+          <p style="margin:0; font-size:13.5px; line-height:1.55;">입력 · 되돌리기 · 외부 반입 횟수</p>
+          <p style="margin:0; font-size:13.5px; line-height:1.55;">시작 · 멈춤 · 종료 시각</p>
+        </div>
+      </div>
+      <div style="flex-grow:1; min-width:0; padding-left:28px; border-left:1px solid #e6e3de;">
+        <p class="label" style="margin:0 0 11px; color:#8f8a83;">기록되지 않습니다</p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <p style="margin:0; font-size:13.5px; line-height:1.55; color:#8f8a83;">화면에 무엇이 있는지<br><span style="font-size:12px;">캡처 원본은 이 기기에만 남습니다</span></p>
+          <p style="margin:0; font-size:13.5px; line-height:1.55; color:#8f8a83;">무엇을 입력했는지</p>
+          <p style="margin:0; font-size:13.5px; line-height:1.55; color:#8f8a83;">카메라 · 마이크 · 다른 앱</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div style="margin-top:30px; padding-top:24px; border-top:1px solid #e6e3de; display:flex; flex-direction:column; gap:18px;">
+      <div>
+        <p class="label" style="margin:0 0 7px;">작업 이름</p>
+        <div style="border:1px solid #d9d5cf; border-radius:5px; padding:11px 14px; font-size:15px; display:flex; align-items:center; gap:2px;">
+          <span>재이_커미션</span><span style="display:inline-block; width:1.5px; height:17px; background:#171717;"></span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px;">
+        <div style="flex-grow:1;">
+          <p style="margin:0; font-size:14px;">진행 썸네일을 검증 화면에 공개</p>
+          <p style="margin:2px 0 0; font-size:12.5px; color:#8f8a83; line-height:1.6;">끄면 해시만 남고 그림은 보이지 않습니다. 나중에 바꿀 수 있습니다.</p>
+        </div>
+        <div style="flex-grow:0; width:40px; height:23px; border-radius:12px; background:#2c6e49; padding:3px; display:flex; justify-content:flex-end;">
+          <span style="width:17px; height:17px; border-radius:50%; background:#ffffff;"></span>
+        </div>
+      </div>
+    </div>
+
+    <button style="font-family:inherit; width:100%; margin-top:30px; font-size:15px; font-weight:500; padding:14px 20px; border:1px solid #171717; background:#171717; color:#ffffff; border-radius:5px; cursor:pointer;">기록 시작</button>
+
+    <p style="margin:16px 0 0; font-size:12.5px; color:#8f8a83; line-height:1.75; text-align:center;">
+      언제든 멈출 수 있습니다. <span style="color:#171717;">멈춘 구간은 지워지지 않고 공백으로 남습니다.</span>
+    </p>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
