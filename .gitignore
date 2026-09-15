@@ -21,3 +21,6 @@ design/trace-screens.html
 node_modules/
 package-lock.json
 package.json
+
+# Office 임시 잠금 파일
+~$*
