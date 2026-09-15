@@ -3,9 +3,10 @@ const pptxgen = require("pptxgenjs");
 
 // ── 제품 화면과 같은 색을 쓴다 ─────────────────────────
 const INK="171717", PAPER="FAF9F7", WHITE="FFFFFF", PANEL="F2F0EC";
-const CARD_D="202020", CHIP_D="262626";
+const BAR_NEG="BFBAB2", ZERO="D9D5CF";   // 증감 막대의 아래쪽과 0선
 const MUTED_D="9A948C", MUTED_L="6F6A63", FAINT_L="9A948C";
-const BAR="E8E4DE", ORANGE="C0603F", GREEN="2C6E49", GREEN_D="7FC49A";
+const BAR="E8E4DE";
+const ORANGE="C0603F", GREEN="2C6E49", GREEN_D="7FC49A";
 const F = "맑은 고딕";
 
 const pres = new pptxgen();
@@ -29,13 +30,13 @@ function bars(slide, vals, pasted, x, y, w, h, gap, color) {
   const mid = y + h / 2;                     // 0 선. 위는 쓴 양, 아래는 지운 양
   slide.addShape(pres.ShapeType.rect, {
     x, y: mid - 0.005, w, h: 0.01,
-    fill: { color: "3A3A3A" }, line: { type: "none" },
+    fill: { color: ZERO }, line: { type: "none" },
   });
   vals.forEach((v, i) => {
     const bh = Math.max(0.02, Math.abs(v) * (h / 2));
     slide.addShape(pres.ShapeType.rect, {
       x: x + i * (bw + gap), y: v >= 0 ? mid - bh : mid, w: bw, h: bh,
-      fill: { color: pasted[i] ? ORANGE : (v >= 0 ? color : "8C8780") },
+      fill: { color: pasted[i] ? ORANGE : (v >= 0 ? color : BAR_NEG) },
       line: { type: "none" },
     });
   });
@@ -45,21 +46,21 @@ function bars(slide, vals, pasted, x, y, w, h, gap, color) {
    1장 — 무엇을 만들었나
    ══════════════════════════════════════════════════ */
 const s1 = pres.addSlide();
-s1.background = { color: INK };
+s1.background = { color: PAPER };
 
 s1.addText("TRACE", { x:L, y:0.38, w:1.6, h:0.3, isTextBox:true, margin:0,
-  fontFace:F, fontSize:12, bold:true, color:WHITE, charSpacing:4 });
+  fontFace:F, fontSize:12, bold:true, color:INK, charSpacing:4 });
 s1.addText("창작 과정 증명 서비스 · 창의프로젝트1 · 2인 1팀 · 2026.09.15", {
   x:2.25, y:0.38, w:8, h:0.3, isTextBox:true, margin:0,
-  fontFace:F, fontSize:11, color:MUTED_D });
+  fontFace:F, fontSize:11, color:FAINT_L });
 
 s1.addText("결과물만 보고는 구분할 수 없다.\n과정의 기록은 그렇지 않다.", {
   x:L, y:0.9, w:CW, h:1.45, isTextBox:true, margin:0,
-  fontFace:F, fontSize:34, bold:true, color:WHITE, lineSpacing:44 });
+  fontFace:F, fontSize:34, bold:true, color:INK, lineSpacing:44 });
 
 s1.addText("기록이 작성된 뒤 고쳐지지 않았다는 사실만 보증한다. AI 사용 여부는 판정하지 않는다.", {
   x:L, y:2.42, w:9.6, h:0.32, isTextBox:true, margin:0,
-  fontFace:F, fontSize:13, color:MUTED_D });
+  fontFace:F, fontSize:13, color:MUTED_L });
 
 // 데이터 흐름 5단계
 const steps = [["01","작성 · 웹 에디터"],["02","30초마다 스냅샷"],["03","SHA-256 해시 체인"],
@@ -68,11 +69,11 @@ const sw = 2.24, sg = 0.18;
 steps.forEach(([n, label], i) => {
   const x = L + i * (sw + sg);
   s1.addShape(pres.ShapeType.roundRect, { x, y:3.0, w:sw, h:0.78,
-    fill:{ color: CHIP_D }, line:{ type:"none" }, rectRadius:0.06 });
+    fill:{ color: PANEL }, line:{ type:"none" }, rectRadius:0.06 });
   s1.addText(n, { x:x+0.16, y:3.09, w:0.5, h:0.22, isTextBox:true, margin:0,
-    fontFace:F, fontSize:9.5, color:MUTED_D, charSpacing:1 });
+    fontFace:F, fontSize:9.5, color:FAINT_L, charSpacing:1 });
   s1.addText(label, { x:x+0.16, y:3.33, w:sw-0.3, h:0.32, isTextBox:true, margin:0,
-    fontFace:F, fontSize:12, bold:true, color:WHITE });
+    fontFace:F, fontSize:12, bold:true, color:INK });
 });
 
 // 두 장의 편집 곡선
@@ -83,27 +84,27 @@ const cw = 5.765, cy = 4.1, ch = 2.28;
   "10칸 중 1칸, 그것도 붙여넣기 한 번 · 한 칸 최대 +1,180자", E2, Q2, 0.07]
 ].forEach(([cx, title, stat, axis, vals, pst, gap]) => {
   s1.addShape(pres.ShapeType.roundRect, { x:cx, y:cy, w:cw, h:ch,
-    fill:{ color: CARD_D }, line:{ type:"none" }, rectRadius:0.06 });
+    fill:{ color: PANEL }, line:{ type:"none" }, rectRadius:0.06 });
   s1.addText(title, { x:cx+0.28, y:cy+0.16, w:cw-0.56, h:0.3, isTextBox:true, margin:0,
-    fontFace:F, fontSize:13.5, bold:true, color:WHITE });
+    fontFace:F, fontSize:13.5, bold:true, color:INK });
   s1.addText(stat, { x:cx+0.28, y:cy+0.48, w:cw-0.56, h:0.26, isTextBox:true, margin:0,
-    fontFace:F, fontSize:10.5, color:MUTED_D });
-  bars(s1, vals, pst, cx+0.28, cy+0.86, cw-0.56, 1.02, gap, BAR);
+    fontFace:F, fontSize:10.5, color:MUTED_L });
+  bars(s1, vals, pst, cx+0.28, cy+0.86, cw-0.56, 1.02, gap, INK);
   s1.addText(axis, { x:cx+0.28, y:cy+1.95, w:cw-0.56, h:0.24, isTextBox:true, margin:0,
     fontFace:F, fontSize:9.5, color:"7A756E" });
 });
 
 s1.addText([
-  { text:"한 칸이 30초다. 위로 뻗으면 쓴 것, 아래로 뻗으면 지운 것. ", options:{ color:MUTED_D } },
+  { text:"한 칸이 30초다. 위로 뻗으면 쓴 것, 아래로 뻗으면 지운 것. ", options:{ color:MUTED_L } },
   { text:"주황 막대", options:{ color:ORANGE, bold:true } },
-  { text:" 하나가 밖에서 들어온 1,180자다. 분량은 둘 다 1,100자 남짓인데 시간은 열두 배 차이다.", options:{ color:MUTED_D } },
+  { text:" 하나가 밖에서 들어온 1,180자다. 분량은 둘 다 1,100자 남짓인데 시간은 열두 배 차이다.", options:{ color:MUTED_L } },
 ], { x:L, y:6.52, w:CW, h:0.28, isTextBox:true, margin:0, fontFace:F, fontSize:11.5 });
 
 s1.addText([
-  { text:"증명한다", options:{ color:GREEN_D, bold:true } },
-  { text:"  기록이 작성된 뒤 고쳐지지 않았다는 사실      ", options:{ color:WHITE } },
+  { text:"증명한다", options:{ color:GREEN, bold:true } },
+  { text:"  기록이 작성된 뒤 고쳐지지 않았다는 사실      ", options:{ color:INK } },
   { text:"증명하지 않는다", options:{ color:ORANGE, bold:true } },
-  { text:"  본인이 직접 했는지, 무엇이 AI인지, 대리 작업", options:{ color:MUTED_D } },
+  { text:"  본인이 직접 했는지, 무엇이 AI인지, 대리 작업", options:{ color:MUTED_L } },
 ], { x:L, y:6.88, w:CW, h:0.3, isTextBox:true, margin:0, fontFace:F, fontSize:12 });
 
 s1.addNotes(
