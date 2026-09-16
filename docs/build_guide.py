@@ -213,7 +213,7 @@ F += cmd("python seed.py",
 
 F += [P("⑦ 서버를 켭니다", "h3")]
 F += cmd("python app.py")
-F += [P("브라우저 주소창에 <font name=\"MONO\">127.0.0.1:5000</font> 을 칩니다. "
+F += [P("브라우저 주소창에 <font name=\"MONO\">127.0.0.1:5001</font> 을 칩니다. "
         "끄고 싶으면 그 검은 창에서 <font color='#171717'>Ctrl + C</font> 입니다.", "body")]
 
 F += callout("윈도우에서 자주 걸리는 것 세 가지",
@@ -409,7 +409,7 @@ F += cmd("conda activate cp")
 F += cmd("cd %USERPROFILE%\\dev\\trace")
 F += table(["", "주소 · 명령어"], [
     ["서버 켜기",      "<font name=\"MONO\" size=\"8.4\">python app.py</font> → 브라우저에 "
-                       "<font name=\"MONO\" size=\"8.4\">127.0.0.1:5000</font> (끄기는 Ctrl+C)"],
+                       "<font name=\"MONO\" size=\"8.4\">127.0.0.1:5001</font> (끄기는 Ctrl+C)"],
     ["데모 다시 만들기","<font name=\"MONO\" size=\"8.4\">python seed.py</font>"],
     ["작업 올리기",    "<font name=\"MONO\" size=\"8.4\">git add -A</font> → "
                        "<font name=\"MONO\" size=\"8.4\">git commit -m \"...\"</font> → "

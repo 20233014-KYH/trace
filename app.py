@@ -433,4 +433,6 @@ def verify():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # 5000 번은 맥의 AirPlay 수신기가 쓰고 있어서 403 이 뜬다.
+    # 시스템 설정을 건드리지 않아도 되게 5001 번을 쓴다.
+    app.run(debug=True, host="127.0.0.1", port=5001)
