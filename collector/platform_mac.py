@@ -83,3 +83,46 @@ def clipboard_digest():
 
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     return {"length": len(text), "hash": digest}
+
+
+# ---------------------------------------------
+# 자가진단 — 이 파일을 직접 실행하면 돈다
+#     python platform_mac.py
+# ---------------------------------------------
+if __name__ == "__main__":
+    import time
+
+    print()
+    print("  맥용 수집기 자가진단")
+    print("  " + "─" * 50)
+
+    r = active_app()
+    if r["app"]:
+        print(f"  ✅ 활성 프로그램   {r['app']}")
+        print("     창 제목        (맥은 '화면 기록' 권한이 있어야 읽힙니다)")
+    else:
+        print("  ❌ 활성 프로그램을 못 읽었습니다")
+
+    n1 = clipboard_serial()
+    print(f"  ✅ 클립보드 번호   {n1}")
+
+    d = clipboard_digest()
+    if d["length"] is None:
+        print("  ⚠️  클립보드에 글자가 없습니다 (사진이거나 비어 있음)")
+    else:
+        print(f"  ✅ 클립보드 내용   {d['length']}글자  지문 {d['hash'][:12]}…")
+
+    print()
+    print("  이제 아무 글자나 복사해 보세요. 10초 동안 기다립니다...")
+    for _ in range(10):
+        time.sleep(1)
+        n2 = clipboard_serial()
+        if n2 != n1:
+            d = clipboard_digest()
+            길이 = d["length"] if d["length"] is not None else "글자 아님"
+            print(f"  ✅ 복사 감지됨!   {길이}")
+            break
+    else:
+        print("  ⚠️  10초 동안 복사가 감지되지 않았습니다")
+
+    print()
