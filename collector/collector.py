@@ -60,11 +60,21 @@ def main():
         print()
         print("  ⚠️  " + (안내 or "붙여넣기 감시를 켜지 못했습니다."))
         print()
+    elif os_layer.paste_watch_method() == "global":
+        # 예비 방식으로 돌고 있다. 이 방식은 '다른 앱'에 간 키만 본다.
+        print()
+        print("  ⚠️  예비 방식으로 돌고 있습니다.")
+        print("      이 터미널 창 '안에서' 붙여넣은 것은 놓칩니다.")
+        print("      python check_permission.py 로 확인해 보세요.")
+        print()
 
     print("  멈추려면 Control + C 를 누르세요.")
     print("  " + "─" * 58)
 
-    장부.적기("watch_state", {"paste_watch": 붙여넣기_감시중})
+    장부.적기("watch_state", {
+        "paste_watch": 붙여넣기_감시중,
+        "method": os_layer.paste_watch_method(),
+    })
 
     직전_앱 = None            # 방금 전에 본 프로그램
     직전_복사번호 = None       # 방금 전에 본 클립보드 번호

@@ -29,7 +29,7 @@ def _환경_안내(모자란것):
     else:
         줄.append("  환경은 맞는데 준비물이 빠졌습니다:")
         줄.append("")
-        줄.append("      pip install pyobjc-framework-Cocoa")
+        줄.append("      pip install pyobjc-framework-Cocoa pyobjc-framework-Quartz")
     줄.append("  " + "─" * 62)
     줄.append("")
     return "\n".join(줄)
@@ -140,6 +140,9 @@ def clipboard_digest():
 
 _붙여넣기_횟수 = 0
 _감시자 = None          # 이 변수를 남겨둬야 한다. 안 그러면 파이썬이 감시자를 치워버린다.
+_탭 = None
+_탭_소스 = None
+_쓰는_방식 = None        # "tap" 또는 "global"
 
 V_키 = 9                # 맥에서 V 자리의 번호 (자판이 한글이어도 같다)
 
@@ -232,7 +235,7 @@ def 입력모니터링_요청():
 
     처음이면 허락을 묻는 창이 뜬다.
     한 번 거부한 적이 있으면 창은 안 뜨지만, 대신 시스템 설정의
-    '입력 모니터링' 목록에 터미널이 추가되어 직접 켤 수 있게 된다.
+    '입력 모니터링' 목록에 그 프로그램이 추가되어 직접 켤 수 있게 된다.
     """
     try:
         return bool(_iokit().IOHIDRequestAccess(들을_권한))
@@ -245,6 +248,78 @@ def 권한_있나():
     return 입력모니터링_켜졌나() or 손쉬운사용_켜졌나()
 
 
+# ---------------------------------------------
+# 방식 ① 이벤트 탭 — 좋은 방식
+#
+# ★ 왜 이걸 쓰나 ★
+#   원래 addGlobalMonitor 를 썼는데, 이름 그대로 '글로벌(다른 앱)' 전용이다.
+#   내 앱에 간 키는 안 준다. 수집기는 터미널의 자식이므로 터미널이 내 앱이고,
+#   터미널 안에서 누른 ⌘V 는 통째로 안 보였다. (여기서 또 헤맸다)
+#
+#   이벤트 탭은 화면 전체의 키를 본다. 내 앱이든 남의 앱이든 다 잡힌다.
+#
+# ★ ListenOnly 로 만든다 ★
+#   '듣기만 하고 건드리지 않는다'는 뜻이다. 키를 가로채지 않으므로
+#   우리 프로그램이 버벅여도 남의 키 입력이 느려지지 않는다.
+# ---------------------------------------------
+def _탭_콜백(프록시, 종류, 이벤트, 참조):
+    """키가 눌릴 때마다 불린다. ⌘V 인지만 보고 나머지는 전부 버린다."""
+    global _붙여넣기_횟수
+    from Quartz import (
+        CGEventGetFlags, CGEventGetIntegerValueField, CGEventTapEnable,
+        kCGEventFlagMaskCommand, kCGEventTapDisabledByTimeout,
+        kCGEventTapDisabledByUserInput, kCGKeyboardEventKeycode,
+    )
+
+    # 맥이 탭을 꺼버리는 경우가 있다 (우리가 너무 느리면). 다시 켠다.
+    if 종류 in (kCGEventTapDisabledByTimeout, kCGEventTapDisabledByUserInput):
+        if _탭 is not None:
+            CGEventTapEnable(_탭, True)
+        return 이벤트
+
+    커맨드 = bool(CGEventGetFlags(이벤트) & kCGEventFlagMaskCommand)
+    키번호 = CGEventGetIntegerValueField(이벤트, kCGKeyboardEventKeycode)
+    if 커맨드 and 키번호 == V_키:
+        _붙여넣기_횟수 += 1
+    return 이벤트          # 건드리지 않고 그대로 돌려준다
+
+
+def _탭으로_시작():
+    global _탭, _탭_소스
+    try:
+        from Quartz import (
+            CFMachPortCreateRunLoopSource, CFRunLoopAddSource, CFRunLoopGetCurrent,
+            CGEventMaskBit, CGEventTapCreate, CGEventTapEnable,
+            kCFRunLoopCommonModes, kCGEventKeyDown, kCGEventTapOptionListenOnly,
+            kCGHeadInsertEventTap, kCGSessionEventTap,
+        )
+    except ImportError:
+        return False        # Quartz 가 없으면 아래 방식으로 넘어간다
+
+    try:
+        _탭 = CGEventTapCreate(
+            kCGSessionEventTap,              # 이 로그인 세션 전체
+            kCGHeadInsertEventTap,
+            kCGEventTapOptionListenOnly,     # ★ 듣기만. 가로채지 않는다
+            CGEventMaskBit(kCGEventKeyDown),  # 키를 누를 때만
+            _탭_콜백,
+            None,
+        )
+        if _탭 is None:
+            return False                     # 권한이 없으면 여기서 None 이 나온다
+
+        _탭_소스 = CFMachPortCreateRunLoopSource(None, _탭, 0)
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), _탭_소스, kCFRunLoopCommonModes)
+        CGEventTapEnable(_탭, True)
+        return True
+    except Exception:
+        return False
+
+
+# ---------------------------------------------
+# 방식 ② 글로벌 모니터 — 예비용
+#   내 앱에 간 키는 못 본다는 한계가 있지만, 탭이 안 될 때를 대비해 남겨 둔다.
+# ---------------------------------------------
 def _키를_눌렀을때(이벤트):
     """키가 눌릴 때마다 불린다. ⌘V 인지만 보고 나머지는 전부 버린다."""
     global _붙여넣기_횟수
@@ -254,31 +329,43 @@ def _키를_눌렀을때(이벤트):
     # ← 함수가 여기서 끝난다. 다른 키는 쳐다보지도 않고 버려진다.
 
 
-def paste_watch_start():
-    """붙여넣기 감시를 시작한다. 성공하면 True, 권한이 없으면 False."""
+def _모니터로_시작():
     global _감시자
-
-    # 아직 허락을 안 받았으면 맥에게 정식으로 물어본다.
-    # (이래야 시스템 설정의 '입력 모니터링' 목록에 터미널이 나타난다)
-    if not 입력모니터링_켜졌나():
-        입력모니터링_요청()
-
-    if not 권한_있나():
-        return False
-
-    # NSApplication 을 먼저 깨운다.
-    # 이걸 안 하면 키 소식이 우리에게 배달되지 않는 경우가 있다.
-    # setActivationPolicy_(1) = 액세서리 → Dock 에 아이콘이 뜨지 않는다.
     try:
         앱 = NSApplication.sharedApplication()
-        앱.setActivationPolicy_(1)
+        앱.setActivationPolicy_(1)      # Dock 에 아이콘이 뜨지 않게
     except Exception:
         pass
-
     _감시자 = NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
         NSEventMaskKeyDown, _키를_눌렀을때
     )
     return _감시자 is not None
+
+
+def paste_watch_start():
+    """붙여넣기 감시를 시작한다. 성공하면 True, 권한이 없으면 False."""
+    global _쓰는_방식
+
+    # 아직 허락을 안 받았으면 맥에게 정식으로 물어본다.
+    # (이래야 시스템 설정 '입력 모니터링' 목록에 그 프로그램이 나타난다)
+    if not 입력모니터링_켜졌나():
+        입력모니터링_요청()
+
+    if _탭으로_시작():
+        _쓰는_방식 = "tap"
+        return True
+
+    if 권한_있나() and _모니터로_시작():
+        _쓰는_방식 = "global"
+        return True
+
+    _쓰는_방식 = None
+    return False
+
+
+def paste_watch_method():
+    """지금 어떤 방식으로 보고 있나. 못 보고 있으면 None."""
+    return _쓰는_방식
 
 
 def paste_watch_poll():

@@ -212,6 +212,15 @@ def paste_watch_poll():
     return 횟수
 
 
+def paste_watch_method():
+    """지금 어떤 방식으로 보고 있나.
+
+    윈도우는 한 가지뿐이다 — GetAsyncKeyState 로 물어보기.
+    (맥은 권한 상황에 따라 두 가지 중 하나를 쓴다)
+    """
+    return "keystate"
+
+
 def permission_hint():
     """윈도우는 권한이 필요 없다."""
     return None

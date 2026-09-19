@@ -40,7 +40,7 @@ if ! conda activate trace 2>/dev/null; then
   echo ""
   echo "      conda create -n trace python=3.11 -y"
   echo "      conda activate trace"
-  echo "      pip install pyobjc-framework-Cocoa"
+  echo "      pip install pyobjc-framework-Cocoa pyobjc-framework-Quartz"
   echo "  ──────────────────────────────────────────────────────────────"
   echo ""
   read -n 1 -s -r -p "  아무 키나 누르면 닫힙니다..."

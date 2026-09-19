@@ -43,7 +43,7 @@ conda create -n trace python=3.11 -y
 conda activate trace
 ```
 ```bash
-pip install pyobjc-framework-Cocoa
+pip install pyobjc-framework-Cocoa pyobjc-framework-Quartz
 ```
 
 ### 윈도우 (Anaconda Prompt 에서)
@@ -335,6 +335,24 @@ python check_permission.py
 안 켜도 창·복사 기록은 정상으로 남습니다. 붙여넣기만 안 보입니다.
 
 **윈도우는 권한이 하나도 필요 없습니다.** 바로 됩니다.
+
+### 맥은 '이벤트 탭'으로 봅니다 (여기서 또 헤맸습니다)
+
+처음엔 `addGlobalMonitor` 를 썼는데, **이름 그대로 '글로벌(다른 앱)' 전용**입니다.
+**내 앱에 간 키는 안 줍니다.**
+
+수집기는 터미널이 켠 자식이라 **터미널이 곧 내 앱**입니다.
+그래서 터미널 안에서 ⌘V 를 누르면 **하나도 안 보였습니다.**
+권한을 다 켜 놓고도 "키 소식 0개" 가 나온 이유가 이것입니다. 권한 문제가 아니었습니다.
+
+| 방식 | 다른 앱에 간 키 | 내 앱에 간 키 |
+|---|---|---|
+| `addGlobalMonitor` | ✅ | ❌ **안 보임** |
+| **`CGEventTap`** | ✅ | ✅ |
+
+지금은 **이벤트 탭**을 먼저 쓰고, 안 되면 글로벌 모니터로 물러납니다.
+탭은 **`ListenOnly`** 로 만듭니다 — **듣기만 하고 키를 가로채지 않는다**는 뜻입니다.
+그래서 우리 프로그램이 버벅여도 남의 키 입력이 느려지지 않습니다.
 
 ### 키를 훔쳐보는 것 아닌가 (솔직한 답)
 
