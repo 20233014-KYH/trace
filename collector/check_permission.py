@@ -17,10 +17,26 @@ import ctypes.util
 import sys
 import time
 
-from AppKit import (
-    NSApplication, NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
-)
-from Foundation import NSRunLoop, NSDate
+try:
+    from AppKit import (
+        NSApplication, NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
+    )
+    from Foundation import NSRunLoop, NSDate
+except Exception:
+    import os
+    지금환경 = os.environ.get("CONDA_DEFAULT_ENV", "(모름)")
+    raise SystemExit(
+        "\n  " + "─" * 62 +
+        "\n  준비물이 없습니다: 맥용 도구 (pyobjc)\n" +
+        (f"\n  지금 환경이 '{지금환경}' 입니다. 'trace' 여야 합니다."
+         "\n  터미널을 껐다 켜면 항상 (base) 로 돌아갑니다. 매번 켜 주세요:"
+         "\n\n      conda activate trace\n"
+         "\n  프롬프트 맨 앞이 (trace) 로 바뀌면 된 것입니다."
+         if 지금환경 != "trace" else
+         "\n  환경은 맞는데 준비물이 빠졌습니다:"
+         "\n\n      pip install pyobjc-framework-Cocoa") +
+        "\n  " + "─" * 62 + "\n"
+    )
 
 
 V_키 = 9

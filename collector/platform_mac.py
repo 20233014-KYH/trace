@@ -10,11 +10,40 @@ import ctypes
 import ctypes.util
 import hashlib
 
-from AppKit import (
-    NSWorkspace, NSPasteboard, NSPasteboardTypeString,
-    NSApplication, NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
-)
-from Foundation import NSRunLoop, NSDate
+def _환경_안내(모자란것):
+    """왜 안 되는지와 무엇을 치면 되는지 알려준다. 에러 더미 대신."""
+    import os
+    지금환경 = os.environ.get("CONDA_DEFAULT_ENV", "(모름)")
+    줄 = []
+    줄.append("")
+    줄.append("  " + "─" * 62)
+    줄.append(f"  준비물이 없습니다: {모자란것}")
+    줄.append("")
+    if 지금환경 != "trace":
+        줄.append(f"  지금 환경이 '{지금환경}' 입니다. 'trace' 여야 합니다.")
+        줄.append("  터미널을 껐다 켜면 항상 (base) 로 돌아갑니다. 매번 켜 주세요:")
+        줄.append("")
+        줄.append("      conda activate trace")
+        줄.append("")
+        줄.append("  프롬프트 맨 앞이 (trace) 로 바뀌면 된 것입니다.")
+    else:
+        줄.append("  환경은 맞는데 준비물이 빠졌습니다:")
+        줄.append("")
+        줄.append("      pip install pyobjc-framework-Cocoa")
+    줄.append("  " + "─" * 62)
+    줄.append("")
+    return "\n".join(줄)
+
+
+try:
+    from AppKit import (
+        NSWorkspace, NSPasteboard, NSPasteboardTypeString,
+        NSApplication, NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
+    )
+    from Foundation import NSRunLoop, NSDate
+except Exception:
+    # 에러 더미를 쏟아내는 대신, 뭘 치면 되는지 알려주고 끝낸다.
+    raise SystemExit(_환경_안내("맥용 도구 (pyobjc)"))
 
 
 def active_app():
