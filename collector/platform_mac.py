@@ -156,6 +156,47 @@ V_키 = 9                # 맥에서 V 자리의 번호 (자판이 한글이어�
 허용됨 = 0             # kIOHIDAccessTypeGranted
 
 
+def 지금_실행중인_앱():
+    """이 파이썬을 켠 '프로그램'이 무엇인지 찾는다.
+
+    ★ 왜 필요한가 ★
+      맥 권한은 파이썬이 아니라 '파이썬을 켠 프로그램'에게 붙는다.
+      터미널에서 켰으면 터미널이, Claude 안에서 켰으면 Claude 가 받아야 한다.
+      터미널에만 권한을 주고 Claude 안에서 돌리면 아무리 켜도 안 된다.
+      (실제로 이것 때문에 한참 헤맸다)
+
+    부모의 부모의 부모… 를 거슬러 올라가며 .app 을 찾는다.
+    돌려주는 모양: ("터미널", "/System/.../Terminal") 또는 (None, None)
+    """
+    import os
+    import subprocess
+
+    pid = os.getpid()
+    for _ in range(15):
+        try:
+            결과 = subprocess.run(["ps", "-o", "ppid=,comm=", "-p", str(pid)],
+                                  capture_output=True, text=True, timeout=3)
+        except Exception:
+            return None, None
+        줄 = 결과.stdout.strip()
+        if not 줄:
+            return None, None
+        쪼갬 = 줄.split(None, 1)
+        if len(쪼갬) < 2:
+            return None, None
+        부모, 실행경로 = 쪼갬
+        if ".app/Contents/MacOS/" in 실행경로:
+            이름 = 실행경로.split(".app/")[0].split("/")[-1]
+            return 이름, 실행경로
+        try:
+            pid = int(부모)
+        except ValueError:
+            return None, None
+        if pid <= 1:
+            return None, None
+    return None, None
+
+
 def 손쉬운사용_켜졌나():
     """'손쉬운 사용' 목록에 들어 있나."""
     try:
@@ -255,13 +296,19 @@ def permission_hint():
     if 입력:
         return None
 
+    앱, _ = 지금_실행중인_앱()
+    켤것 = f"'{앱}'" if 앱 else "이 프로그램"
+
     안내 = ["붙여넣기는 못 잡습니다. 맥은 권한이 두 개로 나뉘어 있습니다.",
             f"     손쉬운 사용    {'✅ 켜짐' if 손쉬운 else '❌ 꺼짐'}",
             "     입력 모니터링  ❌ 꺼짐   ← 붙여넣기는 이게 있어야 합니다",
             "",
+            f"     ★ 지금 이것을 켠 프로그램: {앱 or '(못 찾음)'}",
+            f"       권한은 파이썬이 아니라 {켤것} 이 받아야 합니다.",
+            "",
             "     시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링",
             "     ('손쉬운 사용' 말고 '입력 모니터링' 입니다. 다른 목록입니다)",
-            "     목록에서 '터미널' 을 켜고, ★ 터미널을 ⌘Q 로 완전히 껐다 켜세요.",
+            f"     목록에서 {켤것} 을 켜고, ★ {켤것} 을 완전히 껐다 켜세요.",
             "",
             "     자세히 알아보려면:  python check_permission.py",
             "     안 켜도 창·복사 기록은 정상으로 남습니다."]
