@@ -6,9 +6,14 @@
 # 그래서 collector.py 는 맥인지 윈도우인지 신경 쓰지 않아도 된다.
 # =============================================
 
+import ctypes
+import ctypes.util
 import hashlib
 
-from AppKit import NSWorkspace, NSPasteboard, NSPasteboardTypeString
+from AppKit import (
+    NSWorkspace, NSPasteboard, NSPasteboardTypeString,
+    NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
+)
 from Foundation import NSRunLoop, NSDate
 
 
@@ -83,6 +88,96 @@ def clipboard_digest():
 
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     return {"length": len(text), "hash": digest}
+
+
+
+# =============================================
+# 붙여넣기 감지
+#
+# 왜 따로 만드나 — 복사는 클립보드를 바꾸지만
+# 붙여넣기는 아무것도 바꾸지 않는다. 그래서 클립보드를 아무리 들여다봐도
+# 못 잡는다. 키를 누르는 것(⌘V)을 직접 봐야 한다.
+#
+# ★ 솔직하게 적어 둔다 ★
+#   맥은 "V 키만 알려줘" 같은 주문을 받아주지 않는다.
+#   그래서 어떤 키를 누르든 우리 프로그램에 소식이 온다.
+#   아래 _키를_눌렀을때() 가 하는 일은 딱 두 줄이다 —
+#   ⌘V 인지 보고, 맞으면 숫자를 1 올린다. 아니면 그냥 버린다.
+#   무슨 글자를 쳤는지는 세지도, 적지도, 저장하지도 않는다.
+#
+# 이 기능은 '손쉬운 사용' 권한이 있어야 돌아간다.
+# 권한이 없으면 붙여넣기만 못 볼 뿐, 나머지 기록은 정상이다.
+# =============================================
+
+_붙여넣기_횟수 = 0
+_감시자 = None          # 이 변수를 남겨둬야 한다. 안 그러면 파이썬이 감시자를 치워버린다.
+
+V_키 = 9                # 맥에서 V 자리의 번호 (자판이 한글이어도 같다)
+
+
+def 권한_있나():
+    """'손쉬운 사용' 권한이 켜져 있는지 맥에게 직접 물어본다."""
+    try:
+        경로 = ctypes.util.find_library("ApplicationServices")
+        라이브러리 = ctypes.cdll.LoadLibrary(경로)
+        라이브러리.AXIsProcessTrusted.restype = ctypes.c_bool
+        라이브러리.AXIsProcessTrusted.argtypes = []
+        return bool(라이브러리.AXIsProcessTrusted())
+    except Exception:
+        return False
+
+
+def _키를_눌렀을때(이벤트):
+    """키가 눌릴 때마다 불린다. ⌘V 인지만 보고 나머지는 전부 버린다."""
+    global _붙여넣기_횟수
+    커맨드를_같이_눌렀나 = bool(이벤트.modifierFlags() & NSEventModifierFlagCommand)
+    if 커맨드를_같이_눌렀나 and 이벤트.keyCode() == V_키:
+        _붙여넣기_횟수 += 1
+    # ← 함수가 여기서 끝난다. 다른 키는 쳐다보지도 않고 버려진다.
+
+
+def paste_watch_start():
+    """붙여넣기 감시를 시작한다. 성공하면 True, 권한이 없으면 False."""
+    global _감시자
+    if not 권한_있나():
+        return False
+    _감시자 = NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
+        NSEventMaskKeyDown, _키를_눌렀을때
+    )
+    return _감시자 is not None
+
+
+def paste_watch_poll():
+    """지난번에 물어본 뒤로 붙여넣기를 몇 번 했는지 돌려주고 0 으로 되돌린다."""
+    global _붙여넣기_횟수
+    횟수 = _붙여넣기_횟수
+    _붙여넣기_횟수 = 0
+    return 횟수
+
+
+def permission_hint():
+    """권한이 없을 때 보여줄 안내문. 권한이 있으면 None."""
+    if 권한_있나():
+        return None
+    return (
+        "붙여넣기는 못 잡습니다 ('손쉬운 사용' 권한이 꺼져 있습니다).\n"
+        "     켜려면: 시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용\n"
+        "             거기에 '터미널'을 추가해 켠 뒤, 터미널을 껐다 켜세요.\n"
+        "     안 켜도 창·복사 기록은 정상으로 남습니다."
+    )
+
+
+def sleep(초):
+    """기다린다. 단, 가만히 자는 게 아니라 맥의 소식을 계속 받으며 기다린다.
+
+    ★ 여기가 중요하다 ★
+      time.sleep() 으로 자버리면 그 1초 동안 온 ⌘V 소식을 통째로 놓친다.
+      아래 방식은 '우편함을 열어둔 채로' 1초를 보낸다.
+      (위에 나온 우편함 이야기와 같은 것이다)
+    """
+    NSRunLoop.currentRunLoop().runUntilDate_(
+        NSDate.dateWithTimeIntervalSinceNow_(초)
+    )
 
 
 # ---------------------------------------------
