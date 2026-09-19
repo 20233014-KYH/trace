@@ -1,0 +1,22 @@
+# Trace 수집기 준비물
+#
+#   pip install -r requirements.txt
+#
+# ★ 뒤에 붙은 조건 덕분에 자기 운영체제 것만 깔린다 ★
+#   맥에서 pywin32 를 깔려고 하면 실패한다. 반대도 마찬가지다.
+#   sys_platform 조건을 적어두면 pip 이 알아서 건너뛴다.
+
+# 둘 다 필요
+flask
+requests
+pyperclip
+watchdog
+pynput            # 입력·삭제 횟수 세기 (keys.enabled=true 일 때)
+
+# 윈도우에서만
+pywin32 ; sys_platform == "win32"
+psutil  ; sys_platform == "win32"
+
+# 맥에서만
+pyobjc-framework-Cocoa  ; sys_platform == "darwin"
+pyobjc-framework-Quartz ; sys_platform == "darwin"

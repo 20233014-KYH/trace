@@ -1,0 +1,70 @@
+{
+  "_comment": "Trace 수집기 설정. 학생이 직접 고친다. 여기 없는 앱은 '기타'로만 기록되고 창 제목은 남지 않는다.",
+  "server": "http://127.0.0.1:5000",
+  "poll_interval_sec": 1.0,
+  "idle_after_sec": 300,
+  "heartbeat_sec": 30,
+  "whitelist_apps": [
+    "Code.exe",
+    "pycharm64.exe",
+    "notepad++.exe",
+    "chrome.exe",
+    "msedge.exe",
+    "firefox.exe",
+    "claude.exe",
+    "ChatGPT.exe",
+    "Acrobat.exe",
+    "AcroRd32.exe",
+    "SumatraPDF.exe",
+    "WINWORD.EXE",
+    "POWERPNT.EXE",
+    "EXCEL.EXE",
+    "Photoshop.exe",
+    "Illustrator.exe",
+    "WindowsTerminal.exe",
+    "cmd.exe",
+    "powershell.exe",
+    "Code",
+    "Claude",
+    "ChatGPT",
+    "Google Chrome",
+    "Safari",
+    "Firefox",
+    "Microsoft Word",
+    "Microsoft PowerPoint",
+    "Microsoft Excel",
+    "Preview",
+    "미리보기",
+    "메모",
+    "Notes",
+    "Pages",
+    "Keynote",
+    "Numbers",
+    "Adobe Photoshop 2025",
+    "Adobe Illustrator 2025",
+    "터미널",
+    "Terminal",
+    "iTerm2"
+  ],
+  "clipboard": {
+    "enabled": true
+  },
+  "keys": {
+    "_comment": "pynput 키 훅. 입력·삭제 횟수 + Ctrl+V/Z/Y/X 감지만. 어떤 키인지는 절대 기록하지 않음. Proof Mode 에서는 필수.",
+    "enabled": true,
+    "flush_sec": 10
+  },
+  "files": {
+    "_comment": "감시 폴더. 비어 있으면 파일 이벤트 안 잡음. 저장 시 내용 SHA256만 기록.",
+    "watch_dirs": [],
+    "ignore_patterns": [
+      ".git",
+      "__pycache__",
+      "node_modules",
+      ".tmp",
+      "~$"
+    ]
+  },
+  "data_dir": "../data",
+  "_comment_platform": "화이트리스트에 윈도우 exe 이름과 맥 앱 이름이 같이 들어 있다. 맥은 '.exe' 가 없고 '메모' 처럼 한글 이름인 앱도 있다."
+}
