@@ -12,7 +12,7 @@ import hashlib
 
 from AppKit import (
     NSWorkspace, NSPasteboard, NSPasteboardTypeString,
-    NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
+    NSApplication, NSEvent, NSEventMaskKeyDown, NSEventModifierFlagCommand,
 )
 from Foundation import NSRunLoop, NSDate
 
@@ -115,8 +115,20 @@ _감시자 = None          # 이 변수를 남겨둬야 한다. 안 그러면 �
 V_키 = 9                # 맥에서 V 자리의 번호 (자판이 한글이어도 같다)
 
 
-def 권한_있나():
-    """'손쉬운 사용' 권한이 켜져 있는지 맥에게 직접 물어본다."""
+# ★ 맥은 키를 보는 권한이 두 개로 나뉘어 있다 ★
+#
+#   손쉬운 사용     컴퓨터를 '조작'해도 된다   (마우스를 움직이고 클릭하고)
+#   입력 모니터링   키 입력을 '들어도' 된다    ← 붙여넣기는 이쪽이 필요하다
+#
+# 완전히 다른 목록이다. 손쉬운 사용만 켜면 붙여넣기는 안 잡힌다.
+# (실제로 이것 때문에 한참 헤맸다)
+
+들을_권한 = 1          # kIOHIDRequestTypeListenEvent
+허용됨 = 0             # kIOHIDAccessTypeGranted
+
+
+def 손쉬운사용_켜졌나():
+    """'손쉬운 사용' 목록에 들어 있나."""
     try:
         경로 = ctypes.util.find_library("ApplicationServices")
         라이브러리 = ctypes.cdll.LoadLibrary(경로)
@@ -125,6 +137,42 @@ def 권한_있나():
         return bool(라이브러리.AXIsProcessTrusted())
     except Exception:
         return False
+
+
+def _iokit():
+    경로 = ctypes.util.find_library("IOKit")
+    라이브러리 = ctypes.cdll.LoadLibrary(경로)
+    라이브러리.IOHIDCheckAccess.restype = ctypes.c_int
+    라이브러리.IOHIDCheckAccess.argtypes = [ctypes.c_int]
+    라이브러리.IOHIDRequestAccess.restype = ctypes.c_bool
+    라이브러리.IOHIDRequestAccess.argtypes = [ctypes.c_int]
+    return 라이브러리
+
+
+def 입력모니터링_켜졌나():
+    """'입력 모니터링' 목록에 들어 있고 켜져 있나."""
+    try:
+        return _iokit().IOHIDCheckAccess(들을_권한) == 허용됨
+    except Exception:
+        return False
+
+
+def 입력모니터링_요청():
+    """맥에게 정식으로 요청한다.
+
+    처음이면 허락을 묻는 창이 뜬다.
+    한 번 거부한 적이 있으면 창은 안 뜨지만, 대신 시스템 설정의
+    '입력 모니터링' 목록에 터미널이 추가되어 직접 켤 수 있게 된다.
+    """
+    try:
+        return bool(_iokit().IOHIDRequestAccess(들을_권한))
+    except Exception:
+        return False
+
+
+def 권한_있나():
+    """붙여넣기를 잡을 가망이 있나. 둘 중 하나라도 있으면 일단 시도해 본다."""
+    return 입력모니터링_켜졌나() or 손쉬운사용_켜졌나()
 
 
 def _키를_눌렀을때(이벤트):
@@ -139,8 +187,24 @@ def _키를_눌렀을때(이벤트):
 def paste_watch_start():
     """붙여넣기 감시를 시작한다. 성공하면 True, 권한이 없으면 False."""
     global _감시자
+
+    # 아직 허락을 안 받았으면 맥에게 정식으로 물어본다.
+    # (이래야 시스템 설정의 '입력 모니터링' 목록에 터미널이 나타난다)
+    if not 입력모니터링_켜졌나():
+        입력모니터링_요청()
+
     if not 권한_있나():
         return False
+
+    # NSApplication 을 먼저 깨운다.
+    # 이걸 안 하면 키 소식이 우리에게 배달되지 않는 경우가 있다.
+    # setActivationPolicy_(1) = 액세서리 → Dock 에 아이콘이 뜨지 않는다.
+    try:
+        앱 = NSApplication.sharedApplication()
+        앱.setActivationPolicy_(1)
+    except Exception:
+        pass
+
     _감시자 = NSEvent.addGlobalMonitorForEventsMatchingMask_handler_(
         NSEventMaskKeyDown, _키를_눌렀을때
     )
@@ -156,15 +220,23 @@ def paste_watch_poll():
 
 
 def permission_hint():
-    """권한이 없을 때 보여줄 안내문. 권한이 있으면 None."""
-    if 권한_있나():
+    """권한이 모자랄 때 보여줄 안내문. 다 있으면 None."""
+    입력 = 입력모니터링_켜졌나()
+    손쉬운 = 손쉬운사용_켜졌나()
+    if 입력:
         return None
-    return (
-        "붙여넣기는 못 잡습니다 ('손쉬운 사용' 권한이 꺼져 있습니다).\n"
-        "     켜려면: 시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용\n"
-        "             거기에 '터미널'을 추가해 켠 뒤, 터미널을 껐다 켜세요.\n"
-        "     안 켜도 창·복사 기록은 정상으로 남습니다."
-    )
+
+    안내 = ["붙여넣기는 못 잡습니다. 맥은 권한이 두 개로 나뉘어 있습니다.",
+            f"     손쉬운 사용    {'✅ 켜짐' if 손쉬운 else '❌ 꺼짐'}",
+            "     입력 모니터링  ❌ 꺼짐   ← 붙여넣기는 이게 있어야 합니다",
+            "",
+            "     시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링",
+            "     ('손쉬운 사용' 말고 '입력 모니터링' 입니다. 다른 목록입니다)",
+            "     목록에서 '터미널' 을 켜고, ★ 터미널을 ⌘Q 로 완전히 껐다 켜세요.",
+            "",
+            "     자세히 알아보려면:  python check_permission.py",
+            "     안 켜도 창·복사 기록은 정상으로 남습니다."]
+    return "\n".join(안내)
 
 
 def sleep(초):
