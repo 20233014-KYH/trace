@@ -24,3 +24,6 @@ package.json
 
 # Office 임시 잠금 파일
 ~$*
+
+# 파이썬이 자동으로 만드는 캐시 폴더
+__pycache__/
