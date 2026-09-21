@@ -178,7 +178,8 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - ~~Backend · DB (A)~~ → `3-코드/server/` 완료 (9/21, A). 윈도우에서도 확인: 계약 검사 8/8 통과, 실제 수집기 → A 서버 → SQLite 저장 · 봉인 검증 ✓ (9/21 B)
 - 맥 수집기: `platform_mac.py` 가 새 collector.py 에 빠짐 → A가 브랜치로 PR 예정
 - 관통 1 은 **10/7(수)** — B 윈도우 → A 맥 서버는 127.0.0.1 이라 안 닿음 → 그날 ngrok 터널로
-- 확장 실사용 테스트 (Chrome에 로드 → 탭 전환이 콘솔에 찍히는지) · A의 React 골격에 `SessionView` 끼우기
+- ~~확장 실사용 테스트~~ 완료 (9/21): Chrome 실사용으로 tab · ai_question · ai_answer_excerpt 전부 도착. 잡힌 버그 2개 수정 — ① ChatGPT가 창 제목을 대화 제목으로 바꾸면 `other`로 떨어짐 → 확장 탭 분류 우선 ② Ctrl+C 직후 작업표시줄 클릭하면 복사 출처가 explorer.exe → Ctrl+C 누른 창을 기억
+- A의 React 골격에 `SessionView` 끼우기
 
 **📅 예정**
 - 3주차 ★관통 1 (10/7 수): B 수집기 → A 맥 서버(ngrok) → DB 건수 대조
