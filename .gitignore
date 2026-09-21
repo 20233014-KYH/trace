@@ -22,3 +22,6 @@ __pycache__/
 
 # Office 임시 잠금 파일
 ~$*
+
+# Claude 데스크톱 앱 로컬 설정
+.claude/
