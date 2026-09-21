@@ -128,6 +128,11 @@ POST /sessions/{id}/context                           ← 브라우저 확장 ·
   · Proof 세션에 보내면 403. 서버도 저장하지 않는다
   · 항목별 토글이 꺼져 있으면 아예 안 보냄 (목업 17). 시간이 부족하면 browser 까지만 구현
 
+GET  /sessions/{id}/context                           ← 맥락 읽기 (Learn 화면) ★ B 요청으로 추가 9/21
+  응답  {items:[{id, ts, source, kind, text, meta}]}   ts 순서
+  · Proof 세션이면 403 (애초에 저장하지 않음)
+  · 초안에는 POST 만 있어 화면이 맥락을 받을 길이 없었다 (405)
+
 GET  /sessions/{id}/report                            ← 리포트 (Learn 만). **없으면 이때 생성한다 — 학생이 열 때** (9/21 결정)
   응답  {status:"ready", topics:[…], struggles:[…], process:[…], points:[…], todo:[…], generated_at, provider, runs}
   · 세션 종료 시 자동 생성하지 않는다. 안 여는 세션엔 AI 비용을 쓰지 않기 위해 (Learn 비용의 절반 가까이 절감)

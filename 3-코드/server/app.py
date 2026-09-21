@@ -397,6 +397,27 @@ def context(sid):
     return jsonify(accepted=n)
 
 
+@app.get("/api/sessions/<sid>/context")
+def get_context(sid):
+    """맥락 읽기 — B 요청 (9/21). Learn 화면이 마커·패널을 그리려면 필요하다.
+
+    계약 5절에는 POST 만 있었다. 화면이 받을 길이 없어 405 가 났다.
+    → docs/api.md 에 추가했다.
+
+    Proof 세션에는 맥락이 없다 (애초에 저장하지 않는다) → 403.
+    """
+    with db.Session() as d:
+        s, 코드 = _learn만(d, sid)
+        if 코드:
+            return s, 코드
+        항목 = [{"id": c.id, "ts": c.ts, "source": c.source, "kind": c.kind,
+                 "text": c.text, "meta": c.meta or {}}
+                for c in (d.query(db.Context)
+                          .filter(db.Context.session_id == sid)
+                          .order_by(db.Context.ts).all())]
+    return jsonify(items=항목)
+
+
 @app.get("/api/sessions/<sid>/report")
 def get_report(sid):
     """없으면 이때 만든다 — 학생이 열 때 (계약 5절 · 9/21 결정). 안 보는 세션엔 AI 비용 0."""
