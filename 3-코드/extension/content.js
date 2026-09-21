@@ -43,14 +43,29 @@ document.addEventListener("copy", () => {
   if (t) send("ai_answer_excerpt", t);
 });
 
-// ③ AI 질문 — 입력창에서 Enter (Shift+Enter 제외). 사이트별로 입력창 셀렉터가 다르다.
-//    TODO: claude.ai / chatgpt.com / gemini 입력창 구조 확인 후 셀렉터 보강. 지금은 contenteditable·textarea 전부.
+// ③ AI 질문 — 사이트마다 입력창(textarea · contenteditable)과 보내는 방법(Enter · 버튼)이 다르다.
+//    셀렉터를 사이트별로 두지 않고, "마지막으로 글자를 친 입력창"을 기억했다가 Enter 나 버튼 클릭 0.4초 뒤에
+//    그 입력창이 비어 있으면 '보낸 것'으로 본다. ChatGPT · Claude · Gemini · 뤼튼 · Grok · DeepSeek · NotebookLM 공통.
+let lastEl = null, lastText = "";
+const editable = (el) => !!el && (el.tagName === "TEXTAREA" || el.isContentEditable);
+const textOf = (el) => ((el.value ?? el.innerText) || "").trim();
+
+document.addEventListener("input", (e) => {
+  if (editable(e.target)) { lastEl = e.target; lastText = textOf(e.target); }
+}, true);
+
+function maybeSent() {
+  const t = lastText;
+  if (t.length < 2) return;
+  setTimeout(() => {
+    const now = lastEl && document.contains(lastEl) ? textOf(lastEl) : "";
+    if (!now || now.length < t.length / 2) { send("ai_question", t); lastText = ""; }   // 비었거나 절반 아래로 줄었으면 보낸 것
+  }, 400);
+}
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" || e.shiftKey || e.isComposing) return;
-  const el = document.activeElement;
-  if (!el) return;
-  const editable = el.tagName === "TEXTAREA" || el.isContentEditable;
-  if (!editable) return;
-  const text = (el.value ?? el.innerText ?? "").trim();
-  if (text.length >= 2) send("ai_question", text);
+  if (editable(document.activeElement)) { lastEl = document.activeElement; lastText = textOf(lastEl); maybeSent(); }
+}, true);
+document.addEventListener("click", (e) => {
+  if (e.target.closest && e.target.closest("button, [role=button]")) maybeSent();     // 보내기 버튼 (어느 사이트든)
 }, true);

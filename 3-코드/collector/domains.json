@@ -10,21 +10,43 @@
         "gemini.google.com",
         "perplexity.ai",
         "copilot.microsoft.com",
-        "poe.com"
+        "poe.com",
+        "wrtn.ai",
+        "grok.com",
+        "chat.deepseek.com",
+        "deepseek.com",
+        "notebooklm.google.com",
+        "chat.mistral.ai",
+        "clova-x.naver.com"
       ],
       "apps": [
         "claude.exe",
         "ChatGPT.exe",
         "Claude",
         "ChatGPT",
-        "Gemini"
+        "Gemini",
+        "Cursor.exe",
+        "Windsurf.exe",
+        "Cursor",
+        "Windsurf"
       ],
       "title_keywords": [
         "Claude",
         "ChatGPT",
         "Gemini",
         "Perplexity",
-        "Copilot"
+        "Copilot",
+        "뤼튼",
+        "Wrtn",
+        "Grok",
+        "DeepSeek",
+        "NotebookLM",
+        "CLOVA X",
+        "Claude Code",
+        "Codex",
+        "Cursor",
+        "Windsurf",
+        "Copilot Chat"
       ]
     },
     "resource": {
