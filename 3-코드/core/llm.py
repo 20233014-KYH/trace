@@ -104,7 +104,7 @@ def _fake(system, messages, json_mode):
             "todo": ["(가짜) 참조 변수와 객체의 관계를 코드로 직접 확인하기"],
             "_fake": True,
         }, ensure_ascii=False)
-    return "(가짜 답변) LLM_PROVIDER 를 qwen 또는 claude 로 설정하고 키를 넣으면 실제 답이 옵니다."
+    return "(가짜 답변) 서버 환경변수 LLM_PROVIDER=openai 와 OPENAI_API_KEY 를 넣으면 GPT-5.6 Luna 가 실제로 답합니다."
 
 
 # ─────────────────────────── Learn 작업 3개 ───────────────────────────
@@ -152,3 +152,13 @@ def _parse_json(raw: str) -> dict:
     if not m:
         raise ValueError("JSON 없음")
     return json.loads(m.group(0))
+
+# ─────────────────────────── 서버(server/app.py)가 부르는 이름 ───────────────────────────
+def report(session: dict, context: list):
+    """→ (리포트 dict, 공급자 이름). A 의 서버가 이 이름·형태로 부른다."""
+    return make_report(session, context), PROVIDER
+
+
+def chat(selection: str, question: str, history: list | None = None, recent_context: list | None = None) -> str:
+    """Side Chat · 알약 위 질문칸 공용. 서버가 최근 맥락을 넘기면 근거로 쓴다 (안 넘기면 선택 부분만)."""
+    return side_chat(selection, question, history or [], recent_context or [])

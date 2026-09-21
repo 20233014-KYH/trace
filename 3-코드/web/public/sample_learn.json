@@ -1,0 +1,784 @@
+{
+ "session": {
+  "id": "sample-learn-0001",
+  "date": "2026-09-22",
+  "start": "14:00:00",
+  "end": "14:20:00",
+  "dur": "20분 0초",
+  "minutes": 21,
+  "sealed_at": "2026-09-22T14:20:05+09:00",
+  "anchor": "none",
+  "root": "4b1b92beae4e5c03a39097cca6f10b296adbb48166107ee2f2a56d1719184fcb",
+  "segments": [
+   {
+    "s": 0.02,
+    "e": 5.0,
+    "cat": "resource",
+    "title": "3주차_예외처리.pdf"
+   },
+   {
+    "s": 5.0,
+    "e": 7.02,
+    "cat": "work",
+    "title": "Main.java - java-hw2"
+   },
+   {
+    "s": 7.02,
+    "e": 9.67,
+    "cat": "ai",
+    "title": "chatgpt.com"
+   },
+   {
+    "s": 9.67,
+    "e": 11.52,
+    "cat": "work",
+    "title": "Main.java - java-hw2"
+   },
+   {
+    "s": 11.52,
+    "e": 14.0,
+    "cat": "resource",
+    "title": "docs.oracle.com"
+   },
+   {
+    "s": 14.0,
+    "e": 15.17,
+    "cat": "other",
+    "title": ""
+   },
+   {
+    "s": 15.17,
+    "e": 20.0,
+    "cat": "work",
+    "title": "Main.java - java-hw2"
+   }
+  ],
+  "typed": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   80,
+   51,
+   0,
+   0,
+   18,
+   66,
+   0,
+   0,
+   0,
+   30,
+   25,
+   33,
+   0,
+   0,
+   0,
+   0
+  ],
+  "deleted": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   8,
+   9,
+   0,
+   0,
+   2,
+   14,
+   0,
+   0,
+   0,
+   4,
+   1,
+   6,
+   0,
+   0,
+   0,
+   0
+  ],
+  "pastes": [
+   {
+    "m": 9,
+    "len": 200,
+    "ai": true,
+    "matched": true,
+    "ts": "14:09:42",
+    "target": "Code.exe",
+    "target_title": "Main.java - java-hw2",
+    "src": {
+     "app": "chrome.exe",
+     "title": "chatgpt.com",
+     "category": "ai"
+    },
+    "after_typed": 84
+   },
+   {
+    "m": 15,
+    "len": 14,
+    "ai": false,
+    "matched": true,
+    "ts": "14:15:12",
+    "target": "Code.exe",
+    "target_title": "Main.java - java-hw2",
+    "src": {
+     "app": "explorer.exe",
+     "title": "",
+     "category": "other"
+    },
+    "after_typed": 58
+   },
+   {
+    "m": 15,
+    "len": 77,
+    "ai": false,
+    "matched": false,
+    "ts": "14:15:30",
+    "target": "Code.exe",
+    "target_title": "Main.java - java-hw2",
+    "src": null,
+    "after_typed": 58
+   },
+   {
+    "m": 16,
+    "len": 120,
+    "ai": true,
+    "matched": true,
+    "ts": "14:16:20",
+    "target": "WINWORD.EXE",
+    "target_title": "보고서.docx - Word",
+    "src": {
+     "app": "chrome.exe",
+     "title": "보고서.docx - Word",
+     "category": "ai"
+    },
+    "after_typed": 33
+   }
+  ],
+  "undos": [
+   6,
+   10
+  ],
+  "flow": [
+   {
+    "ts": "14:00:01",
+    "app": "Acrobat.exe",
+    "title": "3주차_예외처리.pdf",
+    "cat": "resource",
+    "typed": 0,
+    "deleted": 0,
+    "items": []
+   },
+   {
+    "ts": "14:05:00",
+    "app": "Code.exe",
+    "title": "Main.java - java-hw2",
+    "cat": "work",
+    "typed": 131,
+    "deleted": 17,
+    "items": [
+     {
+      "ts": "14:06:40",
+      "kind": "undo",
+      "text": "되돌리기 (Ctrl+Z)"
+     }
+    ]
+   },
+   {
+    "ts": "14:07:00",
+    "app": "chrome.exe",
+    "title": "ChatGPT",
+    "cat": "ai",
+    "typed": 0,
+    "deleted": 0,
+    "items": []
+   },
+   {
+    "ts": "14:07:01",
+    "app": "chrome.exe",
+    "title": "chatgpt.com",
+    "cat": "ai",
+    "typed": 0,
+    "deleted": 0,
+    "items": [
+     {
+      "ts": "14:09:30",
+      "kind": "copy",
+      "text": "복사 200자"
+     }
+    ]
+   },
+   {
+    "ts": "14:09:40",
+    "app": "Code.exe",
+    "title": "Main.java - java-hw2",
+    "cat": "work",
+    "typed": 84,
+    "deleted": 16,
+    "items": [
+     {
+      "ts": "14:09:42",
+      "kind": "paste",
+      "len": 200,
+      "src": {
+       "app": "chrome.exe",
+       "title": "chatgpt.com",
+       "category": "ai"
+      },
+      "text": "붙여넣기 200자"
+     },
+     {
+      "ts": "14:10:20",
+      "kind": "undo",
+      "text": "되돌리기 (Ctrl+Z)"
+     },
+     {
+      "ts": "14:11:00",
+      "kind": "file",
+      "text": "파일 modified · Main.java"
+     }
+    ]
+   },
+   {
+    "ts": "14:11:30",
+    "app": "chrome.exe",
+    "title": "Java Docs",
+    "cat": "other",
+    "typed": 0,
+    "deleted": 0,
+    "items": []
+   },
+   {
+    "ts": "14:11:31",
+    "app": "chrome.exe",
+    "title": "docs.oracle.com",
+    "cat": "resource",
+    "typed": 0,
+    "deleted": 0,
+    "items": []
+   },
+   {
+    "ts": "14:14:00",
+    "app": "KakaoTalk.exe",
+    "title": "",
+    "cat": "other",
+    "typed": 30,
+    "deleted": 4,
+    "items": []
+   },
+   {
+    "ts": "14:15:00",
+    "app": "explorer.exe",
+    "title": "",
+    "cat": "other",
+    "typed": 0,
+    "deleted": 0,
+    "items": [
+     {
+      "ts": "14:15:05",
+      "kind": "copy",
+      "text": "복사 14자"
+     }
+    ]
+   },
+   {
+    "ts": "14:15:10",
+    "app": "Code.exe",
+    "title": "Main.java - java-hw2",
+    "cat": "work",
+    "typed": 25,
+    "deleted": 1,
+    "items": [
+     {
+      "ts": "14:15:12",
+      "kind": "paste",
+      "len": 14,
+      "src": {
+       "app": "explorer.exe",
+       "title": "",
+       "category": "other"
+      },
+      "text": "붙여넣기 14자"
+     },
+     {
+      "ts": "14:15:30",
+      "kind": "paste",
+      "len": 77,
+      "src": null,
+      "text": "붙여넣기 77자"
+     }
+    ]
+   },
+   {
+    "ts": "14:16:00",
+    "app": "WINWORD.EXE",
+    "title": "보고서.docx - Word",
+    "cat": "work",
+    "typed": 33,
+    "deleted": 6,
+    "items": [
+     {
+      "ts": "14:16:10",
+      "kind": "copy",
+      "text": "복사 120자"
+     },
+     {
+      "ts": "14:16:20",
+      "kind": "paste",
+      "len": 120,
+      "src": {
+       "app": "chrome.exe",
+       "title": "보고서.docx - Word",
+       "category": "ai"
+      },
+      "text": "붙여넣기 120자"
+     },
+     {
+      "ts": "14:16:22",
+      "kind": "doc",
+      "text": "붙여넣은 자리: 문단 4"
+     },
+     {
+      "ts": "14:16:25",
+      "kind": "doc",
+      "text": "문서 문단 4 +120자 / -0자"
+     },
+     {
+      "ts": "14:16:50",
+      "kind": "doc",
+      "text": "문서 문단 4 +27자 / -6자"
+     },
+     {
+      "ts": "14:16:55",
+      "kind": "doc",
+      "text": "저장 · chars 1530 · words 310"
+     },
+     {
+      "ts": "14:17:00",
+      "kind": "idle_start",
+      "text": "자리 비움 (5분 무입력)"
+     },
+     {
+      "ts": "14:19:30",
+      "kind": "idle_end",
+      "text": "복귀"
+     }
+    ]
+   }
+  ],
+  "chain": [
+   [
+    "14:00:00",
+    "session_start",
+    "세션 시작 · learn",
+    "0000000000000000000000000000000000000000000000000000000000000000",
+    "d4775c150607dbc3e922a22394dd7057cde609fdc25238ab51874768cce99e63"
+   ],
+   [
+    "14:00:01",
+    "window",
+    "Acrobat.exe · 3주차_예외처리.pdf",
+    "d4775c150607dbc3e922a22394dd7057cde609fdc25238ab51874768cce99e63",
+    "18dd59ee24201cbd9d1140df9fb2c8af5e863cc165f0f05b7c9ce1470fd2dcbf"
+   ],
+   [
+    "14:05:00",
+    "window",
+    "Code.exe · Main.java - java-hw2",
+    "18dd59ee24201cbd9d1140df9fb2c8af5e863cc165f0f05b7c9ce1470fd2dcbf",
+    "ba0db5a474ba3a34e330f561058f833e275ff1108398ac590f8c5437c22e6523"
+   ],
+   [
+    "14:05:10",
+    "keys",
+    "입력 42자 · 삭제 5자 · Code.exe",
+    "ba0db5a474ba3a34e330f561058f833e275ff1108398ac590f8c5437c22e6523",
+    "7c37b24183002be6dcc0bae49615072d4dd0d0d5de729c73e84a8f6dd9244c4d"
+   ],
+   [
+    "14:05:20",
+    "keys",
+    "입력 38자 · 삭제 3자 · Code.exe",
+    "7c37b24183002be6dcc0bae49615072d4dd0d0d5de729c73e84a8f6dd9244c4d",
+    "73eb0398d0c6b2e26b2634baf68653db3149faff11d7c1c0fbb8c033110383e3"
+   ],
+   [
+    "14:06:10",
+    "keys",
+    "입력 51자 · 삭제 9자 · Code.exe",
+    "73eb0398d0c6b2e26b2634baf68653db3149faff11d7c1c0fbb8c033110383e3",
+    "cb21f37ea5007d93701455d562c30c582b3c70c47806d9c0a8e6a606125c7e2e"
+   ],
+   [
+    "14:06:40",
+    "undo",
+    "되돌리기 (Ctrl+Z)",
+    "cb21f37ea5007d93701455d562c30c582b3c70c47806d9c0a8e6a606125c7e2e",
+    "b24867476ceac3321ca0e9556574fc3aebf83439bfeff3acaf3fe7b78af129ce"
+   ],
+   [
+    "14:07:00",
+    "window",
+    "chrome.exe · ChatGPT",
+    "b24867476ceac3321ca0e9556574fc3aebf83439bfeff3acaf3fe7b78af129ce",
+    "e92d804b5ba934e0583067883574ca6e66408a42baa62d20d12c1c9dd2649c39"
+   ],
+   [
+    "14:07:01",
+    "tab",
+    "chatgpt.com · ai",
+    "e92d804b5ba934e0583067883574ca6e66408a42baa62d20d12c1c9dd2649c39",
+    "4b1dc95c660e8dbb6a4ff7780a6830aa65473531b8e8427133c0520dbcb2991d"
+   ],
+   [
+    "14:09:30",
+    "copy",
+    "200자 · sha256:2cf8ffd5aef6… · chrome.exe",
+    "4b1dc95c660e8dbb6a4ff7780a6830aa65473531b8e8427133c0520dbcb2991d",
+    "7c023a18f2f776b2cc685d25edfe75b172615ed54edd85a58a10472c2a811cbd"
+   ],
+   [
+    "14:09:40",
+    "window",
+    "Code.exe · Main.java - java-hw2",
+    "7c023a18f2f776b2cc685d25edfe75b172615ed54edd85a58a10472c2a811cbd",
+    "7dea0861a2311f17792916973f84d9bd1f22c9b4d7e6077ce221c3d180723261"
+   ],
+   [
+    "14:09:42",
+    "paste",
+    "200자 · sha256:2cf8ffd5aef6… · Code.exe",
+    "7dea0861a2311f17792916973f84d9bd1f22c9b4d7e6077ce221c3d180723261",
+    "d04eb95fe0292c4e6f386fe0df60b55c40181316755d7e7faa374471271201ae"
+   ],
+   [
+    "14:09:55",
+    "keys",
+    "입력 18자 · 삭제 2자 · Code.exe",
+    "d04eb95fe0292c4e6f386fe0df60b55c40181316755d7e7faa374471271201ae",
+    "c9d3ac45062b81f68c0f14b483daa1070ac38650096ec15021e66c227e1e3e3e"
+   ],
+   [
+    "14:10:20",
+    "undo",
+    "되돌리기 (Ctrl+Z)",
+    "c9d3ac45062b81f68c0f14b483daa1070ac38650096ec15021e66c227e1e3e3e",
+    "49c170421a36d895fee10aebd02147487e13d22c8a8f1301c3ee13c7f13f7f12"
+   ],
+   [
+    "14:10:30",
+    "keys",
+    "입력 66자 · 삭제 14자 · Code.exe",
+    "49c170421a36d895fee10aebd02147487e13d22c8a8f1301c3ee13c7f13f7f12",
+    "2a0646b773d7b203a639976e09e362b717c3715afec93b1d319d9eac0ffe8f10"
+   ],
+   [
+    "14:11:00",
+    "file",
+    "modified · C:/work/java-hw2/Main.java · sha256:0788c9685f1a",
+    "2a0646b773d7b203a639976e09e362b717c3715afec93b1d319d9eac0ffe8f10",
+    "8144b1d66c78b8540aecc5c3347c5b6eacca5b2f14bf4e5dc5610b9870c2514b"
+   ],
+   [
+    "14:11:30",
+    "window",
+    "chrome.exe · Java Docs",
+    "8144b1d66c78b8540aecc5c3347c5b6eacca5b2f14bf4e5dc5610b9870c2514b",
+    "1848d994b9302e73780c0af7bd8d250341866460978f81e0fe8d5fd0aa0f7829"
+   ],
+   [
+    "14:11:31",
+    "tab",
+    "docs.oracle.com · resource",
+    "1848d994b9302e73780c0af7bd8d250341866460978f81e0fe8d5fd0aa0f7829",
+    "35a9e01c2f912bcce6ebcd68586171e429ee041bfd9c2aba5ccd5384b08fc45c"
+   ],
+   [
+    "14:14:00",
+    "window",
+    "KakaoTalk.exe",
+    "35a9e01c2f912bcce6ebcd68586171e429ee041bfd9c2aba5ccd5384b08fc45c",
+    "eedea8cbcc6808d20a4fcebbfd1f4eaa8997d47ce12477efe5338389a60cd7eb"
+   ],
+   [
+    "14:14:10",
+    "keys",
+    "입력 30자 · 삭제 4자 · KakaoTalk.exe",
+    "eedea8cbcc6808d20a4fcebbfd1f4eaa8997d47ce12477efe5338389a60cd7eb",
+    "5e60cd40d5918992610a626817b83bd71bfb3b221df2c823d42f7a57a712a4b9"
+   ],
+   [
+    "14:15:00",
+    "window",
+    "explorer.exe",
+    "5e60cd40d5918992610a626817b83bd71bfb3b221df2c823d42f7a57a712a4b9",
+    "f15b7ca89d799697b87a1044f27f95ec61b4ce79d7ecef51e46b86c5a06c5e62"
+   ],
+   [
+    "14:15:05",
+    "copy",
+    "14자 · sha256:e69b84e354a4… · explorer.exe",
+    "f15b7ca89d799697b87a1044f27f95ec61b4ce79d7ecef51e46b86c5a06c5e62",
+    "1a84fabed0de9acf5a64f0e853705c6019de2af3afd9081bb386245ce56fa494"
+   ],
+   [
+    "14:15:10",
+    "window",
+    "Code.exe · Main.java - java-hw2",
+    "1a84fabed0de9acf5a64f0e853705c6019de2af3afd9081bb386245ce56fa494",
+    "211d749e102e6aba930c6403041465b6a16c230986448b87e62c5b53806c96a2"
+   ],
+   [
+    "14:15:12",
+    "paste",
+    "14자 · sha256:e69b84e354a4… · Code.exe",
+    "211d749e102e6aba930c6403041465b6a16c230986448b87e62c5b53806c96a2",
+    "75bee5642d327dbfd4bdf48723d98cd63a5a25cd103a0bc5db3e7db9dc874a7f"
+   ],
+   [
+    "14:15:30",
+    "paste",
+    "77자 · sha256:4766284c64f4… · Code.exe",
+    "75bee5642d327dbfd4bdf48723d98cd63a5a25cd103a0bc5db3e7db9dc874a7f",
+    "7eba4de96cc9af77337b73814f164c4fa355d71895861d725d5dc6a6d2dbe191"
+   ],
+   [
+    "14:15:40",
+    "keys",
+    "입력 25자 · 삭제 1자 · Code.exe",
+    "7eba4de96cc9af77337b73814f164c4fa355d71895861d725d5dc6a6d2dbe191",
+    "bee94bde914f51f105ab30a0ebc3a34f4e4cef9fdc0dd041c0286f0b2ceac353"
+   ],
+   [
+    "14:16:00",
+    "window",
+    "WINWORD.EXE · 보고서.docx - Word",
+    "bee94bde914f51f105ab30a0ebc3a34f4e4cef9fdc0dd041c0286f0b2ceac353",
+    "18749fcc1d9e03ff53b33f5ad3f3354e1b0fc25880aea49c7ae20b436ccdab91"
+   ],
+   [
+    "14:16:10",
+    "copy",
+    "120자 · sha256:b16c66c85c58… · chrome.exe",
+    "18749fcc1d9e03ff53b33f5ad3f3354e1b0fc25880aea49c7ae20b436ccdab91",
+    "c7d260f63325b69323ce78f8af962b0acf76d53f2619cdb9ddbaeaa5c1731b47"
+   ],
+   [
+    "14:16:20",
+    "paste",
+    "120자 · sha256:b16c66c85c58… · WINWORD.EXE",
+    "c7d260f63325b69323ce78f8af962b0acf76d53f2619cdb9ddbaeaa5c1731b47",
+    "b7f2dfd4f4a7e18f8b78252fbded92cd781a96e6cdbb2b3698e542a245030647"
+   ],
+   [
+    "14:16:22",
+    "doc_paste_at",
+    "Word · 보고서.docx · 문단 4",
+    "b7f2dfd4f4a7e18f8b78252fbded92cd781a96e6cdbb2b3698e542a245030647",
+    "5392bbd4d19c74cf5b5dcc1930dba8cf2403e9213f188589d3b55118f49dfcc6"
+   ],
+   [
+    "14:16:25",
+    "doc_change",
+    "Word · 보고서.docx · 문단 4 · +120 · -0",
+    "5392bbd4d19c74cf5b5dcc1930dba8cf2403e9213f188589d3b55118f49dfcc6",
+    "6625b2173c4842ada083d460d3cad9cb083bb9d43b09250a821c31b3f72cef39"
+   ],
+   [
+    "14:16:40",
+    "keys",
+    "입력 33자 · 삭제 6자 · WINWORD.EXE",
+    "6625b2173c4842ada083d460d3cad9cb083bb9d43b09250a821c31b3f72cef39",
+    "13a70d3cb324d052bcb0a933a9d712bcc5bde6cff88aea964308302ebc90a57f"
+   ],
+   [
+    "14:16:50",
+    "doc_change",
+    "Word · 보고서.docx · 문단 4 · +27 · -6",
+    "13a70d3cb324d052bcb0a933a9d712bcc5bde6cff88aea964308302ebc90a57f",
+    "560dffdeb310c9c41f05b0c1ad19a31e55bd8aef76047bd4eef8045b9f29a3d5"
+   ],
+   [
+    "14:16:55",
+    "doc_save",
+    "Word · 보고서.docx · chars=1530 · words=310",
+    "560dffdeb310c9c41f05b0c1ad19a31e55bd8aef76047bd4eef8045b9f29a3d5",
+    "16daf9b820df936b5501fb623505e0215c864dfcb364533552721b9e656dbee2"
+   ],
+   [
+    "14:17:00",
+    "idle_start",
+    "idle_start",
+    "16daf9b820df936b5501fb623505e0215c864dfcb364533552721b9e656dbee2",
+    "448aeb532525e45be70e181d3fd166f695fc5b4cfed39bb7292236c103d6cd12"
+   ],
+   [
+    "14:19:30",
+    "idle_end",
+    "idle_end",
+    "448aeb532525e45be70e181d3fd166f695fc5b4cfed39bb7292236c103d6cd12",
+    "59c99b4e6b7e87655bbda82c5a7ec52355fef2edd0a8c53012230e9c6ccc0a5d"
+   ],
+   [
+    "14:20:00",
+    "session_end",
+    "세션 종료",
+    "59c99b4e6b7e87655bbda82c5a7ec52355fef2edd0a8c53012230e9c6ccc0a5d",
+    "4b1b92beae4e5c03a39097cca6f10b296adbb48166107ee2f2a56d1719184fcb"
+   ]
+  ],
+  "stats": {
+   "typed": 303,
+   "deleted": 44,
+   "pasted": 411,
+   "pasted_ai": 320,
+   "pasted_other": 91,
+   "total": 714,
+   "typed_pct": 42,
+   "pasted_pct": 58,
+   "cpm": 43,
+   "max_cpm": 80,
+   "edit_ratio": 15,
+   "undo": 2,
+   "pauses": 1,
+   "paste_count": 4,
+   "paste_ai_count": 2,
+   "ai_min": 2.7,
+   "ai_visits": 1,
+   "events": 37
+  },
+  "mode": "learn",
+  "work_id": "Java 과제 2"
+ },
+ "context": [
+  {
+   "id": "c01",
+   "ts": "2026-09-22T14:05:40+09:00",
+   "source": "vscode",
+   "kind": "error",
+   "text": "Exception in thread \"main\" java.lang.NullPointerException\n\tat Main.main(Main.java:12)",
+   "meta": {
+    "file": "Main.java",
+    "line": 12
+   }
+  },
+  {
+   "id": "c02",
+   "ts": "2026-09-22T14:07:10+09:00",
+   "source": "browser",
+   "kind": "ai_question",
+   "text": "NullPointerException이 발생하는 이유가 뭐야?",
+   "meta": {
+    "domain": "chatgpt.com"
+   }
+  },
+  {
+   "id": "c03",
+   "ts": "2026-09-22T14:07:40+09:00",
+   "source": "browser",
+   "kind": "ai_answer_excerpt",
+   "text": "NullPointerException은 초기화되지 않은 객체 참조를 사용할 때 발생합니다. User user; 는 선언만 한 것이고, user = new User(); 로 객체를 만들어야 합니다. 선언은 이름표를 만드는 것, 생성(new)은 실제 객체를 메모리에 만드는 것입니다. 이름표만 있고 객체가 없으면 null 입니다. 쓰기 전에 반드시 생성하세요.",
+   "meta": {
+    "domain": "chatgpt.com"
+   }
+  },
+  {
+   "id": "c04",
+   "ts": "2026-09-22T14:10:30+09:00",
+   "source": "vscode",
+   "kind": "run_result",
+   "text": "정상 실행 · exit 0",
+   "meta": {
+    "file": "Main.java",
+    "ok": true
+   }
+  },
+  {
+   "id": "c05",
+   "ts": "2026-09-22T14:11:40+09:00",
+   "source": "browser",
+   "kind": "page",
+   "text": "Arrays (Java Platform SE 21) — docs.oracle.com",
+   "meta": {
+    "domain": "docs.oracle.com"
+   }
+  },
+  {
+   "id": "c06",
+   "ts": "2026-09-22T14:12:20+09:00",
+   "source": "chat",
+   "kind": "chat",
+   "text": "Q: 선언이랑 생성이 다른 거야?\nA: 네. 선언은 \"User를 담을 이름표\"를 만드는 것, 생성(new)은 실제 객체를 메모리에 만드는 것입니다.",
+   "meta": {}
+  },
+  {
+   "id": "c07",
+   "ts": "2026-09-22T14:16:25+09:00",
+   "source": "office",
+   "kind": "paste_at",
+   "text": "NullPointerException은 초기화되지 않은 객체 참조를 사용할 때 발생합니다. User user; 는 선언만 한 것이고 …",
+   "meta": {
+    "app": "WINWORD.EXE",
+    "file": "보고서.docx",
+    "where": "문단 4",
+    "chars": 120
+   }
+  },
+  {
+   "id": "c08",
+   "ts": "2026-09-22T14:17:00+09:00",
+   "source": "office",
+   "kind": "diff",
+   "text": "+ 이번 과제에서 배운 것은 객체를 쓰기 전에 반드시 생성해야 한다는 점이다.",
+   "meta": {
+    "app": "WINWORD.EXE",
+    "file": "보고서.docx",
+    "where": "문단 5",
+    "chars": 33
+   }
+  },
+  {
+   "id": "c09",
+   "ts": "2026-09-22T14:18:30+09:00",
+   "source": "office",
+   "kind": "save_stats",
+   "text": "",
+   "meta": {
+    "app": "WINWORD.EXE",
+    "file": "보고서.docx",
+    "chars": 1530,
+    "words": 310
+   }
+  }
+ ],
+ "report": {
+  "status": "ready",
+  "provider": "fake",
+  "runs": 1,
+  "generated_at": "2026-09-22T16:20:00+09:00",
+  "topics": [
+   "Java 예외 처리",
+   "NullPointerException — 초기화되지 않은 참조",
+   "객체 선언과 생성(new)의 차이",
+   "배열 문서 참고 (docs.oracle.com)"
+  ],
+  "struggles": [
+   "객체 초기화 — 14:05 오류 → 14:07 질문 → 14:09 답변 붙여넣기 → 14:10 재실행까지 5분, 물어보기에서 1번 더 질문"
+  ],
+  "process": [
+   "오류 발생 → AI에게 질문 → 답변 참고 → 200자 붙여넣기 → 직접 수정 84자 → 재실행 → 해결",
+   "docs.oracle.com 참고 → Word 보고서에 답변 120자 붙여넣기 → 직접 33자 추가 → 저장"
+  ],
+  "points": [
+   "NullPointerException이 발생하는 상황",
+   "참조 변수와 객체의 관계",
+   "오류 메시지(at Main.main(Main.java:12))로 위치 찾기"
+  ],
+  "todo": [
+   "선언과 생성의 차이 — 물어보기에서 물었지만 코드로 직접 확인하지 않음",
+   "보고서에 붙여넣은 120자를 자기 말로 다시 쓰기"
+  ]
+ }
+}

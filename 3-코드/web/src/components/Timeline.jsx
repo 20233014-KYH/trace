@@ -1,16 +1,19 @@
 // 분당 활동 레인 그래프 — 활성 창 / 직접 입력 / 붙여넣기 / 삭제·되돌리기
 // viewer.html 의 lanes() 를 그대로 옮김. 입력: session (계약 ②). 출력: SVG.
 import { COLORS, CAT, catColor, appName, srcName } from '../lib/format.jsx';
+import { KIND } from '../lib/learn.js';
 
-const LANE = { win: 26, typed: 110, paste: 90, edit: 40 };
+const LANE = { win: 26, mark: 30, typed: 110, paste: 90, edit: 40 };
 const GAP = 18;
 
-export default function Timeline({ s, width = 1000 }) {
+/** markers(Learn): [{id, m, kind}] → 활성 창 아래에 '학습 흐름' 레인. onMarker(id) · selected 로 맥락 패널과 연결 */
+export default function Timeline({ s, width = 1000, markers = null, selected = null, onMarker = null }) {
   const W = width, L = 110, R = 20, M = s.minutes;
   const X = (m) => L + (m / M) * (W - L - R);
   const bw = Math.max(1.5, (W - L - R) / M - 2);
   const y = { win: 8 };
-  y.typed = y.win + LANE.win + GAP; y.paste = y.typed + LANE.typed + GAP; y.edit = y.paste + LANE.paste + GAP;
+  y.mark = y.win + LANE.win + (markers ? 10 : 0);
+  y.typed = y.mark + (markers ? LANE.mark : 0) + GAP; y.paste = y.typed + LANE.typed + GAP; y.edit = y.paste + LANE.paste + GAP;
   const H = y.edit + LANE.edit + 34;
   const maxT = Math.max(...s.typed) || 1, maxP = Math.max(...s.pastes.map((p) => p.len)) || 1, maxD = Math.max(...s.deleted) || 1;
   const step = M > 120 ? 30 : M > 60 ? 15 : M > 30 ? 10 : 5;
@@ -53,6 +56,23 @@ export default function Timeline({ s, width = 1000 }) {
           </g>
         );
       })}
+
+      {/* 1b 학습 흐름 (Learn) — 맥락 마커. 누르면 오른쪽에 맥락 */}
+      {markers && <>
+        <Label yy={y.mark + 15} t="학습 흐름" sub="오류·질문·참고·적용" />
+        <line x1={L} y1={y.mark + LANE.mark / 2} x2={W - R} y2={y.mark + LANE.mark / 2} stroke="#eef0f3" />
+        {markers.map((mk, i) => {
+          const k = KIND[mk.kind] || KIND.selection, cx = X(mk.m), cy = y.mark + LANE.mark / 2, sel = mk.id === selected;
+          const prev = markers[i - 1], lift = prev && Math.abs(X(prev.m) - cx) < 16 ? -13 : 0;
+          return (
+            <g key={mk.id} style={{ cursor: onMarker ? 'pointer' : 'default' }} onClick={() => onMarker && onMarker(mk.id)}>
+              <circle cx={cx} cy={cy + lift} r={sel ? 10 : 8} fill={sel ? k.c : '#fff'} stroke={k.c} strokeWidth="2" />
+              <text x={cx} y={cy + lift + 4} fontSize="10" fontWeight="700" fill={sel ? '#fff' : k.c} textAnchor="middle">{k.ic}</text>
+              <title>{mk.ts.slice(11, 16)} {k.t}{mk.item?.text ? ` — ${mk.item.text.slice(0, 60)}` : mk.paste ? ` ${mk.paste.len}자` : ''}</title>
+            </g>
+          );
+        })}
+      </>}
 
       {/* 2 직접 입력 */}
       <Label yy={y.typed + LANE.typed / 2} t="직접 입력" sub="자/분" />
