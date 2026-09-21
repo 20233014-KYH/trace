@@ -7,6 +7,7 @@ keys.py — 키 입력 훅 (pynput). Proof Mode 에서는 필수, Learn Mode 에
   · 붙여넣기 (윈도우 Ctrl+V / 맥 ⌘V)                     → on_paste()
   · Ctrl+Z / Ctrl+Y (되돌리기 / 다시실행) → on_undo() / on_redo()
   · Ctrl+X (잘라내기)                     → on_cut()
+  · 복사 (윈도우 Ctrl+C / 맥 ⌘C)           → on_copy()   — 어느 창에서 눌렀는지만 기억 (내용 X)
 
 어떤 키가 눌렸는지, 무슨 글자인지는 어디에도 저장하지 않는다.
 이 파일 전체가 그 증거다 — 파일럿 학생에게 그대로 보여준다.
@@ -21,18 +22,18 @@ import threading
 #     맥     : ⌘(Command) + V / Z / X,  다시 실행은 ⌘⇧Z
 #   안 나누면 맥에서 붙여넣기가 한 번도 안 잡힌다.
 #   맥은 ⌘ 를 누른 채여도 char 가 제어문자가 아니라 글자('v')로 온다.
-MAC_CHARS = {"v": "paste", "z": "undo", "y": "redo", "x": "cut"}
+MAC_CHARS = {"v": "paste", "z": "undo", "y": "redo", "x": "cut", "c": "copy"}
 
-VK_V, VK_Z, VK_Y, VK_X = 0x56, 0x5A, 0x59, 0x58
-CTRL_CHARS = {"\x16": "paste", "\x1a": "undo", "\x19": "redo", "\x18": "cut"}
-CTRL_VKS = {VK_V: "paste", VK_Z: "undo", VK_Y: "redo", VK_X: "cut"}
+VK_V, VK_Z, VK_Y, VK_X, VK_C = 0x56, 0x5A, 0x59, 0x58, 0x43
+CTRL_CHARS = {"\x16": "paste", "\x1a": "undo", "\x19": "redo", "\x18": "cut", "\x03": "copy"}
+CTRL_VKS = {VK_V: "paste", VK_Z: "undo", VK_Y: "redo", VK_X: "cut", VK_C: "copy"}
 
 
 class KeyCounter:
-    def __init__(self, on_paste, on_undo=None, on_redo=None, on_cut=None):
+    def __init__(self, on_paste, on_undo=None, on_redo=None, on_cut=None, on_copy=None):
         from pynput import keyboard  # 지연 import: enabled=false 면 pynput 없어도 됨
         self._kb = keyboard
-        self._cb = {"paste": on_paste, "undo": on_undo, "redo": on_redo, "cut": on_cut}
+        self._cb = {"paste": on_paste, "undo": on_undo, "redo": on_redo, "cut": on_cut, "copy": on_copy}
         self._mod = False        # 윈도우면 Ctrl, 맥이면 ⌘ 를 누르고 있나
         self._shift = False      # 맥의 다시 실행(⌘⇧Z) 판별용
         self._typed = 0
