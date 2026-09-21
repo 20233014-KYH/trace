@@ -185,12 +185,14 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - 데이터 계약 ①②(`3-코드/README.md`) · API 계약 ③ 초안 · 기획서 수정 문구 · A 회의 자료 (`1-기획/`)
 
 **🔄 진행 중 (1~2주차)**
-- A와 API 계약 확정 → `docs/api.md` · ~~최종 기획서 5곳 반영~~ 반영 완료 (9/20, `1-기획/0-최종 기획서.md`) — A 확인만
-- Backend · DB (A) — 참고 서버를 기준으로
+- ~~A와 API 계약 확정~~ → `docs/api.md` 확정 (9/21, A) · ~~기획서 5곳~~ 반영 완료
+- ~~Backend · DB (A)~~ → `3-코드/server/` 완료 (9/21, A). 윈도우에서도 확인: 계약 검사 8/8 통과, 실제 수집기 → A 서버 → SQLite 저장 · 봉인 검증 ✓ (9/21 B)
+- 맥 수집기: `platform_mac.py` 가 새 collector.py 에 빠짐 → A가 브랜치로 PR 예정
+- 관통 1 은 **10/7(수)** — B 윈도우 → A 맥 서버는 127.0.0.1 이라 안 닿음 → 그날 ngrok 터널로
 - 확장 실사용 테스트 (Chrome에 로드 → 탭 전환이 콘솔에 찍히는지) · A의 React 골격에 `SessionView` 끼우기
 
 **📅 예정**
-- 3주차 ★관통 1: 수집기 → A 서버 → DB
+- 3주차 ★관통 1 (10/7 수): B 수집기 → A 맥 서버(ngrok) → DB 건수 대조
 - 5~6주차: A 골격에 Timeline 결합 · Learn 화면(맥락·Report) · ★관통 2 (실데이터 화면)
 - 7주차: 확장 맥락 정확도(사이트별 입력창) · `page` 맥락 · 서버 앵커(OpenTimestamps)
 - 8주차: Learn 지표 · 트레이 아이콘 · pywebview 창 · Learning Report 화면
@@ -235,8 +237,8 @@ Trace/
 ├─ README.md                      ← 이 문서. 처음이면 여기부터
 ├─ 1-기획/                        기획·계약·회의 — 글로 된 것 전부
 │  ├─ 0-최종 기획서.md              A와 합의한 기준 문서 · 9/20 합의 5곳 반영됨
-│  ├─ 1-개발 로드맵 (10주·B).md      합의된 결정 5개 · 주차별 할 일 · 이번 주
-│  ├─ 2-API 계약 초안 (docs-api).md  서버와 주고받는 규칙 (계약 ③) — A와 확정 후 저장소 docs/api.md 로
+│  ├─ 1-개발 로드맵 (10주·B).md      합의된 결정 11개 · 주차별 할 일 · 이번 주
+│  ├─ 2-API 계약 초안 (docs-api).md  초안 — 확정본은 docs/api.md (9/21, 기본키만 (session_id, id) 로)
 │  ├─ 3-최종 기획서 수정 문구 (5곳).md 9/20 합의를 기획서에 반영할 문장
 │  ├─ 4-A 회의자료 (2026-09-20).md   A와의 회의 자료
 │  ├─ 참고-2인 분업 가이드.pdf        A가 만든 분업·일정 가이드
@@ -248,19 +250,22 @@ Trace/
 ├─ 3-코드/                        실제로 도는 것 — 수집기 · 체인 · 참고 서버 · 뷰어
 │  ├─ README.md                    테스트 절차 · 데이터 계약 ①(이벤트 한 줄) ②(session.json)
 │  ├─ 0_서버시작.bat · 1_기록시작.bat · 2_결과보기.bat
-│  ├─ collector/   collector.py(수집기) · keys.py(횟수만) · office.py(Word·PPT 맥락) · bridge.py(확장 다리) · classify.py · domains.json · config.json · dev_receiver.py(참고 서버)
+│  ├─ collector/   collector.py(수집기) · keys.py(횟수만) · office.py(Word·PPT 맥락) · bridge.py(확장 다리) · classify.py · domains.json · config.json · dev_receiver.py(참고 서버 · 메모리 · 진짜 서버 아님)
+│  ├─ server/      **진짜 서버 (A)** — app.py · db.py(SQLite/PostgreSQL) · test_contract.py(계약 검사 8개) · README.md
 │  ├─ core/        chain.py(공용 해시) · derive.py(이벤트 → 화면 데이터) · llm.py(Learn AI 어댑터 · Qwen/Claude/fake)
 │  ├─ ui/          viewer.html(테스트 뷰어 · HTML 한 장)
 │  ├─ web/         React (Vite) — Timeline.jsx · SessionView.jsx · README.md
 │  ├─ extension/   Chrome 확장 (MV3) — background.js(탭) · content.js(Learn 맥락) · popup · README.md
 │  ├─ tests/       derive·chain 픽스처 — events_basic.jsonl → expected_basic.json · test_derive.py
 │  └─ data/        sample_session.json · (실행하면 events-날짜.jsonl · session.json)
-└─ 4-전달/                        남에게 보낸 묶음 (날짜별 zip)
-   └─ Trace-A전달-2026-09-20.zip    회의자료 + 계약 + 기획서 문구 + 코드
+├─ docs/                          A 쪽 문서 — api.md(확정 계약 ③) · 기획안 PDF · 작업 가이드 PDF
+└─ 9-옛버전/                      A의 9/19 이전 작업 (platform_mac.py 는 여기서 살려 옴)
 ```
 
+주고받기는 **GitHub** `https://github.com/20233014-KYH/trace` 로 (9/21부터 zip 안 씀).
+
 **처음이면 이 3개만:** `README.md` → `1-기획/1-개발 로드맵` → `2-디자인/목업 PNG/00-전체흐름과-화면원칙.png`
-**서버를 만든다면 (A):** `1-기획/2-API 계약` → `3-코드/README.md` → `3-코드/collector/dev_receiver.py`
+**서버 쪽 (A):** `docs/api.md` → `3-코드/server/README.md` → `python 3-코드/server/app.py` + `test_contract.py` (8개 통과가 정상)
 
 ## 9. 협업 규칙
 
@@ -268,5 +273,6 @@ Trace/
   자르는 원칙은 **"내가 만든 데이터는 내가 화면까지 그린다."**
 - **계약 3개**가 있어야 서로 안 기다린다: ① 이벤트 한 줄 · ② session.json · ③ API. 바꾸면 상대에게 알린다. 해시 계산은 `core/chain.py` 밖에서 하지 않는다.
 - **관문 3개**(3·6·9주차)는 미루지 않는다. 기능을 줄여서라도 그 주에 끝에서 끝까지 한 번 돌린다.
+- **Git (9/21 A 제안):** 하루 시작할 때 `git pull` · 브랜치는 3일 넘기지 않기 · `core/chain.py` `core/derive.py` `docs/api.md` 고칠 땐 먼저 말하기.
 - **README 갱신:** 기능이 되거나 결정이 바뀌면 6절(지금 상태)과 관련 절을 그날 고친다. 목업은 `2-디자인/목업 원본/build.py`로, 코드는 `3-코드/README.md`도 같이.
 - **문장 하나로 말할 수 있어야 한다:** "Trace는 AI를 썼는지 말해주지 않는다. AI로 건너뛴 자리를 본인에게 보여준다." 증명하는 것/않는 것을 두 사람이 같은 문장으로.
