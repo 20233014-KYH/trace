@@ -46,7 +46,9 @@
     "Adobe Illustrator 2025",
     "터미널",
     "Terminal",
-    "iTerm2"
+    "iTerm2",
+    "Cursor.exe",
+    "Windsurf.exe"
   ],
   "clipboard": {
     "enabled": true

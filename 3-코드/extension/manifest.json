@@ -1,15 +1,72 @@
 {
   "manifest_version": 3,
   "name": "Trace",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "탭 전환을 Trace 수집기에 알린다. Learn 모드에서만 AI 질문·선택 텍스트 등 맥락을 보낸다. 내용은 Proof 모드에서 절대 보내지 않는다.",
-  "permissions": ["tabs", "storage", "scripting"],
-  "host_permissions": ["http://127.0.0.1:5077/*", "https://claude.ai/*", "https://chatgpt.com/*", "https://chat.openai.com/*", "https://gemini.google.com/*", "https://www.perplexity.ai/*"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "action": { "default_popup": "popup.html", "default_title": "Trace" },
-  "content_scripts": [
-    { "matches": ["https://claude.ai/*", "https://chatgpt.com/*", "https://chat.openai.com/*", "https://gemini.google.com/*", "https://www.perplexity.ai/*"],
-      "js": ["content.js"], "run_at": "document_idle" }
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting"
   ],
-  "web_accessible_resources": [{ "resources": ["domains.json"], "matches": ["<all_urls>"] }]
+  "host_permissions": [
+    "http://127.0.0.1:5077/*",
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://gemini.google.com/*",
+    "https://www.perplexity.ai/*",
+    "https://perplexity.ai/*",
+    "https://copilot.microsoft.com/*",
+    "https://poe.com/*",
+    "https://wrtn.ai/*",
+    "https://*.wrtn.ai/*",
+    "https://grok.com/*",
+    "https://chat.deepseek.com/*",
+    "https://notebooklm.google.com/*",
+    "https://chat.mistral.ai/*",
+    "https://clova-x.naver.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Trace"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*",
+        "https://copilot.microsoft.com/*",
+        "https://poe.com/*",
+        "https://wrtn.ai/*",
+        "https://*.wrtn.ai/*",
+        "https://grok.com/*",
+        "https://chat.deepseek.com/*",
+        "https://notebooklm.google.com/*",
+        "https://chat.mistral.ai/*",
+        "https://clova-x.naver.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "domains.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }
