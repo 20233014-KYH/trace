@@ -6,7 +6,7 @@ import Timeline from './Timeline.jsx';
 import ContextPanel from './ContextPanel.jsx';
 import ReportView from './ReportView.jsx';
 import AskBox, { Pill } from './AskBox.jsx';
-import { markers, ctxCounts, KIND, LEGEND } from '../lib/learn.js';
+import { markers, ctxCounts, KIND, LEGEND, clockS } from '../lib/learn.js';
 import { fmt } from '../lib/format.jsx';
 import { stats } from '../lib/stats.js';
 import * as api from '../lib/api.js';
@@ -91,7 +91,7 @@ export default function LearnView({ s, ctx = [], report: report0 = null, live = 
         <div className="card scroll"><table>
           <thead><tr><th>시각</th><th>출처</th><th>종류</th><th>내용</th></tr></thead>
           <tbody>{ctx.map((it) => (
-            <tr key={it.id}><td className="mono dim">{it.ts.slice(11, 19)}</td><td>{it.source}</td><td>{KIND[it.kind]?.t || it.kind}</td><td className="sum">{it.text || <span className="dim">{JSON.stringify(it.meta)}</span>}</td></tr>
+            <tr key={it.id}><td className="mono dim">{clockS(it.ts)}</td><td>{it.source}</td><td>{KIND[it.kind]?.t || it.kind}</td><td className="sum">{it.text || <span className="dim">{JSON.stringify(it.meta)}</span>}</td></tr>
           ))}</tbody>
         </table><p className="note">맥락 원본 {ctx.length}건 (계약 ③ 5절). 이벤트 체인은 Proof 와 같은 형식 — "한눈에" 탭에서.</p></div>
       )}

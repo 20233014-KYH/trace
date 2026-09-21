@@ -110,7 +110,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 ### Learn Mode — 맥락 · Side Chat · Report (설계 완료 · 구현 예정)
 - **왜:** 이벤트만으론 "왜 AI를 썼는지"를 모릅니다. 오류 → 질문 → 답변 참고 → 직접 수정 → 해결이라는 **맥락**이 있어야 학습 과정이 됩니다.
 - **뭘:** 브라우저 확장이 AI 질문·답변 발췌·선택 텍스트·참고 페이지를 보냅니다(Must). **Word·PowerPoint는 이미 됩니다** — 열린 문서의
-  바뀐 문단·도형만(내용 ≤500자), 붙여넣은 자리, 저장 시 글자 수. VS Code(Should)가 남았고, 시간이 부족하면 거기서 멈춥니다. AI에게 묻는 길은 둘: **알약 위의 작은 질문칸**(항상 떠 있음, 누르면 채팅 패널이 위로 펼쳐졌다 ✕로 닫힘 — 웹에 가지 않고 바로 묻기)과
+  바뀐 문단·도형만(내용 ≤500자), 붙여넣은 자리, 저장 시 글자 수. **저장 파일 diff**(9/21)로 VS Code·IntelliJ·메모장 등 **어떤 편집기든** 저장할 때 "hello.py 5행 +17자"와 붙여넣은 자리를 남깁니다 — VS Code 확장 없이. 남은 건 오류 메시지(터미널·Jupyter)뿐입니다. AI에게 묻는 길은 둘: **알약 위의 작은 질문칸**(항상 떠 있음, 누르면 채팅 패널이 위로 펼쳐졌다 ✕로 닫힘 — 웹에 가지 않고 바로 묻기)과
   코드를 드래그했을 때 뜨는 작은 툴바 → Side Chat. 둘 다 같은 `/chat` 이고 대화는 세션 맥락에 남습니다. 학생이 리포트를 **열 때** AI가
   주요 학습 내용 · 어려움 · 학습 과정 · 학습 포인트 · 추가 학습을 정리한 리포트를 만듭니다(세션 종료 시 자동 생성 안 함 — 안 보는 세션엔 비용 0). 점수 없음, 공유 없음.
 
@@ -176,7 +176,8 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - 계약 ③ 참고 서버 (`3-코드/collector/dev_receiver.py`): 재계산·대조·수신 시각·지연 판정·봉인 검증
 - 테스트 뷰어 (`3-코드/ui/viewer.html`): 두 숫자 · 레인 그래프 · 앱별 활동 · 접힌 상세 로그 · 핵심 순간
 - **React 화면 뼈대** (`3-코드/web/`): 뷰어를 컴포넌트로 옮김 — `Timeline.jsx`(레인 그래프) · `SessionView.jsx`(한눈에). 샘플·파일·서버 세 경로로 데이터 로드. 실데이터로 렌더 확인 (9/20)
-- **Learn 화면 React 뼈대** (`3-코드/web/`, 9/21): `LearnView`(탭 3개) · `Timeline` 에 학습 흐름 마커 레인 · `ContextPanel`(직전 오류 → 질문 → 답변 → 이후) · `ReportView`(열 때 GET, 다시 생성 POST, 3회) · `AskBox`(알약 위 질문칸 ↔ 채팅 패널). 샘플(`sample_learn.json`)과 A 서버 둘 다로 확인 — report·chat·Proof 403. 서버에 **`GET /context` 제안** (아직 없음)
+- **Learn 화면 React 뼈대** (`3-코드/web/`, 9/21): `LearnView`(탭 3개) · `Timeline` 에 학습 흐름 마커 레인 · `ContextPanel`(직전 오류 → 질문 → 답변 → 이후) · `ReportView`(열 때 GET, 다시 생성 POST, 3회) · `AskBox`(알약 위 질문칸 ↔ 채팅 패널). 샘플(`sample_learn.json`)과 A 서버 둘 다로 확인 — report·chat·Proof 403. A 가 `GET /context` 추가(9/21) → **실데이터로 확인** (ChatGPT 질문 → 답변 복사 → 메모장 붙여넣기 → 직접 수정이 마커·맥락 패널에 그대로). 시각 표기 차이(확장 UTC · 수집기 KST) 화면에서 흡수
+- **저장 파일 diff** (`3-코드/collector/file_diff.py`, 9/21): 감시 폴더의 텍스트 파일이 저장되면 이전 내용과 비교 — 숫자(`doc_change` n행 +a/-b · `doc_paste_at`)는 두 모드 체인에, 바뀐 줄은 Learn 맥락(`diff` · `paste_at`, source `editor`)으로. **편집기 무관**(VS Code·IntelliJ·메모장). 실테스트: "AI 창 복사 17자 → VS Code 5행 붙여넣기 → 저장"이 Word 때와 같은 형식으로 남음. 시작 스냅샷 최대 3000개, 파일 내용은 메모리에만
 - **derive·chain 픽스처** (`3-코드/tests/`): 이벤트 30건 → 골든 session.json. 서버 이관 시 같은 출력 확인용. 한 글자 변조도 체인이 잡는 것 확인 (9/20)
 - **Word·PowerPoint 문서 변화** (`3-코드/collector/office.py`): 열린 문서를 5초마다 보고 — 숫자(문단 n +120자/-6자 · 붙여넣은 자리 · 저장 시 글자 수)는 **두 모드 공통 이벤트로 체인에**, 바뀐 텍스트는 Learn 맥락으로만. "AI 창 복사 100자 → Word 문단 2 +100자"가 Proof 체인에서 확인됨 (9/20)
 - **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 추천 · 9/20)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)
@@ -200,7 +201,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - 8주차: Learn 지표 · 트레이 아이콘 · pywebview 창 · Learning Report 화면
 - 9주차 ★관통 3 → 10주차 파일럿(수강생 10명) · 발표
 
-**아직 안 된 것:** VS Code·Office 맥락(Should), 설치 파일 exe(Could), 맥 창 제목(확장 설치 시 완전 동작으로 명시 예정)
+**아직 안 된 것:** 오류 메시지 맥락(터미널·Jupyter — VS Code 확장은 저장 파일 diff 로 대체, 9/21), 설치 파일 exe(Could), 맥 창 제목(확장 설치 시 완전 동작으로 명시 예정)
 
 ---
 

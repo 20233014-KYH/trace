@@ -2,7 +2,7 @@
 // 상태: none(열면 생성) → loading → ready | error. 다시 생성은 POST (세션당 3회).
 import { fmt } from '../lib/format.jsx';
 import { stats } from '../lib/stats.js';
-import { ctxCounts } from '../lib/learn.js';
+import { ctxCounts, clock } from '../lib/learn.js';
 
 export default function ReportView({ s, ctx, report, state, error, onOpen, onRegen }) {
   const st = stats(s), cc = ctxCounts(s, ctx);
@@ -43,7 +43,7 @@ export default function ReportView({ s, ctx, report, state, error, onOpen, onReg
           <div className="foot rep">
             <span>이 리포트는 세션의 이벤트와 맥락(AI 질문·답변 발췌·참고 페이지·오류·문서 변화)을 AI 가 정리한 것입니다. 점수·등급이 아니며, 내 PC 와 내 계정에만 저장됩니다.</span>
             <span style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-              생성 {report.generated_at ? report.generated_at.slice(11, 16) : ''} · {report.provider}{report._fake || report.provider === 'fake' ? ' (가짜 · 키 없음)' : ''} · {report.runs || 1}/3회
+              생성 {report.generated_at ? clock(report.generated_at) : ''} · {report.provider}{report._fake || report.provider === 'fake' ? ' (가짜 · 키 없음)' : ''} · {report.runs || 1}/3회
               <button className="btn sm" onClick={onRegen} disabled={(report.runs || 1) >= 3}>다시 생성</button>
             </span>
           </div>
