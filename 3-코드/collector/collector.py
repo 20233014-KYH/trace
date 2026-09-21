@@ -1,5 +1,5 @@
 """
-collector.py — Trace Tier 0 수집기 (Windows 상주 프로그램)
+collector.py — Trace Tier 0 수집기 (윈도우 · 맥 상주 프로그램)
 
 무엇을 잡나:
   · 세션 시작·종료 · 유휴(5분 무입력) · heartbeat(30초)
@@ -35,12 +35,22 @@ import time
 import uuid
 from datetime import datetime, timezone, timedelta
 
-import psutil
 import pyperclip
 import requests
-import win32api
-import win32gui
-import win32process
+
+# ── 운영체제에 따라 맞는 파일을 불러온다 ────────────────────────────
+#   platform_win.py / platform_mac.py 는 같은 이름의 함수를 갖는다:
+#     foreground()  idle_seconds()  input_permission_hint()
+#   나머지(클립보드 pyperclip · 키 pynput · 파일 watchdog)는 양쪽 다 돈다.
+if sys.platform == "win32":
+    import platform_win as osx
+elif sys.platform == "darwin":
+    import platform_mac as osx
+else:
+    sys.exit(f"맥과 윈도우만 지원합니다 (지금: {sys.platform}).")
+
+foreground = osx.foreground
+idle_seconds = osx.idle_seconds
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # ../core
@@ -290,25 +300,6 @@ class Sink:
             self._log_f.close()
 
 
-# ─────────────────────────── 활성 창 ───────────────────────────
-def foreground() -> tuple[str, str]:
-    try:
-        hwnd = win32gui.GetForegroundWindow()
-        title = win32gui.GetWindowText(hwnd) or ""
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        exe = psutil.Process(pid).name() if pid else "?"
-    except Exception:
-        return "?", ""
-    return exe, title
-
-
-def idle_seconds() -> float:
-    try:
-        return (win32api.GetTickCount() - win32api.GetLastInputInfo()) / 1000.0
-    except Exception:
-        return 0.0
-
-
 # ─────────────────────────── 수집기 본체 ───────────────────────────
 class Collector:
     def __init__(self, cfg: dict, mode: str, work_id: str, dry_run: bool):
@@ -361,6 +352,9 @@ class Collector:
         if cfg.get("clipboard", {}).get("enabled", True):
             self._clip_hash = self._read_clip_hash()
         if cfg.get("keys", {}).get("enabled"):
+            안내 = osx.input_permission_hint()
+            if 안내:
+                print("  ⚠️  " + 안내 + "\n")
             from keys import KeyCounter
             self._keys = KeyCounter(on_paste=self._on_paste,
                                     on_undo=lambda: self._on_edit("undo"),
@@ -374,7 +368,9 @@ class Collector:
                 print(f"  확장 다리 http://127.0.0.1:{bridge.PORT}  (브라우저 확장 → tab · context)")
             except OSError as e:
                 print(f"  확장 다리 실패 ({e}) — 확장 없이 계속")
-        if cfg.get("office", {}).get("enabled", True):
+        # Office 맥락은 윈도우 COM(pythoncom) 전용이다. 맥에서는 건너뛴다.
+        # (import 는 office.py 의 스레드 안에서 일어나서 try 로 안 잡힌다)
+        if cfg.get("office", {}).get("enabled", True) and sys.platform == "win32":
             try:
                 from office import OfficeWatcher
                 with_text = self.mode == "learn" and cfg.get("learn_context", {}).get("office", False)
@@ -532,7 +528,5 @@ def main():
 
 
 if __name__ == "__main__":
-    if sys.platform != "win32":
-        sys.exit("이 수집기는 Windows 전용입니다 (pywin32).")
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     main()
