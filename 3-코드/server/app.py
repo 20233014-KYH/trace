@@ -483,7 +483,13 @@ def chat(sid):
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
-    print(f"Trace Backend  http://127.0.0.1:5000/api   저장: {db.DB_URL}")
+    # ★ 맥은 5000 번을 AirPlay 수신 모드가 이미 쓰고 있다 ★
+    #   우리 서버가 꺼져 있으면 AirPlay 가 대신 대답하고 403 을 돌려준다.
+    #   수집기는 "서버가 있네" 하고 보냈다가 계속 거절당한다. 원인 찾기 어렵다.
+    #   맥에서는 포트를 바꾸는 쪽이 낫다:  TRACE_PORT=5050 python server/app.py
+    #   (윈도우는 이 문제가 없어 5000 그대로 쓰면 된다)
+    PORT = int(os.environ.get("TRACE_PORT", "5000"))
+    print(f"Trace Backend  http://127.0.0.1:{PORT}/api   저장: {db.DB_URL}")
     print("  계약: docs/api.md   ·  참고 구현과 같은 응답을 내야 합니다")
     print(f"  인증: {'강제' if 인증_강제 else '선택 (TRACE_REQUIRE_AUTH=1 로 켬)'}")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host="127.0.0.1", port=PORT, debug=False)
