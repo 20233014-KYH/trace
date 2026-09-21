@@ -48,6 +48,7 @@ from core import chain as C          # noqa: E402
 from classify import Classifier      # noqa: E402
 
 VERSION = "0.2.0"
+BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}   # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
 KST = timezone(timedelta(hours=9))
 
 
@@ -330,6 +331,8 @@ class Collector:
         self._last_hb = 0.0
         self._clip_hash = None
         self._clip_len = 0
+        self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
+        self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
         self._last_keys_flush = time.time()
@@ -342,7 +345,11 @@ class Collector:
         # 화이트리스트 밖 앱은 분류·제목 없이 other 로만 남긴다 (개인정보)
         if exe.lower() not in self.whitelist:
             return {"app": exe, "title": "", "category": "other"}
-        return {"app": exe, "title": title, "category": self.clf.by_app(exe, title)}
+        cat = self.clf.by_app(exe, title)
+        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지
+        if exe.lower() in BROWSERS and self._tab and cat == "other":
+            cat = self._tab[1]
+        return {"app": exe, "title": title, "category": cat}
 
     def run(self):
         cfg = self.cfg
@@ -365,7 +372,8 @@ class Collector:
             self._keys = KeyCounter(on_paste=self._on_paste,
                                     on_undo=lambda: self._on_edit("undo"),
                                     on_redo=lambda: self._on_edit("redo"),
-                                    on_cut=lambda: self._on_edit("cut"))
+                                    on_cut=lambda: self._on_edit("cut"),
+                                    on_copy=self._on_copy_key)
             self._keys.start()
         if cfg.get("bridge", {}).get("enabled", True):
             import bridge
@@ -420,9 +428,12 @@ class Collector:
             h = self._read_clip_hash()
             if h and h != self._clip_hash:
                 self._clip_hash = h
-                self._copies[h] = (self._cur[0], self._cur[2])
+                # Ctrl+C 를 누른 순간의 창을 쓴다 — 누르고 바로 작업표시줄을 클릭하면 폴링 시점엔 explorer.exe 가 앞에 있어서
+                src = self._copy_win if (self._copy_win and now - self._copy_at < 3) else (self._cur[0], self._cur[2])
+                self._copy_win = None
+                self._copies[h] = src
                 self.sink.emit({"type": "copy", "len": self._clip_len, "hash": h,
-                                "app": self._cur[0], "category": self._cur[2]})
+                                "app": src[0], "category": src[1]})
 
         if self._keys and now - self._last_keys_flush >= float(self.cfg["keys"].get("flush_sec", 10)):
             self._flush_keys()
@@ -440,6 +451,11 @@ class Collector:
             return None
         self._clip_len = len(text)
         return sha256_text(text)
+
+    def _on_copy_key(self):
+        """Ctrl+C — 창만 기억. 실제 copy 이벤트는 클립보드가 바뀐 걸 확인한 _tick 이 낸다."""
+        if self._cur:
+            self._copy_win, self._copy_at = (self._cur[0], self._cur[2]), time.time()
 
     def _on_paste(self):
         h = self._read_clip_hash()
@@ -473,7 +489,7 @@ class Collector:
     def _on_tab(self, body):
         """확장이 보낸 탭 전환. 도메인으로 분류해 체인에 넣는다 (창 제목 키워드보다 정확)."""
         domain = (body.get("domain") or "").lower()
-        cat = self.clf.by_domain(domain)
+        cat = self.clf.by_domain(domain) if domain else "other"   # "" = 새 탭·chrome:// 등 내부 페이지
         self._tab = (domain, cat, body.get("title", ""))
         self.sink.emit({"type": "tab", "domain": domain, "category": cat, "title": (body.get("title") or "")[:80]})
 

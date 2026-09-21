@@ -7,22 +7,23 @@ keys.py — 키 입력 훅 (pynput). Proof Mode 에서는 필수, Learn Mode 에
   · Ctrl+V (붙여넣기)                     → on_paste()
   · Ctrl+Z / Ctrl+Y (되돌리기 / 다시실행) → on_undo() / on_redo()
   · Ctrl+X (잘라내기)                     → on_cut()
+  · Ctrl+C (복사)                         → on_copy()   — 어느 창에서 눌렀는지만 기억 (내용 X)
 
 어떤 키가 눌렸는지, 무슨 글자인지는 어디에도 저장하지 않는다.
 이 파일 전체가 그 증거다 — 파일럿 학생에게 그대로 보여준다.
 """
 import threading
 
-VK_V, VK_Z, VK_Y, VK_X = 0x56, 0x5A, 0x59, 0x58
-CTRL_CHARS = {"\x16": "paste", "\x1a": "undo", "\x19": "redo", "\x18": "cut"}
-CTRL_VKS = {VK_V: "paste", VK_Z: "undo", VK_Y: "redo", VK_X: "cut"}
+VK_V, VK_Z, VK_Y, VK_X, VK_C = 0x56, 0x5A, 0x59, 0x58, 0x43
+CTRL_CHARS = {"\x16": "paste", "\x1a": "undo", "\x19": "redo", "\x18": "cut", "\x03": "copy"}
+CTRL_VKS = {VK_V: "paste", VK_Z: "undo", VK_Y: "redo", VK_X: "cut", VK_C: "copy"}
 
 
 class KeyCounter:
-    def __init__(self, on_paste, on_undo=None, on_redo=None, on_cut=None):
+    def __init__(self, on_paste, on_undo=None, on_redo=None, on_cut=None, on_copy=None):
         from pynput import keyboard  # 지연 import: enabled=false 면 pynput 없어도 됨
         self._kb = keyboard
-        self._cb = {"paste": on_paste, "undo": on_undo, "redo": on_redo, "cut": on_cut}
+        self._cb = {"paste": on_paste, "undo": on_undo, "redo": on_redo, "cut": on_cut, "copy": on_copy}
         self._ctrl = False
         self._typed = 0
         self._deleted = 0
