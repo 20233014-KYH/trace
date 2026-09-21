@@ -1,5 +1,5 @@
 {
-  "_comment": "앱·도메인 분류. 매칭 순서: 도메인 정확 일치 → 와일드카드 → exe 이름 → 창 제목 키워드 → other. 학생이 자유롭게 추가 가능.",
+  "_comment": "앱·도메인 분류. 매칭 순서: 도메인 정확 일치 → 와일드카드 → exe 이름 → 창 제목 키워드 → other. 학생이 자유롭게 추가 가능. 맥은 exe 이름이 없고 창 제목도 못 읽으므로(화면 기록 권한 필요), 맥에서는 apps 의 앱 이름만으로 분류된다.",
   "categories": {
     "ai": {
       "label": "AI",
@@ -14,7 +14,10 @@
       ],
       "apps": [
         "claude.exe",
-        "ChatGPT.exe"
+        "ChatGPT.exe",
+        "Claude",
+        "ChatGPT",
+        "Gemini"
       ],
       "title_keywords": [
         "Claude",
@@ -50,7 +53,10 @@
         "Acrobat.exe",
         "AcroRd32.exe",
         "SumatraPDF.exe",
-        "msedge.exe:pdf"
+        "msedge.exe:pdf",
+        "Preview",
+        "미리보기",
+        "Books"
       ],
       "title_keywords": [
         ".pdf",
@@ -78,7 +84,18 @@
         "Photoshop.exe",
         "Illustrator.exe",
         "notepad++.exe",
-        "pycharm64.exe"
+        "pycharm64.exe",
+        "Code",
+        "Microsoft Word",
+        "Microsoft PowerPoint",
+        "Microsoft Excel",
+        "메모",
+        "Notes",
+        "Pages",
+        "Keynote",
+        "Numbers",
+        "Adobe Photoshop 2025",
+        "Adobe Illustrator 2025"
       ],
       "title_keywords": []
     },

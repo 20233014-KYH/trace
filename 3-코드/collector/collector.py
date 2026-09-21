@@ -1,5 +1,5 @@
 """
-collector.py — Trace Tier 0 수집기 (Windows 상주 프로그램)
+collector.py — Trace Tier 0 수집기 (윈도우 · 맥 상주 프로그램)
 
 무엇을 잡나:
   · 세션 시작·종료 · 유휴(5분 무입력) · heartbeat(30초)
@@ -35,12 +35,22 @@ import time
 import uuid
 from datetime import datetime, timezone, timedelta
 
-import psutil
 import pyperclip
 import requests
-import win32api
-import win32gui
-import win32process
+
+# ── 운영체제에 따라 맞는 파일을 불러온다 ────────────────────────────
+#   platform_win.py / platform_mac.py 는 같은 이름의 함수를 갖는다:
+#     foreground()  idle_seconds()  input_permission_hint()
+#   나머지(클립보드 pyperclip · 키 pynput · 파일 watchdog)는 양쪽 다 돈다.
+if sys.platform == "win32":
+    import platform_win as osx
+elif sys.platform == "darwin":
+    import platform_mac as osx
+else:
+    sys.exit(f"맥과 윈도우만 지원합니다 (지금: {sys.platform}).")
+
+foreground = osx.foreground
+idle_seconds = osx.idle_seconds
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # ../core
@@ -48,6 +58,7 @@ from core import chain as C          # noqa: E402
 from classify import Classifier      # noqa: E402
 
 VERSION = "0.2.0"
+BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}   # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
 KST = timezone(timedelta(hours=9))
 
 
@@ -290,25 +301,6 @@ class Sink:
             self._log_f.close()
 
 
-# ─────────────────────────── 활성 창 ───────────────────────────
-def foreground() -> tuple[str, str]:
-    try:
-        hwnd = win32gui.GetForegroundWindow()
-        title = win32gui.GetWindowText(hwnd) or ""
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        exe = psutil.Process(pid).name() if pid else "?"
-    except Exception:
-        return "?", ""
-    return exe, title
-
-
-def idle_seconds() -> float:
-    try:
-        return (win32api.GetTickCount() - win32api.GetLastInputInfo()) / 1000.0
-    except Exception:
-        return 0.0
-
-
 # ─────────────────────────── 수집기 본체 ───────────────────────────
 class Collector:
     def __init__(self, cfg: dict, mode: str, work_id: str, dry_run: bool):
@@ -330,6 +322,8 @@ class Collector:
         self._last_hb = 0.0
         self._clip_hash = None
         self._clip_len = 0
+        self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
+        self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
         self._last_keys_flush = time.time()
@@ -342,7 +336,11 @@ class Collector:
         # 화이트리스트 밖 앱은 분류·제목 없이 other 로만 남긴다 (개인정보)
         if exe.lower() not in self.whitelist:
             return {"app": exe, "title": "", "category": "other"}
-        return {"app": exe, "title": title, "category": self.clf.by_app(exe, title)}
+        cat = self.clf.by_app(exe, title)
+        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지
+        if exe.lower() in BROWSERS and self._tab and cat == "other":
+            cat = self._tab[1]
+        return {"app": exe, "title": title, "category": cat}
 
     def run(self):
         cfg = self.cfg
@@ -361,11 +359,15 @@ class Collector:
         if cfg.get("clipboard", {}).get("enabled", True):
             self._clip_hash = self._read_clip_hash()
         if cfg.get("keys", {}).get("enabled"):
+            안내 = osx.input_permission_hint()
+            if 안내:
+                print("  ⚠️  " + 안내 + "\n")
             from keys import KeyCounter
             self._keys = KeyCounter(on_paste=self._on_paste,
                                     on_undo=lambda: self._on_edit("undo"),
                                     on_redo=lambda: self._on_edit("redo"),
-                                    on_cut=lambda: self._on_edit("cut"))
+                                    on_cut=lambda: self._on_edit("cut"),
+                                    on_copy=self._on_copy_key)
             self._keys.start()
         if cfg.get("bridge", {}).get("enabled", True):
             import bridge
@@ -374,7 +376,9 @@ class Collector:
                 print(f"  확장 다리 http://127.0.0.1:{bridge.PORT}  (브라우저 확장 → tab · context)")
             except OSError as e:
                 print(f"  확장 다리 실패 ({e}) — 확장 없이 계속")
-        if cfg.get("office", {}).get("enabled", True):
+        # Office 맥락은 윈도우 COM(pythoncom) 전용이다. 맥에서는 건너뛴다.
+        # (import 는 office.py 의 스레드 안에서 일어나서 try 로 안 잡힌다)
+        if cfg.get("office", {}).get("enabled", True) and sys.platform == "win32":
             try:
                 from office import OfficeWatcher
                 with_text = self.mode == "learn" and cfg.get("learn_context", {}).get("office", False)
@@ -420,9 +424,12 @@ class Collector:
             h = self._read_clip_hash()
             if h and h != self._clip_hash:
                 self._clip_hash = h
-                self._copies[h] = (self._cur[0], self._cur[2])
+                # Ctrl+C 를 누른 순간의 창을 쓴다 — 누르고 바로 작업표시줄을 클릭하면 폴링 시점엔 explorer.exe 가 앞에 있어서
+                src = self._copy_win if (self._copy_win and now - self._copy_at < 3) else (self._cur[0], self._cur[2])
+                self._copy_win = None
+                self._copies[h] = src
                 self.sink.emit({"type": "copy", "len": self._clip_len, "hash": h,
-                                "app": self._cur[0], "category": self._cur[2]})
+                                "app": src[0], "category": src[1]})
 
         if self._keys and now - self._last_keys_flush >= float(self.cfg["keys"].get("flush_sec", 10)):
             self._flush_keys()
@@ -440,6 +447,11 @@ class Collector:
             return None
         self._clip_len = len(text)
         return sha256_text(text)
+
+    def _on_copy_key(self):
+        """Ctrl+C — 창만 기억. 실제 copy 이벤트는 클립보드가 바뀐 걸 확인한 _tick 이 낸다."""
+        if self._cur:
+            self._copy_win, self._copy_at = (self._cur[0], self._cur[2]), time.time()
 
     def _on_paste(self):
         h = self._read_clip_hash()
@@ -473,7 +485,7 @@ class Collector:
     def _on_tab(self, body):
         """확장이 보낸 탭 전환. 도메인으로 분류해 체인에 넣는다 (창 제목 키워드보다 정확)."""
         domain = (body.get("domain") or "").lower()
-        cat = self.clf.by_domain(domain)
+        cat = self.clf.by_domain(domain) if domain else "other"   # "" = 새 탭·chrome:// 등 내부 페이지
         self._tab = (domain, cat, body.get("title", ""))
         self.sink.emit({"type": "tab", "domain": domain, "category": cat, "title": (body.get("title") or "")[:80]})
 
@@ -532,7 +544,5 @@ def main():
 
 
 if __name__ == "__main__":
-    if sys.platform != "win32":
-        sys.exit("이 수집기는 Windows 전용입니다 (pywin32).")
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     main()

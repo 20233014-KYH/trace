@@ -16,16 +16,17 @@ async function refreshStatus() {
 }
 
 function domainOf(url) {
-  try { const u = new URL(url); return u.protocol.startsWith("http") ? u.hostname.replace(/^www\./, "") : null; }
-  catch { return null; }
+  // http(s) 가 아닌 내부 페이지(새 탭 · chrome://)는 "" — 수집기가 "AI 탭에서 나갔다"로 알 수 있게 빈 도메인도 보낸다
+  try { const u = new URL(url); return u.protocol.startsWith("http") ? u.hostname.replace(/^www\./, "") : ""; }
+  catch { return ""; }
 }
 
 async function report(tab) {
   if (!tab || !tab.url) return;
   const domain = domainOf(tab.url);
-  if (!domain || domain === last) return;
+  if (domain === last) return;
   last = domain;
-  const ev = { type: "tab", domain, title: (tab.title || "").slice(0, 80) };
+  const ev = { type: "tab", domain, title: domain ? (tab.title || "").slice(0, 80) : "(브라우저 내부 페이지)" };
   try {
     const r = await fetch(BRIDGE + "/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ev) });
     console.log("[Trace] tab →", domain, r.status);

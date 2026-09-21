@@ -92,7 +92,7 @@ def derive(evs):
         elif t == "tab":
             # 확장이 보낸 탭 전환: 현재 창이 브라우저면 분류·제목을 도메인 기준으로 바꾼다 (창 제목 키워드보다 정확)
             if cur and cur[3] in BROWSERS:
-                cat, title, m = e.get("category", "other"), e.get("domain", ""), mf(e)
+                cat, title, m = e.get("category", "other"), e.get("domain") or e.get("title", ""), mf(e)   # 내부 페이지는 domain "" → 제목으로
                 if not (cur[0] == cat and cur[1] == title):
                     segments.append({"s": cur[2], "e": m, "cat": cur[0], "title": cur[1]})
                     cur = (cat, title, m, cur[3])
