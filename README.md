@@ -167,7 +167,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - **React 화면 뼈대** (`3-코드/web/`): 뷰어를 컴포넌트로 옮김 — `Timeline.jsx`(레인 그래프) · `SessionView.jsx`(한눈에). 샘플·파일·서버 세 경로로 데이터 로드. 실데이터로 렌더 확인 (9/20)
 - **derive·chain 픽스처** (`3-코드/tests/`): 이벤트 30건 → 골든 session.json. 서버 이관 시 같은 출력 확인용. 한 글자 변조도 체인이 잡는 것 확인 (9/20)
 - **Word·PowerPoint 문서 변화** (`3-코드/collector/office.py`): 열린 문서를 5초마다 보고 — 숫자(문단 n +120자/-6자 · 붙여넣은 자리 · 저장 시 글자 수)는 **두 모드 공통 이벤트로 체인에**, 바뀐 텍스트는 Learn 맥락으로만. "AI 창 복사 100자 → Word 문단 2 +100자"가 Proof 체인에서 확인됨 (9/20)
-- **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 결정)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)
+- **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 추천 · 9/20)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)
 - **브라우저 확장 뼈대** (`3-코드/extension/` + `collector/bridge.py`): 탭 전환 → 도메인 분류 → 수집기 체인. Learn 모드에서만 맥락(질문·선택·답변 발췌) 전달, Proof 면 거절. 다리 테스트 완료 (9/20)
 - 화면 설계 목업 22장 (`2-디자인/목업 PNG/`): 모드 선택 · Proof 기록/봉인/한눈에/증명서/검증 · Learn 맥락/**알약 위 질문칸(13b·13c, 9/21)**/Side Chat/Report/설정
 - 첫 실데이터 테스트 (9/20, 7분): 전 배치 체인 일치 · 봉인 검증 · AI 출처 붙여넣기 구분 ✓ · 버그 3개 수정
