@@ -1,4 +1,9 @@
 // content.js — AI 사이트에서만 로드된다 (manifest 의 matches). Learn 모드 맥락 수집.
+// 수집기와 같은 표기 — 현지 시각 + 시간대 (예: 2026-09-21T16:06:31+09:00). UTC 'Z' 로 보내면 로그를 눈으로 맞추기 어렵다
+function localIso() {
+  const d = new Date(), p = (n) => String(n).padStart(2, "0"), off = -d.getTimezoneOffset();
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${off >= 0 ? "+" : "-"}${p(Math.floor(Math.abs(off) / 60))}:${p(Math.abs(off) % 60)}`;
+}
 // 보내는 것 (다리가 Learn 모드일 때만 받아준다 · Proof 면 403 으로 거절):
 //   selection   — AI 로 넘어가기 직전 드래그한 글 ≤200자   (config.learn_context.selection 이 켜져 있을 때)
 //   ai_question — 내가 AI 입력창에 보낸 질문 ≤500자        (ai_question)
@@ -17,7 +22,7 @@ setInterval(loadToggles, 30000);
 
 function send(kind, text, meta = {}) {
   if (!toggles || !toggles[kind] || !text) return;
-  const item = { id: crypto.randomUUID(), ts: new Date().toISOString(), source: "browser", kind,
+  const item = { id: crypto.randomUUID(), ts: localIso(), source: "browser", kind,
                  text: text.slice(0, MAX[kind] || 500), meta: { domain: location.hostname.replace(/^www\./, ""), ...meta } };
   chrome.runtime.sendMessage({ type: "context", items: [item] }).catch(() => {});
 }
