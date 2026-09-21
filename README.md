@@ -176,7 +176,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - 계약 ③ 참고 서버 (`3-코드/collector/dev_receiver.py`): 재계산·대조·수신 시각·지연 판정·봉인 검증
 - 테스트 뷰어 (`3-코드/ui/viewer.html`): 두 숫자 · 레인 그래프 · 앱별 활동 · 접힌 상세 로그 · 핵심 순간
 - **React 화면 뼈대** (`3-코드/web/`): 뷰어를 컴포넌트로 옮김 — `Timeline.jsx`(레인 그래프) · `SessionView.jsx`(한눈에). 샘플·파일·서버 세 경로로 데이터 로드. 실데이터로 렌더 확인 (9/20)
-- **Learn 화면 React 뼈대** (`3-코드/web/`, 9/21): `LearnView`(탭 3개) · `Timeline` 에 학습 흐름 마커 레인 · `ContextPanel`(직전 오류 → 질문 → 답변 → 이후) · `ReportView`(열 때 GET, 다시 생성 POST, 3회) · `AskBox`(알약 위 질문칸 ↔ 채팅 패널). 샘플(`sample_learn.json`)과 A 서버 둘 다로 확인 — report·chat·Proof 403. 서버에 **`GET /context` 제안** (아직 없음)
+- **Learn 화면 React 뼈대** (`3-코드/web/`, 9/21): `LearnView`(탭 3개) · `Timeline` 에 학습 흐름 마커 레인 · `ContextPanel`(직전 오류 → 질문 → 답변 → 이후) · `ReportView`(열 때 GET, 다시 생성 POST, 3회) · `AskBox`(알약 위 질문칸 ↔ 채팅 패널). 샘플(`sample_learn.json`)과 A 서버 둘 다로 확인 — report·chat·Proof 403. A 가 `GET /context` 추가(9/21) → **실데이터로 확인** (ChatGPT 질문 → 답변 복사 → 메모장 붙여넣기 → 직접 수정이 마커·맥락 패널에 그대로). 시각 표기 차이(확장 UTC · 수집기 KST) 화면에서 흡수
 - **derive·chain 픽스처** (`3-코드/tests/`): 이벤트 30건 → 골든 session.json. 서버 이관 시 같은 출력 확인용. 한 글자 변조도 체인이 잡는 것 확인 (9/20)
 - **Word·PowerPoint 문서 변화** (`3-코드/collector/office.py`): 열린 문서를 5초마다 보고 — 숫자(문단 n +120자/-6자 · 붙여넣은 자리 · 저장 시 글자 수)는 **두 모드 공통 이벤트로 체인에**, 바뀐 텍스트는 Learn 맥락으로만. "AI 창 복사 100자 → Word 문단 2 +100자"가 Proof 체인에서 확인됨 (9/20)
 - **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 추천 · 9/20)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)

@@ -18,13 +18,19 @@ export const KIND = {
 };
 export const LEGEND = ['error', 'ai_question', 'page', 'paste', 'diff', 'run_result', 'solved', 'chat'];
 
-/** ISO ts → 세션 시작 기준 분 (float) */
+// 시각은 출처마다 표기가 다르다 — 수집기는 KST(+09:00), 확장은 UTC(Z), 세션 start/end 는 시간대 없는 KST.
+// 전부 Date 로 바꿔 계산하고, 화면엔 Asia/Seoul 로 찍는다 (수집기의 KST 상수와 같음).
+const TZ = 'Asia/Seoul', OFF = '+09:00';
+export const toDate = (ts) => new Date(/(Z|[+-]\d\d:\d\d)$/.test(ts) ? ts : ts + OFF);   // 시간대 없으면 KST 로 간주
+const HM = new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ });
+const HMS = new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: TZ });
+
+/** ts → 세션 시작 기준 분 (float) */
 export function minuteOf(s, ts) {
-  const [h0, m0, s0 = 0] = s.start.split(':').map(Number);
-  const [h, m, sec = 0] = ts.slice(11, 19).split(':').map(Number);
-  return h * 60 + m + sec / 60 - (h0 * 60 + m0 + s0 / 60);
+  return (toDate(ts) - toDate(`${s.date}T${s.start.length === 5 ? s.start + ':00' : s.start}`)) / 60000;
 }
-export const clock = (ts) => ts.slice(11, 16);
+export const clock = (ts) => HM.format(toDate(ts));        // "16:06"
+export const clockS = (ts) => HMS.format(toDate(ts));      // "16:06:31"
 
 /** 마커 = 맥락 항목(답변 발췌·저장 제외) + 세션의 붙여넣기. 시간순 */
 export function markers(s, ctx = []) {
@@ -35,7 +41,8 @@ export function markers(s, ctx = []) {
     out.push({ id: it.id, m: minuteOf(s, it.ts), ts: it.ts, kind, item: it });
   }
   for (const p of s.pastes || []) {
-    out.push({ id: `p-${p.ts}`, m: p.m + 0.5, ts: `${s.date}T${p.ts}`, kind: 'paste', paste: p });
+    const ts = `${s.date}T${p.ts}${OFF}`;
+    out.push({ id: `p-${p.ts}`, m: minuteOf(s, ts), ts, kind: 'paste', paste: p });   // p.m 은 정수 분 — 초 단위 위치는 ts 로
   }
   return out.sort((a, b) => a.m - b.m);
 }
@@ -50,9 +57,9 @@ export function contextAround(s, ctx, mk) {
 
   // 이후 — 마커 뒤 10분 안의 사실: 붙여넣기 · 직접 입력 · 실행 · 문서 변화
   const after = [];
-  for (const p of s.pastes || []) if (p.m >= t && p.m - t <= 10) after.push({ ts: p.ts.slice(0, 5), text: `${p.len}자 붙여넣기 → ${p.target_title || p.target}`, kind: 'paste', ai: p.ai });
+  for (const p of s.pastes || []) { const pm = minuteOf(s, `${s.date}T${p.ts}`); if (pm >= t && pm - t <= 10) after.push({ ts: p.ts.slice(0, 5), text: `${p.len}자 붙여넣기 → ${p.target_title || p.target}`, kind: 'paste', ai: p.ai }); }
   for (const w of s.flow || []) {
-    const wm = minuteOf(s, `${s.date}T${w.ts}`);
+    const wm = minuteOf(s, `${s.date}T${w.ts}`);   // KST 로 간주됨
     if (wm >= t && wm - t <= 10 && w.typed) after.push({ ts: w.ts.slice(0, 5), text: `직접 입력 ${w.typed}자 — ${w.title || w.app}`, kind: 'typed' });
   }
   for (const x of ctx.map((it) => ({ it, m: minuteOf(s, it.ts) }))) {

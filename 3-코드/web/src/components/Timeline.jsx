@@ -1,7 +1,7 @@
 // 분당 활동 레인 그래프 — 활성 창 / 직접 입력 / 붙여넣기 / 삭제·되돌리기
 // viewer.html 의 lanes() 를 그대로 옮김. 입력: session (계약 ②). 출력: SVG.
 import { COLORS, CAT, catColor, appName, srcName } from '../lib/format.jsx';
-import { KIND } from '../lib/learn.js';
+import { KIND, clock } from '../lib/learn.js';
 
 const LANE = { win: 26, mark: 30, typed: 110, paste: 90, edit: 40 };
 const GAP = 18;
@@ -68,7 +68,7 @@ export default function Timeline({ s, width = 1000, markers = null, selected = n
             <g key={mk.id} style={{ cursor: onMarker ? 'pointer' : 'default' }} onClick={() => onMarker && onMarker(mk.id)}>
               <circle cx={cx} cy={cy + lift} r={sel ? 10 : 8} fill={sel ? k.c : '#fff'} stroke={k.c} strokeWidth="2" />
               <text x={cx} y={cy + lift + 4} fontSize="10" fontWeight="700" fill={sel ? '#fff' : k.c} textAnchor="middle">{k.ic}</text>
-              <title>{mk.ts.slice(11, 16)} {k.t}{mk.item?.text ? ` — ${mk.item.text.slice(0, 60)}` : mk.paste ? ` ${mk.paste.len}자` : ''}</title>
+              <title>{clock(mk.ts)} {k.t}{mk.item?.text ? ` — ${mk.item.text.slice(0, 60)}` : mk.paste ? ` ${mk.paste.len}자` : ''}</title>
             </g>
           );
         })}
