@@ -74,8 +74,9 @@
     "flush_sec": 10
   },
   "files": {
-    "_comment": "감시 폴더. 비어 있으면 파일 이벤트 안 잡음. 저장 시 내용 SHA256만 기록.",
+    "_comment": "감시 폴더. 비어 있으면 파일 이벤트 안 잡음. 저장 시 내용 SHA256만 기록. diff=true 면 텍스트 파일은 저장할 때 이전과 비교해 +n/-m자(체인)와 바뀐 줄(Learn 맥락)을 남김 — 에디터 무관.",
     "watch_dirs": [],
+    "diff": true,
     "ignore_patterns": [
       ".git",
       "__pycache__",

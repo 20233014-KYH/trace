@@ -323,6 +323,8 @@ class Collector:
         self._clip_hash = None
         self._clip_len = 0
         self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
+        self._last_paste = None     # (time, len) 마지막 Ctrl+V — 저장 파일 diff 가 붙여넣은 자리 판정에 씀
+        self._fdiff = None
         self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
@@ -392,7 +394,17 @@ class Collector:
         fcfg = cfg.get("files", {})
         if fcfg.get("watch_dirs"):
             from file_watch import FileWatcher
-            self._files = FileWatcher(fcfg["watch_dirs"], fcfg.get("ignore_patterns", []), self.sink.emit, base=HERE)
+            on_saved = None
+            if fcfg.get("diff", True):
+                # 저장 파일 diff — 에디터 무관. 숫자는 두 모드 체인에, 바뀐 텍스트는 Learn 맥락으로만 (Office 와 같은 원칙)
+                from file_diff import FileDiff
+                self._fdiff = FileDiff(self.sink.emit, lambda: self._cur[0] if self._cur else "", lambda: self._last_paste,
+                                       emit_context=self._on_context if self.mode == "learn" else None)
+                on_saved = self._fdiff.on_saved
+            self._files = FileWatcher(fcfg["watch_dirs"], fcfg.get("ignore_patterns", []), self.sink.emit, base=HERE, on_saved=on_saved)
+            if on_saved:
+                n = self._fdiff.baseline(self._files.dirs, self._files.skip)
+                print(f"  저장 파일 diff 켜짐 · 기준 스냅샷 {n}개 (텍스트 파일 · 내용은 메모리에만)")
             self._files.start()
 
         try:
@@ -458,6 +470,7 @@ class Collector:
         exe, title = foreground()
         self.sink.emit({"type": "paste", "len": self._clip_len if h else 0, "hash": h or "",
                         "app": exe, "target_title": title if exe.lower() in self.whitelist else ""})
+        self._last_paste = (time.time(), self._clip_len if h else 0)
         src = self._copies.get(h)
         if src:
             print(f"        ↳ {src[0]}({src[1]}) 에서 복사한 것과 같은 해시")
