@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Trace 목업북 v0.3</title>
+<!--
+  ─────────────────────────────────────────────────────────────────────
+  Trace 목업북 v0.3 · 디자이너 전달용 · 2026-09-19
+  한 파일에 모든 화면. ?screen=ID 로 한 장씩 열림. build.py 가 PNG/PDF 로 뽑아 폴더 구조로 저장.
+
+  화면 ID (build.py 의 SCREENS 와 같아야 함)
+   overview  전체 흐름과 화면 원칙 (개요 페이지)
+   changes   기획 변화 정리 (PDF)
+   s01 모드선택 · s02 첫실행-수집동의(예정)
+   s03 기록중-알약 · s04 알약-hover · s05 봉인확인 · s06 봉인완료(예정)
+   s07 내기록-한눈에 · s08 내기록-체인원본 · s09 검증결과(예정)
+   s10 증명서-내보내기옵션(예정) · s11 증명서-문서 · s12 검증자-웹(예정)
+   s13 Learn-타임라인(예정) · s14 Learn-공유설정(예정)
+
+  ▶ 수정: :root 색 · DATA · 각 화면 함수(HTML 문자열) · META(제목·설명·칩)
+  ─────────────────────────────────────────────────────────────────────
+-->
+<style>
+  :root{
+    --page:#f3f4f7; --win:#fff; --win-bar:#f3f4f6; --line:#e5e7eb; --ink:#1c1f24; --muted:#6b7280; --soft:#f9fafb;
+    --brand:#5b4ddb; --proof:#7c3aed; --learn:#0ea5e9; --rec:#ef4444; --ok:#10b981; --warn:#f59e0b;
+    --g-typed:#10b981; --g-del:#9ca3af; --g-paste-ai:#ef4444; --g-paste:#f59e0b; --g-undo:#7c3aed;
+    --c-resource:#3b82f6; --c-work:#10b981; --c-ai:#f59e0b; --c-other:#cbd5e1;
+    --font:"Pretendard","Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    --mono:Consolas,"Cascadia Mono","JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--font);color:var(--ink);background:var(--page);font-size:14px;line-height:1.55}
+  /* 문서 헤더 (참고 형식) */
+  .doc{width:1400px;padding:22px 28px 30px}
+  .doc .hd{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .doc .num{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--brand);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:var(--mono)}
+  .doc .num.p{border-color:var(--proof);color:var(--proof)}.doc .num.l{border-color:var(--learn);color:var(--learn)}
+  .doc h1{font-size:24px;margin:0;letter-spacing:-.01em}
+  .doc .desc{color:var(--muted);font-size:15px;margin:2px 0 14px 42px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid;font-family:var(--mono);letter-spacing:-.01em}
+  .chip.new{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+  .chip.todo{border-color:#c7d2fe;background:#eef2ff;color:#4338ca}
+  .chip.chg{border-color:#fde68a;background:#fffbeb;color:#b45309}
+  .chip.keep{border-color:#e5e7eb;background:#fff;color:#6b7280}
+  .frame{border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08),0 10px 30px rgba(0,0,0,.06);background:#fff;border:1px solid #dfe2e7}
+  /* 데스크톱 배경 (알약·다이얼로그 맥락용) */
+  .desk{position:relative;width:1344px;height:760px;overflow:hidden;background:radial-gradient(1200px 600px at 30% 20%,#eef1f5 0,#dfe3e8 60%,#d3d8de 100%)}
+  .taskbar{position:absolute;left:0;right:0;bottom:0;height:40px;background:#f4f5f7;border-top:1px solid #d5d9de;display:flex;align-items:center;justify-content:flex-end;padding:0 14px;gap:14px;color:var(--muted);font-size:12px}
+  .tray{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;background:#fff;border:1px solid var(--line)}
+  .tray .dot{width:8px;height:8px;border-radius:50%;background:var(--rec)}
+  /* 앱 창 */
+  .win{background:var(--win);display:flex;flex-direction:column}
+  .win.float{position:absolute;border:1px solid #c9ced5;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden}
+  .bar{height:40px;background:var(--win-bar);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 14px;gap:10px;flex:none}
+  .bar .name{font-weight:700}.bar .name small{font-weight:400;color:var(--muted);margin-left:8px;font-size:12px}
+  .bar .ctl{margin-left:auto;display:flex;gap:18px;color:#6b7280;font-size:12px}
+  .body{flex:1;overflow:hidden}
+  /* 브라우저 창 */
+  .browser .bar{gap:8px}.browser .dots i{display:inline-block;width:11px;height:11px;border-radius:50%;background:#d1d5db;margin-right:5px}
+  .browser .url{margin-left:8px;border:1px solid var(--line);border-radius:8px;padding:4px 12px;font-family:var(--mono);font-size:12px;color:var(--muted);background:#fff}
+  /* 공통 */
+  h2{font-size:22px;margin:0 0 6px;letter-spacing:-.01em}h3{font-size:16px;margin:0 0 8px}h4{font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:600;letter-spacing:.01em}
+  .sub{color:var(--muted);margin:0}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 16px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap;font-weight:500}
+  .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+  .btn.proof{background:var(--proof);border-color:var(--proof);color:#fff}
+  .btn.danger{color:#b91c1c;border-color:#fecaca}
+  .btn.sm{padding:6px 12px;font-size:13px}
+  .badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;white-space:nowrap}
+  .badge.proof{background:#f5f3ff;border-color:#ddd6fe;color:#6d28d9}.badge.learn{background:#e0f2fe;border-color:#bae6fd;color:#0369a1}
+  .badge.ok{background:#ecfdf5;border-color:#a7f3d0;color:#047857}.badge.wait{background:#fffbeb;border-color:#fde68a;color:#b45309}
+  .mono{font-family:var(--mono);font-size:13px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px dashed var(--line)}.kv:first-child{border-top:0}.kv b{font-weight:600;text-align:right}
+  .card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
+  .callout{background:#f0f9ff;border:1px solid #bae6fd;color:#0c4a6e;border-radius:12px;padding:12px 16px;font-size:13.5px}
+  .warn{padding:12px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#92400e}
+  .sw{position:relative;width:44px;height:24px;border-radius:12px;background:#d1d5db;border:0;flex:none}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff}
+  .sw.on{background:var(--ok)}.sw.on::after{left:22px}
+  .sw.lock{background:var(--proof);opacity:.55}
+  .row{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.row:first-child{border-top:0}
+  .row .t{flex:1}.row .t b{display:block;font-size:14px}.row .t span{font-size:12.5px;color:var(--muted)}
+  /* 모드 선택 */
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0 18px}
+  .mode{border:2px solid var(--line);border-radius:14px;padding:22px;position:relative;background:#fff}
+  .mode.on{border-color:var(--proof);background:#faf8ff;box-shadow:0 0 0 4px #ede9fe}
+  .mode .tag{position:absolute;top:14px;right:14px}
+  .mode .ic{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+  .mode.p .ic{background:#ede9fe}.mode.l .ic{background:#e0f2fe}
+  .mode h3{margin:0 0 4px;font-size:18px}
+  .mode .d{color:var(--muted);font-size:13.5px;min-height:42px}
+  .mode ul{margin:12px 0 0;padding:0;list-style:none;font-size:13.5px}
+  .mode li{padding:6px 0;border-top:1px dashed var(--line)}.mode li::before{content:"·";margin-right:6px;color:var(--muted)}
+  /* 알약 */
+  .pill{position:absolute;right:14px;bottom:52px;height:26px;display:flex;align-items:center;gap:7px;padding:0 8px 0 9px;background:rgba(28,31,36,.92);color:#fff;border-radius:13px;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.25);font-variant-numeric:tabular-nums}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--rec);box-shadow:0 0 0 2px rgba(239,68,68,.35)}
+  .pill.learn .dot{background:var(--learn);box-shadow:0 0 0 2px rgba(14,165,233,.35)}
+  .pill .t{font-weight:600}.pill .n{color:#9ca3af}
+  .pill .stop{width:14px;height:14px;border-radius:4px;border:1px solid #4b5563;display:flex;align-items:center;justify-content:center;margin-left:2px}.pill .stop i{width:6px;height:6px;background:#e5e7eb;border-radius:1px;display:block}
+  .pop{position:absolute;right:14px;bottom:86px;width:240px;background:#fff;border:1px solid #c9ced5;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:10px 12px;font-size:11.5px}
+  .pop .r{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted)}.pop .r b{color:var(--ink);font-weight:600}
+  .pop .h{font-weight:700;font-size:12px;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .pop .a{display:flex;gap:6px;margin-top:8px}.pop .a .btn{flex:1;padding:4px 6px;font-size:11px;border-radius:6px}
+  .pop::after{content:"";position:absolute;right:26px;bottom:-6px;width:10px;height:10px;background:#fff;border-right:1px solid #c9ced5;border-bottom:1px solid #c9ced5;transform:rotate(45deg)}
+  .ask{position:absolute;right:14px;bottom:84px;width:190px;height:28px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 4px 0 9px;background:#fff;border:1px solid #c9ced5;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.14);font-size:12px;color:#9ca3af}
+  .ask .ic{width:14px;height:14px;border-radius:50%;background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .ask .send{margin-left:auto;width:20px;height:20px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+  .askpanel{position:absolute;right:14px;bottom:84px;width:360px;background:#fff;border:1px solid #7dd3fc;border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden}
+  .askpanel .hd{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:13px;font-weight:700;color:#0369a1}
+  .askpanel .hd .x{margin-left:auto;color:#6b7280;font-weight:400;font-size:14px}
+  .askpanel .msgs{padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;max-height:330px;overflow:auto}
+  .askpanel .me{align-self:flex-end;max-width:88%;background:#0ea5e9;color:#fff;padding:8px 11px;border-radius:12px 12px 2px 12px}
+  .askpanel .ai{max-width:92%;background:#fff;border:1px solid var(--line);padding:9px 11px;border-radius:12px 12px 12px 2px;line-height:1.55}
+  .askpanel .in{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+  .askpanel .in span{flex:1;border:1px solid var(--line);border-radius:9px;padding:7px 11px;color:var(--muted);font-size:12.5px}
+  .zoom{position:absolute;left:24px;bottom:60px;background:#fff;border:1px solid #c9ced5;border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:12px;color:var(--muted)}
+  .zoom .pill{position:static;transform:scale(2.2);transform-origin:left center;margin:14px 0 14px 4px;display:inline-flex}
+  .dim{position:absolute;inset:0;background:rgba(20,22,26,.35)}
+  .code{background:#1e1e1e;padding:18px 24px;font-family:var(--mono);font-size:13px;line-height:1.7;color:#d4d4d4;height:100%}
+  /* 내 기록 */
+  .rec-layout{display:flex;min-height:100%}
+  .side{width:250px;border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;flex:none}
+  .side .hd{padding:14px 16px 10px;font-weight:700;display:flex;align-items:center;gap:8px}.side .hd .badge{margin-left:auto}
+  .sess{padding:12px 16px;border-top:1px solid var(--line)}
+  .sess.on{background:#fff;border-left:3px solid var(--proof)}
+  .sess .d{font-weight:600;font-size:13.5px}.sess .m{font-size:12px;color:var(--muted);margin-top:2px}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .ro{background:#f5f3ff;border-bottom:1px solid #ddd6fe;color:#5b21b6;padding:8px 22px;font-size:13px}
+  .head{padding:16px 22px 0;display:flex;align-items:flex-start;gap:14px}.head .btns{margin-left:auto;display:flex;gap:8px}
+  .tabs{display:flex;gap:2px;padding:12px 22px 0;border-bottom:1px solid var(--line)}
+  .tabs span{padding:8px 14px;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}.tabs span.on{color:var(--ink);font-weight:600;border-color:var(--ink)}
+  .pane{padding:18px 22px 22px}
+  .verify{padding:10px 22px;border-top:1px solid var(--line);background:var(--soft);font-size:13px;color:var(--muted);display:flex;gap:18px;align-items:center}
+  /* 한눈에 v0.3 */
+  .hero{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .hero .h{padding:18px 22px}
+  .hero .h+.h{border-left:1px solid var(--line)}
+  .hero .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:2px 0 4px}
+  .hero .lbl{font-size:14px;font-weight:600}.hero .sm{font-size:13px;color:var(--muted)}
+  .comp{display:flex;height:26px;border-radius:8px;overflow:hidden;margin:14px 0 0}.comp i{display:block;height:100%}
+  .comp-legend{display:flex;gap:18px;font-size:13px;color:var(--muted);margin-top:8px}.comp-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+  .tile{border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:#fff}
+  .tile .k{font-size:13px;color:var(--muted);font-weight:600}.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-top:2px}.tile .v small{font-size:14px;font-weight:500;color:var(--muted)}.tile .h{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .lanes{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px 18px 8px;background:#fff}
+  .lanes svg{width:100%;height:auto;display:block}
+  .moments{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .mom{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;background:#fff}
+  .mom .t{font-family:var(--mono);font-size:13px;color:var(--muted);flex:none;padding-top:2px}
+  .mom .x{font-size:13.5px}.mom .x b{font-weight:600}
+  .mom .ic{width:10px;height:10px;border-radius:50%;flex:none;margin-top:7px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:600;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px}
+  td{padding:7px 12px;border-bottom:1px solid #f1f2f4;vertical-align:top;white-space:nowrap}td.sum{white-space:normal}
+  .t-window{color:#374151}.t-copy{color:#b45309}.t-paste{color:#b91c1c}.t-file{color:#047857}.t-keys{color:#047857}.t-undo{color:#6d28d9}.t-heartbeat{color:#9ca3af}
+  .link{color:#9ca3af}
+  .toggle{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;font-size:13.5px;font-weight:600;margin-top:12px}
+  .toggle .arr{color:var(--muted)}.toggle .cnt{margin-left:auto;color:var(--muted);font-weight:400;font-size:12.5px}
+  .toggle.open{border-radius:12px 12px 0 0}
+  .flowbox{border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;background:#fff;overflow:hidden}
+  .flowbox td{padding:7px 12px}
+  /* 증명서 문서 */
+  .paper{width:794px;min-height:1123px;background:#fff;margin:0 auto;padding:52px 56px;box-shadow:0 2px 12px rgba(0,0,0,.12);font-size:12.5px;position:relative}
+  .paper .top{display:flex;align-items:flex-start;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+  .paper .top .logo{font-weight:800;font-size:20px;letter-spacing:-.02em}
+  .paper h1{font-size:22px;margin:16px 0 4px}
+  .paper .grid{display:grid;grid-template-columns:150px 1fr;gap:5px 14px;font-size:12.5px;margin:12px 0}
+  .paper .grid .k{color:var(--muted)}
+  .paper .sec{margin-top:18px}.paper .sec h3{font-size:13.5px;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .paper .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .paper .box{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .paper .qr{width:92px;height:92px;border:1px solid var(--line);display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:5px}
+  .paper .qr i{background:#1c1f24;display:block}.paper .qr i.o{background:transparent}
+  .paper .foot{position:absolute;left:56px;right:56px;bottom:34px;display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+  .viewer{background:#e5e7eb;padding:24px 0}
+  /* 개요 페이지 */
+  .ov{width:1600px;padding:40px 48px 56px}
+  .ov .crumb{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .ov h1{font-size:40px;margin:8px 0 6px;letter-spacing:-.02em}
+  .ov .lead{font-size:17px;color:var(--muted);margin:0 0 26px}
+  .ov .cols{display:grid;grid-template-columns:1.05fr 1fr;gap:26px;align-items:start}
+  .ov .panel{background:#fff;border-radius:16px;padding:26px 28px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .ov .panel h2{font-size:20px;margin:0 0 14px}
+  .ov .step{display:flex;gap:16px;padding:13px 0;border-top:1px solid var(--line);align-items:flex-start}
+  .ov .step:first-of-type{border-top:0}
+  .ov .n{width:36px;height:36px;border-radius:9px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;font-size:14px}
+  .ov .n.todo{background:#fff;color:var(--muted);border:1.5px dashed #c7cbd1}
+  .ov .step .x{flex:1}.ov .step .x b{font-size:15px;display:block}.ov .step .x span{font-size:13px;color:var(--muted)}
+  .ov .step .id{font-family:var(--mono);font-size:12px;color:var(--brand);white-space:nowrap;padding-top:4px}
+  .ov .ph{font-size:12px;font-family:var(--mono);color:var(--muted);letter-spacing:.05em;margin:18px 0 4px}
+  .ov ol{margin:0;padding:0;list-style:none}.ov ol li{display:flex;gap:12px;padding:8px 0;font-size:14px}
+  .ov ol li .i{font-family:var(--mono);color:var(--brand);font-size:12.5px;padding-top:3px;flex:none}
+  .ov .lg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  /* 기획변화 (PDF) */
+  .chgdoc{width:210mm;padding:18mm 16mm;background:#fff;font-size:11.5px;line-height:1.55}
+  .chgdoc h1{font-size:24px;margin:0 0 2px}.chgdoc .lead{color:var(--muted);margin:0 0 14px}
+  .chgdoc h2{font-size:15px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1.5px solid var(--ink)}
+  .chgdoc table{font-size:11px}.chgdoc th{font-size:10.5px}.chgdoc td{white-space:normal;padding:6px 8px}
+  .chgdoc .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @page{size:A4;margin:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script id="DATA" type="application/json">
+{
+  "session": { "id":"p_2026-09-19_150002","date":"2026-09-19","start":"15:00:02","end":"15:42:15","dur":"42분 13초","minutes":42,
+    "sealed_at":"2026-09-19 15:42:20","anchor":"pending","root":"e71c09ad5b3f0c2a91d84f6e7b23a5c1d0f9e8b7a6c5d4e3f2a1b0c9d8e7f6a54d2a88f0",
+    "segments":[{"s":0,"e":9,"cat":"resource","title":"강의자료_4주차.pdf"},{"s":9,"e":23,"cat":"work","title":"app.py"},{"s":23,"e":26,"cat":"ai","title":"claude.ai"},{"s":26,"e":31,"cat":"work","title":"app.py"},{"s":31,"e":35,"cat":"resource","title":"docs.python.org"},{"s":35,"e":42,"cat":"work","title":"app.py"}],
+    "typed":  [0,0,0,0,0,0,0,0,0,38,52,61,44,70,58,49,66,55,42,73,60,31,0,0,0,12,48,66,59,50,0,0,0,0,44,68,57,73,61,52,47],
+    "deleted":[0,0,0,0,0,0,0,0,0,6,9,12,4,15,8,7,13,9,5,16,11,4,0,0,0,2,10,14,9,8,0,0,0,0,7,12,9,15,10,8,6],
+    "pastes":[{"m":26,"len":240,"ai":true},{"m":29,"len":180,"ai":true},{"m":30,"len":160,"ai":true},{"m":36,"len":120,"ai":true},{"m":38,"len":131,"ai":false},{"m":40,"len":96,"ai":false},{"m":41,"len":95,"ai":false}],
+    "undos":[11,13,17,19,27,28,36,38,40],
+    "chain":[["15:00:02","session_start","세션 시작 · Proof Mode"],["15:00:03","window","Acrobat.exe · 강의자료_4주차.pdf"],["15:00:33","heartbeat",""],["15:09:41","window","Code.exe · app.py - trace"],["15:09:51","keys","입력 9자 · 삭제 1자"],["15:10:01","keys","입력 12자 · 삭제 2자"],["15:11:20","undo","되돌리기 (Ctrl+Z)"],["15:12:08","file","저장 · C:/work/app.py · sha256:51ab…"],["15:23:15","window","chrome.exe · Claude"],["15:26:02","copy","240자 · sha256:8c2f…"],["15:26:09","window","Code.exe · app.py - trace"],["15:26:11","paste","240자 → app.py · sha256:8c2f… (브라우저(AI 사이트)에서 복사한 것과 같은 해시)"],["15:26:21","keys","입력 4자 · 삭제 0자"],["15:27:05","undo","되돌리기 (Ctrl+Z)"],["15:27:40","file","저장 · C:/work/app.py · sha256:9e04…"],["15:38:50","copy","96자 · sha256:d17b…"],["15:39:05","paste","131자 → app.py · sha256:2a6e… (복사본과 다름)"],["15:42:15","session_end","봉인 요청"]]
+  },
+  "others":[{"date":"2026-09-17","start":"14:00","end":"15:30","dur":"1시간 30분","anchor":"done"},{"date":"2026-09-15","start":"20:15","end":"21:02","dur":"47분 10초","anchor":"done"}]
+}
+</script>
+
+<script>
+const D=JSON.parse(document.getElementById('DATA').textContent), S=D.session;
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=n=>n.toLocaleString('ko-KR');
+const CAT={resource:'학습자료',work:'작업',ai:'AI',other:'기타'};
+const TYPE={session_start:'세션 시작',session_end:'세션 종료',window:'창 전환',copy:'복사',paste:'붙여넣기',file:'파일',keys:'입력',undo:'되돌리기',heartbeat:'heartbeat'};
+function mockHash(s){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);const a=(h2>>>0).toString(16).padStart(8,'0'),b=(h1>>>0).toString(16).padStart(8,'0');return (a+b+a+b).slice(0,16);}
+const short=h=>h.slice(0,4)+' '+h.slice(4,8)+' … '+h.slice(-4);
+function stats(s){const typed=s.typed.reduce((a,b)=>a+b,0),deleted=s.deleted.reduce((a,b)=>a+b,0),pasted=s.pastes.reduce((a,p)=>a+p.len,0),pastedAI=s.pastes.filter(p=>p.ai).reduce((a,p)=>a+p.len,0);const act=s.typed.filter(x=>x>0);const cpm=act.length?Math.round(act.reduce((a,b)=>a+b,0)/act.length):0;let pauses=0,run=0;s.typed.forEach((t,i)=>{const w=s.segments.some(g=>g.cat==='work'&&i>=g.s&&i<g.e);if(w&&t===0){run++;if(run===2)pauses++;}else run=0;});return{typed,deleted,pasted,pastedAI,pastedOther:pasted-pastedAI,cpm,maxcpm:Math.max(...s.typed),pauses,undo:s.undos.length,editRatio:typed?Math.round(deleted/typed*100):0,total:typed+pasted,aiMin:s.segments.filter(g=>g.cat==='ai').reduce((a,g)=>a+g.e-g.s,0),aiVisits:s.segments.filter(g=>g.cat==='ai').length};}
+const ST=stats(S);
+
+/* ───────── 조각 ───────── */
+const ctl='<span class="ctl"><span>─</span><span>☐</span><span>✕</span></span>';
+const appBar=(sub,extra='')=>`<div class="bar"><span class="name">Trace${sub?`<small>${sub}</small>`:''}</span>${extra}${ctl}</div>`;
+const codeBody=`<div class="code"><div style="color:#6a9955"># collector.py — Trace Tier 0</div><div><span style="color:#c586c0">import</span> psutil, pyperclip, win32gui</div><br><div><span style="color:#569cd6">def</span> <span style="color:#dcdcaa">foreground</span>():</div><div>&nbsp;&nbsp;&nbsp;&nbsp;hwnd = win32gui.GetForegroundWindow()</div><div>&nbsp;&nbsp;&nbsp;&nbsp;title = win32gui.GetWindowText(hwnd) <span style="color:#c586c0">or</span> <span style="color:#ce9178">""</span></div><div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#c586c0">return</span> exe, title<span style="border-left:2px solid #d4d4d4;margin-left:1px"></span></div></div>`;
+const vscode=(op='')=>`<div class="win float" style="left:40px;top:30px;width:1264px;height:690px;${op}"><div class="bar"><span class="name" style="color:#6b7280;font-weight:600">app.py — trace — Visual Studio Code</span>${ctl}</div><div class="body">${codeBody}</div></div>`;
+const pill=(cls='')=>`<div class="pill ${cls}"><span class="dot"></span><span class="t">00:42:13</span><span class="n">128</span><span class="stop"><i></i></span></div>`;
+const taskbar=(rec=true)=>`<div class="taskbar">${rec?'<span class="tray"><span class="dot"></span>Trace</span>':''}<span>한국어</span><span>15:42</span></div>`;
+const sideList=(cur=0)=>`<div class="side"><div class="hd">봉인된 세션 <span class="badge proof">Proof</span></div>
+  <div class="sess ${cur===0?'on':''}"><div class="d">2026-09-19 <span style="font-weight:400;color:var(--muted)">15:00–15:42</span></div><div class="m">42분 13초 · <span class="badge wait">앵커 대기</span></div></div>
+  ${D.others.map(o=>`<div class="sess"><div class="d">${o.date} <span style="font-weight:400;color:var(--muted)">${o.start}–${o.end}</span></div><div class="m">${o.dur} · <span class="badge ok">앵커 완료</span></div></div>`).join('')}
+  <div style="margin-top:auto;padding:12px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)">Learn Mode 세션은 별도 탭. 여기엔 봉인된 것만.</div></div>`;
+const recHead=(tab)=>`<div class="ro">🔒 이 기록은 봉인되어 <b>수정·삭제할 수 없습니다.</b> 열람과 내보내기만 가능합니다.</div>
+  <div class="head"><div><h3 style="margin:0;font-size:18px">2026-09-19 세션 <span class="badge proof">Proof</span> <span class="badge wait">봉인 · 앵커 대기</span></h3><div class="sub">15:00:02 – 15:42:15 · 42분 13초 · 루트 해시 <span class="mono">${S.root.slice(0,12)}…${S.root.slice(-8)}</span></div></div>
+  <div class="btns"><button class="btn sm">검증하기</button><button class="btn sm primary">증명서 내보내기</button></div></div>
+  <div class="tabs"><span class="${tab==='o'?'on':''}">한눈에</span><span class="${tab==='c'?'on':''}">체인 원본</span></div>`;
+
+/* 분당 활동 그래프 v0.3 — 레인 4개, 실제 픽셀 크기 */
+function lanes(s,W=1000,compact=false){
+  const L=110,R=20,M=s.minutes,X=m=>L+m/M*(W-L-R),bw=(W-L-R)/M-2;
+  const laneH={win:26,typed:110,paste:90,edit:40};
+  const y={win:8}; y.typed=y.win+laneH.win+18; y.paste=y.typed+laneH.typed+18; y.edit=y.paste+laneH.paste+18; const H=y.edit+laneH.edit+34;
+  const maxT=Math.max(...s.typed)||1, maxP=Math.max(...s.pastes.map(p=>p.len))||1, maxD=Math.max(...s.deleted)||1;
+  const lbl=(yy,t,sub)=>`<text x="${L-12}" y="${yy}" font-size="12.5" font-weight="600" fill="#374151" text-anchor="end">${t}</text>${sub?`<text x="${L-12}" y="${yy+15}" font-size="11" fill="#9ca3af" text-anchor="end">${sub}</text>`:''}`;
+  let g='';
+  // 격자 (5분)
+  for(let m=0;m<=M;m+=5){const x=X(m),hh=15+Math.floor(m/60),mm=String(m%60).padStart(2,'0');g+=`<line x1="${x}" y1="${y.win}" x2="${x}" y2="${H-26}" stroke="#eef0f3"/><text x="${x}" y="${H-8}" font-size="11.5" fill="#6b7280" text-anchor="middle">${hh}:${mm}</text>`;}
+  // 1 활성 창
+  g+=lbl(y.win+17,'활성 창');
+  s.segments.forEach(seg=>{g+=`<rect x="${X(seg.s)}" y="${y.win}" width="${X(seg.e)-X(seg.s)-1}" height="${laneH.win}" rx="4" fill="${css('--c-'+seg.cat)}"/>`; if(seg.e-seg.s>=3) g+=`<text x="${X(seg.s)+8}" y="${y.win+17}" font-size="11.5" fill="#fff" font-weight="700">${CAT[seg.cat]}${seg.e-seg.s>=5?' · '+seg.title:''}</text>`;});
+  // 2 직접 입력
+  const yt0=y.typed+laneH.typed; g+=lbl(y.typed+laneH.typed/2,'직접 입력','자/분');
+  g+=`<line x1="${L}" y1="${yt0}" x2="${W-R}" y2="${yt0}" stroke="#d1d5db"/>`;
+  let path=`M ${X(0)} ${yt0}`; s.typed.forEach((v,m)=>{const h=v/maxT*laneH.typed;path+=` L ${X(m)+bw/2} ${yt0-h}`;}); path+=` L ${X(M-1)+bw/2} ${yt0} Z`;
+  g+=`<path d="${path}" fill="${css('--g-typed')}" opacity=".18"/>`;
+  s.typed.forEach((v,m)=>{if(v)g+=`<rect x="${X(m)+1}" y="${yt0-v/maxT*laneH.typed}" width="${bw}" height="${v/maxT*laneH.typed}" rx="2" fill="${css('--g-typed')}"/>`;});
+  g+=`<text x="${W-R}" y="${y.typed+10}" font-size="11" fill="#9ca3af" text-anchor="end">최대 ${maxT}자/분</text>`;
+  // 3 붙여넣기
+  const yp0=y.paste+laneH.paste; g+=lbl(y.paste+laneH.paste/2,'붙여넣기','글자 수');
+  g+=`<line x1="${L}" y1="${yp0}" x2="${W-R}" y2="${yp0}" stroke="#d1d5db"/>`;
+  s.pastes.forEach((p,i)=>{const x=X(p.m)+bw/2+1,h=Math.max(14,p.len/maxP*(laneH.paste-16)),c=p.ai?css('--g-paste-ai'):css('--g-paste');const prev=s.pastes[i-1];const lift=(prev&&p.m-prev.m<=1&&Math.abs(prev.len-p.len)/maxP*(laneH.paste-16)<16)?14:0;g+=`<line x1="${x}" y1="${yp0}" x2="${x}" y2="${yp0-h}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${yp0-h}" r="7" fill="${c}"/><text x="${x}" y="${yp0-h-11-lift}" font-size="12" font-weight="700" fill="${p.ai?'#b91c1c':'#b45309'}" text-anchor="middle">${p.len}</text>`;});
+  // 4 삭제·되돌리기
+  const ye0=y.edit; g+=lbl(y.edit+laneH.edit/2,'삭제 · 되돌리기','자/분 · ▲');
+  s.deleted.forEach((v,m)=>{if(v)g+=`<rect x="${X(m)+1}" y="${ye0}" width="${bw}" height="${v/maxD*(laneH.edit-14)}" rx="2" fill="${css('--g-del')}"/>`;});
+  s.undos.forEach(m=>{const x=X(m)+bw/2+1;g+=`<polygon points="${x},${ye0+laneH.edit-12} ${x-5},${ye0+laneH.edit-3} ${x+5},${ye0+laneH.edit-3}" fill="${css('--g-undo')}"/>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${g}</svg>`;
+}
+const legend=`<div class="comp-legend" style="margin-top:6px"><span><i style="background:var(--c-resource)"></i>학습자료</span><span><i style="background:var(--c-work)"></i>작업</span><span><i style="background:var(--c-ai)"></i>AI</span><span style="margin-left:10px"><i style="background:var(--g-typed)"></i>직접 입력</span><span><i style="background:var(--g-paste-ai)"></i>붙여넣기 · 브라우저(AI 사이트)에서 복사한 것과 같은 해시</span><span><i style="background:var(--g-paste)"></i>붙여넣기 · 기타</span><span><i style="background:var(--g-del)"></i>삭제</span><span><i style="background:var(--g-undo)"></i>되돌리기</span></div>`;
+
+const FLOW=[["15:00:03","resource","Acrobat","강의자료_4주차.pdf","—"],["15:09:41","work","VS Code","app.py","<span style='color:#047857'>입력 612자</span> · <span style='color:#6b7280'>삭제 88자</span> · <span style='color:#6d28d9'>되돌리기 4회</span> · 파일 저장 2회"],["15:23:15","ai","Chrome","Claude","<span style='color:#b45309'>복사 240자</span>"],["15:26:09","work","VS Code","app.py","<span style='color:#b91c1c;font-weight:600'>붙여넣기 240자</span> <span style='color:#6b7280'>— <b style='color:#b91c1c'>Chrome · Claude</b>에서 복사한 것 (AI)</span> · <span style='color:#047857'>입력 4자</span>"],["15:28:40","ai","Chrome","Claude","<span style='color:#b45309'>복사 180자</span> · <span style='color:#b45309'>복사 160자</span>"],["15:29:02","work","VS Code","app.py","<span style='color:#b91c1c;font-weight:600'>붙여넣기 180자</span> · <span style='color:#b91c1c;font-weight:600'>붙여넣기 160자</span> <span style='color:#6b7280'>— Chrome · Claude에서 복사한 것 (AI)</span> · <span style='color:#047857'>입력 235자</span> · <span style='color:#6d28d9'>되돌리기 2회</span>"],["15:31:00","resource","Chrome","docs.python.org","—"],["15:35:12","work","VS Code","app.py","<span style='color:#047857'>입력 485자</span> · <span style='color:#6b7280'>삭제 67자</span> · <span style='color:#b45309'>복사 96자</span> · <span style='color:#b45309;font-weight:600'>붙여넣기 131자</span> <span style='color:#6b7280'>— 복사본과 다름 (고쳐서 붙임)</span> · 파일 저장 1회"]];
+function flowToggle(open){
+  const bar=`<div class="toggle ${open?'open':''}"><span class="arr">${open?'▼':'▶'}</span>상세 활동 보기 <span style="font-weight:400;color:var(--muted)">— 창이 바뀔 때마다 한 줄, 시간순</span><span class="cnt">창 전환 61회</span></div>`;
+  if(!open) return bar;
+  const dot=c=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${css('--c-'+c)};margin-right:7px"></i>`;
+  return bar+`<div class="flowbox"><table><thead><tr><th style="width:80px">시각</th><th style="width:260px">창</th><th>이벤트</th></tr></thead><tbody>${FLOW.map(([t,c,a,ti,ev])=>`<tr><td class="mono link">${t}</td><td>${dot(c)}<b>${a}${ti?' · '+ti:''}</b></td><td class="sum">${ev}</td></tr>`).join('')}<tr><td colspan="3" style="color:#9ca3af;text-align:center">… 61회 중 8회 표시</td></tr></tbody></table></div>`;}
+
+function overviewPane(open=false){
+  const p=n=>Math.round(n/ST.total*100);
+  return `<div class="hero">
+    <div class="h"><div class="lbl">직접 입력</div><div class="big" style="color:#047857">${p(ST.typed)}%</div><div class="sm">${fmt(ST.typed)}자 · 활동 분 평균 ${ST.cpm}자/분 · 삭제 ${fmt(ST.deleted)}자(${ST.editRatio}%) · 되돌리기 ${ST.undo}회</div></div>
+    <div class="h"><div class="lbl">붙여넣기</div><div class="big" style="color:#b91c1c">${p(ST.pasted)}%</div><div class="sm">${fmt(ST.pasted)}자 · ${S.pastes.length}건 · 그중 <b style="color:#b91c1c">브라우저(AI 사이트)에서 복사한 것과 같은 해시 ${fmt(ST.pastedAI)}자 (${S.pastes.filter(p=>p.ai).length}건)</b></div></div>
+    <div class="h" style="grid-column:1/3;border-top:1px solid var(--line);padding-top:12px"><div class="comp"><i style="width:${p(ST.typed)}%;background:var(--g-typed)"></i><i style="width:${p(ST.pastedAI)}%;background:var(--g-paste-ai)"></i><i style="width:${p(ST.pastedOther)}%;background:var(--g-paste)"></i></div>
+    <div class="comp-legend"><span><i style="background:var(--g-typed)"></i>직접 입력 ${fmt(ST.typed)}자</span><span><i style="background:var(--g-paste-ai)"></i>붙여넣기 · AI 사이트 복사 ${fmt(ST.pastedAI)}자</span><span><i style="background:var(--g-paste)"></i>붙여넣기 · 기타 ${fmt(ST.pastedOther)}자</span><span style="margin-left:auto">결과물 총 ${fmt(ST.total)}자 기준</span></div></div></div>
+  <div class="tiles">
+    <div class="tile"><div class="k">AI 창 → 붙여넣기</div><div class="v">${S.pastes.filter(p=>p.ai).length}<small>건</small></div><div class="h">AI 창 체류 ${ST.aiMin}분(${ST.aiVisits}회) 직후 붙여넣기 · 최대 ${Math.max(...S.pastes.map(p=>p.len))}자</div></div>
+    <div class="tile"><div class="k">붙여넣은 뒤 직접 고친 글자</div><div class="v">4<small>자 → 66자</small></div><div class="h">첫 붙여넣기(240자) 뒤 10초간 4자, 다음 3분간 66자 입력</div></div>
+    <div class="tile"><div class="k">긴 멈춤</div><div class="v">${ST.pauses}<small>회</small></div><div class="h">작업 창에서 2분 이상 무입력 (AI 창 체류는 별도)</div></div></div>
+  <div class="lanes"><h4>분당 활동</h4>${lanes(S)}${legend}</div>
+  ${flowToggle(open)}
+  <h4 style="margin:16px 0 8px">핵심 순간 — 이벤트 체인에서 자동으로 뽑은 4개</h4>
+  <div class="moments">
+    <div class="mom"><span class="ic" style="background:var(--g-typed)"></span><span class="t">15:09–15:22</span><span class="x"><b>13분 연속 직접 입력</b> · 분당 31~73자, 삭제 4~16자, 되돌리기 4회 — 치고 고치는 리듬이 이어짐</span></div>
+    <div class="mom"><span class="ic" style="background:var(--g-paste-ai)"></span><span class="t">15:23–15:26</span><span class="x"><b>claude.ai 3분 → 240자 붙여넣기</b> · 복사본과 해시 일치 · 직후 10초간 직접 입력 4자</span></div>
+    <div class="mom"><span class="ic" style="background:var(--g-paste-ai)"></span><span class="t">15:29–15:30</span><span class="x"><b>180자 · 160자 연속 붙여넣기</b> · 둘 다 브라우저(AI 사이트)에서 복사한 것과 같은 해시 · 사이에 되돌리기 2회</span></div>
+    <div class="mom"><span class="ic" style="background:var(--g-paste)"></span><span class="t">15:38–15:41</span><span class="x"><b>96자 복사 → 131자 붙여넣기</b> · 복사본과 다름(고쳐서 붙임) · 이후 3분간 직접 입력 160자</span></div></div>`;
+}
+
+/* ───────── 화면 ───────── */
+const V={};
+V.s01=()=>`<div class="win frame" style="width:1100px"> ${appBar('v0.3')}
+  <div class="body" style="padding:40px 56px 44px">
+    <h2>어떤 모드로 시작할까요?</h2><p class="sub">기록의 주인은 나입니다. 무엇을 남기고 누구에게 보일지는 여기서 정합니다.</p>
+    <div class="modes">
+      <div class="mode p on"><span class="tag badge proof">기본</span><div class="ic">🔒</div><h3>Proof Mode</h3><div class="d">작업 과정을 해시 체인으로 봉인해 "사후에 고치지 않았다"를 증명합니다. 제출·소명·의뢰용.</div>
+        <ul><li>창 전환 · 입력 · 삭제 · 되돌리기 · 복사 · 붙여넣기 · 파일 저장을 시각순으로 묶음</li><li>봉인 뒤에는 나도 못 고침 — 열람과 증명서만</li><li>화면 구석 작은 표시만 남고 백그라운드에서 기록</li></ul></div>
+      <div class="mode l"><div class="ic">👁</div><h3>Learn Mode</h3><div class="d">공부하면서 무엇을 물었고 무엇을 직접 고쳤는지 맥락까지 기록하고, AI가 학습 과정을 정리해 줍니다. 나를 위한 기록.</div>
+        <ul><li>이벤트 + 맥락(AI 질문·답변 발췌·참고 페이지·오류)</li><li>Side Chat · 세션 끝나면 Learning Session Report</li><li>점수 없음 · 공유 없음 · 항목별로 끌 수 있음</li></ul></div></div>
+    <div style="display:flex;align-items:center;gap:14px"><button class="btn proof">🔒 Proof Mode로 시작</button><button class="btn">내 기록 보기</button><label style="margin-left:auto;display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px"><input type="checkbox" checked> 다음부터 묻지 않고 이 모드로 시작</label></div>
+    <div class="callout" style="margin-top:26px;color:var(--muted);background:var(--soft);border-color:var(--line)"><b style="color:var(--ink)">수집하는 것</b> — 활성 창의 앱 이름·제목, 키 입력·삭제·되돌리기의 <b style="color:var(--ink)">횟수</b>, 복사·붙여넣기의 <b style="color:var(--ink)">길이와 해시</b>, 파일 저장 해시. &nbsp;<b style="color:var(--ink)">수집하지 않는 것</b> — 화면, 어떤 키를 눌렀는지, 클립보드 원문, AI 대화 내용. <u>전체 항목 보기</u></div>
+  </div></div>`;
+
+V.s02=()=>`<div class="win frame" style="width:1100px">${appBar('처음 한 번만')}
+  <div class="body" style="padding:36px 56px 40px">
+    <h2>기록을 시작하기 전에 확인해 주세요</h2><p class="sub">Trace는 내용을 읽지 않습니다. 여기 적힌 것만 기록하고, 전부 내 PC에 먼저 저장됩니다.</p>
+    <div class="card" style="margin-top:20px"><h4>기록하는 항목 — 전부 여기 있습니다</h4>
+      <div class="row"><div class="t"><b>활성 창의 앱 이름과 창 제목</b><span>예: Code.exe · app.py — trace. 화면은 찍지 않습니다.</span></div><span class="badge">항상</span></div>
+      <div class="row"><div class="t"><b>키 입력·삭제·되돌리기의 횟수</b><span>10초마다 "입력 12자 · 삭제 2자"처럼 개수만. 어떤 키인지는 기록하지 않습니다. Proof Mode의 증명에 필요합니다.</span></div><span class="badge proof">Proof 필수</span></div>
+      <div class="row"><div class="t"><b>복사·붙여넣기의 길이와 해시</b><span>원문은 저장하지 않습니다. 같은 해시가 AI 창 복사 → 작업 창 붙여넣기로 나타나면 "그대로 옮김"으로 표시됩니다.</span></div><span class="badge">항상</span></div>
+      <div class="row"><div class="t"><b>감시 폴더의 파일 저장</b><span>저장 시각과 내용 해시만. 폴더는 내가 고릅니다.</span></div><button class="btn sm">폴더 선택… <span class="mono" style="color:var(--muted)">C:/work</span></button></div></div>
+    <div class="card" style="margin-top:14px"><h4>창 제목을 남길 앱 — 여기 없는 앱은 '기타'로만 남고 제목은 기록되지 않습니다</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">${['Code.exe','chrome.exe','claude.exe','Acrobat.exe','WINWORD.EXE','POWERPNT.EXE','Photoshop.exe','pycharm64.exe'].map(a=>`<span class="badge" style="padding:6px 12px;font-size:13px;color:var(--ink);background:#fff">${a} <span style="color:var(--muted);margin-left:4px">✕</span></span>`).join('')}<span class="badge" style="padding:6px 12px;font-size:13px;border-style:dashed">+ 앱 추가</span></div></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:22px"><label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" checked> 위 항목만 기록되는 것을 확인했고, 기록은 내 PC에 먼저 저장되며 공유는 내가 정합니다.</label><button class="btn proof" style="margin-left:auto">시작</button></div>
+  </div></div>`;
+
+V.s03=()=>`<div class="frame desk">${vscode()}${pill()}
+  <div class="zoom"><div>실제 크기 26px · 확대 2.2×</div>${pill()}<div>● 경과 시간 · 이벤트 수 · ■ 봉인하고 종료</div></div>${taskbar()}</div>`;
+
+V.s04=()=>`<div class="frame desk">${vscode()}
+  <div class="pop"><div class="h"><span style="width:7px;height:7px;border-radius:50%;background:var(--rec);display:inline-block"></span>Proof 기록 중 <span class="badge ok" style="margin-left:auto;font-size:10px;padding:1px 6px">체인 정상</span></div>
+    <div class="r"><span>경과</span><b>00:42:13 · 15:00 시작</b></div><div class="r"><span>이벤트</span><b>128건</b></div><div class="r"><span>입력 / 삭제</span><b>2,140자 / 310자</b></div><div class="r"><span>붙여넣기</span><b>7건 · 1,022자</b></div><div class="r"><span>마지막 해시</span><b class="mono" style="font-size:10.5px">a3f9…c21e</b></div>
+    <div class="a"><button class="btn">내 기록</button><button class="btn danger">봉인하고 종료</button></div></div>${pill()}
+  <svg style="position:absolute;right:96px;bottom:44px;width:14px;height:20px" viewBox="0 0 14 20"><path d="M1 1 L1 15 L5 11 L8 18 L10 17 L7 10 L12 10 Z" fill="#fff" stroke="#000"/></svg>${taskbar()}</div>`;
+
+V.s05=()=>`<div class="frame desk">${vscode()}${pill()}<div class="dim"></div>
+  <div class="win float" style="left:432px;top:190px;width:480px"><div class="bar"><span class="name">세션 봉인</span></div>
+    <div class="body" style="padding:22px 24px"><h3>이 세션을 봉인할까요?</h3><p class="sub">봉인하면 모든 이벤트가 하나의 루트 해시로 묶이고, 그 해시를 OpenTimestamps(공개 타임스탬프)에 제출합니다.</p>
+      <div style="margin-top:12px;font-size:13px"><div class="kv"><span>기간</span><b>15:00:02 – 15:42:15 (42분 13초)</b></div><div class="kv"><span>이벤트</span><b>128건</b></div><div class="kv"><span>입력 · 삭제 · 되돌리기</span><b>2,140자 · 310자 · 9회</b></div><div class="kv"><span>붙여넣기</span><b>7건 1,022자 (브라우저(AI 사이트)에서 복사한 것과 같은 해시 4건 700자)</b></div><div class="kv"><span>루트 해시</span><b class="mono">e71c 09ad 5b3f … 4d2a 88f0</b></div></div>
+      <div class="warn" style="margin:12px 0;font-size:13px">⚠ 봉인 뒤에는 <b>나를 포함해 아무도</b> 이 기록을 고치거나 지울 수 없습니다. 열람과 내보내기만 가능합니다.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn">취소 — 계속 기록</button><button class="btn proof">🔒 봉인</button></div></div></div>${taskbar()}</div>`;
+
+V.s06=()=>`<div class="frame desk">${vscode()}<div class="dim"></div>
+  <div class="win float" style="left:432px;top:230px;width:480px"><div class="bar"><span class="name">봉인 완료</span></div>
+    <div class="body" style="padding:22px 24px;text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:#ecfdf5;color:#047857;display:flex;align-items:center;justify-content:center;font-size:26px;margin:4px auto 10px">✓</div>
+      <h3>세션이 봉인됐습니다</h3><p class="sub">128건 · 루트 해시 <span class="mono">e71c…88f0</span></p>
+      <div class="card" style="text-align:left;margin:14px 0;font-size:13px;background:var(--soft)"><div class="kv"><span>내 PC에 저장</span><b class="badge ok">완료</b></div><div class="kv"><span>OpenTimestamps 제출</span><b class="badge ok">완료 · 15:42:21</b></div><div class="kv"><span>공개 앵커(비트코인 블록) 확인</span><b class="badge wait">대기 · 보통 1시간 내</b></div></div>
+      <p class="sub" style="font-size:12.5px">앵커가 확인되면 트레이 알림으로 알려드립니다. 확인 전에도 증명서는 만들 수 있고, 확인 뒤 다시 내보내면 앵커 정보가 붙습니다.</p>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:14px"><button class="btn">닫기</button><button class="btn primary">내 기록에서 보기</button></div></div></div>${taskbar(false)}</div>`;
+
+V.s07=()=>`<div class="win frame" style="width:1344px">${appBar('내 기록')}<div class="body rec-layout">${sideList()}<div class="main">${recHead('o')}<div class="pane">${overviewPane()}</div>
+  <div class="verify"><span>✓ 체인 검증 128/128 일치</span><span>hᵢ = SHA256(hᵢ₋₁ ‖ 시각 ‖ 요약)</span><span style="margin-left:auto">이 화면은 사실만 보여줍니다. "AI 사용 여부"를 판정하지 않습니다.</span></div></div></div></div>`;
+
+V.s07b=()=>`<div class="win frame" style="width:1344px">${appBar('내 기록')}<div class="body rec-layout">${sideList()}<div class="main">${recHead('o')}<div class="pane">${overviewPane(true)}</div>
+  <div class="verify"><span>✓ 체인 검증 128/128 일치</span><span style="margin-left:auto">이 화면은 사실만 보여줍니다. "AI 사용 여부"를 판정하지 않습니다.</span></div></div></div></div>`;
+
+V.s08=()=>{let prev='0000000000000000',rows='';S.chain.forEach((e,i)=>{const [ts,type,sum]=e,h=mockHash(prev+ts+sum);rows+=`<tr><td class="link">${i+1}</td><td class="mono">${ts}</td><td class="t-${type}">${TYPE[type]||type}</td><td class="sum">${sum}</td><td class="mono link">${short(prev)}</td><td class="mono">${short(h)}</td></tr>`;prev=h;});
+  return `<div class="win frame" style="width:1344px">${appBar('내 기록')}<div class="body rec-layout">${sideList()}<div class="main">${recHead('c')}<div class="pane">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:14px;font-size:13px"><span style="color:var(--muted)">봉인 시각</span><span>2026-09-19 15:42:20</span><span style="color:var(--muted)">공개 앵커 (OpenTimestamps)</span><span><span class="badge wait">제출됨 · 확인 대기</span></span><span style="color:var(--muted)">증명하는 것</span><span>이 순서·이 시각에 진행됐고 사후에 바뀌지 않았음</span><span style="color:var(--muted)">증명하지 않는 것</span><span>"AI가 아니다", 본인 작업 여부, 결과물의 품질</span></div>
+    <table><thead><tr><th>#</th><th>시각</th><th>이벤트</th><th>요약 (내용 아님 — 횟수·길이·해시·창 제목만)</th><th>이전 해시</th><th>해시 hᵢ</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="sub" style="font-size:12.5px;margin-top:8px">… 128건 중 18건 표시. 입력(keys)은 10초 단위로 묶여 "입력 n자 · 삭제 m자"로 기록됩니다. 중간 하나만 바뀌어도 이후 해시가 전부 어긋납니다.</p></div>
+    <div class="verify"><span>✓ 체인 검증 128/128 일치</span><span>hᵢ = SHA256(hᵢ₋₁ ‖ 시각 ‖ 요약)</span></div></div></div></div>`;};
+
+V.s09=()=>`<div class="win frame" style="width:1344px;position:relative">${appBar('내 기록')}<div class="body rec-layout" style="filter:blur(1px);opacity:.6">${sideList()}<div class="main">${recHead('o')}<div class="pane" style="height:420px"></div></div></div>
+  <div class="dim"></div>
+  <div class="win float" style="left:412px;top:120px;width:520px"><div class="bar"><span class="name">검증 결과</span></div>
+    <div class="body" style="padding:22px 24px"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#ecfdf5;color:#047857;display:flex;align-items:center;justify-content:center;font-size:22px">✓</div><div><h3 style="margin:0">기록이 변조되지 않았습니다</h3><div class="sub">방금 다시 계산한 결과 · 2026-09-19 16:40:05</div></div></div>
+      <div style="margin-top:14px;font-size:13px"><div class="kv"><span>체인 재계산</span><b class="badge ok">128 / 128 해시 일치</b></div><div class="kv"><span>루트 해시</span><b class="mono">e71c 09ad … 4d2a 88f0 · 일치</b></div><div class="kv"><span>OpenTimestamps 앵커</span><b class="badge ok">비트코인 블록 #912,347 · 16:04</b></div><div class="kv"><span>봉인 시각 ≤ 앵커 시각</span><b class="badge ok">15:42:20 ≤ 16:04:11</b></div><div class="kv"><span>로컬 파일 해시</span><b class="mono">proof_2026-09-19.json · 일치</b></div></div>
+      <div class="callout" style="margin-top:14px;font-size:12.5px">이 검증은 <b>"기록이 봉인 이후 바뀌지 않았다"</b>와 <b>"봉인이 그 시각 이전에 존재했다"</b>만 확인합니다. 작업을 누가 했는지, AI를 썼는지는 확인하지 않습니다.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn">검증 로그 복사</button><button class="btn primary">닫기</button></div></div></div></div>`;
+
+V.s10=()=>`<div class="win frame" style="width:1344px;position:relative">${appBar('내 기록')}<div class="body rec-layout" style="filter:blur(1px);opacity:.6">${sideList()}<div class="main">${recHead('o')}<div class="pane" style="height:520px"></div></div></div>
+  <div class="dim"></div>
+  <div class="win float" style="left:372px;top:70px;width:600px"><div class="bar"><span class="name">증명서 내보내기</span></div>
+    <div class="body" style="padding:22px 24px"><h3>무엇을 누구에게 보여줄까요?</h3><p class="sub">증명서는 언제든 다시 만들 수 있습니다. 봉인된 원본은 바뀌지 않습니다.</p>
+      <div class="card" style="margin-top:14px;padding:6px 16px">
+        <div class="row"><div class="t"><b>PDF 증명서 (1장)</b><span>요약 · 활동 그래프 · 루트 해시 · 검증 QR. 사람이 읽는 용도</span></div><input type="checkbox" checked></div>
+        <div class="row"><div class="t"><b>검증 파일 (.json + .ots)</b><span>이벤트 체인 원본과 타임스탬프 증명. 검증자가 verify 페이지나 ots 도구로 직접 확인</span></div><input type="checkbox" checked></div></div>
+      <div class="card" style="margin-top:10px;padding:6px 16px"><h4 style="margin:10px 0 4px">포함 범위</h4>
+        <div class="row"><div class="t"><b>창 제목</b><span>끄면 "작업 · 학습자료 · AI" 분류만 남고 파일명·사이트명은 빠집니다</span></div><button class="sw on"></button></div>
+        <div class="row"><div class="t"><b>분당 활동 그래프</b><span>직접 입력 / 붙여넣기 / 삭제 리듬</span></div><button class="sw on"></button></div>
+        <div class="row"><div class="t"><b>핵심 순간 4개</b><span>체인에서 자동 추출. 문구는 수정할 수 없습니다</span></div><button class="sw on"></button></div>
+        <div class="row"><div class="t"><b>작성자 이름</b><span>비우면 익명 증명서. 세션 ID로만 식별</span></div><span class="mono" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--muted)">홍길동</span></div></div>
+      <div class="warn" style="margin-top:12px;font-size:12.5px">증명서에는 <b>클립보드 원문·키 내용·AI 대화</b>가 없습니다. 원래 기록하지 않았기 때문입니다.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn">취소</button><button class="btn primary">내보내기 → 폴더 선택</button></div></div></div></div>`;
+
+V.s11=()=>{const p=n=>Math.round(n/ST.total*100);const qr=Array.from({length:49},(_,i)=>`<i class="${[0,1,2,3,4,7,11,14,18,21,22,23,24,25,28,29,30,32,34,36,38,42,43,44,45,46].includes(i)?'':'o'}"></i>`).join('');
+  return `<div class="frame viewer" style="width:900px"><div class="paper">
+    <div class="top"><div><div class="logo">Trace <span style="font-weight:400;color:var(--muted);font-size:13px">· Proof</span></div><div style="font-size:11px;color:var(--muted)">작업 과정 증명서 · Work Process Certificate</div></div><div style="margin-left:auto;text-align:right;font-size:11px;color:var(--muted)">발급 2026-09-19 16:41<br>증명서 번호 <span class="mono" style="font-size:11px">TRC-2026-0919-150002</span></div></div>
+    <h1>이 작업은 2026-09-19 15:00–15:42에 진행되었고,<br>봉인 이후 변경되지 않았습니다.</h1>
+    <div class="grid"><span class="k">세션</span><span class="mono" style="font-size:11.5px">${S.id}</span><span class="k">작성자</span><span>홍길동 <span style="color:var(--muted)">(작성자 입력 · Trace가 확인하지 않음)</span></span><span class="k">기간</span><span>2026-09-19 15:00:02 – 15:42:15 (42분 13초) · 이벤트 128건</span><span class="k">루트 해시 (SHA-256)</span><span class="mono" style="font-size:10.5px;word-break:break-all">${S.root}</span><span class="k">공개 앵커</span><span>OpenTimestamps · 비트코인 블록 #912,347 · 2026-09-19 16:04:11 KST <span class="badge ok" style="font-size:10px">확인됨</span></span></div>
+    <div class="sec"><h3>결과물은 어떻게 만들어졌나</h3>
+      <div class="two"><div><div style="display:flex;gap:18px;align-items:baseline"><span style="font-size:30px;font-weight:800;color:#047857">${p(ST.typed)}%</span><span style="font-size:12px">직접 입력 ${fmt(ST.typed)}자</span><span style="font-size:30px;font-weight:800;color:#b91c1c;margin-left:auto">${p(ST.pasted)}%</span><span style="font-size:12px">붙여넣기 ${fmt(ST.pasted)}자</span></div>
+        <div class="comp" style="height:16px;margin-top:6px"><i style="width:${p(ST.typed)}%;background:var(--g-typed)"></i><i style="width:${p(ST.pastedAI)}%;background:var(--g-paste-ai)"></i><i style="width:${p(ST.pastedOther)}%;background:var(--g-paste)"></i></div>
+        <div class="comp-legend" style="font-size:10.5px;gap:10px"><span><i style="background:var(--g-typed)"></i>직접 입력</span><span><i style="background:var(--g-paste-ai)"></i>브라우저(AI 사이트)에서 복사한 것과 같은 해시 ${fmt(ST.pastedAI)}자</span><span><i style="background:var(--g-paste)"></i>기타 ${fmt(ST.pastedOther)}자</span></div></div>
+      <div class="box" style="font-size:11.5px"><div class="kv" style="padding:4px 0"><span>입력 속도 (활동 분 평균)</span><b>${ST.cpm}자/분</b></div><div class="kv" style="padding:4px 0"><span>삭제 · 되돌리기</span><b>${fmt(ST.deleted)}자 · ${ST.undo}회</b></div><div class="kv" style="padding:4px 0"><span>붙여넣기</span><b>${S.pastes.length}건 · AI 창 직후 ${S.pastes.filter(p=>p.ai).length}건</b></div><div class="kv" style="padding:4px 0"><span>AI 창 체류</span><b>${ST.aiMin}분 · ${ST.aiVisits}회</b></div></div></div></div>
+    <div class="sec"><h3>분당 활동</h3>${lanes(S,682)}</div>
+    <div class="sec two"><div><h3>핵심 순간</h3><div style="font-size:11.5px;line-height:1.6"><div><b class="mono">15:09–15:22</b> 13분 연속 직접 입력, 되돌리기 4회</div><div><b class="mono">15:23–15:26</b> claude.ai 3분 → 240자 붙여넣기(복사본 일치) → 직접 입력 4자</div><div><b class="mono">15:29–15:30</b> 180자·160자 연속 붙여넣기(복사본 일치)</div><div><b class="mono">15:38–15:41</b> 96자 복사 → 131자 붙여넣기(고쳐 붙임) → 직접 입력 160자</div></div></div>
+      <div><h3>이 증명서가 말하는 것</h3><div style="font-size:11.5px;line-height:1.6"><div>✓ 위 이벤트가 이 순서·이 시각에 기록되었고 봉인 뒤 바뀌지 않았음</div><div>✓ 봉인이 2026-09-19 16:04 이전에 존재했음 (공개 블록체인 앵커)</div><div style="color:#b91c1c">✗ 작업을 누가 했는지, AI를 썼는지 안 썼는지, 결과물의 품질</div><div style="color:var(--muted);margin-top:4px">Trace는 판정하지 않습니다. 해석은 보는 사람의 몫입니다.</div></div></div></div>
+    <div class="sec" style="display:flex;gap:16px;align-items:center"><div class="qr">${qr}</div><div style="font-size:11.5px"><b>검증 방법</b><br>1. <span class="mono" style="font-size:11px">verify.trace.app</span> 에 접속해 함께 받은 <span class="mono" style="font-size:11px">proof_2026-09-19.json</span> 과 <span class="mono" style="font-size:11px">.ots</span> 를 올린다<br>2. 또는 <span class="mono" style="font-size:11px">ots verify proof_2026-09-19.json.ots</span> (OpenTimestamps 공개 도구)<br>3. 화면의 루트 해시가 위 해시와 같으면 이 증명서는 그 기록의 것이다</div></div>
+    <div class="foot"><span>Trace Proof · 기록은 작성자 PC에 먼저 저장되고 내용은 읽지 않음</span><span>1 / 1</span></div></div></div>`;};
+
+V.s12=()=>`<div class="frame browser" style="width:1200px"><div class="bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">verify.trace.app/#TRC-2026-0919-150002</span></div>
+  <div class="body" style="padding:36px 60px 44px;background:#fff">
+    <div style="display:flex;align-items:baseline;gap:12px"><span style="font-weight:800;font-size:22px">Trace</span><span style="color:var(--muted)">증명서 검증 · 설치 없이 브라우저에서</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:26px;margin-top:22px;align-items:start">
+      <div><div style="border:2px dashed #c7cbd1;border-radius:14px;padding:34px 20px;text-align:center;color:var(--muted)"><div style="font-size:28px">⇩</div><b style="color:var(--ink)">proof_….json 과 .ots 를 여기에</b><br><span style="font-size:12.5px">파일은 브라우저 안에서만 계산됩니다. 서버로 보내지 않습니다.</span></div>
+        <div class="card" style="margin-top:12px;font-size:13px"><div class="kv"><span>proof_2026-09-19.json</span><b class="badge ok">읽음 · 128건</b></div><div class="kv"><span>proof_2026-09-19.json.ots</span><b class="badge ok">읽음</b></div></div></div>
+      <div><div class="card" style="border-color:#a7f3d0;background:#f0fdf4"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#047857;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px">✓</div><div><h3 style="margin:0">변조되지 않은 기록입니다</h3><div class="sub" style="font-size:13px">2026-09-19 15:00–15:42 · 42분 13초 · 작성자 홍길동(자기 기입)</div></div></div>
+        <div style="margin-top:12px;font-size:13px"><div class="kv"><span>체인 재계산</span><b>128 / 128 일치</b></div><div class="kv"><span>루트 해시</span><b class="mono">e71c 09ad … 4d2a 88f0</b></div><div class="kv"><span>공개 앵커</span><b>비트코인 블록 #912,347 · 2026-09-19 16:04 KST</b></div></div></div>
+        <div class="hero" style="margin-top:12px"><div class="h"><div class="lbl">직접 입력</div><div class="big" style="font-size:36px;color:#047857">57%</div><div class="sm">1,336자 · 53자/분 · 삭제 229자 · 되돌리기 9회</div></div><div class="h"><div class="lbl">붙여넣기</div><div class="big" style="font-size:36px;color:#b91c1c">43%</div><div class="sm">1,022자 · 7건 · 브라우저(AI 사이트)에서 복사한 것과 같은 해시 700자(4건)</div></div></div>
+        <div class="lanes" style="margin-top:12px">${lanes(S,640)}</div>
+        <p class="sub" style="font-size:12.5px;margin-top:10px">이 페이지는 "기록이 봉인 뒤 바뀌지 않았다"만 확인합니다. AI 사용 여부나 작성자 본인 여부는 판정하지 않습니다.</p></div></div></div></div>`;
+
+/* ───────── Learn (최종 기획서: Event + Context → AI 분석 → Learning Session Report · Side Chat) ───────── */
+const LD = {
+  date:"2026-09-22", start:"14:00", end:"14:50", minutes:50, work:"Java 과제 2 · 예외 처리",
+  segments:[{s:0,e:5,cat:"resource",title:"3주차_예외처리.pdf"},{s:5,e:6,cat:"work",title:"Main.java"},{s:6,e:8,cat:"ai",title:"chatgpt.com"},{s:8,e:12,cat:"work",title:"Main.java"},{s:12,e:20,cat:"resource",title:"docs.oracle.com"},{s:20,e:23,cat:"ai",title:"chatgpt.com"},{s:23,e:32,cat:"work",title:"Main.java"},{s:32,e:35,cat:"other",title:""},{s:35,e:50,cat:"work",title:"Main.java"}],
+  typed:[0,0,0,0,0,14,0,0,18,36,44,30,0,0,0,0,0,0,0,0,0,0,0,22,40,52,38,0,25,47,33,0,0,0,0,41,58,49,62,55,40,37,51,44,30,28,35,42,26,12],
+  flow:[{m:5,k:"error",t:"14:05",x:"NullPointerException"},{m:6,k:"ask",t:"14:06",x:"AI 질문"},{m:7,k:"paste",t:"14:07",x:"200자"},{m:8,k:"edit",t:"14:08",x:"직접 수정"},{m:9,k:"run",t:"14:09",x:"재실행"},{m:9.6,k:"ok",t:"14:09",x:"해결"},{m:12,k:"ref",t:"14:12",x:"docs.oracle.com"},{m:20,k:"ask",t:"14:20",x:"AI 질문"},{m:22,k:"paste",t:"14:22",x:"150자"},{m:24,k:"edit",t:"14:24",x:"직접 수정"},{m:27,k:"run",t:"14:27",x:"실행"},{m:27.6,k:"error",t:"14:27",x:"ArrayIndexOutOfBounds"},{m:30,k:"edit",t:"14:30",x:"직접 수정"},{m:31,k:"ok",t:"14:31",x:"해결"},{m:44,k:"run",t:"14:44",x:"실행"},{m:44.6,k:"ok",t:"14:44",x:"정상"}],
+};
+const FK={error:["✕","#ef4444","오류"],ask:["?","#0ea5e9","AI 질문"],ref:["▤","#3b82f6","참고"],paste:["▼","#f59e0b","붙여넣기"],edit:["✎","#10b981","직접 수정"],run:["▶","#6b7280","실행"],ok:["✓","#047857","해결"]};
+
+function learnLanes(s,W=1000,sel=1){
+  const L=100,R=20,M=s.minutes,X=m=>L+m/M*(W-L-R),bw=(W-L-R)/M-2;
+  const y={win:8,flow:56,typed:130};const H=y.typed+90+34;
+  const [h0,m0]=s.start.split(':').map(Number);
+  const lbl=(yy,t,sub)=>`<text x="${L-12}" y="${yy}" font-size="12.5" font-weight="600" fill="#374151" text-anchor="end">${t}</text>${sub?`<text x="${L-12}" y="${yy+15}" font-size="11" fill="#9ca3af" text-anchor="end">${sub}</text>`:''}`;
+  let g='';
+  for(let m=0;m<=M;m+=5){const x=X(m),tot=h0*60+m0+m;g+=`<line x1="${x}" y1="${y.win}" x2="${x}" y2="${H-26}" stroke="#eef0f3"/><text x="${x}" y="${H-8}" font-size="11.5" fill="#6b7280" text-anchor="middle">${String(Math.floor(tot/60)).padStart(2,'0')}:${String(tot%60).padStart(2,'0')}</text>`;}
+  g+=lbl(y.win+17,'활성 창');
+  s.segments.forEach(seg=>{g+=`<rect x="${X(seg.s)}" y="${y.win}" width="${X(seg.e)-X(seg.s)-1}" height="26" rx="4" fill="${css('--c-'+seg.cat)}"/>`;if(seg.e-seg.s>=3)g+=`<text x="${X(seg.s)+8}" y="${y.win+17}" font-size="11.5" fill="#fff" font-weight="700">${CAT[seg.cat]}${seg.e-seg.s>=6&&seg.title?' · '+seg.title:''}</text>`;});
+  g+=lbl(y.flow+22,'학습 흐름','오류·질문·참고·적용');
+  g+=`<line x1="${L}" y1="${y.flow+18}" x2="${W-R}" y2="${y.flow+18}" stroke="#e5e7eb"/>`;
+  s.flow.forEach((f,i)=>{const [ic,c]=FK[f.k],x=X(f.m),on=i===sel;g+=`<g${on?' opacity="1"':''}><circle cx="${x}" cy="${y.flow+18}" r="${on?13:10}" fill="${on?c:'#fff'}" stroke="${c}" stroke-width="${on?3:2}"/><text x="${x}" y="${y.flow+22.5}" font-size="${on?12:11}" font-weight="700" fill="${on?'#fff':c}" text-anchor="middle">${ic}</text></g>`;if(on)g+=`<rect x="${x-34}" y="${y.flow-6}" width="68" height="16" rx="8" fill="${c}"/><text x="${x}" y="${y.flow+6}" font-size="10.5" fill="#fff" font-weight="700" text-anchor="middle">${f.t} ${FK[f.k][2]}</text>`;});
+  const yt0=y.typed+90,maxT=Math.max(...s.typed)||1;g+=lbl(y.typed+45,'직접 입력','자/분');g+=`<line x1="${L}" y1="${yt0}" x2="${W-R}" y2="${yt0}" stroke="#d1d5db"/>`;
+  s.typed.forEach((v,m)=>{if(v)g+=`<rect x="${X(m)+1}" y="${yt0-v/maxT*90}" width="${bw}" height="${v/maxT*90}" rx="2" fill="${css('--g-typed')}"/>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${g}</svg>`;}
+const learnSide=(cur=0)=>`<div class="side"><div class="hd">내 세션 <span class="badge learn">Learn</span></div>
+  <div class="sess ${cur===0?'on':''}" style="${cur===0?'border-left-color:var(--learn)':''}"><div class="d">2026-09-22 <span style="font-weight:400;color:var(--muted)">14:00–14:50</span></div><div class="m">Java 과제 2 · AI 질문 2 · 오류 2→해결 2 · <span class="badge ok">리포트 완료</span></div></div>
+  <div class="sess"><div class="d">2026-09-19 <span style="font-weight:400;color:var(--muted)">10:00–10:40</span></div><div class="m">기획안 정리 · AI 질문 1 · <span class="badge">리포트 없음</span></div></div>
+  <div class="sess"><div class="d">2026-09-17 <span style="font-weight:400;color:var(--muted)">14:00–15:30</span></div><div class="m">Java 과제 1 · AI 질문 3 · <span class="badge ok">리포트 완료</span></div></div>
+  <div style="margin-top:auto;padding:12px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)">Proof 세션은 별도 탭. 여기엔 Learn 만.</div></div>`;
+const learnPill=`<div class="pill learn"><span class="dot"></span><span class="t">00:23:40</span><span class="n">맥락 12</span><span class="stop"><i></i></span></div>`;
+
+/* 13 Learn · 기록 중 — 알약(파랑) + 맥락 수집 표시 */
+V.s13=()=>`<div class="frame desk">
+  <div class="win float" style="left:40px;top:30px;width:1264px;height:690px"><div class="bar"><span class="name" style="color:#6b7280;font-weight:600">Main.java — java-hw2 — Visual Studio Code</span>${ctl}</div>
+    <div class="body"><div class="code"><div><span style="color:#569cd6">public class</span> <span style="color:#4ec9b0">Main</span> {</div><div>&nbsp;&nbsp;<span style="color:#569cd6">public static void</span> <span style="color:#dcdcaa">main</span>(String[] args) {</div><div>&nbsp;&nbsp;&nbsp;&nbsp;User user;</div><div>&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(user.getName());</div><div>&nbsp;&nbsp;}</div><div>}</div><br><div style="color:#f48771">Exception in thread "main" java.lang.NullPointerException</div><div style="color:#f48771">&nbsp;&nbsp;at Main.main(Main.java:12)</div></div></div></div>
+  <div class="pop" style="bottom:86px"><div class="h"><span style="width:7px;height:7px;border-radius:50%;background:var(--learn);display:inline-block"></span>Learn 기록 중 <span class="badge learn" style="margin-left:auto;font-size:10px;padding:1px 6px">맥락 수집 켜짐</span></div>
+    <div class="r"><span>경과</span><b>00:23:40 · Java 과제 2</b></div><div class="r"><span>이벤트</span><b>84건</b></div><div class="r"><span>맥락</span><b>AI 질문 2 · 참고 페이지 4 · 오류 2</b></div><div class="r"><span>직접 입력 / 붙여넣기</span><b>612자 / 2건 350자</b></div>
+    <div class="a"><button class="btn">타임라인</button><button class="btn">세션 마치기</button></div></div>
+  ${learnPill}<svg style="position:absolute;right:96px;bottom:44px;width:14px;height:20px" viewBox="0 0 14 20"><path d="M1 1 L1 15 L5 11 L8 18 L10 17 L7 10 L12 10 Z" fill="#fff" stroke="#000"/></svg>
+  <div class="taskbar"><span class="tray"><span class="dot" style="background:var(--learn)"></span>Trace</span><span>한국어</span><span>14:23</span></div></div>`;
+
+/* 13b Learn · 알약 위 질문칸 (평소 상태) */
+const vscodeJava = `<div class="win float" style="left:40px;top:30px;width:1264px;height:690px"><div class="bar"><span class="name" style="color:#6b7280;font-weight:600">Main.java — java-hw2 — Visual Studio Code</span>${ctl}</div>
+    <div class="body"><div class="code"><div><span style="color:#569cd6">public class</span> <span style="color:#4ec9b0">Main</span> {</div><div>&nbsp;&nbsp;<span style="color:#569cd6">public static void</span> <span style="color:#dcdcaa">main</span>(String[] args) {</div><div>&nbsp;&nbsp;&nbsp;&nbsp;User user;</div><div>&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(user.getName());</div><div>&nbsp;&nbsp;}</div><div>}</div><br><div style="color:#f48771">Exception in thread "main" java.lang.NullPointerException</div><div style="color:#f48771">&nbsp;&nbsp;at Main.main(Main.java:12)</div></div></div></div>`;
+V.s13b=()=>`<div class="frame desk">${vscodeJava}
+  <div class="ask"><span class="ic">?</span>AI에게 물어보기…<span class="send">↑</span></div>${learnPill}
+  <div class="zoom" style="left:auto;right:230px;bottom:60px;width:300px;font-size:12px"><b style="color:var(--ink)">알약 위 질문칸</b><br>· 알약과 같은 폭(190px)·같은 오른쪽 선, 높이 28px. 항상 떠 있음<br>· 클릭하거나 글자를 치면 위로 패널이 펼쳐짐 → 13c<br>· 웹으로 가서 AI에게 묻지 않아도 되게 — 질문이 세션 맥락에 남음<br>· Proof 모드에는 없음 (알약만)</div>
+  <div class="taskbar"><span class="tray"><span class="dot" style="background:var(--learn)"></span>Trace</span><span>한국어</span><span>14:23</span></div></div>`;
+
+/* 13c Learn · 질문칸을 누르면 채팅 패널이 위로 펼쳐짐 */
+V.s13c=()=>`<div class="frame desk">${vscodeJava}
+  <div class="askpanel">
+    <div class="hd"><span style="width:7px;height:7px;border-radius:50%;background:var(--learn);display:inline-block"></span>Learn AI · 물어보기<span class="x">✕</span></div>
+    <div class="msgs">
+      <div class="me">NullPointerException이 발생하는 이유가 뭐야?</div>
+      <div class="ai"><b>초기화되지 않은 객체를 썼을 때</b> 납니다. 12행의 <code>user</code>는 <code>User user;</code>로 <b>선언만</b> 된 상태라 아무것도 가리키지 않아요(null). 그 상태에서 <code>.getName()</code>을 부르면 이 예외가 납니다.<br><br>고치려면 쓰기 전에 객체를 만들어야 합니다: <code>User user = new User();</code><div style="margin-top:6px;font-size:11px;color:var(--muted)">근거: 14:05 오류 (Main.java:12)</div></div>
+      <div class="me">선언이랑 생성이 다른 거야?</div>
+      <div class="ai">네. <b>선언</b>은 "User를 담을 이름표"를 만드는 것, <b>생성(new)</b>은 실제 객체를 메모리에 만드는 것입니다. 이름표만 있고 객체가 없으면 null이에요.</div>
+    </div>
+    <div class="in"><span>이어서 묻기…</span><span style="flex:none;width:30px;height:30px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center">↑</span></div>
+    <div style="padding:6px 14px 10px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)">이 대화는 세션 맥락으로 남아 리포트에 반영됩니다 · ✕ 를 누르면 질문칸으로 돌아감 · 코드를 드래그해서 묻는 건 15</div>
+  </div>${learnPill}
+  <div class="taskbar"><span class="tray"><span class="dot" style="background:var(--learn)"></span>Trace</span><span>한국어</span><span>14:24</span></div></div>`;
+
+/* 14 Learn · 타임라인 + 맥락 */
+V.s14=()=>`<div class="win frame" style="width:1344px">${appBar('Learn')}<div class="body rec-layout">${learnSide()}
+  <div class="main"><div class="head"><div><h3 style="margin:0;font-size:18px">2026-09-22 · Java 과제 2 <span class="badge learn">Learn</span></h3><div class="sub">14:00–14:50 · 50분 · AI 질문 2 · 참고 페이지 4 · 오류 2 → 해결 2 · 직접 입력 1,250자 · 붙여넣기 2건 350자</div></div><div class="btns"><button class="btn sm">수집 설정</button><button class="btn sm primary">Learning Report</button></div></div>
+  <div class="tabs"><span class="on">타임라인 + 맥락</span><span>Learning Report</span><span>이벤트 원본</span></div>
+  <div class="pane" style="display:grid;grid-template-columns:1fr 400px;gap:16px">
+    <div><div class="lanes" style="margin-top:0"><h4>학습 흐름 — 마커를 누르면 오른쪽에 맥락</h4>${learnLanes(LD)}
+      <div class="comp-legend" style="margin-top:4px">${Object.entries(FK).map(([k,[ic,c,n]])=>`<span><b style="color:${c}">${ic}</b> ${n}</span>`).join('')}<span style="margin-left:auto"><i style="background:var(--g-typed)"></i>직접 입력</span></div></div>
+      <h4 style="margin:16px 0 8px">이 세션의 학습 흐름 2개 — 이벤트를 AI가 묶은 것</h4>
+      <div class="mom" style="margin-bottom:8px;border-color:#bae6fd;background:#f0f9ff"><span class="t" style="color:#0369a1;font-weight:700">①</span><span class="x"><b>14:05–14:09 NullPointerException</b><br><span style="color:var(--muted)">오류 → AI 질문 → 답변 200자 참고 → 붙여넣기 → <b style="color:#047857">직접 수정 18자</b> → 재실행 → 해결 · 4분</span></span></div>
+      <div class="mom"><span class="t" style="color:#0369a1;font-weight:700">②</span><span class="x"><b>14:12–14:31 배열 인덱스</b><br><span style="color:var(--muted)">docs.oracle.com 8분 → AI 질문 → 150자 참고 → 붙여넣기 → 직접 수정 → 실행 → <b style="color:#ef4444">다시 오류</b> → 직접 수정 → 해결 · 19분</span></span></div></div>
+    <div class="card" style="border-color:#bae6fd;padding:0;overflow:hidden;align-self:start">
+      <div style="background:#f0f9ff;padding:10px 16px;border-bottom:1px solid #bae6fd;display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:50%;background:#0ea5e9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">?</span><b>14:06 AI 질문</b><span class="badge" style="margin-left:auto">chatgpt.com</span></div>
+      <div style="padding:14px 16px;font-size:13px">
+        <h4>직전 — 14:05 오류</h4><div class="mono" style="background:#fef2f2;color:#991b1b;padding:8px 10px;border-radius:8px;font-size:12px">Exception in thread "main" java.lang.NullPointerException<br>&nbsp;&nbsp;at Main.main(Main.java:12)</div>
+        <h4 style="margin-top:12px">질문 — 내가 입력한 것</h4><div style="background:var(--soft);padding:8px 10px;border-radius:8px">"NullPointerException이 발생하는 이유가 뭐야?"</div>
+        <h4 style="margin-top:12px">답변 발췌 — 복사한 200자</h4><div style="background:var(--soft);padding:8px 10px;border-radius:8px;color:#374151">NullPointerException은 초기화되지 않은 객체 참조를 사용할 때 발생합니다. <code>User user;</code>는 선언만 한 것이고, <code>user = new User();</code>로 객체를 만들어야 …</div>
+        <h4 style="margin-top:12px">이후</h4><div style="display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12.5px"><span class="mono" style="color:var(--muted)">14:07</span><span>Main.java 12행에 200자 붙여넣기</span><span class="mono" style="color:var(--muted)">14:08</span><span><b style="color:#047857">직접 수정 18자</b> — <code class="mono" style="font-size:11.5px">user = new User();</code></span><span class="mono" style="color:var(--muted)">14:09</span><span>재실행 → 정상 · <b>4분 만에 해결</b></span></div>
+        <div style="display:flex;gap:8px;margin-top:14px"><button class="btn sm" style="color:#0369a1;border-color:#bae6fd;flex:1">Side Chat에서 더 묻기</button><button class="btn sm">메모</button></div>
+        <p class="sub" style="font-size:11.5px;margin-top:10px">이 맥락은 Learn 모드 · 맥락 수집 켜짐 상태에서 브라우저 확장이 저장한 것입니다. Proof 세션에는 없습니다.</p></div></div></div>
+  <div class="verify"><span>Learn Mode는 AI 사용 여부를 판정하지 않습니다.</span><span>보는 것은 "AI를 쓴 뒤 무엇을 했는가" 입니다.</span></div></div></div></div>`;
+
+/* 15 Learn · 텍스트 선택 → 작은 툴바 (Side Chat 은 아직 안 열림) */
+V.s15=()=>`<div class="frame desk">
+  <div class="win float" style="left:40px;top:30px;width:1264px;height:690px"><div class="bar"><span class="name" style="color:#6b7280;font-weight:600">Main.java — java-hw2 — Visual Studio Code</span>${ctl}</div><div class="body"><div class="code"><div><span style="color:#569cd6">public class</span> <span style="color:#4ec9b0">Main</span> {</div><div>&nbsp;&nbsp;<span style="color:#569cd6">public static void</span> <span style="color:#dcdcaa">main</span>(String[] args) {</div><div style="background:#264f78;margin:0 -24px;padding:0 24px">&nbsp;&nbsp;&nbsp;&nbsp;User user = <span style="color:#569cd6">new</span> User();</div><div style="background:#264f78;margin:0 -24px;padding:0 24px">&nbsp;&nbsp;&nbsp;&nbsp;user.setName(<span style="color:#ce9178">"kim"</span>);</div><div>&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(user.getName());</div><div>&nbsp;&nbsp;}</div><div>}</div></div></div></div>
+  <div style="position:absolute;left:214px;top:96px;background:#1c1f24;color:#fff;border-radius:8px;padding:6px 4px;display:flex;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.28);font-size:13px">
+    <span style="padding:3px 12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--learn);display:inline-block"></span>Side Chat 시작</span><span style="width:1px;height:16px;background:#4b5563"></span><span style="padding:3px 12px;color:#d1d5db">메모</span>
+    <span style="position:absolute;left:34px;bottom:-5px;width:10px;height:10px;background:#1c1f24;transform:rotate(45deg)"></span></div>
+  <svg style="position:absolute;left:432px;top:158px;width:14px;height:20px" viewBox="0 0 14 20"><path d="M1 1 L1 15 L5 11 L8 18 L10 17 L7 10 L12 10 Z" fill="#fff" stroke="#000"/></svg>
+  <div class="zoom" style="left:auto;right:24px;bottom:96px;width:300px;font-size:12px"><b style="color:var(--ink)">동작</b><br>① 코드·문서에서 드래그<br>② 선택 바로 위에 작은 툴바 (Claude·Notion 방식)<br>③ [Side Chat 시작] 누르면 오른쪽에 패널 → 15b<br>④ 다른 곳 클릭하면 툴바 사라짐. 아무것도 기록 안 됨</div>
+  ${learnPill}<div class="taskbar"><span class="tray"><span class="dot" style="background:var(--learn)"></span>Trace</span><span>한국어</span><span>14:31</span></div></div>`;
+
+/* 15b Learn · Side Chat 열림 */
+V.s15b=()=>`<div class="frame desk">
+  <div class="win float" style="left:40px;top:30px;width:880px;height:690px"><div class="bar"><span class="name" style="color:#6b7280;font-weight:600">Main.java — java-hw2 — Visual Studio Code</span>${ctl}</div>
+    <div class="body"><div class="code"><div><span style="color:#569cd6">public class</span> <span style="color:#4ec9b0">Main</span> {</div><div>&nbsp;&nbsp;<span style="color:#569cd6">public static void</span> <span style="color:#dcdcaa">main</span>(String[] args) {</div><div style="background:#264f78;margin:0 -24px;padding:0 24px">&nbsp;&nbsp;&nbsp;&nbsp;User user = <span style="color:#569cd6">new</span> User();</div><div style="background:#264f78;margin:0 -24px;padding:0 24px">&nbsp;&nbsp;&nbsp;&nbsp;user.setName(<span style="color:#ce9178">"kim"</span>);</div><div>&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(user.getName());</div><div>&nbsp;&nbsp;}</div><div>}</div></div></div></div>
+  <div class="win float" style="left:936px;top:30px;width:368px;height:690px;border-color:#7dd3fc"><div class="bar" style="background:#f0f9ff;border-color:#bae6fd"><span class="name" style="color:#0369a1">Learn AI</span><span class="badge learn">Side Chat</span><span class="ctl"><span>─</span><span>✕</span></span></div>
+    <div class="body" style="display:flex;flex-direction:column;font-size:13px">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--line);background:var(--soft);font-size:12px;color:var(--muted)">선택한 2줄 · Main.java 11–12행 · 14:31 · 이 대화는 세션 기록에 연결됩니다</div>
+      <div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto">
+        <div style="align-self:flex-end;max-width:88%;background:#0ea5e9;color:#fff;padding:9px 12px;border-radius:12px 12px 2px 12px">이 부분은 왜 <code>new User()</code>를 꼭 써야 해? 선언만 하면 안 돼?</div>
+        <div style="max-width:92%;background:#fff;border:1px solid var(--line);padding:10px 12px;border-radius:12px 12px 12px 2px;line-height:1.6"><b>선언과 생성은 다릅니다.</b> <code>User user;</code>는 "User를 가리킬 수 있는 이름"만 만든 것이라 아직 아무것도 가리키지 않아요(null). <code>new User()</code>가 실제 객체를 메모리에 만들고, 그때부터 <code>user.setName()</code>을 부를 수 있습니다.<br><br>14:05에 났던 NullPointerException이 정확히 이 차이 때문이었어요. 선언만 된 <code>user</code>에 <code>.getName()</code>을 불렀으니까요.<div style="margin-top:8px;font-size:11.5px;color:var(--muted)">참고: 14:05 오류 · 14:06 질문 · 14:08 수정</div></div>
+        <div style="align-self:flex-end;max-width:88%;background:#0ea5e9;color:#fff;padding:9px 12px;border-radius:12px 12px 2px 12px">그럼 참조 변수랑 객체는 다른 거야?</div>
+        <div style="max-width:92%;background:#fff;border:1px solid var(--line);padding:10px 12px;border-radius:12px 12px 12px 2px;line-height:1.6">네. <b>참조 변수</b>는 주소를 담는 이름표, <b>객체</b>는 그 주소에 있는 실제 데이터입니다. 같은 객체를 두 이름표가 가리킬 수도 있어요. 직접 확인해 보려면 …<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border-radius:8px;font-size:12px;color:#0369a1">이 개념은 Learning Report의 "추가 학습" 에 올라갑니다 — 객체 생성과 참조 변수의 차이</div></div></div>
+      <div style="padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px"><span style="flex:1;border:1px solid var(--line);border-radius:9px;padding:8px 12px;color:var(--muted)">이어서 묻기…</span><button class="btn sm" style="background:#0ea5e9;border-color:#0ea5e9;color:#fff">보내기</button></div></div></div>
+  ${learnPill}<div class="taskbar"><span class="tray"><span class="dot" style="background:var(--learn)"></span>Trace</span><span>한국어</span><span>14:31</span></div></div>`;
+
+/* 16 Learn · Learning Session Report */
+V.s16=()=>`<div class="win frame" style="width:1344px">${appBar('Learn')}<div class="body rec-layout">${learnSide()}
+  <div class="main"><div class="head"><div><h3 style="margin:0;font-size:18px">2026-09-22 · Java 과제 2 <span class="badge learn">Learn</span></h3><div class="sub">14:00–14:50 · 50분 · Learning Session Report · 열어본 시각 16:20에 생성</div></div><div class="btns"><button class="btn sm">다시 생성</button><button class="btn sm primary">PDF로 내보내기</button></div></div>
+  <div class="tabs"><span>타임라인 + 맥락</span><span class="on">Learning Report</span><span>이벤트 원본</span></div>
+  <div class="pane">
+    <div class="hero" style="grid-template-columns:repeat(4,1fr)"><div class="h"><div class="lbl">직접 입력</div><div class="big" style="font-size:34px;color:#047857">1,250<small style="font-size:14px;font-weight:500;color:var(--muted)">자</small></div><div class="sm">붙여넣기 350자 · 2건 모두 이후 직접 수정</div></div><div class="h"><div class="lbl">AI 질문</div><div class="big" style="font-size:34px;color:#0369a1">2</div><div class="sm">둘 다 오류 직후 · 답변 참고 → 적용 → 수정</div></div><div class="h"><div class="lbl">오류 → 해결</div><div class="big" style="font-size:34px">2<small style="font-size:14px;font-weight:500;color:var(--muted)"> / 2</small></div><div class="sm">4분 · 19분</div></div><div class="h"><div class="lbl">참고 페이지</div><div class="big" style="font-size:34px">4</div><div class="sm">docs.oracle.com 8분 · 강의자료 5분</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div class="card"><h4>이번 세션의 주요 학습 내용</h4><ul style="margin:0;padding-left:18px;line-height:1.8"><li>Java 예외 처리</li><li>NullPointerException — 초기화되지 않은 참조</li><li>객체 참조와 초기화</li><li>ArrayIndexOutOfBoundsException — 배열 범위</li></ul></div>
+      <div class="card"><h4>가장 많은 어려움을 겪은 부분</h4><ul style="margin:0;padding-left:18px;line-height:1.8"><li><b>객체 초기화 과정</b> — 오류 → 질문 → 수정까지 4분, Side Chat에서 2번 더 질문</li><li><b>배열 인덱스 범위</b> — 문서 8분 읽고도 한 번 더 오류. 19분</li></ul></div>
+      <div class="card" style="grid-column:1/3"><h4>학습 과정 — 이벤트를 AI가 순서로 묶음</h4>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px">${['오류 발생','오류 원인 검색','AI에게 질문','답변 참고','코드 적용','직접 수정','재실행','오류 해결'].map((t,i)=>`<span style="padding:6px 12px;border-radius:999px;background:${i===5?'#ecfdf5':'#f3f4f7'};border:1px solid ${i===5?'#a7f3d0':'#e5e7eb'};font-weight:${i===5?700:500}">${t}</span>${i<7?'<span style="color:#9ca3af">→</span>':''}`).join('')}</div>
+        <p class="sub" style="font-size:12.5px;margin-top:8px">두 흐름 모두 "답변 참고" 뒤에 <b>직접 수정</b>이 있었습니다. 그대로 붙이고 끝난 경우는 없습니다.</p></div>
+      <div class="card"><h4>학습 포인트</h4><ul style="margin:0;padding-left:18px;line-height:1.8"><li>NullPointerException이 발생하는 상황</li><li>객체 참조와 초기화의 관계</li><li>오류 메시지(<code>at Main.main(Main.java:12)</code>)로 위치 찾기</li></ul></div>
+      <div class="card" style="border-color:#fde68a;background:#fffbeb"><h4 style="color:#92400e">추가 학습이 필요한 부분</h4><ul style="margin:0;padding-left:18px;line-height:1.8"><li>객체 생성과 참조 변수의 차이 — Side Chat에서 물었지만 코드로 확인 안 함</li><li>예외 발생 원인을 문서에서 직접 추적하기 — 두 번 다 AI에게 먼저 물음</li></ul></div></div>
+    <p class="sub" style="font-size:12px;margin-top:12px">이 리포트는 세션의 이벤트와 맥락(AI 질문·답변 발췌·참고 페이지·오류)을 AI가 정리한 것입니다. 점수·등급이 아니며, 내 PC와 내 계정에만 저장됩니다. 누구에게 보여줄지는 PDF로 내보내서 내가 정합니다.</p></div>
+  <div class="verify"><span>Learn Mode는 AI 사용 여부를 판정하지 않습니다.</span><span style="margin-left:auto">리포트 생성: Trace AI · 학생이 처음 열 때 (다시 생성 2회까지)</span></div></div></div></div>`;
+
+/* 17 Learn · 맥락 수집 설정 */
+V.s17=()=>`<div class="win frame" style="width:1100px">${appBar('Learn · 수집 설정')}<div class="body" style="padding:32px 48px 40px">
+  <h2>Learn 모드는 무엇을 기록하나</h2><p class="sub">Learn 모드는 맥락(내용)을 기록합니다. 그래서 항목마다 켜고 끌 수 있습니다. 기록은 내 PC와 내 계정에만 남고, 밖으로 나가는 건 내가 PDF로 내보낼 때뿐입니다.</p>
+  <div class="card" style="margin-top:16px;padding:4px 18px"><h4 style="margin:12px 0 4px">맥락 수집 — Proof 세션에는 적용되지 않음</h4>
+    ${[['AI에게 입력한 질문','AI 사이트에서 내가 보낸 질문 원문. 학습 흐름의 "왜 물었나"',true],['AI 답변 중 복사한 부분','복사한 텍스트만(≤500자). 답변 전체는 저장 안 함',true],['선택한 텍스트','AI로 넘어가기 직전 드래그한 글(≤200자)',false],['방문한 학습 페이지','제목·URL·체류 시간. 학습자료로 분류된 사이트만',true],['Side Chat 대화','선택한 코드·질문·답변. 리포트의 "추가 학습"에 반영',true],['코드 변경·실행 결과·오류','VS Code 확장 — 브라우저 다음 순서로 예정',null],['문서 변경·붙여넣은 위치','Word · PowerPoint (Office 자동화) — 그 다음 순서로 예정',null]].map(([a,b,on])=>`<div class="row"><div class="t"><b>${a}</b><span>${b}</span></div>${on===null?'<span class="badge">예정</span>':`<button class="sw ${on?'on':''}" style="${on?'background:var(--learn)':''}"></button>`}</div>`).join('')}</div>
+  <div class="card" style="margin-top:14px;padding:4px 18px"><h4 style="margin:12px 0 4px">분류표 — 어떤 사이트·앱을 무엇으로 볼지</h4>
+    <div class="row"><div class="t"><b>AI</b><span class="mono" style="font-size:12.5px">claude.ai, chatgpt.com, gemini.google.com, perplexity.ai, copilot.microsoft.com</span></div><button class="btn sm">편집</button></div>
+    <div class="row"><div class="t"><b>학습자료</b><span class="mono" style="font-size:12.5px">*.ac.kr, docs.oracle.com, docs.python.org, developer.mozilla.org, stackoverflow.com, wikipedia.org</span></div><button class="btn sm">편집</button></div>
+    <div class="row"><div class="t"><b>작업</b><span class="mono" style="font-size:12.5px">Code.exe, WINWORD.EXE, POWERPNT.EXE, notion.so, docs.google.com</span></div><button class="btn sm">편집</button></div></div>
+  <div class="card" style="margin-top:14px;padding:4px 18px"><h4 style="margin:12px 0 4px">세션 관리</h4>
+    ${[['2026-09-22 · 14:00–14:50','Java 과제 2 · AI 질문 2 · 리포트 완료'],['2026-09-19 · 10:00–10:40','기획안 정리 · AI 질문 1 · 리포트 없음'],['2026-09-17 · 14:00–15:30','Java 과제 1 · AI 질문 3 · 리포트 완료']].map(([a,b])=>`<div class="row"><div class="t"><b>${a}</b><span>${b}</span></div><button class="btn sm">리포트</button><button class="btn sm">PDF</button><button class="btn sm danger">삭제</button></div>`).join('')}
+    <p class="sub" style="font-size:12px;margin:8px 0 10px">Learn 세션은 삭제하면 사라집니다 (Proof와 다름 — Proof는 봉인 후 삭제 불가).</p></div></div></div>`;
+
+/* 개요 페이지 */
+V.overview=()=>`<div class="ov"><div class="crumb">Trace · 전체 · 디자이너 전달 · 2026-09-19</div><h1>Trace · 켜서 봉인하고 증명서까지</h1><p class="lead">앱을 켜면 모드를 고르고, Proof는 화면 구석 알약만 남긴 채 백그라운드에서 기록하다가 봉인하면 해시 체인으로 잠기고, 내 기록에서 열람하거나 증명서로 내보낸다. Learn은 같은 기록을 타임라인으로 돌아본다.</p>
+  <div class="cols"><div class="panel"><h2>순서와 화면</h2>
+    <div class="lg"><span class="chip new">신규 · 이번 목업</span><span class="chip todo">예정 · 다음 라운드</span><span class="chip chg">변경 · v0.2 대비</span></div>
+    ${[['1','시작','01','모드 선택','기본 = Proof · 다음부터 묻지 않기 · 수집 항목 한 줄','',0],['','','02','첫 실행 · 수집 항목 동의','기록 항목 전부 나열 · 창 제목 남길 앱 · 감시 폴더','예정',1],
+      ['2','Proof 기록','03','기록 중 · 알약','우하단 26px · 경과·이벤트 수·정지 · 작업 방해 없음','변경',0],['','','04','알약 hover','팝오버: 경과·이벤트·입력/삭제·붙여넣기·해시 · [내 기록][봉인]','',0],['','','05','봉인 확인','기간·이벤트·입력·붙여넣기·루트 해시 · 되돌릴 수 없음 경고','',0],['','','06','봉인 완료','로컬 저장 ✓ · OTS 제출 ✓ · 앵커 대기 · 트레이 알림','예정',1],
+      ['3','내 기록','07','한눈에','직접 입력 % vs 붙여넣기 % · 레인 그래프 4개 · 핵심 순간 4개','변경',0],['','','7b','상세 활동 펼침','"▶ 상세 활동 보기" 누르면 창별 시간순 표 · 출처 창 이름 표시','신규',0],['','','08','체인 원본','이벤트 표 · 이전 해시 → 해시 · 증명하는/않는 것','',0],['','','09','검증 결과','체인 재계산 · 루트 일치 · 앵커 블록 · 시각 순서','예정',1],
+      ['4','증명서','10','내보내기 옵션','PDF / .json+.ots · 창 제목·그래프·핵심 순간 포함 여부 · 작성자','예정',1],['','','11','증명서 문서 (A4 1장)','한 문장 결론 · 해시 · 앵커 · 구성 % · 그래프 · 검증 QR','신규',0],['','','12','검증자 웹','설치 없이 .json+.ots 올려 검증 · 브라우저 안에서만 계산','예정',1],
+      ['5','Learn','13','기록 중 · 알약(파랑)','맥락 수집 켜짐 표시 · hover에 AI 질문·참고·오류 수 · [Side Chat]','예정',1],['','','13b','알약 위 질문칸','항상 떠 있는 작은 입력칸 · 웹에 안 가고 바로 묻기 · Proof에는 없음','예정',1],['','','13c','물어보기 패널','질문칸 위로 펼쳐짐 · 세션 오류를 근거로 답함 · ✕ 로 닫힘','예정',1],['','','14','타임라인 + 맥락','학습 흐름 마커 → 맥락 패널(오류·질문·답변 발췌·이후 수정) · AI가 흐름을 묶음','예정',1],['','','15','선택 → 작은 툴바','드래그하면 [Side Chat 시작 | 메모] 만. 다른 곳 누르면 사라짐','예정',1],['','','15b','Side Chat 열림','툴바를 누르면 오른쪽 패널 · 선택한 코드로 질문 · 세션 기록과 연결','예정',1],['','','16','Learning Session Report','학습 내용·어려움·과정·포인트·추가 학습 · 점수 없음','예정',1],['','','17','수집 설정','항목별 토글(질문·답변·선택·페이지·Side Chat) · 분류표 · 교수 공개 없음','예정',1]]
+      .map(([ph,pn,id,t,d,c,todo])=>`${ph?`<div class="ph">${ph} · ${pn}</div>`:''}<div class="step"><div class="n ${todo?'todo':''}">${id}</div><div class="x"><b>${t} ${c?`<span class="chip ${c==='예정'?'todo':c==='변경'?'chg':'new'}" style="font-size:11px;padding:1px 8px;vertical-align:2px">${c}</span>`:''}</b><span>${d}</span></div><div class="id">${id} · ${ph==='5'||pn==='Learn'||id>=13?'Learn':'Proof'}</div></div>`).join('')}</div>
+  <div><div class="panel"><h2>두 모드</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="card" style="border-color:#ddd6fe;background:#faf8ff"><b style="color:var(--proof)">Proof · 기본</b><div style="font-size:13px;color:var(--muted);margin-top:4px">봉인 → 못 고침 → 제3자에게 증명서. 키 훅 필수(횟수만).</div></div><div class="card" style="border-color:#bae6fd;background:#f0f9ff"><b style="color:#0369a1">Learn</b><div style="font-size:13px;color:var(--muted);margin-top:4px">이벤트 + 맥락(질문·답변 발췌·페이지·오류) → AI 분석 → Learning Report. Side Chat. 교수 공유 없음 — 나를 위한 기록.</div></div></div></div>
+  <div class="panel" style="margin-top:22px"><h2>화면 원칙</h2><ol>
+    ${['<b>판정하지 않는다.</b> "AI 확률" 같은 숫자 없음. 직접 입력 %·붙여넣기 %는 사실, 해석은 보는 사람 몫 — 모든 결과 화면 하단에 한 줄로 명시',
+       '<b>내용은 어디에도 없다.</b> 화면·키 내용·클립보드 원문·AI 대화는 기록 자체를 안 함. 모든 수치는 횟수·길이·해시',
+       '<b>기록 중엔 알약만.</b> 26px, 글씨 11px, 정지 버튼 14px. 창을 가리지 않음. 자세한 건 hover',
+       '<b>봉인은 되돌릴 수 없고, 그 사실을 두 번 말한다.</b> 봉인 확인 다이얼로그 + 내 기록 상단 보라 띠',
+       '<b>결과는 한 문장 + 두 숫자부터.</b> "직접 입력 57% / 붙여넣기 43%" → 막대 → 레인 그래프 → 핵심 순간 순으로 내려감',
+       '<b>레인 그래프는 4줄 고정.</b> 활성 창 / 직접 입력 / 붙여넣기 / 삭제·되돌리기. 빨강은 오직 "브라우저(AI 사이트)에서 복사한 것과 같은 해시한 붙여넣기"에만',
+       '<b>증명하는 것과 않는 것을 항상 나란히.</b> 체인·증명서·검증 화면 전부',
+       '<b>앵커는 시간차가 있다.</b> "봉인됨"과 "앵커 확인"을 다른 뱃지로. 대기는 노랑, 완료는 초록',
+       '<b>검증자는 설치하지 않는다.</b> PDF 1장 + .json/.ots + 웹 검증 페이지. 브라우저 안에서만 계산',
+       '<b>Learn은 맥락을 기록하되 항목별로 끈다.</b> AI 질문·답변 발췌·선택 텍스트·페이지 각각 토글. Proof 세션엔 맥락이 아예 없다',
+       '<b>Learn의 결론은 "AI를 썼나"가 아니라 "AI를 쓴 뒤 무엇을 했나".</b> 리포트의 학습 과정 띠에서 "직접 수정"을 강조',
+       '<b>Learn에는 공유 개념이 없다.</b> 나를 위한 기록. 밖으로 나가는 건 내가 PDF로 내보낼 때뿐. Side Chat은 드래그 → 작은 툴바 → 클릭, 두 단계',
+       '<b>화이트리스트 밖 앱은 제목 없이 "기타".</b> 첫 실행 화면에서 학생이 직접 고름'].map((t,i)=>`<li><span class="i">${String(i+1).padStart(2,'0')}</span><span>${t}</span></li>`).join('')}</ol></div></div></div></div>`;
+
+/* 기획 변화 정리 (PDF) */
+V.changes=()=>`<div class="chgdoc"><div class="crumb" style="font-family:var(--mono);font-size:10px;color:var(--muted)">TRACE · 기획 변화 정리 · 2026-09-19</div><h1>Trace 기획 변화 정리</h1><p class="lead">기획안 v0.2(웹 프로토타입 · Learn Must) → 목업북 v0.3(설치형 앱 · Proof 기본). 디자이너가 화면을 그리기 전에 알아야 할 결정만 적었다.</p>
+  <h2>01 무엇이 바뀌었나</h2>
+  <table><thead><tr><th style="width:22%">항목</th><th style="width:36%">기획안 v0.2 (9/19 오전)</th><th>목업북 v0.3 (9/19 오후)</th></tr></thead><tbody>
+    <tr><td>형태</td><td>웹 프로토타입 + 로컬 수집기 (Flask → 브라우저)</td><td><b>설치형 앱 하나.</b> 수집·열람·증명서가 앱 안. 프로그램 받고 웹으로 다시 들어오는 사람은 거의 없다</td></tr>
+    <tr><td>기본 모드</td><td>Learn Must · Proof Should</td><td><b>Proof 기본.</b> 실행 → 모드 선택 → Proof면 알약만 남기고 백그라운드. Learn은 같은 수집기에 출력만 다름</td></tr>
+    <tr><td>기록 중 UI</td><td>(없음 — 웹 타임라인만)</td><td>우하단 26px 알약. hover 시 팝오버. 창을 가리지 않는다</td></tr>
+    <tr><td>Proof 이벤트</td><td>창 전환 · 복사 · 붙여넣기 · 파일</td><td>+ <b>입력 · 삭제 · 되돌리기 · 다시 실행</b> (횟수만). 이것 없이는 "직접 쳤는지"가 그래프에 안 나온다 → 키 훅이 Proof에서 필수</td></tr>
+    <tr><td>결과 화면 (Proof)</td><td>타임라인 + 지표 5개</td><td><b>한눈에</b>: 직접 입력 % / 붙여넣기 % 두 숫자 → 구성 막대 → 레인 그래프 4줄 → 핵심 순간 4개. 체인 원본은 별도 탭</td></tr>
+    <tr><td>Learn Mode</td><td>이벤트만 · 타임라인 · 지표 4개 · 메모</td><td><b>최종 기획서:</b> 이벤트 + <b>맥락</b>(AI 질문·답변 발췌·선택 텍스트·페이지·오류) → AI 분석 → <b>Learning Session Report</b> · <b>Side Chat</b>. 맥락은 브라우저 확장이 Learn 모드에서만, 항목별 토글. VS Code 맥락은 이번 학기 제외</td></tr>
+    <tr><td>증명서</td><td>"해시 체인으로 봉인된 증명서" 한 줄</td><td>3종 구체화: PDF 1장 · .json+.ots 검증 파일 · 검증자 웹 페이지(설치 없음)</td></tr>
+    <tr><td>수정 가능성</td><td>Learn은 메모·삭제(공백) / Proof는 봉인 후 불가</td><td>동일. Proof "내 기록"엔 편집·삭제 버튼 자체가 없음. 상단 보라 띠로 명시</td></tr></tbody></table>
+  <h2>02 그대로 가는 것</h2>
+  <div class="two"><div class="box"><b>판정하지 않는다.</b> 합산 점수·등급·AI 확률 없음. 모든 결과 화면 하단에 "사실만 보여줍니다" 한 줄.</div><div class="box"><b>내용을 읽지 않는다.</b> 화면·키 내용·클립보드 원문·AI 대화 없음. 횟수·길이·해시만. 첫 실행 화면에서 전부 나열.</div><div class="box"><b>기록의 주인은 학생.</b> 로컬 먼저 저장, 공유는 세션별 선택(Learn), 증명서 내보내기도 학생이 누름(Proof).</div><div class="box"><b>증명하는 것 / 않는 것.</b> "순서·시각·불변" 은 증명, "AI 아님·본인·품질" 은 증명 안 함. 항상 나란히.</div></div>
+  <h2>03 화면 목록과 상태</h2>
+  <table><thead><tr><th>단계</th><th>화면</th><th>상태</th><th>디자이너에게</th></tr></thead><tbody>
+    <tr><td>1 시작</td><td>01 모드 선택 · 02 첫 실행 동의</td><td>01 완료 · 02 예정</td><td>Proof 카드가 기본으로 선택된 상태. Learn은 옆에 같은 크기</td></tr>
+    <tr><td>2 Proof 기록</td><td>03 알약 · 04 hover · 05 봉인 확인 · 06 봉인 완료</td><td>03~05 완료 · 06 예정</td><td>알약은 26px 고정. 색은 빨강(기록) 하나. 팝오버는 240px</td></tr>
+    <tr><td>3 내 기록</td><td>07 한눈에 · 07b 상세 활동 펼침 · 08 체인 원본 · 09 검증 결과</td><td>07~08 완료 · 09 예정</td><td>07이 핵심. 두 숫자(57% / 43%)가 첫눈에 들어와야 함. 빨강은 "AI에서 복사한 것" 에만. 상세 로그는 접혀 있고 눌러야 펼쳐짐(9/20 실테스트에서 나온 요구)</td></tr>
+    <tr><td>4 증명서</td><td>10 내보내기 옵션 · 11 PDF 문서 · 12 검증자 웹</td><td>11 완료 · 10·12 예정</td><td>11은 A4 1장. 맨 위 한 문장 결론 → 해시·앵커 → 구성 % → 그래프 → QR</td></tr>
+    <tr><td>5 Learn</td><td>13 기록 중 · 13b 알약 위 질문칸 · 13c 물어보기 패널 · 14 타임라인+맥락 · 15 선택 툴바 · 15b Side Chat · 16 Learning Report · 17 수집 설정</td><td>예정 (최종 기획서 반영)</td><td>Proof와 같은 창 틀, 색만 파랑. 14의 맥락 패널과 16의 학습 과정 띠가 중심. "직접 수정"을 초록으로. <b>교수 공개 없음</b> — Learn은 나를 위한 기록</td></tr></tbody></table>
+  <h2>04 아직 정하지 않은 것 (디자인에 영향)</h2>
+  <table><tbody><tr><td style="width:40%">알약 위치를 사용자가 옮길 수 있게 할지 (우하단 고정 vs 드래그)</td><td>제안: 고정. 트레이 아이콘이 있으니 위치 선택은 다음</td></tr>
+    <tr><td>"핵심 순간" 4개를 자동 추출만 할지, 학생이 고를 수 있게 할지</td><td>Proof는 자동만 (고르면 증명력 약화). Learn은 메모로 대체</td></tr>
+    <tr><td>증명서에 작성자 이름을 넣을지</td><td>선택. 비우면 익명 · 세션 ID로만 식별. "Trace가 확인하지 않음" 표기</td></tr>
+    <tr><td>Learn과 Proof를 한 세션에서 동시에 켤 수 있는지</td><td>아니오. 한 세션 = 한 모드. 전환은 새 세션</td></tr></tbody></table>
+  <p style="margin-top:14px;color:var(--muted);font-size:10.5px">파일: 목업북 HTML 한 개(trace-mockbook.html)에서 모든 화면을 ?screen=ID 로 열 수 있고, build.py 가 이 PNG/PDF 를 다시 만든다. 색은 :root 변수, 데이터는 DATA 블록.</p></div>`;
+
+/* 메타 (문서 헤더) */
+const META={
+  s01:['1','모드 선택 — 앱을 켜면 먼저 묻는다. 기본은 Proof','두 카드 같은 크기, Proof가 선택된 채로 열림. "다음부터 묻지 않기" 체크 시 다음 실행부터 바로 알약.',[['keep','유지: v0.2']]],
+  s02:['2','첫 실행 — 무엇을 기록하는지 전부 보여주고 시작','한 번만. 항목 4개 · 창 제목을 남길 앱(화이트리스트) · 감시 폴더. 여기 없는 건 기록하지 않는다는 약속 화면.',[['todo','예정']]],
+  s03:['3','기록 중 — 우하단 알약 하나만 남는다','26px 높이. ● 경과 · 이벤트 수 · ■ 정지. 작업 창을 가리지 않고, 트레이에도 같은 점.',[['chg','변경: 창 → 알약']]],
+  s04:['4','알약 hover — 필요할 때만 자세히','마우스를 올리면 240px 팝오버. 벗어나면 다시 알약. 버튼은 [내 기록] [봉인하고 종료] 둘.',[['new','신규']]],
+  s05:['5','봉인 확인 — 되돌릴 수 없다는 걸 한 번 더','무엇이 묶이는지(기간·이벤트·입력·붙여넣기·루트 해시) 보여주고 경고. 취소는 "계속 기록".',[['chg','변경: 입력·삭제 항목 추가']]],
+  s06:['6','봉인 완료 — 로컬 저장 ✓ · OTS 제출 ✓ · 앵커는 대기','앵커(비트코인 블록 확인)는 보통 1시간. 대기 중에도 증명서는 만들 수 있고, 확인되면 트레이 알림.',[['todo','예정']]],
+  s07:['7','내 기록 · 한눈에 — 두 숫자부터, 그래프로, 순간으로','직접 입력 % / 붙여넣기 % → 구성 막대 → 레인 4줄(활성 창·입력·붙여넣기·삭제) → 핵심 순간 4개. 빨강은 "브라우저(AI 사이트) 복사본 일치" 에만.',[['chg','변경: 시인성 재구성']]],
+  s07b:['7b','내 기록 · 상세 활동 펼침 — 눌러야 보인다','"▶ 상세 활동 보기"를 누르면 창이 바뀔 때마다 한 줄씩 시간순 표. 출처 창 이름으로 "Chrome · Claude에서 복사한 것". 접으면 사라짐.',[['new','신규 · 9/20 실테스트 반영']]],
+  s08:['8','내 기록 · 체인 원본 — 이벤트 하나하나와 해시','이전 해시 → 해시. 중간 하나 바뀌면 이후가 전부 어긋난다. 편집·삭제 버튼 없음.',[['keep','유지: v0.2']]],
+  s09:['9','검증 결과 — 앱 안에서 다시 계산','체인 재계산 · 루트 일치 · 앵커 블록 · 봉인 ≤ 앵커 시각. "누가·AI 여부"는 확인하지 않는다고 명시.',[['todo','예정']]],
+  s10:['10','증명서 내보내기 — 무엇을 누구에게','PDF 1장 / .json+.ots · 창 제목·그래프·핵심 순간 포함 여부 · 작성자 이름(선택).',[['todo','예정']]],
+  s11:['11','증명서 — A4 한 장','맨 위 한 문장 결론 → 세션·해시·앵커 → 구성 % → 분당 활동 → 핵심 순간 · 말하는 것/않는 것 → 검증 QR.',[['new','신규']]],
+  s12:['12','검증자 웹 — 설치 없이 파일만 올려서','제3자용. 브라우저 안에서만 계산. 결과는 앱 "한눈에" 와 같은 구성.',[['todo','예정']]],
+  s13:['13','Learn · 기록 중 — 같은 알약, 파란 점, "맥락 수집 켜짐"','Proof와 같은 26px 알약. hover 팝오버에 맥락 수(AI 질문·참고 페이지·오류)와 [Side Chat] 버튼이 추가된다.',[['todo','예정'],['chg','변경: 최종 기획서 반영']]],
+  s13b:['13b','Learn · 알약 위 질문칸 — 웹에 가지 않고 바로 묻는다','알약과 같은 폭의 작은 입력칸이 항상 떠 있다. 누르거나 치면 채팅 패널이 위로 펼쳐진다(13c). 질문은 세션 맥락에 남는다. Proof에는 없음.',[['todo','예정'],['new','신규 · 9/21']]],
+  s13c:['13c','Learn · 물어보기 패널 펼침 — 물었다가 닫는다','질문칸 위로 360px 패널. 답변에 이 세션의 오류·질문을 근거로 붙인다. ✕ 로 닫으면 질문칸만 남음. 코드를 드래그해서 묻는 Side Chat(15)과 같은 기능, 진입만 다름.',[['todo','예정'],['new','신규 · 9/21']]],
+  s14:['14','Learn · 타임라인 + 맥락 — 이벤트가 아니라 이벤트의 맥락','학습 흐름 마커(오류·질문·참고·붙여넣기·수정·실행·해결)를 누르면 오른쪽에 맥락: 직전 오류 → 내 질문 → 답변 발췌 → 이후 수정. AI가 흐름을 묶는다.',[['todo','예정'],['chg','변경: 맥락 패널 신설']]],
+  s15:['15','Learn · 선택하면 작은 툴바 — 아직 아무것도 안 뜬다','드래그하면 선택 바로 위에 [Side Chat 시작 | 메모] 툴바만. 다른 곳을 누르면 사라지고 기록도 없다. Claude·Notion 방식.',[['todo','예정'],['new','신규']]],
+  s15b:['15b','Learn · Side Chat — 툴바를 누르면 오른쪽에 열린다','선택한 코드가 대화의 기준. 답변은 이 세션의 이전 오류·질문을 참조하고, 대화는 세션 기록과 Report에 연결된다.',[['todo','예정'],['new','신규']]],
+  s16:['16','Learn · Learning Session Report — 한 세션을 정리한 보고서','주요 학습 내용 · 어려움 · 학습 과정(오류→질문→참고→적용→수정→재실행→해결) · 학습 포인트 · 추가 학습. 점수 없음.',[['todo','예정'],['new','신규']]],
+  s17:['17','Learn · 수집 설정 — 항목마다 켜고 끈다, 공유 개념은 없다','Learn은 내용을 기록하므로 항목별 토글(질문·답변 발췌·선택 텍스트·페이지·Side Chat). 분류표 편집. 교수 공개 없음 — 밖으로 나가는 건 PDF 내보내기뿐.',[['todo','예정'],['chg','변경: 교수 공개 제거']]],
+};
+
+const q=new URLSearchParams(location.search), id=q.get('screen')||'s01';
+const root=document.getElementById('root');
+if(id==='overview'||id==='changes'){ root.innerHTML=V[id](); if(id==='changes') document.body.style.background='#fff'; }
+else{ const [n,t,d,chips]=META[id]; const cls=parseInt(n)>=13?'l':'p';
+  root.innerHTML=`<div class="doc"><div class="hd"><span class="num ${cls}">${n}</span><h1>${t}</h1></div><div class="desc">${d}${chips.map(([c,x])=>`<span class="chip ${c}">${x}</span>`).join('')}</div>${V[id]()}</div>`; }
+</script>
+</body>
+</html>
