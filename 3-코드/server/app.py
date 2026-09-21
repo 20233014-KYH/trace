@@ -13,12 +13,15 @@ app.py — Trace Backend (A)
 계약: docs/api.md
 참고 구현: 3-코드/collector/dev_receiver.py  — 둘은 같은 응답을 내야 한다
 """
+import functools
 import os
+import secrets
 import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
+from werkzeug.security import check_password_hash, generate_password_hash
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))          # 3-코드/ 를 경로에 넣어 core 를 쓴다
@@ -59,11 +62,177 @@ def 이벤트들(db세션, sid):
     return [r.payload for r in 행들]
 
 
+# ─────────────────────────── 인증 (계약 1절) ───────────────────────────
+#
+# ★ 지금은 '켜져 있지만 강제하지 않는다' ★
+#   B 의 수집기는 아직 토큰을 안 보낸다. 여기서 401 을 던지기 시작하면
+#   10/7 관통 테스트가 그대로 깨진다.
+#   그래서 기본값은 끔. 수집기가 토큰을 보내게 되면 그때 켠다.
+#
+#       TRACE_REQUIRE_AUTH=1 python server/app.py
+#
+#   토큰이 오면 꺼져 있어도 확인하고 g.user 에 담는다. 그래야 켜기 전에
+#   "제대로 붙었나"를 미리 볼 수 있다.
+
+인증_강제 = os.environ.get("TRACE_REQUIRE_AUTH", "0") == "1"
+
+
+def 토큰_사용자(d):
+    """Authorization: Bearer <token> 을 보고 사용자를 찾는다. 없으면 None."""
+    머리 = request.headers.get("Authorization", "")
+    if not 머리.startswith("Bearer "):
+        return None
+    t = d.get(db.Token, 머리[7:].strip())
+    if not t:
+        return None
+    t.last_used_at = now().replace(tzinfo=None)
+    return d.get(db.User, t.user_id)
+
+
+def 로그인_필요(f):
+    """인증이 강제일 때만 막는다. 아니면 통과시키되 g.user 는 채운다."""
+    @functools.wraps(f)
+    def 감싼것(*a, **kw):
+        with db.Session() as d:
+            u = 토큰_사용자(d)
+            d.commit()
+            g.user_id = u.id if u else None
+            g.user_name = u.name if u else None
+        if 인증_강제 and not g.user_id:
+            return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
+        return f(*a, **kw)
+    return 감싼것
+
+
+@app.post("/api/auth/signup")
+def signup():
+    """★ 계약에 없던 것을 더했다 (9/21, A).
+    로그인만 있으면 계정을 만들 방법이 없다. B 에게 알렸다."""
+    b = request.get_json(force=True)
+    이메일 = (b.get("email") or "").strip().lower()
+    비번 = b.get("password") or ""
+    if not 이메일 or len(비번) < 8:
+        return jsonify(error="bad_request",
+                       message="이메일과 8자 이상 비밀번호가 필요합니다"), 400
+    with db.Session() as d:
+        if d.query(db.User).filter(db.User.email == 이메일).first():
+            return jsonify(error="conflict", message="이미 있는 이메일입니다"), 409
+        u = db.User(id=str(uuid.uuid4()), email=이메일,
+                    password_hash=generate_password_hash(비번),   # ★ 원문은 저장하지 않는다
+                    name=b.get("name") or 이메일.split("@")[0],
+                    created_at=now().replace(tzinfo=None))
+        d.add(u)
+        d.commit()
+        결과 = {"id": u.id, "name": u.name}
+    print(f"← signup {이메일}")
+    return jsonify(id=결과["id"], name=결과["name"]), 201
+
+
+@app.post("/api/auth/login")
+def login():
+    b = request.get_json(force=True)
+    이메일 = (b.get("email") or "").strip().lower()
+    with db.Session() as d:
+        u = d.query(db.User).filter(db.User.email == 이메일).first()
+        # ★ "이메일이 없다" 와 "비번이 틀렸다" 를 구분해서 알려주지 않는다.
+        #   구분해 주면 어떤 이메일이 가입되어 있는지 알아낼 수 있다.
+        if not u or not check_password_hash(u.password_hash, b.get("password") or ""):
+            return jsonify(error="unauthorized", message="이메일 또는 비밀번호가 맞지 않습니다"), 401
+        t = db.Token(token=secrets.token_urlsafe(32), user_id=u.id,
+                     device=(b.get("device") or "")[:100],
+                     created_at=now().replace(tzinfo=None))
+        d.add(t)
+        d.commit()
+        답 = {"token": t.token, "user": {"id": u.id, "name": u.name}}
+    print(f"← login {이메일}")
+    return jsonify(답)
+
+
+@app.post("/api/auth/logout")
+def logout():
+    """이 기기 연결 끊기. 토큰 한 줄을 지운다."""
+    머리 = request.headers.get("Authorization", "")
+    if not 머리.startswith("Bearer "):
+        return jsonify(error="bad_request", message="토큰이 없습니다"), 400
+    with db.Session() as d:
+        t = d.get(db.Token, 머리[7:].strip())
+        if t:
+            d.delete(t)
+            d.commit()
+    return jsonify(ok=True)
+
+
+@app.get("/api/me")
+@로그인_필요
+def me():
+    if not g.user_id:
+        return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
+    with db.Session() as d:
+        works = d.query(db.Work).filter(db.Work.user_id == g.user_id).all()
+        답 = {"id": g.user_id, "name": g.user_name,
+              "works": [{"id": w.id, "title": w.title, "mode": w.mode} for w in works]}
+    return jsonify(답)
+
+
+# ─────────────────────────── Work (계약 2절) ───────────────────────────
+@app.post("/api/works")
+@로그인_필요
+def create_work():
+    b = request.get_json(force=True)
+    모드 = b.get("mode")
+    if 모드 not in ("learn", "proof"):
+        return jsonify(error="bad_request",
+                       message='mode 는 "learn" 또는 "proof" 여야 합니다'), 400
+    with db.Session() as d:
+        w = db.Work(id=b.get("id") or str(uuid.uuid4()), user_id=g.user_id,
+                    title=b.get("title") or "제목 없음", mode=모드,
+                    created_at=now().replace(tzinfo=None))
+        d.add(w)
+        d.commit()
+        답 = {"id": w.id, "title": w.title, "mode": w.mode,
+              "created_at": w.created_at.isoformat(timespec="seconds")}
+    print(f"← work 만듦 {답['id'][:8]}…  {답['title']}  ({모드})")
+    return jsonify(답), 201
+
+
+@app.get("/api/works")
+@로그인_필요
+def list_works():
+    with db.Session() as d:
+        q = d.query(db.Work)
+        if g.user_id:
+            q = q.filter(db.Work.user_id == g.user_id)
+        목록 = []
+        for w in q.all():
+            세션들 = d.query(db.Sess).filter(db.Sess.work_id == w.id).all()
+            마지막 = max((s.started_at for s in 세션들 if s.started_at), default=None)
+            목록.append({"id": w.id, "title": w.title, "mode": w.mode,
+                         "sessions": len(세션들), "last_at": 마지막})
+    return jsonify(목록)
+
+
+@app.get("/api/works/<wid>")
+@로그인_필요
+def get_work(wid):
+    with db.Session() as d:
+        w = d.get(db.Work, wid)
+        if not w or (g.user_id and w.user_id and w.user_id != g.user_id):
+            return jsonify(error="not_found"), 404
+        세션들 = []
+        for s in d.query(db.Sess).filter(db.Sess.work_id == wid).all():
+            n = d.query(db.Event).filter(db.Event.session_id == s.id).count()
+            세션들.append({"id": s.id, "start": s.started_at, "end": s.ended_at,
+                           "dur": None, "events": n, "sealed": bool(s.sealed_at)})
+        답 = {"id": w.id, "title": w.title, "mode": w.mode, "sessions": 세션들}
+    return jsonify(답)
+
+
 # ─────────────────────────── 계약 0 · 확인용 ───────────────────────────
 @app.get("/api/health")
 def health():
     with db.Session() as s:
-        return jsonify(ok=True, sessions=s.query(db.Sess).count(), storage="db")
+        return jsonify(ok=True, sessions=s.query(db.Sess).count(), storage="db",
+                       auth="required" if 인증_강제 else "optional")
 
 
 # ─────────────────────────── 계약 3 · 세션 ───────────────────────────
@@ -295,4 +464,5 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     print(f"Trace Backend  http://127.0.0.1:5000/api   저장: {db.DB_URL}")
     print("  계약: docs/api.md   ·  참고 구현과 같은 응답을 내야 합니다")
+    print(f"  인증: {'강제' if 인증_강제 else '선택 (TRACE_REQUIRE_AUTH=1 로 켬)'}")
     app.run(host="127.0.0.1", port=5000, debug=False)

@@ -33,9 +33,34 @@
 ## 1. 인증 (A)
 
 ```
-POST /auth/login        {email, password}           → {token, user:{id, name}}
-GET  /me                                             → {id, name, works:[…]}
+POST /auth/signup       {email, password, name?}    → {id, name}              201
+POST /auth/login        {email, password, device?}  → {token, user:{id, name}}
+POST /auth/logout       (Bearer)                    → {ok:true}
+GET  /me                (Bearer)                    → {id, name, works:[…]}
 ```
+
+**★ 초안에 없던 것 2개를 더했습니다 (9/21, A → B 에게 알림)**
+
+| | 왜 |
+|---|---|
+| `POST /auth/signup` | 로그인만 있으면 **계정을 만들 방법이 없습니다** |
+| `POST /auth/logout` | 토큰 한 줄을 지웁니다. "이 기기 연결 끊기" |
+
+**토큰은 JWT 가 아니라 DB 의 무작위 문자열**입니다. JWT 는 서버가 들고 있지 않아
+로그아웃·강제 만료를 못 합니다. 학생 기록을 다루므로 **연결 끊기가 되어야** 합니다.
+
+**★ 지금 인증은 켜져 있지만 강제하지 않습니다**
+
+B 의 수집기는 아직 토큰을 보내지 않습니다. 여기서 401 을 던지기 시작하면
+**10/7 관통 테스트가 그대로 깨집니다.** 그래서 기본값은 끔:
+
+```bash
+python server/app.py                        # 인증 선택 (기본)
+TRACE_REQUIRE_AUTH=1 python server/app.py   # 인증 강제
+```
+
+토큰이 오면 꺼져 있어도 확인해서 사용자를 붙입니다 — 켜기 전에 미리 확인할 수 있습니다.
+**수집기가 토큰을 보내게 되면 그때 켭니다.**
 
 ## 2. Work — 하나의 과제·작업 단위 (A)
 

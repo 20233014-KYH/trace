@@ -39,6 +39,22 @@ class User(Base):
     created_at = Column(DateTime)
 
 
+class Token(Base):
+    """로그인 토큰. JWT 대신 무작위 문자열을 DB 에 둔다.
+
+    ★ 왜 JWT 가 아닌가 ★
+      JWT 는 서버가 들고 있지 않아서 '로그아웃·강제 만료'를 할 수 없다.
+      학생 기록을 다루는 서비스라 "이 기기 연결 끊기"가 되어야 한다.
+      표 하나면 그게 되고, 초보가 봐도 무슨 일이 일어나는지 보인다.
+    """
+    __tablename__ = "tokens"
+    token = Column(String(64), primary_key=True)
+    user_id = Column(String(64), ForeignKey("users.id"))
+    device = Column(String(100))
+    created_at = Column(DateTime)
+    last_used_at = Column(DateTime)
+
+
 class Work(Base):
     """하나의 과제·작업. 한 Work = 한 모드 (learn 또는 proof)."""
     __tablename__ = "works"
