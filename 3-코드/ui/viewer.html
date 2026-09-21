@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Trace 뷰어 — 한눈에 (테스트용)</title>
+<!--
+  viewer.html — core/derive.py 가 만든 session.json 을 열어 "한눈에" 화면을 그린다.
+  서버 없음. 더블클릭으로 열고 session.json 을 끌어다 놓거나 [파일 열기].
+  화면 구성은 목업북 07 과 같다. 디자인은 나중 — 여기서는 "숫자와 그래프가 말이 되는가" 만 본다.
+-->
+<style>
+  :root{--ink:#1c1f24;--muted:#6b7280;--line:#e5e7eb;--soft:#f9fafb;--proof:#7c3aed;
+    --g-typed:#10b981;--g-del:#9ca3af;--g-paste-ai:#ef4444;--g-paste:#f59e0b;--g-undo:#7c3aed;
+    --c-resource:#3b82f6;--c-work:#10b981;--c-ai:#f59e0b;--c-other:#cbd5e1;--c-gap:#e5e7eb}
+  *{box-sizing:border-box}body{margin:0;font-family:"Segoe UI","Malgun Gothic",sans-serif;font-size:14px;color:var(--ink);background:#f3f4f7;line-height:1.55}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5}
+  header b{font-size:16px}header .sub{color:var(--muted)}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 14px;font:inherit;cursor:pointer}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  main{max-width:1180px;margin:0 auto;padding:22px 24px 60px}
+  .drop{border:2px dashed #c7cbd1;border-radius:14px;padding:44px 20px;text-align:center;color:var(--muted);background:#fff}
+  .drop b{color:var(--ink)}
+  .head{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .badge.proof{background:#f5f3ff;border-color:#ddd6fe;color:#6d28d9}
+  .mono{font-family:Consolas,monospace;font-size:13px}
+  .hero{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  .hero .h{padding:18px 22px}.hero .h+.h{border-left:1px solid var(--line)}
+  .hero .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:2px 0 4px}
+  .hero .lbl{font-weight:600}.hero .sm{font-size:13px;color:var(--muted)}
+  .comp{display:flex;height:26px;border-radius:8px;overflow:hidden;margin-top:14px}.comp i{display:block;height:100%}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+  .tile{border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:#fff}
+  .tile .k{font-size:13px;color:var(--muted);font-weight:600}.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2}.tile .v small{font-size:14px;font-weight:500;color:var(--muted)}.tile .h{font-size:12.5px;color:var(--muted)}
+  .card{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px 18px 8px;background:#fff}
+  h4{font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:600}
+  .moments{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .mom{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;background:#fff}
+  .mom .ic{width:10px;height:10px;border-radius:50%;flex:none;margin-top:7px}.mom .t{font-family:Consolas,monospace;font-size:13px;color:var(--muted);flex:none;padding-top:2px}.mom .x{font-size:13.5px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}th{text-align:left;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}td{padding:6px 10px;border-bottom:1px solid #f1f2f4;white-space:nowrap;vertical-align:top}td.sum{white-space:normal}
+  .foot{margin-top:14px;font-size:13px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+  details{margin-top:14px}summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .apps{width:100%;border-collapse:collapse;font-size:13px}.apps td,.apps th{padding:7px 10px;border-bottom:1px solid #f1f2f4;white-space:nowrap}.apps th{text-align:left;color:var(--muted);font-weight:600;font-size:12px}.apps td.n{font-weight:600}.apps td.r{text-align:right;font-variant-numeric:tabular-nums}
+  .toggle{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:13.5px;font-weight:600;list-style:none;user-select:none}.toggle::-webkit-details-marker{display:none}.toggle .arr{display:inline-block;transition:transform .15s;color:var(--muted)}details[open] .toggle .arr{transform:rotate(90deg)}details[open] .toggle{border-radius:12px 12px 0 0}.toggle .cnt{margin-left:auto;color:var(--muted);font-weight:400;font-size:12.5px}
+  .flowbox{border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;background:#fff;overflow:hidden}
+</style>
+</head>
+<body>
+<header><b>Trace 뷰어</b><span class="sub">한눈에 · 테스트용</span>
+  <span style="margin-left:auto"></span>
+  <button class="btn" onclick="loadSample()">샘플 열기</button>
+  <label class="btn primary">session.json 열기<input type="file" accept=".json" style="display:none" onchange="readFile(this.files[0])"></label></header>
+<main id="main"><div class="drop" id="drop"><div style="font-size:28px">⇩</div><b>session.json 을 여기에 끌어다 놓으세요</b><br>또는 오른쪽 위 [session.json 열기] · 데이터 없이 화면만 보려면 [샘플 열기]<br><br><span class="mono">python core/derive.py data/events-YYYY-MM-DD.jsonl</span> 이 만든 파일입니다.</div></main>
+
+<script>
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=n=>(n||0).toLocaleString('ko-KR');
+const CAT={resource:'학습자료',work:'작업',ai:'AI',other:'기타'};
+const TYPE={session_start:'세션 시작',session_end:'세션 종료',window:'창 전환',copy:'복사',paste:'붙여넣기',file:'파일',keys:'입력',undo:'되돌리기',redo:'다시 실행',cut:'잘라내기',idle_start:'유휴',idle_end:'복귀'};
+const $=s=>document.querySelector(s);
+const APP={'claude.exe':'Claude 앱','ChatGPT.exe':'ChatGPT 앱','chrome.exe':'Chrome','msedge.exe':'Edge','firefox.exe':'Firefox','KakaoTalk.exe':'카카오톡','Code.exe':'VS Code','pycharm64.exe':'PyCharm','explorer.exe':'탐색기','WINWORD.EXE':'Word','POWERPNT.EXE':'PowerPoint','EXCEL.EXE':'Excel','Acrobat.exe':'Acrobat','AcroRd32.exe':'Acrobat','SumatraPDF.exe':'PDF 뷰어','notepad++.exe':'Notepad++','WindowsTerminal.exe':'터미널','?':'(알 수 없음)'};
+const appName=a=>APP[a]||(a||'').replace(/\.exe$/i,'');
+/* 창 이름: 브라우저·편집기는 "Chrome · ChatGPT" 처럼 제목 앞부분을 붙인다 */
+function winName(app,title){const n=appName(app);if(!title)return n;const t=title.replace(/ [-–—] (Google Chrome|Chrome|Microsoft Edge|Mozilla Firefox|Visual Studio Code)$/,'').trim();const base=n.replace(/ 앱$/,'').toLowerCase();return (t&&t.toLowerCase()!==base&&t.toLowerCase()!==n.toLowerCase())?`${n} · ${t.slice(0,40)}`:n;}
+const srcName=src=>src?winName(src.app,src.title):'';
+/* 붙여넣기 한 줄 설명 */
+function pasteText(p){if(!p.matched)return '복사 기록 없음 (다른 기기·이전 세션·이미지)';const w=srcName(p.src);return p.ai?`<b style="color:#b91c1c">${w}</b>에서 복사한 것 (AI)`:`${w}에서 복사한 것`;}
+
+/* 통계 (derive.py 와 같은 정의 — stats 가 없으면 여기서 계산) */
+function stats(s){ if(s.stats) return s.stats;
+  const typed=s.typed.reduce((a,b)=>a+b,0),deleted=s.deleted.reduce((a,b)=>a+b,0),pasted=s.pastes.reduce((a,p)=>a+p.len,0),pasted_ai=s.pastes.filter(p=>p.ai).reduce((a,p)=>a+p.len,0);const act=s.typed.filter(x=>x>0);
+  return{typed,deleted,pasted,pasted_ai,pasted_other:pasted-pasted_ai,total:typed+pasted,typed_pct:typed+pasted?Math.round(typed/(typed+pasted)*100):0,pasted_pct:typed+pasted?Math.round(pasted/(typed+pasted)*100):0,cpm:act.length?Math.round(act.reduce((a,b)=>a+b,0)/act.length):0,max_cpm:Math.max(0,...s.typed),edit_ratio:typed?Math.round(deleted/typed*100):0,undo:s.undos.length,pauses:0,paste_count:s.pastes.length,paste_ai_count:s.pastes.filter(p=>p.ai).length,ai_min:s.segments.filter(g=>g.cat==='ai').reduce((a,g)=>a+g.e-g.s,0),ai_visits:s.segments.filter(g=>g.cat==='ai').length,events:s.chain.length};}
+
+/* 레인 그래프 — 목업북 07 과 동일 */
+function lanes(s,W=1000){
+  const L=110,R=20,M=s.minutes,X=m=>L+m/M*(W-L-R),bw=Math.max(1.5,(W-L-R)/M-2);
+  const laneH={win:26,typed:110,paste:90,edit:40};const y={win:8};y.typed=y.win+laneH.win+18;y.paste=y.typed+laneH.typed+18;y.edit=y.paste+laneH.paste+18;const H=y.edit+laneH.edit+34;
+  const maxT=Math.max(...s.typed)||1,maxP=Math.max(...s.pastes.map(p=>p.len))||1,maxD=Math.max(...s.deleted)||1;
+  const lbl=(yy,t,sub)=>`<text x="${L-12}" y="${yy}" font-size="12.5" font-weight="600" fill="#374151" text-anchor="end">${t}</text>${sub?`<text x="${L-12}" y="${yy+15}" font-size="11" fill="#9ca3af" text-anchor="end">${sub}</text>`:''}`;
+  const step=M>120?30:M>60?15:M>30?10:5; const [h0,m0]=s.start.split(':').map(Number);
+  let g='';
+  for(let m=0;m<=M;m+=step){const x=X(m),tot=h0*60+m0+m,hh=String(Math.floor(tot/60)%24).padStart(2,'0'),mm=String(tot%60).padStart(2,'0');g+=`<line x1="${x}" y1="${y.win}" x2="${x}" y2="${H-26}" stroke="#eef0f3"/><text x="${x}" y="${H-8}" font-size="11.5" fill="#6b7280" text-anchor="middle">${hh}:${mm}</text>`;}
+  g+=lbl(y.win+17,'활성 창');
+  s.segments.forEach(seg=>{g+=`<rect x="${X(seg.s)}" y="${y.win}" width="${Math.max(1,X(seg.e)-X(seg.s)-1)}" height="${laneH.win}" rx="4" fill="${css('--c-'+(CAT[seg.cat]?seg.cat:'other'))}"/>`;if((X(seg.e)-X(seg.s))>60)g+=`<text x="${X(seg.s)+8}" y="${y.win+17}" font-size="11.5" fill="#fff" font-weight="700">${CAT[seg.cat]||seg.cat}${(X(seg.e)-X(seg.s))>120&&seg.title?' · '+seg.title.slice(0,28):''}</text>`;});
+  const yt0=y.typed+laneH.typed;g+=lbl(y.typed+laneH.typed/2,'직접 입력','자/분');g+=`<line x1="${L}" y1="${yt0}" x2="${W-R}" y2="${yt0}" stroke="#d1d5db"/>`;
+  s.typed.forEach((v,m)=>{if(v)g+=`<rect x="${X(m)+1}" y="${yt0-v/maxT*laneH.typed}" width="${bw}" height="${v/maxT*laneH.typed}" rx="1.5" fill="${css('--g-typed')}"/>`;});
+  g+=`<text x="${W-R}" y="${y.typed+10}" font-size="11" fill="#9ca3af" text-anchor="end">최대 ${maxT}자/분</text>`;
+  const yp0=y.paste+laneH.paste;g+=lbl(y.paste+laneH.paste/2,'붙여넣기','글자 수');g+=`<line x1="${L}" y1="${yp0}" x2="${W-R}" y2="${yp0}" stroke="#d1d5db"/>`;
+  s.pastes.forEach((p,i)=>{const x=X(p.m)+bw/2+1,h=Math.max(14,p.len/maxP*(laneH.paste-16)),c=p.ai?css('--g-paste-ai'):css('--g-paste');const prev=s.pastes[i-1];const lift=(prev&&p.m-prev.m<=1&&Math.abs(prev.len-p.len)/maxP*(laneH.paste-16)<16)?14:0;g+=`<line x1="${x}" y1="${yp0}" x2="${x}" y2="${yp0-h}" stroke="${c}" stroke-width="3"/><circle cx="${x}" cy="${yp0-h}" r="7" fill="${c}"><title>${p.ts} ${p.len}자 → ${appName(p.target)}${p.src?' ← '+srcName(p.src):''}</title></circle><text x="${x}" y="${yp0-h-11-lift}" font-size="12" font-weight="700" fill="${p.ai?'#b91c1c':'#b45309'}" text-anchor="middle">${p.len}</text>`;});
+  const ye0=y.edit;g+=lbl(y.edit+laneH.edit/2,'삭제 · 되돌리기','자/분 · ▲');
+  s.deleted.forEach((v,m)=>{if(v)g+=`<rect x="${X(m)+1}" y="${ye0}" width="${bw}" height="${v/maxD*(laneH.edit-14)}" rx="1.5" fill="${css('--g-del')}"/>`;});
+  s.undos.forEach(m=>{const x=X(m)+bw/2+1;g+=`<polygon points="${x},${ye0+laneH.edit-12} ${x-5},${ye0+laneH.edit-3} ${x+5},${ye0+laneH.edit-3}" fill="${css('--g-undo')}"/>`;});
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${g}</svg>`;}
+
+/* 핵심 순간 — 단순 규칙. 사실만 쓴다. */
+function moments(s){
+  const t=s.typed,out=[];const clock=m=>{const [h0,m0]=s.start.split(':').map(Number);const tot=h0*60+m0+m;return `${String(Math.floor(tot/60)%24).padStart(2,'0')}:${String(tot%60).padStart(2,'0')}`;};
+  let best=[0,0],cur=null;t.forEach((v,i)=>{if(v>0){if(!cur)cur=[i,i];cur[1]=i;if(cur[1]-cur[0]>best[1]-best[0])best=[...cur];}else cur=null;});
+  if(best[1]>best[0]){const run=t.slice(best[0],best[1]+1),d=s.deleted.slice(best[0],best[1]+1),u=s.undos.filter(m=>m>=best[0]&&m<=best[1]).length;out.push(['typed',`${clock(best[0])}–${clock(best[1]+1)}`,`<b>${best[1]-best[0]+1}분 연속 직접 입력</b> · 분당 ${Math.min(...run)}~${Math.max(...run)}자, 삭제 ${Math.min(...d)}~${Math.max(...d)}자, 되돌리기 ${u}회`]);}
+  const ai=s.pastes.filter(p=>p.ai);if(ai.length){const p=ai[0];const seg=[...s.segments].reverse().find(g=>g.cat==='ai'&&g.s<=p.m);out.push(['ai',`${clock(p.m)}`,`<b>${srcName(p.src)}${seg?` ${(seg.e-seg.s).toFixed(1)}분`:''} → ${appName(p.target)}에 ${p.len}자 붙여넣기</b> · ${pasteText(p)} · 이후 3분 직접 입력 ${p.after_typed??'–'}자`]);}
+  const big=[...s.pastes].sort((a,b)=>b.len-a.len)[0];if(big&&big!==ai[0])out.push([big.ai?'ai':'other',`${clock(big.m)}`,`<b>가장 긴 붙여넣기 ${big.len}자 → ${appName(big.target)}</b> · ${pasteText(big)} · 이후 3분 직접 입력 ${big.after_typed??'–'}자`]);
+  const oth=s.pastes.filter(p=>!p.ai);if(oth.length){const p=oth[oth.length-1];if(p!==big)out.push(['other',`${clock(p.m)}`,`<b>${p.len}자 붙여넣기 → ${appName(p.target)}</b> · ${pasteText(p)} · 이후 3분 직접 입력 ${p.after_typed??'–'}자`]);}
+  if(!s.pastes.length)out.push(['typed','—','<b>붙여넣기 없음</b> · 이 세션의 결과물은 전부 직접 입력']);
+  return out.slice(0,4);}
+
+/* 앱별 요약 — 흐름(flow)을 앱 단위로 합침. 체류 = 다음 창 전환까지 */
+function appSummary(s){
+  if(!s.flow||!s.flow.length) return '';
+  const sec=t=>{const [h,m,x]=t.split(':').map(Number);return h*3600+m*60+x;};
+  const end=sec(s.end); const agg={};
+  s.flow.forEach((w,i)=>{
+    const key=(w.cat==='ai'&&['chrome.exe','msedge.exe','firefox.exe'].includes(w.app))?winName(w.app,w.title):appName(w.app);
+    const a=agg[key]||(agg[key]={key,cat:w.cat,dwell:0,typed:0,deleted:0,copy:0,paste:0,pasteAI:0,pasteLen:0});
+    const next=s.flow[i+1]?sec(s.flow[i+1].ts):end; a.dwell+=Math.max(0,next-sec(w.ts));
+    a.typed+=w.typed; a.deleted+=w.deleted;
+    w.items.forEach(it=>{if(it.kind==='copy')a.copy++; if(it.kind==='paste'){a.paste++;a.pasteLen+=it.len||0;if(it.src&&it.src.category==='ai')a.pasteAI++;}});
+    if(w.cat!=='other')a.cat=w.cat;});
+  const rows=Object.values(agg).sort((x,y)=>y.dwell-x.dwell);
+  const dot=c=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${css('--c-'+(CAT[c]?c:'other'))};margin-right:7px"></i>`;
+  const dur=x=>x>=60?`${Math.floor(x/60)}분 ${Math.round(x%60)}초`:`${Math.round(x)}초`;
+  return `<table class="apps"><thead><tr><th>앱</th><th style="text-align:right">체류</th><th style="text-align:right">직접 입력</th><th style="text-align:right">삭제</th><th style="text-align:right">복사</th><th style="text-align:right">붙여넣기</th></tr></thead><tbody>${rows.map(a=>`<tr><td class="n">${dot(a.cat)}${a.key}</td><td class="r">${dur(a.dwell)}</td><td class="r" style="color:${a.typed?'#047857':'#9ca3af'}">${a.typed?a.typed+'자':'—'}</td><td class="r" style="color:${a.deleted?'#6b7280':'#9ca3af'}">${a.deleted?a.deleted+'자':'—'}</td><td class="r" style="color:${a.copy?'#b45309':'#9ca3af'}">${a.copy?a.copy+'건':'—'}</td><td class="r">${a.paste?`<span style="color:${a.pasteAI?'#b91c1c':'#b45309'};font-weight:600">${a.paste}건 ${a.pasteLen}자</span>${a.pasteAI?` <span style="color:#b91c1c;font-size:12px">(AI에서 ${a.pasteAI})</span>`:''}`:'<span style="color:#9ca3af">—</span>'}</td></tr>`).join('')}</tbody></table>`;}
+
+function flowTable(s){
+  if(!s.flow||!s.flow.length) return '<p class="sub" style="padding:12px 16px">이벤트 흐름 없음 (derive.py 를 다시 실행하세요)</p>';
+  const dot=c=>`<i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${css('--c-'+(CAT[c]?c:'other'))};margin-right:6px"></i>`;
+  const rows=s.flow.map(w=>{
+    const acts=[];
+    if(w.typed||w.deleted) acts.push(`<span style="color:#047857">입력 ${w.typed}자</span>${w.deleted?` · <span style="color:#6b7280">삭제 ${w.deleted}자</span>`:''}`);
+    w.items.forEach(it=>{
+      if(it.kind==='paste'){const p={matched:!!it.src,src:it.src,ai:!!(it.src&&it.src.category==='ai')};acts.push(`<span style="color:${p.ai?'#b91c1c':'#b45309'};font-weight:600">${it.text}</span> <span style="color:#6b7280">— ${pasteText(p)}</span>`);}
+      else if(it.kind==='copy') acts.push(`<span style="color:#b45309">${it.text}</span>`);
+      else if(['undo','redo','cut'].includes(it.kind)) acts.push(`<span style="color:#6d28d9">${it.text}</span>`);
+      else acts.push(it.text);});
+    const note=(w.cat==='other'&&!w.title)?' <span style="color:#9ca3af;font-size:11.5px">(화이트리스트 밖 · 제목 없음)</span>':'';
+    return `<tr><td class="mono" style="color:var(--muted)">${w.ts}</td><td>${dot(w.cat)}<b>${winName(w.app,w.title)}</b>${note}</td><td class="sum">${acts.length?acts.join('<span style="color:#d1d5db"> · </span>'):'<span style="color:#9ca3af">—</span>'}</td></tr>`;});
+  return `<table><thead><tr><th style="width:80px">시각</th><th style="width:300px">창</th><th>이벤트</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;}
+
+function render(s){
+  const st=stats(s);const col={typed:'var(--g-typed)',ai:'var(--g-paste-ai)',other:'var(--g-paste)'};
+  $('#main').innerHTML=`
+  <div class="head"><div><h2 style="margin:0;font-size:20px">${s.date} 세션 <span class="badge proof">Proof</span> ${s.anchor==='none'?'<span class="badge">봉인 전 · 테스트</span>':''}</h2><div style="color:var(--muted)">${s.start} – ${s.end} · ${s.dur} · 이벤트 ${st.events}건 · 루트 해시 <span class="mono">${s.root.slice(0,12)}…${s.root.slice(-8)}</span></div></div></div>
+  <div class="hero"><div class="h"><div class="lbl">직접 입력</div><div class="big" style="color:#047857">${st.typed_pct}%</div><div class="sm">${fmt(st.typed)}자 · 활동 분 평균 ${st.cpm}자/분 · 삭제 ${fmt(st.deleted)}자(${st.edit_ratio}%) · 되돌리기 ${st.undo}회</div></div>
+    <div class="h"><div class="lbl">붙여넣기</div><div class="big" style="color:#b91c1c">${st.pasted_pct}%</div><div class="sm">${fmt(st.pasted)}자 · ${st.paste_count}건 · 그중 <b style="color:#b91c1c">AI 앱·사이트에서 복사한 것 ${fmt(st.pasted_ai)}자 (${st.paste_ai_count}건)</b></div></div>
+    <div class="h" style="grid-column:1/3;border-top:1px solid var(--line);padding-top:12px"><div class="comp"><i style="width:${st.typed_pct}%;background:var(--g-typed)"></i><i style="width:${st.total?st.pasted_ai/st.total*100:0}%;background:var(--g-paste-ai)"></i><i style="width:${st.total?st.pasted_other/st.total*100:0}%;background:var(--g-paste)"></i></div>
+    <div class="legend"><span><i style="background:var(--g-typed)"></i>직접 입력 ${fmt(st.typed)}자</span><span><i style="background:var(--g-paste-ai)"></i>붙여넣기 · AI에서 복사 ${fmt(st.pasted_ai)}자</span><span><i style="background:var(--g-paste)"></i>붙여넣기 · 기타 ${fmt(st.pasted_other)}자</span><span style="margin-left:auto">결과물 총 ${fmt(st.total)}자 기준</span></div></div></div>
+  <div class="tiles"><div class="tile"><div class="k">AI에서 복사 → 붙여넣기</div><div class="v">${st.paste_ai_count}<small>건</small></div><div class="h">AI 앱·사이트 체류 ${st.ai_min}분(${st.ai_visits}회) · 붙여넣기 최대 ${s.pastes.length?Math.max(...s.pastes.map(p=>p.len)):0}자</div></div>
+    <div class="tile"><div class="k">입력 속도 · 수정</div><div class="v">${st.cpm}<small>자/분</small></div><div class="h">최대 ${st.max_cpm}자/분 · 삭제 ÷ 입력 ${st.edit_ratio}%</div></div>
+    <div class="tile"><div class="k">긴 멈춤</div><div class="v">${st.pauses}<small>회</small></div><div class="h">작업 창에서 2분 이상 무입력 (AI 창 체류는 별도)</div></div></div>
+  <div class="card"><h4>분당 활동</h4>${lanes(s)}<div class="legend" style="margin-bottom:6px"><span><i style="background:var(--c-resource)"></i>학습자료</span><span><i style="background:var(--c-work)"></i>작업</span><span><i style="background:var(--c-ai)"></i>AI</span><span><i style="background:var(--c-other)"></i>기타</span><span style="margin-left:10px"><i style="background:var(--g-typed)"></i>직접 입력</span><span><i style="background:var(--g-paste-ai)"></i>붙여넣기 · AI 앱·사이트에서 복사한 것</span><span><i style="background:var(--g-paste)"></i>붙여넣기 · 기타</span><span><i style="background:var(--g-del)"></i>삭제</span><span><i style="background:var(--g-undo)"></i>되돌리기</span></div></div>
+  <div class="card" style="padding:14px 18px 6px"><h4>앱별 활동 — 어디서 무엇을 했나</h4>${appSummary(s)}</div>
+  <details style="margin-top:10px"><summary class="toggle"><span class="arr">▶</span>상세 활동 보기 <span style="font-weight:400;color:var(--muted)">— 창이 바뀔 때마다 한 줄, 시간순</span><span class="cnt">창 전환 ${(s.flow||[]).length}회</span></summary><div class="flowbox">${flowTable(s)}</div></details>
+  <h4 style="margin:16px 0 8px">핵심 순간 — 규칙으로 자동 추출</h4><div class="moments">${moments(s).map(([k,t,x])=>`<div class="mom"><span class="ic" style="background:${col[k]}"></span><span class="t">${t}</span><span class="x">${x}</span></div>`).join('')}</div>
+  <details><summary>체인 원본 ${s.chain.length}건 (SHA-256 · hᵢ = SHA256(hᵢ₋₁ ‖ 시각 ‖ 종류 ‖ 요약))</summary><div class="card" style="overflow:auto;max-height:420px"><table><thead><tr><th>#</th><th>시각</th><th>이벤트</th><th>요약</th><th>이전 해시</th><th>해시</th></tr></thead><tbody>${s.chain.map((r,i)=>`<tr><td style="color:#9ca3af">${i+1}</td><td class="mono">${r[0]}</td><td>${TYPE[r[1]]||r[1]}</td><td class="sum">${r[2]}</td><td class="mono" style="color:#9ca3af">${(r[3]||'').slice(0,8)}…</td><td class="mono">${(r[4]||'').slice(0,8)}…${(r[4]||'').slice(-4)}</td></tr>`).join('')}</tbody></table></div></details>
+  <div class="foot"><span>이 화면은 사실만 보여줍니다. "AI 사용 여부"를 판정하지 않습니다.</span><span style="margin-left:auto">테스트 뷰어 · 디자인은 목업북 07 기준으로 나중에</span></div>`;
+  window.scrollTo(0,0);}
+
+function readFile(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{render(JSON.parse(r.result));}catch(e){alert('JSON 오류: '+e.message);}};r.readAsText(f,'utf-8');}
+document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();readFile(e.dataTransfer.files[0]);});
+function loadSample(){render(SAMPLE);}
+const SAMPLE={"id":"sample","date":"2026-09-19","start":"15:00:02","end":"15:42:15","dur":"42분 13초","minutes":42,"anchor":"none","root":"e71c09ad5b3f0c2a91d84f6e7b23a5c1d0f9e8b7a6c5d4e3f2a1b0c9d8e7f6a54d2a88f0",
+"segments":[{"s":0,"e":9,"cat":"resource","title":"강의자료_4주차.pdf"},{"s":9,"e":23,"cat":"work","title":"app.py"},{"s":23,"e":26,"cat":"ai","title":"claude.ai"},{"s":26,"e":31,"cat":"work","title":"app.py"},{"s":31,"e":35,"cat":"resource","title":"docs.python.org"},{"s":35,"e":42,"cat":"work","title":"app.py"}],
+"typed":[0,0,0,0,0,0,0,0,0,38,52,61,44,70,58,49,66,55,42,73,60,31,0,0,0,12,48,66,59,50,0,0,0,0,44,68,57,73,61,52,47],
+"deleted":[0,0,0,0,0,0,0,0,0,6,9,12,4,15,8,7,13,9,5,16,11,4,0,0,0,2,10,14,9,8,0,0,0,0,7,12,9,15,10,8,6],
+"pastes":[{"m":26,"len":240,"ai":true,"matched":true,"after_typed":126},{"m":29,"len":180,"ai":true,"matched":true,"after_typed":109},{"m":30,"len":160,"ai":true,"matched":true,"after_typed":50},{"m":36,"len":120,"ai":true,"matched":true,"after_typed":191},{"m":38,"len":131,"ai":false,"matched":false,"after_typed":160},{"m":40,"len":96,"ai":false,"matched":true,"after_typed":47},{"m":41,"len":95,"ai":false,"matched":false,"after_typed":0}],
+"undos":[11,13,17,19,27,28,36,38,40],
+"chain":[["15:00:02","session_start","세션 시작","000000","a1b2c3d4e5f6"],["15:00:03","window","Acrobat.exe · 강의자료_4주차.pdf","a1b2c3","b2c3d4e5f6a7"],["15:09:41","window","Code.exe · app.py - trace","b2c3d4","c3d4e5f6a7b8"],["15:09:51","keys","입력 9자 · 삭제 1자 · Code.exe","c3d4e5","d4e5f6a7b8c9"],["15:11:20","undo","되돌리기 (Ctrl+Z)","d4e5f6","e5f6a7b8c9d0"],["15:23:15","window","chrome.exe · Claude","e5f6a7","f6a7b8c9d0e1"],["15:26:02","copy","240자 · sha256:8c2f… · chrome.exe","f6a7b8","a7b8c9d0e1f2"],["15:26:11","paste","240자 · sha256:8c2f… · Code.exe","a7b8c9","b8c9d0e1f2a3"],["15:42:15","session_end","세션 종료","b8c9d0","e71c09ad5b3f"]]};
+</script>
+</body>
+</html>

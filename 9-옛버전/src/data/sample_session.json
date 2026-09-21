@@ -1,0 +1,370 @@
+{
+ "id": "s_2026-09-19_164259",
+ "date": "2026-09-19",
+ "start": "16:00:00",
+ "end": "16:43:03",
+ "dur": "43분 3초",
+ "minutes": 44,
+ "sealed_at": null,
+ "anchor": "none",
+ "root": "4c9fec008bd1e257381e172058fed925dca53dce37711ab8711b95fd0a007907",
+ "segments": [
+  {
+   "s": 0,
+   "e": 3,
+   "cat": "resource",
+   "title": "강의자료.pdf"
+  },
+  {
+   "s": 3,
+   "e": 12,
+   "cat": "work",
+   "title": "app.py"
+  },
+  {
+   "s": 12,
+   "e": 14,
+   "cat": "ai",
+   "title": "Claude"
+  },
+  {
+   "s": 14,
+   "e": 42,
+   "cat": "work",
+   "title": "app.py"
+  },
+  {
+   "s": 42,
+   "e": 44,
+   "cat": "ai",
+   "title": "Claude"
+  }
+ ],
+ "typed": [
+  0,
+  0,
+  0,
+  43,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  50,
+  51,
+  0,
+  0,
+  0,
+  30,
+  30,
+  30,
+  30,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "deleted": [
+  0,
+  0,
+  0,
+  5,
+  5,
+  5,
+  5,
+  5,
+  5,
+  5,
+  5,
+  5,
+  0,
+  0,
+  0,
+  6,
+  6,
+  6,
+  6,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "pastes": [
+  {
+   "m": 14,
+   "len": 240,
+   "ai": true,
+   "matched": true,
+   "ts": "16:14:35",
+   "target": "Code.exe",
+   "after_typed": 60
+  },
+  {
+   "m": 19,
+   "len": 90,
+   "ai": false,
+   "matched": true,
+   "ts": "16:19:30",
+   "target": "Code.exe",
+   "after_typed": 0
+  }
+ ],
+ "undos": [
+  5,
+  8
+ ],
+ "chain": [
+  [
+   "16:00:00",
+   "window",
+   "Acrobat.exe · 강의자료.pdf",
+   "0000000000000000000000000000000000000000000000000000000000000000",
+   "25b5cad7e3e4c904924dbc6ce2bfabacf40aa8166e41093c01fc4d7527fc9c19"
+  ],
+  [
+   "16:03:00",
+   "window",
+   "Code.exe · app.py",
+   "25b5cad7e3e4c904924dbc6ce2bfabacf40aa8166e41093c01fc4d7527fc9c19",
+   "1e893d8e40955e65c93395c356fa68f4cc5931811dae93dd47bdda7390596fe8"
+  ],
+  [
+   "16:03:10",
+   "keys",
+   "입력 43자 · 삭제 5자 · Code.exe",
+   "1e893d8e40955e65c93395c356fa68f4cc5931811dae93dd47bdda7390596fe8",
+   "6e0204b701f6897c2b8ed45e3d420cbe3dfe10c3e572439c6be8a7e184aa68bc"
+  ],
+  [
+   "16:04:10",
+   "keys",
+   "입력 44자 · 삭제 5자 · Code.exe",
+   "6e0204b701f6897c2b8ed45e3d420cbe3dfe10c3e572439c6be8a7e184aa68bc",
+   "5bd935acdc35a900a9117705434baf85427a2133811780d1a208c82531b924cb"
+  ],
+  [
+   "16:05:10",
+   "keys",
+   "입력 45자 · 삭제 5자 · Code.exe",
+   "5bd935acdc35a900a9117705434baf85427a2133811780d1a208c82531b924cb",
+   "045deadb67d8ecf6668eef199f2da7a2fc27193f0d33f3f1bd210ef1da2133da"
+  ],
+  [
+   "16:05:20",
+   "undo",
+   "되돌리기 (Ctrl+Z)",
+   "045deadb67d8ecf6668eef199f2da7a2fc27193f0d33f3f1bd210ef1da2133da",
+   "998830acc0489a8aa850ca805d0c9e3c303ce23fd54b4d6cfeca392a8a792fff"
+  ],
+  [
+   "16:06:10",
+   "keys",
+   "입력 46자 · 삭제 5자 · Code.exe",
+   "998830acc0489a8aa850ca805d0c9e3c303ce23fd54b4d6cfeca392a8a792fff",
+   "0e2e80b26df75aaf84155a53c04472585154bf12ee4167930191ad76dd12cf01"
+  ],
+  [
+   "16:07:10",
+   "keys",
+   "입력 47자 · 삭제 5자 · Code.exe",
+   "0e2e80b26df75aaf84155a53c04472585154bf12ee4167930191ad76dd12cf01",
+   "abfb49af07bc909e05dfd80ca1cad7b730a2172a74c42bbff25b935c8e9cc756"
+  ],
+  [
+   "16:08:10",
+   "keys",
+   "입력 48자 · 삭제 5자 · Code.exe",
+   "abfb49af07bc909e05dfd80ca1cad7b730a2172a74c42bbff25b935c8e9cc756",
+   "d98da4c49a41458020f6a2e7ae0c5d56307aa36fef5cc28d7b795f492596a1fa"
+  ],
+  [
+   "16:08:20",
+   "undo",
+   "되돌리기 (Ctrl+Z)",
+   "d98da4c49a41458020f6a2e7ae0c5d56307aa36fef5cc28d7b795f492596a1fa",
+   "3d6e9c5830cb932d15ed1638c265152c96cf6a0f66a0cb5600af99f9af03ef32"
+  ],
+  [
+   "16:09:10",
+   "keys",
+   "입력 49자 · 삭제 5자 · Code.exe",
+   "3d6e9c5830cb932d15ed1638c265152c96cf6a0f66a0cb5600af99f9af03ef32",
+   "7dfd921bdd4acbd82a55f951e4d7046f55b2992bb311951319c4b3a1aa666dc4"
+  ],
+  [
+   "16:10:10",
+   "keys",
+   "입력 50자 · 삭제 5자 · Code.exe",
+   "7dfd921bdd4acbd82a55f951e4d7046f55b2992bb311951319c4b3a1aa666dc4",
+   "30d7ceb8323f5127771dd5aa175a146f9fbf143e563bbe22729d98927ee44bc1"
+  ],
+  [
+   "16:11:10",
+   "keys",
+   "입력 51자 · 삭제 5자 · Code.exe",
+   "30d7ceb8323f5127771dd5aa175a146f9fbf143e563bbe22729d98927ee44bc1",
+   "4b6343c42e9df3dce4a4e102c61ca55a53fbaa496f92810bf2b16907147f53c4"
+  ],
+  [
+   "16:12:00",
+   "window",
+   "chrome.exe · Claude",
+   "4b6343c42e9df3dce4a4e102c61ca55a53fbaa496f92810bf2b16907147f53c4",
+   "88b9c54cb5444fe8239b3e7f8cfa2d707d244efe68e3098dbe4394af140b6d28"
+  ],
+  [
+   "16:14:00",
+   "copy",
+   "240자 · sha256:4c98a1a4ba90… · chrome.exe",
+   "88b9c54cb5444fe8239b3e7f8cfa2d707d244efe68e3098dbe4394af140b6d28",
+   "9cae533892ee4448150ff18ff0e776c82ba967aa0ea48f4725a61c0346da8048"
+  ],
+  [
+   "16:14:30",
+   "window",
+   "Code.exe · app.py",
+   "9cae533892ee4448150ff18ff0e776c82ba967aa0ea48f4725a61c0346da8048",
+   "ade3dd9f88588cc0753847d6337c57e20ed1e847ecb789e3f4d149843af0bfa4"
+  ],
+  [
+   "16:14:35",
+   "paste",
+   "240자 · sha256:4c98a1a4ba90… · Code.exe",
+   "ade3dd9f88588cc0753847d6337c57e20ed1e847ecb789e3f4d149843af0bfa4",
+   "94736b9b431f068260b43417eb549b4ad4f321bb52c79f771010e3d06909e2c7"
+  ],
+  [
+   "16:15:10",
+   "keys",
+   "입력 30자 · 삭제 6자 · Code.exe",
+   "94736b9b431f068260b43417eb549b4ad4f321bb52c79f771010e3d06909e2c7",
+   "52b927efd12c3c7fc30bbd1510ea08dbc911e5dc31243d0d9da29480b8eb454e"
+  ],
+  [
+   "16:16:10",
+   "keys",
+   "입력 30자 · 삭제 6자 · Code.exe",
+   "52b927efd12c3c7fc30bbd1510ea08dbc911e5dc31243d0d9da29480b8eb454e",
+   "c90e542bab01bf44562481aa600196383de246c31ae575a880f3c980eaf8edb1"
+  ],
+  [
+   "16:17:10",
+   "keys",
+   "입력 30자 · 삭제 6자 · Code.exe",
+   "c90e542bab01bf44562481aa600196383de246c31ae575a880f3c980eaf8edb1",
+   "2eab34b0de3f4d29d21b0e94bb69ad2843ede37afd2e063e5d201369dbeb19e6"
+  ],
+  [
+   "16:18:10",
+   "keys",
+   "입력 30자 · 삭제 6자 · Code.exe",
+   "2eab34b0de3f4d29d21b0e94bb69ad2843ede37afd2e063e5d201369dbeb19e6",
+   "63d3ab727d33e90567b011501fa5d6d8827252675170cc3dcaa14cc7a0c58df8"
+  ],
+  [
+   "16:19:00",
+   "copy",
+   "90자 · sha256:4f4e4d8c6b83… · Code.exe",
+   "63d3ab727d33e90567b011501fa5d6d8827252675170cc3dcaa14cc7a0c58df8",
+   "4407a9340865e8d74edbf06219446dd78e7b83a0b94ac693b1ae588a91c59ff3"
+  ],
+  [
+   "16:19:30",
+   "paste",
+   "90자 · sha256:4f4e4d8c6b83… · Code.exe",
+   "4407a9340865e8d74edbf06219446dd78e7b83a0b94ac693b1ae588a91c59ff3",
+   "5e02a3952dcd885b854660035fa8f84b250fc6dc4f9af58b6d3ff432798437ac"
+  ],
+  [
+   "16:20:00",
+   "session_end",
+   "세션 종료",
+   "5e02a3952dcd885b854660035fa8f84b250fc6dc4f9af58b6d3ff432798437ac",
+   "27f96d21ba4d67a505cc1a5e6a40247c12a52d25d57840bc5b2dc389e7b39dbc"
+  ],
+  [
+   "16:42:59",
+   "session_start",
+   "세션 시작",
+   "27f96d21ba4d67a505cc1a5e6a40247c12a52d25d57840bc5b2dc389e7b39dbc",
+   "9bf72c107cdbf3befed0c85616306c2efa4625dd44b440424063ba4184c84f37"
+  ],
+  [
+   "16:42:59",
+   "window",
+   "claude.exe · Claude",
+   "9bf72c107cdbf3befed0c85616306c2efa4625dd44b440424063ba4184c84f37",
+   "9953f8c094db2a59413b63909f3ef6162c334d959a81940ef4529dd90a36aec4"
+  ],
+  [
+   "16:43:03",
+   "copy",
+   "240자 · sha256:718df6704d8a… · claude.exe",
+   "9953f8c094db2a59413b63909f3ef6162c334d959a81940ef4529dd90a36aec4",
+   "4c9fec008bd1e257381e172058fed925dca53dce37711ab8711b95fd0a007907"
+  ]
+ ],
+ "stats": {
+  "typed": 543,
+  "deleted": 69,
+  "pasted": 330,
+  "pasted_ai": 240,
+  "pasted_other": 90,
+  "total": 873,
+  "typed_pct": 62,
+  "pasted_pct": 38,
+  "cpm": 42,
+  "max_cpm": 51,
+  "edit_ratio": 13,
+  "undo": 2,
+  "pauses": 1,
+  "paste_count": 2,
+  "paste_ai_count": 1,
+  "ai_min": 4,
+  "ai_visits": 2,
+  "events": 27
+ }
+}

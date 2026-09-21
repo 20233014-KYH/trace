@@ -1,0 +1,15 @@
+# Trace 수집기·변환·뷰어 의존성 (Windows)
+flask
+pywin32 ; sys_platform == "win32"
+psutil  ; sys_platform == "win32"
+pyperclip
+watchdog
+requests
+pynput
+openai    # Qwen (알리바바 Model Studio · OpenAI 호환 엔드포인트)
+anthropic # Claude 비교용 (선택)
+
+# 서버 (A)
+sqlalchemy
+pyobjc-framework-Cocoa  ; sys_platform == "darwin"
+pyobjc-framework-Quartz ; sys_platform == "darwin"

@@ -1,0 +1,92 @@
+{
+  "_comment": "앱·도메인 분류. 매칭 순서: 도메인 정확 일치 → 와일드카드 → exe 이름 → 창 제목 키워드 → other. 학생이 자유롭게 추가 가능.",
+  "categories": {
+    "ai": {
+      "label": "AI",
+      "domains": [
+        "claude.ai",
+        "chatgpt.com",
+        "chat.openai.com",
+        "gemini.google.com",
+        "perplexity.ai",
+        "copilot.microsoft.com",
+        "poe.com"
+      ],
+      "apps": [
+        "claude.exe",
+        "ChatGPT.exe"
+      ],
+      "title_keywords": [
+        "Claude",
+        "ChatGPT",
+        "Gemini",
+        "Perplexity",
+        "Copilot"
+      ]
+    },
+    "resource": {
+      "label": "학습자료",
+      "domains": [
+        "*.ac.kr",
+        "wikipedia.org",
+        "docs.python.org",
+        "developer.mozilla.org",
+        "stackoverflow.com",
+        "scholar.google.com",
+        "youtube.com",
+        "docs.oracle.com",
+        "learn.microsoft.com",
+        "developer.android.com",
+        "w3schools.com",
+        "geeksforgeeks.org",
+        "baeldung.com",
+        "velog.io",
+        "tistory.com",
+        "notion.site",
+        "dbpia.co.kr",
+        "riss.kr"
+      ],
+      "apps": [
+        "Acrobat.exe",
+        "AcroRd32.exe",
+        "SumatraPDF.exe",
+        "msedge.exe:pdf"
+      ],
+      "title_keywords": [
+        ".pdf",
+        "강의자료",
+        "Lecture"
+      ]
+    },
+    "work": {
+      "label": "작업",
+      "domains": [
+        "docs.google.com",
+        "notion.so",
+        "figma.com",
+        "github.com",
+        "colab.research.google.com",
+        "replit.com",
+        "codesandbox.io",
+        "overleaf.com"
+      ],
+      "apps": [
+        "Code.exe",
+        "WINWORD.EXE",
+        "POWERPNT.EXE",
+        "EXCEL.EXE",
+        "Photoshop.exe",
+        "Illustrator.exe",
+        "notepad++.exe",
+        "pycharm64.exe"
+      ],
+      "title_keywords": []
+    },
+    "other": {
+      "label": "기타",
+      "_comment": "화이트리스트 밖. 제목 없이 category만 기록.",
+      "domains": [],
+      "apps": []
+    }
+  }
+}
