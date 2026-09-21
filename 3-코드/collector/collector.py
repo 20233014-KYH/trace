@@ -281,6 +281,10 @@ class Sink:
             body = f"typed={ev['count']}  deleted={ev.get('deleted', 0)}  app={ev.get('app', '')}"
         elif k == "file":
             body = f"{ev['action']:8} {ev['path']}"
+        elif k == "commit":
+            body = f"{ev['repo']} · {ev['hash'][:7]} ({ev.get('branch','')}) · {ev['files']}파일 +{ev['added']}/-{ev['removed']}"
+        elif k == "git_push":
+            body = f"{ev['repo']} · {ev['remote_ref']} → {ev['hash'][:7]}"
         elif k == "tab":
             body = f"[{ev['category']:8}] {ev['domain']:18} {ev.get('title', '')[:50]}  (확장)"
         elif k == "doc_change":
@@ -325,6 +329,7 @@ class Collector:
         self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
         self._last_paste = None     # (time, len) 마지막 Ctrl+V — 저장 파일 diff 가 붙여넣은 자리 판정에 씀
         self._fdiff = None
+        self._git = None
         self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
@@ -406,6 +411,15 @@ class Collector:
                 n = self._fdiff.baseline(self._files.dirs, self._files.skip)
                 print(f"  저장 파일 diff 켜짐 · 기준 스냅샷 {n}개 (텍스트 파일 · 내용은 메모리에만)")
             self._files.start()
+            if fcfg.get("git", True):
+                # git 커밋·푸시 — 숫자(해시·파일·줄 수)는 체인, 커밋 메시지는 Learn 맥락만 (결정 13)
+                from git_watch import GitWatcher
+                self._git = GitWatcher(self._files.dirs, self.sink.emit, emit_context=self._on_context if self.mode == "learn" else None)
+                if self._git.repos:
+                    self._git.start()
+                    print(f"  git 감시 켜짐 · 저장소 {len(self._git.repos)}개 ({', '.join(os.path.basename(r) for r in self._git.repos[:5])})")
+                else:
+                    print("  git 감시: 감시 폴더에 저장소 없음 (또는 git 미설치)")
 
         try:
             while not self._stop.is_set():
@@ -521,6 +535,8 @@ class Collector:
             self._keys.stop()
         if self._files:
             self._files.stop()
+        if self._git:
+            self._git.stop()
         if self._bridge:
             self._bridge.shutdown()
         if self._office:

@@ -29,6 +29,10 @@ def summary(e: dict) -> str:
         return f"입력 {e.get('count',0)}자 · 삭제 {e.get('deleted',0)}자 · {e.get('app','')}"
     if t == "file":
         return f"{e.get('action','')} · {e.get('path','')} · {(e.get('content_hash') or '')[:19]}"
+    if t == "commit":
+        return f"{e.get('repo','')} · {e.get('hash','')} · {e.get('branch','')} · {e.get('files',0)}파일 · +{e.get('added',0)} · -{e.get('removed',0)}"
+    if t == "git_push":
+        return f"{e.get('repo','')} · {e.get('remote_ref','')} · {e.get('hash','')}"
     if t in ("undo", "redo", "cut"):
         return {"undo": "되돌리기 (Ctrl+Z)", "redo": "다시 실행 (Ctrl+Y)", "cut": "잘라내기 (Ctrl+X)"}[t]
     if t == "tab":

@@ -30,6 +30,7 @@ export default function ContextPanel({ s, ctx, mk, onAsk }) {
       {mk.kind === 'ai_question' && <section><h5>질문 — 내가 입력한 것</h5><blockquote>"{it.text}"</blockquote></section>}
       {mk.kind === 'chat' && <section><h5>물어보기 — 알약 위 질문칸</h5><pre className="quote">{it.text}</pre></section>}
       {mk.kind === 'page' && <section><h5>참고 페이지</h5><blockquote>{it.text}</blockquote></section>}
+      {mk.kind === 'commit' && <section><h5>커밋 {it.meta?.hash?.slice(0, 7)} · {it.meta?.repo} ({it.meta?.branch})</h5><pre className="quote">{it.text}</pre></section>}
       {mk.kind === 'selection' && <section><h5>선택한 부분</h5><pre className="quote">{it.text}</pre></section>}
       {mk.kind === 'diff' && <section><h5>직접 수정 — {it.meta?.where || it.meta?.file}{it.meta?.chars != null ? ` · ${it.meta.chars > 0 ? '+' : ''}${it.meta.chars}자` : ''}</h5><pre className="quote">{it.text}</pre></section>}
       {mk.kind === 'paste_at' && <section><h5>문서에 붙여넣음 — {it.meta?.file} {it.meta?.where} · {it.meta?.chars}자</h5><pre className="quote">{it.text}</pre></section>}

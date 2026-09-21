@@ -118,6 +118,7 @@ function FlowDetails({ s }) {
             w.items.forEach((it, j) => {
               if (it.kind === 'paste') { const p = { matched: !!it.src, src: it.src, ai: !!(it.src && it.src.category === 'ai') }; acts.push(<span key={j}><span style={{ color: p.ai ? '#b91c1c' : '#b45309', fontWeight: 600 }}>{it.text}</span> <span style={{ color: '#6b7280' }}>— {pasteText(p)}</span></span>); }
               else if (it.kind === 'copy') acts.push(<span key={j} style={{ color: '#b45309' }}>{it.text}</span>);
+              else if (it.kind === 'commit') acts.push(<span key={j} style={{ color: '#0f766e', fontWeight: 600 }}>{it.text}</span>);
               else if (['undo', 'redo', 'cut'].includes(it.kind)) acts.push(<span key={j} style={{ color: '#6d28d9' }}>{it.text}</span>);
               else acts.push(<span key={j}>{it.text}</span>);
             });
