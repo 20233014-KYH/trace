@@ -1,14 +1,12 @@
 """
 llm.py — Learn Mode 의 AI 호출 한 곳. 리포트 · 학습 흐름 묶기 · Side Chat.
 
-교수 결정(9/20): 알리바바 Qwen 을 API 로 쓴다. 비교용으로 Claude 도 붙일 수 있게 어댑터로 감쌌다.
+결정(9/21): OpenAI GPT-5.6 Luna 를 API 로 쓴다 (9/20 Qwen 에서 변경 — 성능·비용 모두 Luna 가 나음). 비교용으로 Qwen·Claude 도 어댑터로 남겨둔다.
 키는 **서버 환경변수에만** 있다. 수집기·확장·화면은 이 모듈을 부르지 못한다 (서버가 부른다).
 
-  LLM_PROVIDER = qwen | openai | claude | fake   (기본 fake — 키 없으면 가짜 리포트, 화면 개발용)
-  DASHSCOPE_API_KEY                           Qwen (알리바바 Model Studio)
-  DASHSCOPE_BASE_URL                          기본 국제(싱가포르) 엔드포인트 — 학생 데이터는 중국 리전으로 보내지 않는다
-  QWEN_MODEL                                  기본 qwen-plus
-  OPENAI_API_KEY · OPENAI_MODEL               GPT 비교용 (기본 gpt-5.6-luna — 가장 싼 급)
+  LLM_PROVIDER = openai | qwen | claude | fake   (기본 fake — 키 없으면 가짜 리포트, 화면 개발용)
+  OPENAI_API_KEY · OPENAI_MODEL               **본 서비스** (기본 gpt-5.6-luna)
+  DASHSCOPE_API_KEY · DASHSCOPE_BASE_URL · QWEN_MODEL   Qwen 비교용 (국제 엔드포인트 · 기본 qwen-plus)
   ANTHROPIC_API_KEY · CLAUDE_MODEL            Claude 비교용 (기본 claude-opus-5)
 
 Proof 세션은 이 모듈을 부르면 안 된다 — 부르는 쪽(dev_receiver)이 mode 를 확인한다.
@@ -64,16 +62,10 @@ def _claude():
 
 def complete(system: str, messages: list, json_mode: bool = False, max_tokens: int = 4000) -> str:
     """messages = [{"role":"user"|"assistant","content":str}, …] → 텍스트. 공급자 차이는 여기서만."""
-    if PROVIDER == "qwen":
-        r = _qwen().chat.completions.create(
-            model=QWEN_MODEL, max_tokens=max_tokens,
-            messages=[{"role": "system", "content": system}] + messages,
-            **({"response_format": {"type": "json_object"}} if json_mode else {}),
-        )
-        return r.choices[0].message.content or ""
-    if PROVIDER == "openai":                       # Qwen 과 같은 OpenAI 호환 호출 — 엔드포인트·키만 다름
-        r = _openai().chat.completions.create(
-            model=OPENAI_MODEL, max_tokens=max_tokens,
+    if PROVIDER in ("openai", "qwen"):             # 둘 다 OpenAI 호환 호출 — 클라이언트·모델 이름만 다름
+        client, model = (_openai(), OPENAI_MODEL) if PROVIDER == "openai" else (_qwen(), QWEN_MODEL)
+        r = client.chat.completions.create(
+            model=model, max_tokens=max_tokens,
             messages=[{"role": "system", "content": system}] + messages,
             **({"response_format": {"type": "json_object"}} if json_mode else {}),
         )
@@ -99,7 +91,7 @@ def _fake(system, messages, json_mode):
             "todo": ["(가짜) 참조 변수와 객체의 관계를 코드로 직접 확인하기"],
             "_fake": True,
         }, ensure_ascii=False)
-    return "(가짜 답변) LLM_PROVIDER 를 qwen 또는 claude 로 설정하고 키를 넣으면 실제 답이 옵니다."
+    return "(가짜 답변) LLM_PROVIDER=openai 와 OPENAI_API_KEY 를 넣으면 실제 답이 옵니다."
 
 
 # ─────────────────────────── Learn 작업 3개 ───────────────────────────
@@ -117,7 +109,7 @@ def _pack(session: dict, context: list) -> str:
 
 
 def make_report(session: dict, context: list, retries: int = 2) -> dict:
-    """Learning Session Report. JSON 이 깨지면 다시 부른다 (Qwen 이 가끔 형식을 어김)."""
+    """Learning Session Report. JSON 이 깨지면 다시 부른다 (모델이 가끔 형식을 어김)."""
     user = _pack(session, context)
     last_err = None
     for _ in range(retries + 1):

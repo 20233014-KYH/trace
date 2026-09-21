@@ -135,5 +135,5 @@ GET  /sessions/7f3a…/certificate.pdf
 | 지연 수신 기준 | 이벤트 ts 와 서버 received_at 차이 5분. 오프라인 큐 재전송이 여기 걸리는데, 숨기지 않고 "지연 수신 구간"으로 표시 |
 | Learn Context 최대 길이 | 500자. 그 이상은 확장이 잘라서 보냄 |
 | `end` 시 체인 불일치 | 409 반환하되 세션은 "봉인 실패"로 남김. 조용히 덮어쓰지 않음 |
-| AI 공급자 | **Qwen API (알리바바 Model Studio · 국제/싱가포르 엔드포인트) — 교수 결정 9/20.** `core/llm.py` 어댑터라 Claude 로 바꿔 비교 가능. 키 없으면 fake |
+| AI 공급자 | **OpenAI GPT-5.6 Luna (`gpt-5.6-luna`) — 9/21 결정 (9/20 Qwen 에서 변경).** 서버 환경변수 `LLM_PROVIDER=openai` + `OPENAI_API_KEY`. `core/llm.py` 어댑터라 Qwen·Claude 로 바꿔 비교 가능. 키 없으면 fake |
 | AI 호출 상한 | 리포트 세션당 3회 · Side Chat 세션당 30회. 서버가 셈 |

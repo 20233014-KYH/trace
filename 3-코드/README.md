@@ -62,7 +62,7 @@ start ui\viewer.html
 | `ui/viewer.html` | session.json → 한눈에 화면. 서버 없음 (HTML 한 장) | 동작 확인 |
 | `web/` | 같은 화면의 **React 판** (Vite). `npm run dev` · `/api` 프록시 → 5000. A의 골격에 `SessionView` 를 끼운다 | 동작 확인 |
 | `tests/` | **derive·chain 픽스처** — `events_basic.jsonl` → `expected_basic.json` 골든. `python tests/test_derive.py`. A 가 서버로 옮길 때 같은 출력이 나오는지 확인 | 통과 |
-| `core/llm.py` | **Learn 의 AI 호출 한 곳** — 리포트(JSON 5항목 · **학생이 열 때 생성**) · Side Chat. 공급자 어댑터: `LLM_PROVIDER=qwen`(교수 결정 · 알리바바 API · 국제 엔드포인트) · `claude`(비교용) · `fake`(기본, 키 없을 때). 키는 환경변수만 | 동작 확인 (fake) · 실제 키는 A |
+| `core/llm.py` | **Learn 의 AI 호출 한 곳** — 리포트(JSON 5항목 · **학생이 열 때 생성**) · Side Chat. 공급자 어댑터: `LLM_PROVIDER=openai`(GPT-5.6 Luna · 9/21 결정) · `qwen`·`claude`(비교용) · `fake`(기본, 키 없을 때). 키는 환경변수만 | 동작 확인 (fake) · 실제 키는 A |
 | `collector/office.py` | **Word·PowerPoint 문서 변화** (COM). 활성 문서를 5초마다 보고 — **숫자는 두 모드 공통 이벤트**(`doc_change` +n자/-m자 · `doc_paste_at` 붙여넣은 자리 · `doc_save` 저장 통계, 체인에 들어감), **텍스트는 Learn 맥락**(`diff` · `paste_at`). Proof 에선 글자를 저장하지 않음 | 동작 확인 (Word · PPT · Proof/Learn) |
 | `collector/bridge.py` | **확장 다리** 127.0.0.1:5077 — 확장의 `tab` 이벤트를 체인에 넣고, Learn 모드일 때만 `context` 를 서버로 전달 (Proof 면 403) | 동작 확인 |
 | `extension/` | **Chrome 확장 (MV3) 뼈대** — 탭 전환 → 도메인 → 다리. AI 사이트에서 Learn 맥락(질문·선택·답변 발췌). `extension/README.md` | 탭: 동작 · 맥락: 뼈대 |
@@ -86,11 +86,11 @@ chain[] [ts,type,summary,prev,hash]   root   stats{typed,pasted,pasted_ai,cpm,un
 
 ## 4-1. AI 키 (Learn 만)
 ```bat
-set LLM_PROVIDER=qwen
-set DASHSCOPE_API_KEY=sk-…          :: 알리바바 Model Studio 에서 발급. 서버 환경변수에만. 저장소·화면·확장에 절대 넣지 않는다
+set LLM_PROVIDER=openai
+set OPENAI_API_KEY=sk-…             :: OpenAI 에서 발급 (모델 gpt-5.6-luna). 서버 환경변수에만. 저장소·화면·확장에 절대 넣지 않는다
 0_서버시작.bat
 ```
-키가 없으면 `fake` 로 돌아 가짜 리포트를 준다 (화면 개발용). Claude 와 비교하려면 `LLM_PROVIDER=claude` + `ANTHROPIC_API_KEY`.
+키가 없으면 `fake` 로 돌아 가짜 리포트를 준다 (화면 개발용). 비교하려면 `LLM_PROVIDER=qwen` + `DASHSCOPE_API_KEY`, 또는 `claude` + `ANTHROPIC_API_KEY`.
 
 ## 5. 다음 (순서)
 0. A: 서버로 옮긴 derive/chain 이 `tests/test_derive.py` 를 통과하는지 (픽스처 준비됨)

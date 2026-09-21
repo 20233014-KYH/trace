@@ -140,7 +140,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - 과금 대상은 학생이 아니라 **보는 쪽**(수업·학과·공모전 주최)입니다. 학생이 자기 기록을 보는 데 돈을 받지 않는 것이 원칙이고,
   Proof 증명서는 건당 과금이 가능합니다. 구체 가격은 파일럿 뒤 교수 인터뷰로 정합니다.
 - 받지 않는 돈: 광고 · AI 판정 점수 판매 · 학생 데이터 판매. 하나라도 받으면 "학생이 주인"이 깨집니다.
-- **Learn의 AI 비용은 상한으로 묶여 있습니다** — Qwen-Plus 기준 학생 1명 한 학기 약 650원(리포트 36회 + 채팅 180턴). 리포트는 학생이 열 때만 만들고(안 보면 0원), 채팅은 세션당 30턴. 학생당 3,000원 라이선스 안에서 남습니다. Sonnet급을 쓰면 4,300원으로 적자 — 모델 선택이 곧 사업성
+- **Learn의 AI 비용은 상한으로 묶여 있습니다** — GPT-5.6 Luna 기준 학생 1명 한 학기 약 440원(리포트 36회 + 채팅 180턴; Qwen-Plus 였으면 650원). 리포트는 학생이 열 때만 만들고(안 보면 0원), 채팅은 세션당 30턴. 학생당 3,000원 라이선스 안에서 남습니다. Sonnet급을 쓰면 4,300원으로 적자 — 모델 선택이 곧 사업성
 
 ### 🔒 보안 · 개인정보 — 무엇을 안 읽는지가 설계의 절반
 
@@ -167,7 +167,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - **React 화면 뼈대** (`3-코드/web/`): 뷰어를 컴포넌트로 옮김 — `Timeline.jsx`(레인 그래프) · `SessionView.jsx`(한눈에). 샘플·파일·서버 세 경로로 데이터 로드. 실데이터로 렌더 확인 (9/20)
 - **derive·chain 픽스처** (`3-코드/tests/`): 이벤트 30건 → 골든 session.json. 서버 이관 시 같은 출력 확인용. 한 글자 변조도 체인이 잡는 것 확인 (9/20)
 - **Word·PowerPoint 문서 변화** (`3-코드/collector/office.py`): 열린 문서를 5초마다 보고 — 숫자(문단 n +120자/-6자 · 붙여넣은 자리 · 저장 시 글자 수)는 **두 모드 공통 이벤트로 체인에**, 바뀐 텍스트는 Learn 맥락으로만. "AI 창 복사 100자 → Word 문단 2 +100자"가 Proof 체인에서 확인됨 (9/20)
-- **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 결정)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)
+- **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **GPT-5.6 Luna** (9/21 결정, 9/20엔 Qwen), Qwen·Claude 비교 가능, 키 없으면 fake
 - **브라우저 확장 뼈대** (`3-코드/extension/` + `collector/bridge.py`): 탭 전환 → 도메인 분류 → 수집기 체인. Learn 모드에서만 맥락(질문·선택·답변 발췌) 전달, Proof 면 거절. 다리 테스트 완료 (9/20)
 - 화면 설계 목업 22장 (`2-디자인/목업 PNG/`): 모드 선택 · Proof 기록/봉인/한눈에/증명서/검증 · Learn 맥락/**알약 위 질문칸(13b·13c, 9/21)**/Side Chat/Report/설정
 - 첫 실데이터 테스트 (9/20, 7분): 전 배치 체인 일치 · 봉인 검증 · AI 출처 붙여넣기 구분 ✓ · 버그 3개 수정
@@ -205,7 +205,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
                                                                             ▼
 [ 서버 · DB ]  (A · 진행 중 — 참고 구현: collector/dev_receiver.py)
   같은 chain.py 로 재계산 → 대조 · 수신 시각 · 지연 판정 · 봉인 시 루트 확정 · OpenTimestamps 앵커
-  Learn 만: core/llm.py → Qwen API (알리바바 · 키는 서버 환경변수) → 리포트 JSON · Side Chat
+  Learn 만: core/llm.py → OpenAI GPT-5.6 Luna API (키는 서버 환경변수) → 리포트 JSON · Side Chat
   GET /api/sessions/{id} → core/derive.py 가 만든 session.json (화면용)
                                                                             ▼
 [ 앱 화면 ]  React (3-코드/web · 한눈에 화면 완료) → pywebview 창 안에 (예정) · ui/viewer.html 은 HTML 한 장짜리 동일 화면
@@ -242,7 +242,7 @@ Trace/
 │  ├─ 0_서버시작.bat · 1_기록시작.bat · 2_결과보기.bat
 │  ├─ collector/   collector.py(수집기) · keys.py(횟수만) · office.py(Word·PPT 맥락) · bridge.py(확장 다리) · classify.py · domains.json · config.json · dev_receiver.py(참고 서버 · 메모리 · 진짜 서버 아님)
 │  ├─ server/      **진짜 서버 (A)** — app.py · db.py(SQLite/PostgreSQL) · test_contract.py(계약 검사 8개) · README.md
-│  ├─ core/        chain.py(공용 해시) · derive.py(이벤트 → 화면 데이터) · llm.py(Learn AI 어댑터 · Qwen/Claude/fake)
+│  ├─ core/        chain.py(공용 해시) · derive.py(이벤트 → 화면 데이터) · llm.py(Learn AI 어댑터 · GPT-5.6 Luna/Qwen/Claude/fake)
 │  ├─ ui/          viewer.html(테스트 뷰어 · HTML 한 장)
 │  ├─ web/         React (Vite) — Timeline.jsx · SessionView.jsx · README.md
 │  ├─ extension/   Chrome 확장 (MV3) — background.js(탭) · content.js(Learn 맥락) · popup · README.md

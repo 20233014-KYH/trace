@@ -6,7 +6,7 @@ pyperclip
 watchdog
 requests
 pynput
-openai    # Qwen (알리바바 Model Studio · OpenAI 호환 엔드포인트)
+openai    # GPT-5.6 Luna (본 서비스) · Qwen 비교용도 같은 라이브러리
 anthropic # Claude 비교용 (선택)
 
 # 서버 (A)
