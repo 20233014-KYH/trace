@@ -122,6 +122,10 @@ def derive(evs):
                                        "text": f"붙여넣기 {e.get('len', 0)}자"})
         elif t == "file":
             if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": "file", "text": f"파일 {e.get('action', '')} · {os.path.basename(e.get('path', ''))}"})
+        elif t == "commit":
+            if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": "commit", "text": f"커밋 {e.get('hash','')[:7]} · {e.get('files',0)}파일 +{e.get('added',0)}/-{e.get('removed',0)} ({e.get('repo','')})"})
+        elif t == "git_push":
+            if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": "commit", "text": f"푸시 {e.get('remote_ref','')} · {e.get('hash','')[:7]}"})
         elif t == "doc_change":
             if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": "doc", "text": f"문서 {e.get('where','')} +{e.get('added',0)}자 / -{e.get('removed',0)}자"})
         elif t == "doc_paste_at":

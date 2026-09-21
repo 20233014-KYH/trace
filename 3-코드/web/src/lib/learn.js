@@ -15,8 +15,9 @@ export const KIND = {
   solved:            { ic: '✓', c: '#059669', t: '해결' },
   save_stats:        { ic: '💾', c: '#6b7280', t: '저장' },
   chat:              { ic: '💬', c: '#0ea5e9', t: '물어보기' },
+  commit:            { ic: '⎇', c: '#0f766e', t: '커밋' },
 };
-export const LEGEND = ['error', 'ai_question', 'page', 'paste', 'diff', 'run_result', 'solved', 'chat'];
+export const LEGEND = ['error', 'ai_question', 'page', 'paste', 'diff', 'run_result', 'solved', 'chat', 'commit'];
 
 // 시각은 출처마다 표기가 다르다 — 수집기는 KST(+09:00), 확장은 UTC(Z), 세션 start/end 는 시간대 없는 KST.
 // 전부 Date 로 바꿔 계산하고, 화면엔 Asia/Seoul 로 찍는다 (수집기의 KST 상수와 같음).
