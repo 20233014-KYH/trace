@@ -1,370 +1,914 @@
 {
- "id": "s_2026-09-19_164259",
- "date": "2026-09-19",
+ "id": "sample-proof-0001",
+ "date": "2026-09-22",
  "start": "16:00:00",
- "end": "16:43:03",
- "dur": "43분 3초",
- "minutes": 44,
+ "end": "16:48:00",
+ "dur": "48분 0초",
+ "minutes": 49,
  "sealed_at": null,
  "anchor": "none",
- "root": "4c9fec008bd1e257381e172058fed925dca53dce37711ab8711b95fd0a007907",
+ "root": "29e20adbd0714db1074c6b7614a18f3e04e4c992e14ccec2baf4be386b35b65c",
  "segments": [
   {
-   "s": 0,
-   "e": 3,
+   "s": 0.03,
+   "e": 6.0,
    "cat": "resource",
-   "title": "강의자료.pdf"
+   "title": "5주차_정규화.pdf"
   },
   {
-   "s": 3,
-   "e": 12,
+   "s": 6.0,
+   "e": 15.02,
    "cat": "work",
-   "title": "app.py"
+   "title": "DB과제_보고서.docx - Word"
   },
   {
-   "s": 12,
-   "e": 14,
-   "cat": "ai",
-   "title": "Claude"
+   "s": 15.02,
+   "e": 18.5,
+   "cat": "resource",
+   "title": "ko.wikipedia.org"
   },
   {
-   "s": 14,
-   "e": 42,
+   "s": 18.5,
+   "e": 24.02,
    "cat": "work",
-   "title": "app.py"
+   "title": "DB과제_보고서.docx - Word"
   },
   {
-   "s": 42,
-   "e": 44,
+   "s": 24.02,
+   "e": 28.0,
    "cat": "ai",
-   "title": "Claude"
+   "title": "chatgpt.com"
+  },
+  {
+   "s": 28.0,
+   "e": 36.17,
+   "cat": "work",
+   "title": "DB과제_보고서.docx - Word"
+  },
+  {
+   "s": 36.17,
+   "e": 38.0,
+   "cat": "other",
+   "title": ""
+  },
+  {
+   "s": 38.0,
+   "e": 42.02,
+   "cat": "work",
+   "title": "DB과제_보고서.docx - Word"
+  },
+  {
+   "s": 42.02,
+   "e": 44.0,
+   "cat": "ai",
+   "title": "chatgpt.com"
+  },
+  {
+   "s": 44.0,
+   "e": 48.0,
+   "cat": "work",
+   "title": "DB과제_보고서.docx - Word"
   }
  ],
  "typed": [
   0,
   0,
   0,
-  43,
+  0,
+  0,
+  0,
   44,
-  45,
-  46,
-  47,
+  52,
   48,
-  49,
+  39,
+  55,
+  41,
+  47,
   50,
+  36,
+  0,
+  0,
+  0,
+  0,
+  42,
+  46,
+  38,
   51,
+  33,
   0,
   0,
   0,
+  0,
+  0,
+  22,
+  31,
+  28,
+  35,
+  44,
+  40,
+  29,
+  20,
+  0,
+  37,
+  45,
+  41,
+  0,
+  0,
+  0,
+  0,
+  34,
+  48,
   30,
-  30,
-  30,
-  30,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
   0
  ],
  "deleted": [
   0,
   0,
   0,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
-  5,
   0,
   0,
   0,
+  3,
   6,
+  4,
+  7,
+  5,
+  9,
+  3,
+  4,
+  2,
+  0,
+  0,
+  0,
+  0,
+  5,
+  3,
   6,
+  4,
+  2,
+  0,
+  0,
+  0,
+  0,
+  0,
+  18,
+  24,
+  15,
+  9,
+  5,
+  3,
+  4,
+  2,
+  0,
+  4,
   6,
-  6,
+  3,
   0,
   0,
   0,
   0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
-  0,
+  7,
+  4,
+  2,
   0
  ],
  "pastes": [
   {
-   "m": 14,
-   "len": 240,
-   "ai": true,
-   "matched": true,
-   "ts": "16:14:35",
-   "target": "Code.exe",
-   "after_typed": 60
-  },
-  {
-   "m": 19,
-   "len": 90,
+   "m": 18,
+   "len": 85,
    "ai": false,
    "matched": true,
-   "ts": "16:19:30",
-   "target": "Code.exe",
+   "ts": "16:18:40",
+   "target": "WINWORD.EXE",
+   "target_title": "DB과제_보고서.docx - Word",
+   "src": {
+    "app": "chrome.exe",
+    "title": "ko.wikipedia.org",
+    "category": "resource"
+   },
+   "after_typed": 88
+  },
+  {
+   "m": 28,
+   "len": 310,
+   "ai": true,
+   "matched": true,
+   "ts": "16:28:05",
+   "target": "WINWORD.EXE",
+   "target_title": "DB과제_보고서.docx - Word",
+   "src": {
+    "app": "chrome.exe",
+    "title": "chatgpt.com",
+    "category": "ai"
+   },
+   "after_typed": 53
+  },
+  {
+   "m": 41,
+   "len": 60,
+   "ai": false,
+   "matched": false,
+   "ts": "16:41:00",
+   "target": "WINWORD.EXE",
+   "target_title": "DB과제_보고서.docx - Word",
+   "src": null,
    "after_typed": 0
+  },
+  {
+   "m": 44,
+   "len": 140,
+   "ai": true,
+   "matched": true,
+   "ts": "16:44:05",
+   "target": "WINWORD.EXE",
+   "target_title": "DB과제_보고서.docx - Word",
+   "src": {
+    "app": "chrome.exe",
+    "title": "chatgpt.com",
+    "category": "ai"
+   },
+   "after_typed": 82
   }
  ],
  "undos": [
-  5,
-  8
+  11,
+  29,
+  31
+ ],
+ "flow": [
+  {
+   "ts": "16:00:02",
+   "app": "Acrobat.exe",
+   "title": "5주차_정규화.pdf",
+   "cat": "resource",
+   "typed": 0,
+   "deleted": 0,
+   "items": []
+  },
+  {
+   "ts": "16:06:00",
+   "app": "WINWORD.EXE",
+   "title": "DB과제_보고서.docx - Word",
+   "cat": "work",
+   "typed": 412,
+   "deleted": 43,
+   "items": [
+    {
+     "ts": "16:11:00",
+     "kind": "undo",
+     "text": "되돌리기 (Ctrl+Z)"
+    }
+   ]
+  },
+  {
+   "ts": "16:15:00",
+   "app": "chrome.exe",
+   "title": "정규화 - 위키백과",
+   "cat": "other",
+   "typed": 0,
+   "deleted": 0,
+   "items": []
+  },
+  {
+   "ts": "16:15:01",
+   "app": "chrome.exe",
+   "title": "ko.wikipedia.org",
+   "cat": "resource",
+   "typed": 0,
+   "deleted": 0,
+   "items": [
+    {
+     "ts": "16:18:00",
+     "kind": "copy",
+     "text": "복사 85자"
+    }
+   ]
+  },
+  {
+   "ts": "16:18:30",
+   "app": "WINWORD.EXE",
+   "title": "DB과제_보고서.docx - Word",
+   "cat": "work",
+   "typed": 210,
+   "deleted": 20,
+   "items": [
+    {
+     "ts": "16:18:40",
+     "kind": "paste",
+     "len": 85,
+     "src": {
+      "app": "chrome.exe",
+      "title": "ko.wikipedia.org",
+      "category": "resource"
+     },
+     "text": "붙여넣기 85자"
+    },
+    {
+     "ts": "16:18:42",
+     "kind": "doc",
+     "text": "붙여넣은 자리: 문단 3"
+    }
+   ]
+  },
+  {
+   "ts": "16:24:00",
+   "app": "chrome.exe",
+   "title": "ChatGPT",
+   "cat": "ai",
+   "typed": 0,
+   "deleted": 0,
+   "items": []
+  },
+  {
+   "ts": "16:24:01",
+   "app": "chrome.exe",
+   "title": "chatgpt.com",
+   "cat": "ai",
+   "typed": 0,
+   "deleted": 0,
+   "items": [
+    {
+     "ts": "16:27:20",
+     "kind": "copy",
+     "text": "복사 310자"
+    }
+   ]
+  },
+  {
+   "ts": "16:28:00",
+   "app": "WINWORD.EXE",
+   "title": "DB과제_보고서.docx - Word",
+   "cat": "work",
+   "typed": 229,
+   "deleted": 78,
+   "items": [
+    {
+     "ts": "16:28:05",
+     "kind": "paste",
+     "len": 310,
+     "src": {
+      "app": "chrome.exe",
+      "title": "chatgpt.com",
+      "category": "ai"
+     },
+     "text": "붙여넣기 310자"
+    },
+    {
+     "ts": "16:28:07",
+     "kind": "doc",
+     "text": "붙여넣은 자리: 문단 6"
+    },
+    {
+     "ts": "16:28:10",
+     "kind": "doc",
+     "text": "문서 문단 6 +310자 / -0자"
+    },
+    {
+     "ts": "16:29:40",
+     "kind": "undo",
+     "text": "되돌리기 (Ctrl+Z)"
+    },
+    {
+     "ts": "16:31:30",
+     "kind": "undo",
+     "text": "되돌리기 (Ctrl+Z)"
+    },
+    {
+     "ts": "16:35:50",
+     "kind": "doc",
+     "text": "문서 문단 6 +96자 / -71자"
+    },
+    {
+     "ts": "16:36:00",
+     "kind": "doc",
+     "text": "저장 · chars 2140 · words 430"
+    }
+   ]
+  },
+  {
+   "ts": "16:36:10",
+   "app": "KakaoTalk.exe",
+   "title": "",
+   "cat": "other",
+   "typed": 20,
+   "deleted": 2,
+   "items": []
+  },
+  {
+   "ts": "16:38:00",
+   "app": "WINWORD.EXE",
+   "title": "DB과제_보고서.docx - Word",
+   "cat": "work",
+   "typed": 123,
+   "deleted": 13,
+   "items": [
+    {
+     "ts": "16:41:00",
+     "kind": "paste",
+     "len": 60,
+     "src": null,
+     "text": "붙여넣기 60자"
+    }
+   ]
+  },
+  {
+   "ts": "16:42:00",
+   "app": "chrome.exe",
+   "title": "ChatGPT",
+   "cat": "ai",
+   "typed": 0,
+   "deleted": 0,
+   "items": []
+  },
+  {
+   "ts": "16:42:01",
+   "app": "chrome.exe",
+   "title": "chatgpt.com",
+   "cat": "ai",
+   "typed": 0,
+   "deleted": 0,
+   "items": [
+    {
+     "ts": "16:43:40",
+     "kind": "copy",
+     "text": "복사 140자"
+    }
+   ]
+  },
+  {
+   "ts": "16:44:00",
+   "app": "WINWORD.EXE",
+   "title": "DB과제_보고서.docx - Word",
+   "cat": "work",
+   "typed": 112,
+   "deleted": 13,
+   "items": [
+    {
+     "ts": "16:44:05",
+     "kind": "paste",
+     "len": 140,
+     "src": {
+      "app": "chrome.exe",
+      "title": "chatgpt.com",
+      "category": "ai"
+     },
+     "text": "붙여넣기 140자"
+    },
+    {
+     "ts": "16:44:07",
+     "kind": "doc",
+     "text": "붙여넣은 자리: 문단 7"
+    },
+    {
+     "ts": "16:47:40",
+     "kind": "doc",
+     "text": "저장 · chars 2610 · words 520"
+    }
+   ]
+  }
  ],
  "chain": [
   [
    "16:00:00",
-   "window",
-   "Acrobat.exe · 강의자료.pdf",
+   "session_start",
+   "세션 시작 · proof",
    "0000000000000000000000000000000000000000000000000000000000000000",
-   "25b5cad7e3e4c904924dbc6ce2bfabacf40aa8166e41093c01fc4d7527fc9c19"
+   "008e0e27bf81eca4e137ca3d160b929c7d961adf5e3445bbdcc4dac52fdeb56d"
   ],
   [
-   "16:03:00",
+   "16:00:02",
    "window",
-   "Code.exe · app.py",
-   "25b5cad7e3e4c904924dbc6ce2bfabacf40aa8166e41093c01fc4d7527fc9c19",
-   "1e893d8e40955e65c93395c356fa68f4cc5931811dae93dd47bdda7390596fe8"
+   "Acrobat.exe · 5주차_정규화.pdf",
+   "008e0e27bf81eca4e137ca3d160b929c7d961adf5e3445bbdcc4dac52fdeb56d",
+   "1d3dfb98594a8bc6966ebac2df4ce279e843c42f692f99bd8326cf0424a87515"
   ],
   [
-   "16:03:10",
+   "16:06:00",
+   "window",
+   "WINWORD.EXE · DB과제_보고서.docx - Word",
+   "1d3dfb98594a8bc6966ebac2df4ce279e843c42f692f99bd8326cf0424a87515",
+   "b9466bc7ececb395f9590dc0649a726e24ff4e5abf34cfe2c25c712a9a06f20f"
+  ],
+  [
+   "16:06:20",
    "keys",
-   "입력 43자 · 삭제 5자 · Code.exe",
-   "1e893d8e40955e65c93395c356fa68f4cc5931811dae93dd47bdda7390596fe8",
-   "6e0204b701f6897c2b8ed45e3d420cbe3dfe10c3e572439c6be8a7e184aa68bc"
-  ],
-  [
-   "16:04:10",
-   "keys",
-   "입력 44자 · 삭제 5자 · Code.exe",
-   "6e0204b701f6897c2b8ed45e3d420cbe3dfe10c3e572439c6be8a7e184aa68bc",
-   "5bd935acdc35a900a9117705434baf85427a2133811780d1a208c82531b924cb"
-  ],
-  [
-   "16:05:10",
-   "keys",
-   "입력 45자 · 삭제 5자 · Code.exe",
-   "5bd935acdc35a900a9117705434baf85427a2133811780d1a208c82531b924cb",
-   "045deadb67d8ecf6668eef199f2da7a2fc27193f0d33f3f1bd210ef1da2133da"
-  ],
-  [
-   "16:05:20",
-   "undo",
-   "되돌리기 (Ctrl+Z)",
-   "045deadb67d8ecf6668eef199f2da7a2fc27193f0d33f3f1bd210ef1da2133da",
-   "998830acc0489a8aa850ca805d0c9e3c303ce23fd54b4d6cfeca392a8a792fff"
-  ],
-  [
-   "16:06:10",
-   "keys",
-   "입력 46자 · 삭제 5자 · Code.exe",
-   "998830acc0489a8aa850ca805d0c9e3c303ce23fd54b4d6cfeca392a8a792fff",
-   "0e2e80b26df75aaf84155a53c04472585154bf12ee4167930191ad76dd12cf01"
+   "입력 44자 · 삭제 3자 · WINWORD.EXE",
+   "b9466bc7ececb395f9590dc0649a726e24ff4e5abf34cfe2c25c712a9a06f20f",
+   "08e7cb8ea01441070dac0da5c9cbdf4148aedd24cc94a3ee9d08ed9feee28d98"
   ],
   [
    "16:07:10",
    "keys",
-   "입력 47자 · 삭제 5자 · Code.exe",
-   "0e2e80b26df75aaf84155a53c04472585154bf12ee4167930191ad76dd12cf01",
-   "abfb49af07bc909e05dfd80ca1cad7b730a2172a74c42bbff25b935c8e9cc756"
+   "입력 52자 · 삭제 6자 · WINWORD.EXE",
+   "08e7cb8ea01441070dac0da5c9cbdf4148aedd24cc94a3ee9d08ed9feee28d98",
+   "0229d8d41417af93c2d65f72bdb955dbb9b00f6108d8b28939d9e6007f121b17"
   ],
   [
-   "16:08:10",
+   "16:08:05",
    "keys",
-   "입력 48자 · 삭제 5자 · Code.exe",
-   "abfb49af07bc909e05dfd80ca1cad7b730a2172a74c42bbff25b935c8e9cc756",
-   "d98da4c49a41458020f6a2e7ae0c5d56307aa36fef5cc28d7b795f492596a1fa"
+   "입력 48자 · 삭제 4자 · WINWORD.EXE",
+   "0229d8d41417af93c2d65f72bdb955dbb9b00f6108d8b28939d9e6007f121b17",
+   "a6755f3c1cd868d593161681955161b3e2439cb6f20b71b04dfcfdd9ed44da00"
   ],
   [
-   "16:08:20",
+   "16:09:00",
+   "keys",
+   "입력 39자 · 삭제 7자 · WINWORD.EXE",
+   "a6755f3c1cd868d593161681955161b3e2439cb6f20b71b04dfcfdd9ed44da00",
+   "d79079b6e1f4753316bc00c567897f17271027e3cd2abb9a5e1b1187d391e37f"
+  ],
+  [
+   "16:10:05",
+   "keys",
+   "입력 55자 · 삭제 5자 · WINWORD.EXE",
+   "d79079b6e1f4753316bc00c567897f17271027e3cd2abb9a5e1b1187d391e37f",
+   "b19470b9726147451adc7f96996e9fae13b79083b59db887324cffbeb7e0aed7"
+  ],
+  [
+   "16:11:00",
    "undo",
    "되돌리기 (Ctrl+Z)",
-   "d98da4c49a41458020f6a2e7ae0c5d56307aa36fef5cc28d7b795f492596a1fa",
-   "3d6e9c5830cb932d15ed1638c265152c96cf6a0f66a0cb5600af99f9af03ef32"
-  ],
-  [
-   "16:09:10",
-   "keys",
-   "입력 49자 · 삭제 5자 · Code.exe",
-   "3d6e9c5830cb932d15ed1638c265152c96cf6a0f66a0cb5600af99f9af03ef32",
-   "7dfd921bdd4acbd82a55f951e4d7046f55b2992bb311951319c4b3a1aa666dc4"
-  ],
-  [
-   "16:10:10",
-   "keys",
-   "입력 50자 · 삭제 5자 · Code.exe",
-   "7dfd921bdd4acbd82a55f951e4d7046f55b2992bb311951319c4b3a1aa666dc4",
-   "30d7ceb8323f5127771dd5aa175a146f9fbf143e563bbe22729d98927ee44bc1"
+   "b19470b9726147451adc7f96996e9fae13b79083b59db887324cffbeb7e0aed7",
+   "07d48eaaabd1d60f10f572b88f5de1a04e6c579ce5a6f23c3be99adca8e1885e"
   ],
   [
    "16:11:10",
    "keys",
-   "입력 51자 · 삭제 5자 · Code.exe",
-   "30d7ceb8323f5127771dd5aa175a146f9fbf143e563bbe22729d98927ee44bc1",
-   "4b6343c42e9df3dce4a4e102c61ca55a53fbaa496f92810bf2b16907147f53c4"
+   "입력 41자 · 삭제 9자 · WINWORD.EXE",
+   "07d48eaaabd1d60f10f572b88f5de1a04e6c579ce5a6f23c3be99adca8e1885e",
+   "43a221cc52d71a8b47286251a7b33bd444a5610189561b14df72d0a31d05055f"
   ],
   [
-   "16:12:00",
+   "16:12:05",
+   "keys",
+   "입력 47자 · 삭제 3자 · WINWORD.EXE",
+   "43a221cc52d71a8b47286251a7b33bd444a5610189561b14df72d0a31d05055f",
+   "a31d0268a7d13ad1ccabe36387938b3f546fef4ebd002704965f237d16ae0730"
+  ],
+  [
+   "16:13:00",
+   "keys",
+   "입력 50자 · 삭제 4자 · WINWORD.EXE",
+   "a31d0268a7d13ad1ccabe36387938b3f546fef4ebd002704965f237d16ae0730",
+   "4b19dbb08ef3471c4dc30866ee64b3fe26842766f479b77e6b970ec864ef4a09"
+  ],
+  [
+   "16:14:10",
+   "keys",
+   "입력 36자 · 삭제 2자 · WINWORD.EXE",
+   "4b19dbb08ef3471c4dc30866ee64b3fe26842766f479b77e6b970ec864ef4a09",
+   "827c8a0c0093504335798813b85584f651e9bf1b4fa7d27eb7aace7699a7b348"
+  ],
+  [
+   "16:15:00",
    "window",
-   "chrome.exe · Claude",
-   "4b6343c42e9df3dce4a4e102c61ca55a53fbaa496f92810bf2b16907147f53c4",
-   "88b9c54cb5444fe8239b3e7f8cfa2d707d244efe68e3098dbe4394af140b6d28"
+   "chrome.exe · 정규화 - 위키백과",
+   "827c8a0c0093504335798813b85584f651e9bf1b4fa7d27eb7aace7699a7b348",
+   "f72c2be930cfbf3dfd2c37787e1868feb21081aa67c1882abdda5b01467673dd"
   ],
   [
-   "16:14:00",
+   "16:15:01",
+   "tab",
+   "ko.wikipedia.org · resource",
+   "f72c2be930cfbf3dfd2c37787e1868feb21081aa67c1882abdda5b01467673dd",
+   "c92656cf4f15d10114a3ffb77879a2c98f056d14838478539aa7ce41f99c65fd"
+  ],
+  [
+   "16:18:00",
    "copy",
-   "240자 · sha256:4c98a1a4ba90… · chrome.exe",
-   "88b9c54cb5444fe8239b3e7f8cfa2d707d244efe68e3098dbe4394af140b6d28",
-   "9cae533892ee4448150ff18ff0e776c82ba967aa0ea48f4725a61c0346da8048"
+   "85자 · sha256:e0acc63b66bd… · chrome.exe",
+   "c92656cf4f15d10114a3ffb77879a2c98f056d14838478539aa7ce41f99c65fd",
+   "b89c647c966a6ce0405e9908cf469bd9ed1d591ae2c51b5d864e29e32ead1b76"
   ],
   [
-   "16:14:30",
+   "16:18:30",
    "window",
-   "Code.exe · app.py",
-   "9cae533892ee4448150ff18ff0e776c82ba967aa0ea48f4725a61c0346da8048",
-   "ade3dd9f88588cc0753847d6337c57e20ed1e847ecb789e3f4d149843af0bfa4"
+   "WINWORD.EXE · DB과제_보고서.docx - Word",
+   "b89c647c966a6ce0405e9908cf469bd9ed1d591ae2c51b5d864e29e32ead1b76",
+   "2dc7d5e5c2ab41f105dec0e6fcc66d082590be67da171293acdab48b02a4eb9d"
   ],
   [
-   "16:14:35",
+   "16:18:40",
    "paste",
-   "240자 · sha256:4c98a1a4ba90… · Code.exe",
-   "ade3dd9f88588cc0753847d6337c57e20ed1e847ecb789e3f4d149843af0bfa4",
-   "94736b9b431f068260b43417eb549b4ad4f321bb52c79f771010e3d06909e2c7"
+   "85자 · sha256:e0acc63b66bd… · WINWORD.EXE",
+   "2dc7d5e5c2ab41f105dec0e6fcc66d082590be67da171293acdab48b02a4eb9d",
+   "b73d30773a5d88bb42e07e8097036fd0dd5dd206151a56393cd124d574e59dd1"
   ],
   [
-   "16:15:10",
+   "16:18:42",
+   "doc_paste_at",
+   "Word · DB과제_보고서.docx · 문단 3",
+   "b73d30773a5d88bb42e07e8097036fd0dd5dd206151a56393cd124d574e59dd1",
+   "e756f2afe70b3d4aaf78d61c452872985c7e16fa66511d79122ba824293c8181"
+  ],
+  [
+   "16:19:10",
    "keys",
-   "입력 30자 · 삭제 6자 · Code.exe",
-   "94736b9b431f068260b43417eb549b4ad4f321bb52c79f771010e3d06909e2c7",
-   "52b927efd12c3c7fc30bbd1510ea08dbc911e5dc31243d0d9da29480b8eb454e"
+   "입력 42자 · 삭제 5자 · WINWORD.EXE",
+   "e756f2afe70b3d4aaf78d61c452872985c7e16fa66511d79122ba824293c8181",
+   "0989f98bf69b5b1f9f3891ccb46315d1dae12dd1b2ec6c4d370851043405cd24"
   ],
   [
-   "16:16:10",
+   "16:20:05",
    "keys",
-   "입력 30자 · 삭제 6자 · Code.exe",
-   "52b927efd12c3c7fc30bbd1510ea08dbc911e5dc31243d0d9da29480b8eb454e",
-   "c90e542bab01bf44562481aa600196383de246c31ae575a880f3c980eaf8edb1"
+   "입력 46자 · 삭제 3자 · WINWORD.EXE",
+   "0989f98bf69b5b1f9f3891ccb46315d1dae12dd1b2ec6c4d370851043405cd24",
+   "c16e7151508359f659dd4033a898968991d298d06689d83beb0589cd6d6bb018"
   ],
   [
-   "16:17:10",
+   "16:21:00",
    "keys",
-   "입력 30자 · 삭제 6자 · Code.exe",
-   "c90e542bab01bf44562481aa600196383de246c31ae575a880f3c980eaf8edb1",
-   "2eab34b0de3f4d29d21b0e94bb69ad2843ede37afd2e063e5d201369dbeb19e6"
+   "입력 38자 · 삭제 6자 · WINWORD.EXE",
+   "c16e7151508359f659dd4033a898968991d298d06689d83beb0589cd6d6bb018",
+   "54db9d4016be9edc7e36cab7efac42ee5b5796ae58e507c9f79d4357463e2559"
   ],
   [
-   "16:18:10",
+   "16:22:10",
    "keys",
-   "입력 30자 · 삭제 6자 · Code.exe",
-   "2eab34b0de3f4d29d21b0e94bb69ad2843ede37afd2e063e5d201369dbeb19e6",
-   "63d3ab727d33e90567b011501fa5d6d8827252675170cc3dcaa14cc7a0c58df8"
+   "입력 51자 · 삭제 4자 · WINWORD.EXE",
+   "54db9d4016be9edc7e36cab7efac42ee5b5796ae58e507c9f79d4357463e2559",
+   "c26e7dad020b474f38face3ed029890bea7da1863ce21676733d5ce726802db3"
   ],
   [
-   "16:19:00",
+   "16:23:05",
+   "keys",
+   "입력 33자 · 삭제 2자 · WINWORD.EXE",
+   "c26e7dad020b474f38face3ed029890bea7da1863ce21676733d5ce726802db3",
+   "f5a090eef096b6f46879310d8ef7f00c72685a01b981ee8f3baa300e8fa52622"
+  ],
+  [
+   "16:24:00",
+   "window",
+   "chrome.exe · ChatGPT",
+   "f5a090eef096b6f46879310d8ef7f00c72685a01b981ee8f3baa300e8fa52622",
+   "44bd63e685ada993197d54a9c88f0e1b02a4d43e997edc0d71c053fd939299bd"
+  ],
+  [
+   "16:24:01",
+   "tab",
+   "chatgpt.com · ai",
+   "44bd63e685ada993197d54a9c88f0e1b02a4d43e997edc0d71c053fd939299bd",
+   "8ce5b8d9307dd17405d18cfc8f9794dd4f20b92b41fdcb9886962483656a8e20"
+  ],
+  [
+   "16:27:20",
    "copy",
-   "90자 · sha256:4f4e4d8c6b83… · Code.exe",
-   "63d3ab727d33e90567b011501fa5d6d8827252675170cc3dcaa14cc7a0c58df8",
-   "4407a9340865e8d74edbf06219446dd78e7b83a0b94ac693b1ae588a91c59ff3"
+   "310자 · sha256:56990483e652… · chrome.exe",
+   "8ce5b8d9307dd17405d18cfc8f9794dd4f20b92b41fdcb9886962483656a8e20",
+   "cec65e3d7e0dc76d0ba25a6279131b966dc91770d2bb1c6ea5bf99bffb23aba9"
   ],
   [
-   "16:19:30",
+   "16:28:00",
+   "window",
+   "WINWORD.EXE · DB과제_보고서.docx - Word",
+   "cec65e3d7e0dc76d0ba25a6279131b966dc91770d2bb1c6ea5bf99bffb23aba9",
+   "f26e13b54bd7ea1c92a996152fbe9741e555785b027c92a3145c29b490e09ab6"
+  ],
+  [
+   "16:28:05",
    "paste",
-   "90자 · sha256:4f4e4d8c6b83… · Code.exe",
-   "4407a9340865e8d74edbf06219446dd78e7b83a0b94ac693b1ae588a91c59ff3",
-   "5e02a3952dcd885b854660035fa8f84b250fc6dc4f9af58b6d3ff432798437ac"
+   "310자 · sha256:56990483e652… · WINWORD.EXE",
+   "f26e13b54bd7ea1c92a996152fbe9741e555785b027c92a3145c29b490e09ab6",
+   "8de06ec534ae310d8fe88171a5de9cd2c63ba8a9991ce87deb097af5552e0854"
   ],
   [
-   "16:20:00",
+   "16:28:07",
+   "doc_paste_at",
+   "Word · DB과제_보고서.docx · 문단 6",
+   "8de06ec534ae310d8fe88171a5de9cd2c63ba8a9991ce87deb097af5552e0854",
+   "e637e6692f988dff32a569ba473d5f9cafb8779387e3cc39989258309fd254fd"
+  ],
+  [
+   "16:28:10",
+   "doc_change",
+   "Word · DB과제_보고서.docx · 문단 6 · +310 · -0",
+   "e637e6692f988dff32a569ba473d5f9cafb8779387e3cc39989258309fd254fd",
+   "9af89a0cc0b22e188c9bdc69b8a21592c35d6dcf7146c69dee140ee8a771c3ec"
+  ],
+  [
+   "16:29:10",
+   "keys",
+   "입력 22자 · 삭제 18자 · WINWORD.EXE",
+   "9af89a0cc0b22e188c9bdc69b8a21592c35d6dcf7146c69dee140ee8a771c3ec",
+   "b45ba6ca461fba3e67d02f13ab2c418654193c8c383e31fdf149b3e97607ccfc"
+  ],
+  [
+   "16:29:40",
+   "undo",
+   "되돌리기 (Ctrl+Z)",
+   "b45ba6ca461fba3e67d02f13ab2c418654193c8c383e31fdf149b3e97607ccfc",
+   "004d464d00d95fa5e60ed92d6bc55ac91fbe8e3d38e210c295cc7bcc84baae4c"
+  ],
+  [
+   "16:30:05",
+   "keys",
+   "입력 31자 · 삭제 24자 · WINWORD.EXE",
+   "004d464d00d95fa5e60ed92d6bc55ac91fbe8e3d38e210c295cc7bcc84baae4c",
+   "85acbc5521e681f119a9f4daa9b7120cfb5e6b2290617cf2288469eda03174e3"
+  ],
+  [
+   "16:31:00",
+   "keys",
+   "입력 28자 · 삭제 15자 · WINWORD.EXE",
+   "85acbc5521e681f119a9f4daa9b7120cfb5e6b2290617cf2288469eda03174e3",
+   "df5b10d324c9678c34bc57430204f8bc316d7af8c6ce66f2e3248647655fddd7"
+  ],
+  [
+   "16:31:30",
+   "undo",
+   "되돌리기 (Ctrl+Z)",
+   "df5b10d324c9678c34bc57430204f8bc316d7af8c6ce66f2e3248647655fddd7",
+   "875bac22d3e23c6e9bfbca120618f58993e67127300248bc1a64e2639a28c484"
+  ],
+  [
+   "16:32:10",
+   "keys",
+   "입력 35자 · 삭제 9자 · WINWORD.EXE",
+   "875bac22d3e23c6e9bfbca120618f58993e67127300248bc1a64e2639a28c484",
+   "155f39d9667e554b7a5566fcc28f788ff9b2d878777b60d7585ec385457e3d8b"
+  ],
+  [
+   "16:33:05",
+   "keys",
+   "입력 44자 · 삭제 5자 · WINWORD.EXE",
+   "155f39d9667e554b7a5566fcc28f788ff9b2d878777b60d7585ec385457e3d8b",
+   "311320db2483c0a865235c10a9a1dc052715112cbe3013b9db51a7eb19e5eb28"
+  ],
+  [
+   "16:34:00",
+   "keys",
+   "입력 40자 · 삭제 3자 · WINWORD.EXE",
+   "311320db2483c0a865235c10a9a1dc052715112cbe3013b9db51a7eb19e5eb28",
+   "8f1fa33f562dadd2749106100273d33e66bd8d932ea6b75c7cc1b9f5ea315676"
+  ],
+  [
+   "16:35:10",
+   "keys",
+   "입력 29자 · 삭제 4자 · WINWORD.EXE",
+   "8f1fa33f562dadd2749106100273d33e66bd8d932ea6b75c7cc1b9f5ea315676",
+   "c0dd2b68712ec82de6ea49d0a0f163f26bae9c00a71ab4796740796970b27419"
+  ],
+  [
+   "16:35:50",
+   "doc_change",
+   "Word · DB과제_보고서.docx · 문단 6 · +96 · -71",
+   "c0dd2b68712ec82de6ea49d0a0f163f26bae9c00a71ab4796740796970b27419",
+   "8913f18ae7e644c7400fd0b2baf087177e4c7a5bd50dee9388a625e2cc7f7257"
+  ],
+  [
+   "16:36:00",
+   "doc_save",
+   "Word · DB과제_보고서.docx · chars=2140 · words=430",
+   "8913f18ae7e644c7400fd0b2baf087177e4c7a5bd50dee9388a625e2cc7f7257",
+   "aa5d0b3f5a0b10015cadd708f861e9a99f8e18bf5d6cf64dd47782d4dfad8414"
+  ],
+  [
+   "16:36:10",
+   "window",
+   "KakaoTalk.exe",
+   "aa5d0b3f5a0b10015cadd708f861e9a99f8e18bf5d6cf64dd47782d4dfad8414",
+   "569672a8ab26e03c4ba29a7699be704c4b61b1be7eaf9c361ee615b598568ad0"
+  ],
+  [
+   "16:36:40",
+   "keys",
+   "입력 20자 · 삭제 2자 · KakaoTalk.exe",
+   "569672a8ab26e03c4ba29a7699be704c4b61b1be7eaf9c361ee615b598568ad0",
+   "acd4e99244338648d0be504e1688408c3484ee03e31d97eaf920a6e5a1f2e84d"
+  ],
+  [
+   "16:38:00",
+   "window",
+   "WINWORD.EXE · DB과제_보고서.docx - Word",
+   "acd4e99244338648d0be504e1688408c3484ee03e31d97eaf920a6e5a1f2e84d",
+   "0c5651d860e8c21b5b2611ccc7fcebbadafcf1228d84f3c5fbf16cb0d20cdad9"
+  ],
+  [
+   "16:38:20",
+   "keys",
+   "입력 37자 · 삭제 4자 · WINWORD.EXE",
+   "0c5651d860e8c21b5b2611ccc7fcebbadafcf1228d84f3c5fbf16cb0d20cdad9",
+   "3d9e111c93f85b9172b29f0aa62aa823e39b79bca4deaf0a4910331e2ded2145"
+  ],
+  [
+   "16:39:10",
+   "keys",
+   "입력 45자 · 삭제 6자 · WINWORD.EXE",
+   "3d9e111c93f85b9172b29f0aa62aa823e39b79bca4deaf0a4910331e2ded2145",
+   "011af5a888e84ed8b1dab8ee89891613dbfc5c28dd5ec9821e97bc84cc17d9ff"
+  ],
+  [
+   "16:40:05",
+   "keys",
+   "입력 41자 · 삭제 3자 · WINWORD.EXE",
+   "011af5a888e84ed8b1dab8ee89891613dbfc5c28dd5ec9821e97bc84cc17d9ff",
+   "9e6bf3834206cf629fd63b968770605aadb04548ff9d840f6d43c99e9b01eaf3"
+  ],
+  [
+   "16:41:00",
+   "paste",
+   "60자 · sha256:4766284c64f4… · WINWORD.EXE",
+   "9e6bf3834206cf629fd63b968770605aadb04548ff9d840f6d43c99e9b01eaf3",
+   "efcb83f66e74d7fcba0775ed1323cc1ce12668ba0c757aa92b5c9ccbdd222e6e"
+  ],
+  [
+   "16:42:00",
+   "window",
+   "chrome.exe · ChatGPT",
+   "efcb83f66e74d7fcba0775ed1323cc1ce12668ba0c757aa92b5c9ccbdd222e6e",
+   "bb771b0eb5e3a8f3671ad015902cdc44ea91365c3944f8da1e845da3c28738f5"
+  ],
+  [
+   "16:42:01",
+   "tab",
+   "chatgpt.com · ai",
+   "bb771b0eb5e3a8f3671ad015902cdc44ea91365c3944f8da1e845da3c28738f5",
+   "12222178be0ac2afa754089a3b8317fb1752204a6dea550dd12278e1b7d05747"
+  ],
+  [
+   "16:43:40",
+   "copy",
+   "140자 · sha256:890b89e0b883… · chrome.exe",
+   "12222178be0ac2afa754089a3b8317fb1752204a6dea550dd12278e1b7d05747",
+   "aa8099261eef04120eaa2f51df8d7e53b63b13e3579422a851b6dd91d86cdafe"
+  ],
+  [
+   "16:44:00",
+   "window",
+   "WINWORD.EXE · DB과제_보고서.docx - Word",
+   "aa8099261eef04120eaa2f51df8d7e53b63b13e3579422a851b6dd91d86cdafe",
+   "e711feba90ce2580c65b12601324516fb946fdb55970bb2e46de122d1681b211"
+  ],
+  [
+   "16:44:05",
+   "paste",
+   "140자 · sha256:890b89e0b883… · WINWORD.EXE",
+   "e711feba90ce2580c65b12601324516fb946fdb55970bb2e46de122d1681b211",
+   "a6314a3d640ade4790bc37417c037f72f9d8f853355872af2267c464e2a089b3"
+  ],
+  [
+   "16:44:07",
+   "doc_paste_at",
+   "Word · DB과제_보고서.docx · 문단 7",
+   "a6314a3d640ade4790bc37417c037f72f9d8f853355872af2267c464e2a089b3",
+   "d3ea834f9e6c520a8436a0a40c9e4c4057bd57fbf9c952dec4542483fcd34cb8"
+  ],
+  [
+   "16:45:00",
+   "keys",
+   "입력 34자 · 삭제 7자 · WINWORD.EXE",
+   "d3ea834f9e6c520a8436a0a40c9e4c4057bd57fbf9c952dec4542483fcd34cb8",
+   "6110f7aa5e134843ae6f6da559741807db0e6360d956745cd15fa66d62d90029"
+  ],
+  [
+   "16:46:05",
+   "keys",
+   "입력 48자 · 삭제 4자 · WINWORD.EXE",
+   "6110f7aa5e134843ae6f6da559741807db0e6360d956745cd15fa66d62d90029",
+   "3d15b776d50e6eaff03ea2dcbfb06d2773420000c8423be382a2775df2d3b28e"
+  ],
+  [
+   "16:47:00",
+   "keys",
+   "입력 30자 · 삭제 2자 · WINWORD.EXE",
+   "3d15b776d50e6eaff03ea2dcbfb06d2773420000c8423be382a2775df2d3b28e",
+   "f19a3f009ea518072caa03d3b8d1e28f8c6ca8ca207a8be28b890279bc9e6a51"
+  ],
+  [
+   "16:47:40",
+   "doc_save",
+   "Word · DB과제_보고서.docx · chars=2610 · words=520",
+   "f19a3f009ea518072caa03d3b8d1e28f8c6ca8ca207a8be28b890279bc9e6a51",
+   "16b6ab9c5dbb0a654d67cfa8746f853ff22af5a81e67413b0856d4d1142809f4"
+  ],
+  [
+   "16:48:00",
    "session_end",
    "세션 종료",
-   "5e02a3952dcd885b854660035fa8f84b250fc6dc4f9af58b6d3ff432798437ac",
-   "27f96d21ba4d67a505cc1a5e6a40247c12a52d25d57840bc5b2dc389e7b39dbc"
-  ],
-  [
-   "16:42:59",
-   "session_start",
-   "세션 시작",
-   "27f96d21ba4d67a505cc1a5e6a40247c12a52d25d57840bc5b2dc389e7b39dbc",
-   "9bf72c107cdbf3befed0c85616306c2efa4625dd44b440424063ba4184c84f37"
-  ],
-  [
-   "16:42:59",
-   "window",
-   "claude.exe · Claude",
-   "9bf72c107cdbf3befed0c85616306c2efa4625dd44b440424063ba4184c84f37",
-   "9953f8c094db2a59413b63909f3ef6162c334d959a81940ef4529dd90a36aec4"
-  ],
-  [
-   "16:43:03",
-   "copy",
-   "240자 · sha256:718df6704d8a… · claude.exe",
-   "9953f8c094db2a59413b63909f3ef6162c334d959a81940ef4529dd90a36aec4",
-   "4c9fec008bd1e257381e172058fed925dca53dce37711ab8711b95fd0a007907"
+   "16b6ab9c5dbb0a654d67cfa8746f853ff22af5a81e67413b0856d4d1142809f4",
+   "29e20adbd0714db1074c6b7614a18f3e04e4c992e14ccec2baf4be386b35b65c"
   ]
  ],
  "stats": {
-  "typed": 543,
-  "deleted": 69,
-  "pasted": 330,
-  "pasted_ai": 240,
-  "pasted_other": 90,
-  "total": 873,
-  "typed_pct": 62,
-  "pasted_pct": 38,
-  "cpm": 42,
-  "max_cpm": 51,
-  "edit_ratio": 13,
-  "undo": 2,
+  "typed": 1106,
+  "deleted": 169,
+  "pasted": 595,
+  "pasted_ai": 450,
+  "pasted_other": 145,
+  "total": 1701,
+  "typed_pct": 65,
+  "pasted_pct": 35,
+  "cpm": 40,
+  "max_cpm": 55,
+  "edit_ratio": 15,
+  "undo": 3,
   "pauses": 1,
-  "paste_count": 2,
-  "paste_ai_count": 1,
-  "ai_min": 4,
+  "paste_count": 4,
+  "paste_ai_count": 2,
+  "ai_min": 6.0,
   "ai_visits": 2,
-  "events": 27
- }
+  "events": 60
+ },
+ "mode": "proof",
+ "work_id": "DB 과제 보고서"
 }

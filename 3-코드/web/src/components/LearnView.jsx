@@ -1,13 +1,18 @@
-// Learn 세션 화면 — 목업 14(타임라인 + 맥락) · 16(Learning Report) · 13b/13c(알약 위 질문칸).
+// Learn 세션 화면 — 목업 14(타임라인 + 맥락) · 16(Learning Report) · 13b/13c(알약 위 질문칸). 디자인 기준(흑연) — Doc.jsx 부품 위에.
 // 입력: s(session.json · 계약 ②) · ctx(맥락 항목들 · 계약 ③ 5절) · report(GET /report 결과 또는 null)
 // 서버 호출은 lib/api.js 만. 샘플 모드(public/sample_learn.json)면 서버 없이 가짜 답으로 돈다.
 import { useMemo, useState } from 'react';
+import { Settings2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Timeline from './Timeline.jsx';
 import ContextPanel from './ContextPanel.jsx';
 import ReportView from './ReportView.jsx';
 import AskBox, { Pill } from './AskBox.jsx';
+import { Sheet, Head, Sec, Empty, Table, Foot, Dot, FlowLine } from './Doc.jsx';
 import { markers, ctxCounts, KIND, LEGEND, clockS } from '../lib/learn.js';
-import { fmt } from '../lib/format.jsx';
+import { COLORS, fmt } from '../lib/format.jsx';
 import { stats } from '../lib/stats.js';
 import * as api from '../lib/api.js';
 
@@ -28,6 +33,7 @@ export default function LearnView({ s, ctx = [], report: report0 = null, live = 
       setReport(r); setRstate('ready');
     } catch (e) { setRerr(api.explain(e)); setRstate(report ? 'ready' : 'error'); }
   };
+  const openReport = () => { setTab('report'); if (rstate === 'none') loadReport(); };
 
   // ── 물어보기 (Side Chat 과 같은 /chat)
   const [askOpen, setAskOpen] = useState(false);
@@ -46,61 +52,69 @@ export default function LearnView({ s, ctx = [], report: report0 = null, live = 
   const askFrom = (text) => { setSeed(text ? `${text.slice(0, 80)}\n\n이 부분이 왜 그런지 설명해줘` : ''); setAskOpen(true); };
 
   return (
-    <div className="learn">
-      <div className="head">
-        <div>
-          <h2>{s.date} · {s.work_id || '세션'} <span className="badge learn">Learn</span></h2>
-          <div className="sub">{s.start.slice(0, 5)}–{s.end.slice(0, 5)} · {s.dur} · AI 질문 {cc.questions + cc.chats} · 참고 페이지 {cc.pages} · 오류 {cc.errors} → 해결 {cc.solved} · 직접 입력 {fmt(st.typed)}자 · 붙여넣기 {st.paste_count}건 {fmt(st.pasted)}자</div>
-        </div>
-        <span style={{ marginLeft: 'auto' }} />
-        <button className="btn" title="목업 17 · 항목별 토글은 수집기 config.json (learn_context)">수집 설정</button>
-        <button className="btn primary" onClick={() => { setTab('report'); if (rstate === 'none') loadReport(); }}>Learning Report</button>
-      </div>
+    <>
+      <Sheet wide>
+        <Head kicker={`LEARN · ${s.date}`} title={s.work_id || '세션'}
+              sub={<>{s.start.slice(0, 5)}–{s.end.slice(0, 5)} · {s.dur} · AI 질문 {cc.questions + cc.chats} · 참고 페이지 {cc.pages} · 오류 {cc.errors} → 해결 {cc.solved} · 직접 입력 {fmt(st.typed)}자 · 붙여넣기 {st.paste_count}건 {fmt(st.pasted)}자</>}
+              right={<>
+                <Badge variant="secondary"><Dot c="var(--learn)" />Learn</Badge>
+                <Button variant="ghost" size="sm" title="목업 17 · 항목별 토글은 수집기 config.json (learn_context)"><Settings2 /> 수집 설정</Button>
+                <Button size="sm" onClick={openReport}>Learning Report</Button>
+              </>} />
 
-      <nav className="tabs">
-        {[['timeline', '타임라인 + 맥락'], ['report', 'Learning Report'], ['raw', '이벤트 원본']].map(([k, t]) => (
-          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t}</button>
-        ))}
-      </nav>
+        <Tabs value={tab} onValueChange={setTab} className="mb-2">
+          <TabsList variant="line" className="-mb-px">
+            <TabsTrigger value="timeline">타임라인 + 맥락</TabsTrigger>
+            <TabsTrigger value="report" onClick={() => rstate === 'none' && loadReport()}>Learning Report</TabsTrigger>
+            <TabsTrigger value="raw">이벤트 원본</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      {tab === 'timeline' && (
-        <div className="split">
-          <div>
-            <div className="card">
-              <h4>학습 흐름 — 마커를 누르면 오른쪽에 맥락</h4>
-              <Timeline s={s} markers={mks} selected={sel} onMarker={(id) => setSel(id === sel ? null : id)} />
-              <div className="legend">
-                {LEGEND.map((k) => <span key={k}><b style={{ color: KIND[k].c }}>{KIND[k].ic}</b> {KIND[k].t}</span>)}
-                <span><i style={{ background: '#10b981' }} />직접 입력</span>
-              </div>
+        {tab === 'timeline' && (
+          <div className="grid gap-8 md:grid-cols-[1fr_320px]">
+            <div className="min-w-0">
+              <Sec n="01" title="학습 흐름" sub="마커를 누르면 오른쪽에 맥락">
+                <Timeline s={s} markers={mks} selected={sel} onMarker={(id) => setSel(id === sel ? null : id)} />
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px] text-muted-foreground">
+                  {LEGEND.map((k) => <span key={k} className="flex items-center gap-1.5"><b style={{ color: KIND[k].c }}>{KIND[k].ic}</b>{KIND[k].t}</span>)}
+                  <span className="flex items-center gap-1.5"><Dot c={COLORS.typed} />직접 입력</span>
+                </div>
+              </Sec>
+              <Sec n="02" title="흐름을 묶으면" sub="이벤트를 AI 가 순서로 묶은 것">
+                {rstate === 'ready' && report?.process?.length
+                  ? <ol className="space-y-3">{report.process.map((line, i) => <FlowLine key={i} n={i + 1} line={line} />)}</ol>
+                  : <div className="flex flex-wrap items-center gap-3"><Empty>Learning Report 를 열면 AI 가 흐름을 묶어 여기에도 보여줍니다.</Empty><Button variant="outline" size="sm" onClick={openReport}>열기</Button></div>}
+              </Sec>
             </div>
-            <h4 className="sect">이 세션의 학습 흐름 — 이벤트를 AI 가 묶은 것</h4>
-            {rstate === 'ready' && report?.process?.length ? report.process.map((line, i) => (
-              <div key={i} className="card flowcard"><span className="n">{i + 1}</span><span>{line}</span></div>
-            )) : (
-              <div className="card center sm"><span className="sub">Learning Report 를 열면 AI 가 흐름을 묶어 여기에도 보여줍니다.</span> <button className="btn sm" onClick={() => { setTab('report'); if (rstate === 'none') loadReport(); }}>열기</button></div>
-            )}
+            <div className="pt-8"><ContextPanel s={s} ctx={ctx} mk={mks.find((m) => m.id === sel)} onAsk={askFrom} /></div>
           </div>
-          <ContextPanel s={s} ctx={ctx} mk={mks.find((m) => m.id === sel)} onAsk={askFrom} />
-        </div>
-      )}
+        )}
 
-      {tab === 'report' && <ReportView s={s} ctx={ctx} report={report} state={rstate} error={rerr} onOpen={() => loadReport(false)} onRegen={() => loadReport(true)} />}
+        {tab === 'report' && <ReportView bare s={s} ctx={ctx} report={report} state={rstate} error={rerr} onOpen={() => loadReport(false)} onRegen={() => loadReport(true)} />}
 
-      {tab === 'raw' && (
-        <div className="card scroll"><table>
-          <thead><tr><th>시각</th><th>출처</th><th>종류</th><th>내용</th></tr></thead>
-          <tbody>{ctx.map((it) => (
-            <tr key={it.id}><td className="mono dim">{clockS(it.ts)}</td><td>{it.source}</td><td>{KIND[it.kind]?.t || it.kind}</td><td className="sum">{it.text || <span className="dim">{JSON.stringify(it.meta)}</span>}</td></tr>
-          ))}</tbody>
-        </table><p className="note">맥락 원본 {ctx.length}건 (계약 ③ 5절). 이벤트 체인은 Proof 와 같은 형식 — "한눈에" 탭에서.</p></div>
-      )}
+        {tab === 'raw' && (
+          <Sec n="01" title="맥락 원본" sub={`${ctx.length}건 · 계약 ③ 5절`}>
+            <Table className="max-h-[560px] overflow-y-auto"
+              head={[{ t: '시각' }, { t: '출처' }, { t: '종류' }, { t: '내용', wrap: true }]}
+              rows={ctx.map((it) => {
+                const k = KIND[it.kind];
+                return { key: it.id, cells: [
+                  <span className="font-mono text-muted-foreground">{clockS(it.ts)}</span>,
+                  <span className="text-muted-foreground">{it.source}</span>,
+                  <span className="whitespace-nowrap">{k && <b className="mr-1.5" style={{ color: k.c }}>{k.ic}</b>}{k?.t || it.kind}</span>,
+                  <span className="whitespace-pre-wrap break-all">{it.text || <span className="font-mono text-[12px] text-muted-foreground">{JSON.stringify(it.meta)}</span>}</span>,
+                ] };
+              })} />
+            <p className="mt-3 text-[12px] text-muted-foreground">이벤트 체인은 Proof 와 같은 형식 — 한눈에 화면의 "이벤트 원본"에서.</p>
+          </Sec>
+        )}
 
-      <div className="foot">Learn Mode 는 AI 사용 여부를 판정하지 않습니다. 보는 것은 "AI 를 쓴 뒤 무엇을 했는가" 입니다.</div>
+        {tab !== 'report' && <Foot><span>Learn Mode 는 AI 사용 여부를 판정하지 않습니다. 보는 것은 "AI 를 쓴 뒤 무엇을 했는가" 입니다.</span></Foot>}
+      </Sheet>
 
       <AskBox open={askOpen} setOpen={setAskOpen} msgs={msgs} busy={busy} error={aerr} seed={seed} onSend={send}
               pill={<Pill elapsed={s.dur} ctxCount={ctx.length} />} />
-    </div>
+    </>
   );
 }
 

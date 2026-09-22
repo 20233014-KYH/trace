@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trace 디자인 기준</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* ── 토큰: 여기 값이 전부. 오른쪽 편집기가 이 변수를 바꾼다. React index.css 의 :root 와 같은 이름 ── */
+:root{
+  --primary:#7c3aed; --proof:#7c3aed; --learn:#0ea5e9;
+  --bg:#f3f4f7; --surface:#ffffff; --ink:#1c1f24; --muted:#6b7280; --line:#e5e7eb; --soft:#f9fafb;
+  --typed:#10b981; --paste:#f59e0b; --ai:#ef4444; --resource:#3b82f6; --work:#10b981; --other:#cbd5e1;
+  --radius:14px; --font:"Pretendard","Segoe UI","Malgun Gothic",sans-serif; --head:var(--font);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard","Segoe UI",sans-serif;font-size:14px;color:#1c1f24;background:var(--bg);line-height:1.55}
+.top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top h1{margin:0;font-size:17px}
+.top .sub{color:#6b7280;font-size:13px}
+.presets{display:flex;gap:6px;margin-left:auto}
+.presets button{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.presets button.on{background:#1c1f24;color:#fff;border-color:#1c1f24}
+.wrap{display:grid;grid-template-columns:1fr 320px;gap:18px;padding:18px 24px;max-width:1400px;margin:0 auto}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+h2{font-size:14px;color:#6b7280;margin:22px 0 8px;font-weight:600}
+h2:first-child{margin-top:0}
+
+/* ── 편집기 (오른쪽) ── */
+.editor{position:sticky;top:64px;align-self:start;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;max-height:calc(100vh - 80px);overflow:auto}
+.editor h3{margin:0 0 8px;font-size:13px}
+.row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px}
+.row label{flex:1;color:#374151}.row code{color:#9ca3af;font-size:11px}
+.row input[type=color]{width:34px;height:26px;border:1px solid #e5e7eb;border-radius:6px;padding:0;background:none;cursor:pointer}
+.row input[type=text]{width:78px;border:1px solid #e5e7eb;border-radius:6px;padding:3px 6px;font:12px Consolas,monospace}
+.row input[type=range]{width:110px}
+.row select{border:1px solid #e5e7eb;border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
+.editor .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.editor .acts button{border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer}
+.editor .acts button.primary{background:#1c1f24;color:#fff;border-color:#1c1f24}
+.editor textarea{width:100%;height:120px;font:11px Consolas,monospace;border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin-top:8px;white-space:pre}
+.editor .note{font-size:11.5px;color:#6b7280;margin-top:8px;line-height:1.5}
+
+/* ── 미리보기 (왼쪽) — Trace 화면 조각들. 전부 토큰만 쓴다 ── */
+.preview{font-family:var(--font);color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .mark{display:flex;align-items:flex-end;gap:3px}
+.logo .mark i{display:block;border-radius:50%;background:var(--primary)}
+.logo .mark i:nth-child(1){width:6px;height:6px;opacity:.35}.logo .mark i:nth-child(2){width:8px;height:8px;opacity:.6}.logo .mark i:nth-child(3){width:11px;height:11px}
+.logo .word{font-family:var(--head);font-size:26px;font-weight:800;letter-spacing:-.03em}
+.logo .word small{font-weight:500;color:var(--muted);font-size:13px;margin-left:8px;letter-spacing:0}
+.logo.dark{background:var(--ink);color:#fff;padding:14px 20px;border-radius:12px}.logo.dark .mark i{background:#fff}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:86px;border-radius:10px;overflow:hidden;border:1px solid var(--line);font-size:11px}
+.sw i{display:block;height:44px}.sw b{display:block;padding:5px 7px 1px;font-size:11.5px}.sw span{display:block;padding:0 7px 6px;color:var(--muted);font-family:Consolas,monospace;font-size:10.5px}
+.appbar{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 18px;height:52px;display:flex;align-items:center;gap:10px}
+.appbar b{font-family:var(--head);font-size:16px}.appbar .sub{color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 14px;font:inherit;font-size:13px}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+.badge{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);vertical-align:middle}
+.badge.proof{background:color-mix(in srgb,var(--proof) 12%,white);border-color:color-mix(in srgb,var(--proof) 35%,white);color:var(--proof)}
+.badge.learn{background:color-mix(in srgb,var(--learn) 12%,white);border-color:color-mix(in srgb,var(--learn) 35%,white);color:var(--learn)}
+.badge.ok{background:color-mix(in srgb,var(--typed) 12%,white);border-color:color-mix(in srgb,var(--typed) 35%,white);color:var(--typed)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mode{border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;background:var(--surface);border-top:4px solid var(--proof)}
+.mode.learn{border-top-color:var(--learn)}
+.mode h4{margin:0 0 4px;font-family:var(--head);font-size:16px}.mode p{margin:0;color:var(--muted);font-size:13px}
+.mode.on{outline:2px solid var(--proof);outline-offset:2px}
+.hero{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.hero .h{padding:16px 20px}.hero .h+.h{border-left:1px solid var(--line)}
+.hero .lbl{font-weight:600}.hero .big{font-family:var(--head);font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:2px 0 4px}.hero .sm{font-size:12.5px;color:var(--muted)}
+.comp{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:10px 0 6px}.comp i{display:block;height:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.tile .k{font-size:12.5px;color:var(--muted);font-weight:600}.tile .v{font-family:var(--head);font-size:24px;font-weight:800}.tile .v small{font-size:13px;font-weight:500;color:var(--muted)}
+.lane{display:flex;gap:2px;height:22px;margin:8px 0}.lane i{display:block;border-radius:4px;font-size:10.5px;color:#fff;font-weight:700;padding:3px 6px;overflow:hidden;white-space:nowrap}
+.bars{display:flex;gap:2px;align-items:flex-end;height:50px;border-bottom:1px solid var(--line)}.bars i{display:block;flex:1;background:var(--typed);border-radius:2px 2px 0 0}
+.desk{background:linear-gradient(135deg,#dfe3ea,#c9cfd8);border-radius:12px;height:120px;position:relative;overflow:hidden}
+.pill{position:absolute;right:14px;bottom:14px;width:160px;height:26px;display:flex;align-items:center;gap:7px;padding:0 8px 0 9px;background:color-mix(in srgb,var(--ink) 92%,transparent);color:#fff;border-radius:13px;font-size:11px;font-variant-numeric:tabular-nums}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--proof)}.pill.learn .dot{background:var(--learn)}.pill .t{font-weight:700}.pill .n{margin-left:auto;color:#bfc4cc}
+.pill .stop{width:14px;height:14px;border-radius:50%;border:1.5px solid #9ca3af;display:flex;align-items:center;justify-content:center}.pill .stop i{width:6px;height:6px;background:#e5e7eb;border-radius:1px}
+.ask{position:absolute;right:14px;bottom:48px;width:160px;height:28px;display:flex;align-items:center;gap:6px;padding:0 4px 0 9px;background:#fff;border:1px solid #b9bfc7;border-radius:14px;color:#9ca3af;font-size:12px}
+.ask .ic{width:14px;height:14px;border-radius:50%;background:color-mix(in srgb,var(--learn) 15%,white);color:var(--learn);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ask .send{margin-left:auto;width:20px;height:20px;border-radius:50%;background:var(--learn);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px}
+.cert{border:1px solid var(--line);border-radius:6px;background:#fff;padding:22px 26px;font-family:var(--head);position:relative}
+.cert:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--proof);border-radius:6px 0 0 6px}
+.cert h3{margin:0;font-size:18px;letter-spacing:-.02em}.cert .meta{color:var(--muted);font-size:12.5px;margin:4px 0 12px}
+.cert .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px}
+.cert .two div{border:1px solid var(--line);border-radius:8px;padding:8px 10px}.cert .two b{display:block;font-size:12px;margin-bottom:3px}
+.cert .two .no b{color:var(--ai)}.cert .two .yes b{color:var(--typed)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.chip{padding:5px 11px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:13px}
+.chip.on{background:color-mix(in srgb,var(--typed) 12%,white);border-color:color-mix(in srgb,var(--typed) 35%,white);color:var(--typed);font-weight:700}.chips .arr{color:var(--muted)}
+.type h1,.type h2,.type h3{margin:0 0 4px;color:var(--ink);font-family:var(--head)}
+.type h1{font-size:28px;letter-spacing:-.03em}.type h2{font-size:20px;letter-spacing:-.02em;color:var(--ink)}.type h3{font-size:15px}.type p{margin:0 0 6px}
+.type .mono{font-family:Consolas,monospace;font-size:13px;background:var(--soft);padding:2px 6px;border-radius:4px}
+.desc{font-size:13px;color:var(--muted);margin:-4px 0 10px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Trace 디자인 기준</h1><span class="sub">후보 3개 · 오른쪽에서 값을 바꾸면 전부 같이 바뀜 · CSS/피그마용 JSON 내보내기</span>
+  <div class="presets" id="presets"></div>
+</div>
+
+<div class="wrap">
+<div class="preview" id="preview">
+  <div class="card"><h2 style="margin-top:0">후보 설명</h2><p id="desc" class="desc" style="margin:0;font-size:14px;color:var(--ink)"></p></div>
+
+  <h2>로고 · 워드마크 — 발자국 모티프 (점 세 개가 커지며 다가옴 = 남긴 자국)</h2>
+  <div class="card brand">
+    <div class="logo"><span class="mark"><i></i><i></i><i></i></span><span class="word">Trace<small>자국</small></span></div>
+    <div class="logo dark"><span class="mark"><i></i><i></i><i></i></span><span class="word">Trace</span></div>
+    <div class="logo"><span class="mark"><i></i><i></i><i></i></span></div>
+  </div>
+
+  <h2>팔레트</h2>
+  <div class="card"><div class="swatches" id="swatches"></div>
+    <p class="desc" style="margin:10px 0 0">사실 표기 3색(직접 입력 · 붙여넣기 · AI 출처)은 <b>의미가 고정</b>이라 후보와 무관하게 유지. 모드 색 2개는 이 3색과 겹치지 않게.</p></div>
+
+  <h2>글꼴</h2>
+  <div class="card type">
+    <h1>결과만 남는 작업에서, 과정을 남긴다.</h1>
+    <h2>2026-09-22 · Java 과제 2</h2>
+    <h3>직접 입력 42% · 붙여넣기 58%</h3>
+    <p>Trace는 AI를 썼는지 말해주지 않는다. AI로 건너뛴 자리를 본인에게 보여준다. <span class="mono">h₁₂ = 4b1b92be…</span></p>
+    <p class="desc" style="margin:0">본문 Pretendard(무료·한글 가독) · 숫자는 tabular-nums · 해시는 Consolas</p>
+  </div>
+
+  <h2>앱 상단 · 버튼 · 배지</h2>
+  <div class="card" style="padding:12px">
+    <div class="appbar"><b>Trace</b><span class="sub">내 기록</span><span style="margin-left:auto"></span><button class="btn">서버에서</button><button class="btn primary">증명서 만들기</button><button class="btn ink">세션 시작</button></div>
+    <p style="margin:12px 0 0"><span class="badge proof">Proof</span> <span class="badge learn">Learn</span> <span class="badge ok">봉인 · 앵커됨</span> <span class="badge">봉인 전 · 테스트</span></p>
+  </div>
+
+  <h2>모드 선택 (목업 01)</h2>
+  <div class="modes">
+    <div class="mode on"><h4>Proof <span class="badge proof">기본</span></h4><p>내용은 남기지 않고, 순서와 시각만. 봉인 후 증명서.</p></div>
+    <div class="mode learn"><h4>Learn</h4><p>AI 질문·답변·오류를 맥락으로. 리포트는 나만 본다.</p></div>
+  </div>
+
+  <h2>한눈에 (목업 07) — 두 숫자 · 구성 막대 · 타일</h2>
+  <div class="hero">
+    <div class="h"><div class="lbl">직접 입력</div><div class="big" style="color:var(--typed)">42%</div><div class="sm">303자 · 활동 분 평균 27자/분</div></div>
+    <div class="h"><div class="lbl">붙여넣기</div><div class="big" style="color:var(--ai)">58%</div><div class="sm">411자 · 4건 · 그중 <b style="color:var(--ai)">AI 출처 320자</b></div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="comp"><i style="width:42%;background:var(--typed)"></i><i style="width:45%;background:var(--ai)"></i><i style="width:13%;background:var(--paste)"></i></div>
+    <div class="legend"><span><i style="background:var(--typed)"></i>직접 입력</span><span><i style="background:var(--ai)"></i>붙여넣기 · AI에서 복사</span><span><i style="background:var(--paste)"></i>붙여넣기 · 기타</span></div>
+    <div class="lane" style="margin-top:14px"><i style="flex:2;background:var(--resource)">학습자료</i><i style="flex:3;background:var(--work)">작업 · Main.java</i><i style="flex:1.2;background:var(--paste)">AI</i><i style="flex:3;background:var(--work)">작업</i><i style="flex:.8;background:var(--other)"></i></div>
+    <div class="bars"><i style="height:20%"></i><i style="height:35%"></i><i style="height:60%"></i><i style="height:45%"></i><i style="height:0"></i><i style="height:0"></i><i style="height:70%"></i><i style="height:90%"></i><i style="height:65%"></i><i style="height:80%"></i><i style="height:40%"></i><i style="height:55%"></i></div>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="k">AI에서 복사 → 붙여넣기</div><div class="v">2<small>건</small></div></div>
+    <div class="tile"><div class="k">입력 속도 · 수정</div><div class="v">27<small>자/분</small></div></div>
+    <div class="tile"><div class="k">긴 멈춤</div><div class="v">1<small>회</small></div></div>
+  </div>
+
+  <h2>알약 · 질문칸 (목업 13·13b) — 바탕화면 위</h2>
+  <div class="desk">
+    <div class="ask"><span class="ic">?</span>AI에게 물어보기…<span class="send">↑</span></div>
+    <div class="pill learn"><span class="dot"></span><span class="t">00:23:40</span><span class="n">맥락 12</span><span class="stop"><i></i></span></div>
+  </div>
+
+  <h2 style="margin-top:22px">Learning Report 흐름 칩 (목업 16)</h2>
+  <div class="card"><div class="chips"><span class="chip">오류 발생</span><span class="arr">→</span><span class="chip">AI에게 질문</span><span class="arr">→</span><span class="chip">답변 참고</span><span class="arr">→</span><span class="chip on">직접 수정 84자</span><span class="arr">→</span><span class="chip on">해결</span></div></div>
+
+  <h2>증명서 머리 (목업 11)</h2>
+  <div class="cert">
+    <h3>작업 과정 증명서</h3>
+    <div class="meta">2026-09-22 14:00–14:20 · 이벤트 37건 · 루트 4b1b92be…184fcb · OpenTimestamps 앵커</div>
+    <div class="two"><div class="yes"><b>증명하는 것</b>이 순서로, 이 시각에, 이 PC에서 일어났고 이후 바뀌지 않았다</div><div class="no"><b>증명하지 않는 것</b>AI를 안 썼다 · 저자가 누구인지 · 결과물의 품질</div></div>
+  </div>
+</div>
+
+<!-- ── 편집기 ── -->
+<aside class="editor">
+  <h3>토큰 편집 — 바꾸면 왼쪽이 바로 바뀜</h3>
+  <div id="rows"></div>
+  <div class="row"><label>둥글기 <code>--radius</code></label><input type="range" id="radius" min="4" max="24" step="1"><span id="radiusv" style="width:36px;font-size:12px;color:#6b7280"></span></div>
+  <div class="row"><label>제목 글꼴 <code>--head</code></label><select id="head"><option value="var(--font)">본문과 같게 (Pretendard)</option><option value="'Noto Serif KR',Georgia,serif">세리프 (Noto Serif KR)</option><option value="'Segoe UI','Malgun Gothic',sans-serif">시스템 기본</option></select></div>
+  <div class="acts">
+    <button class="primary" id="copyCss">CSS 복사</button>
+    <button id="dlJson">피그마용 JSON 저장</button>
+    <button id="copyJson">JSON 복사</button>
+    <button id="reset">후보로 되돌리기</button>
+  </div>
+  <textarea id="out" readonly></textarea>
+  <p class="note"><b>피그마로 가져가기:</b> Figma → Plugins → <b>Tokens Studio for Figma</b>(무료) → Load from file/JSON → 저장한 JSON 선택 → Variables/Styles 로 만들기. 거기서 색을 바꾸면 다시 JSON 으로 내보내 이 페이지에 붙이거나, CSS 의 <code>:root</code> 값만 손으로 옮기면 React 화면 전체가 바뀝니다 (<code>3-코드/web/src/index.css</code>).</p>
+  <p class="note">편집한 값은 이 브라우저에 자동 저장됩니다. 후보 버튼을 누르면 그 후보의 기본값으로 돌아갑니다.</p>
+</aside>
+</div>
+
+<script>
+// ── 후보 3개 ──
+const PRESETS = {
+  jagug: { name: "① 자국", desc: "지금 쓰던 색을 정리한 것. 보라(Proof)·하늘(Learn), 흰 바탕, 회색 중립. 무난하고 앱 같음 — 학생용 화면에 맞음.",
+    tokens: { primary:"#7c3aed", proof:"#7c3aed", learn:"#0ea5e9", bg:"#f3f4f7", surface:"#ffffff", ink:"#1c1f24", muted:"#6b7280", line:"#e5e7eb", soft:"#f9fafb", typed:"#10b981", paste:"#f59e0b", ai:"#ef4444", resource:"#3b82f6", work:"#10b981", other:"#cbd5e1", radius:14, head:"var(--font)" } },
+  meokji: { name: "② 먹지", desc: "기록·증명 느낌. 남색(Proof)·청록(Learn), 따뜻한 종이색 바탕, 제목은 세리프. 검증자·교수에게 보이는 증명서·검증 화면에 강함.",
+    tokens: { primary:"#1e3a8a", proof:"#1e3a8a", learn:"#0f766e", bg:"#f4f2ec", surface:"#fffdf8", ink:"#1f2328", muted:"#6b6f76", line:"#e6e2d8", soft:"#faf8f2", typed:"#15803d", paste:"#d97706", ai:"#dc2626", resource:"#2563eb", work:"#15803d", other:"#c8c4b8", radius:8, head:"'Noto Serif KR',Georgia,serif" } },
+  notion: { name: "④ 차분한 자국 (노션풍)", desc: "노션처럼 거의 무채색. 글자는 완전 검정이 아닌 #37352f, 선은 연하게, 둥글기 6px, 여백 넉넉히. 모드 색은 노션 팔레트의 낮은 채도 보라·파랑, 사실 표기도 같은 톤으로 낮춤. 색은 '가끔, 작게'.",
+    tokens: { primary:"#37352f", proof:"#9065b0", learn:"#337ea9", bg:"#ffffff", surface:"#ffffff", ink:"#37352f", muted:"#787774", line:"#e9e9e7", soft:"#f7f7f5", typed:"#448361", paste:"#d9730d", ai:"#d44c47", resource:"#7b9fd6", work:"#448361", other:"#d3d1cb", radius:6, head:"var(--font)" } },
+  heukyeon: { name: "③ 흑연", desc: "미니멀. 주색은 거의 검정, Proof는 흑연 회색, Learn만 파랑. 유채색은 사실 표기(초록·주황·빨강)에만 써서 데이터가 제일 먼저 보임.",
+    tokens: { primary:"#18181b", proof:"#52525b", learn:"#2563eb", bg:"#f5f5f5", surface:"#ffffff", ink:"#18181b", muted:"#71717a", line:"#e4e4e7", soft:"#fafafa", typed:"#16a34a", paste:"#f59e0b", ai:"#ef4444", resource:"#60a5fa", work:"#16a34a", other:"#d4d4d8", radius:10, head:"var(--font)" } },
+};
+const LABEL = { primary:"주색 (로고·주요 버튼)", proof:"Proof 모드", learn:"Learn 모드", bg:"페이지 바탕", surface:"카드 바탕", ink:"글자", muted:"보조 글자", line:"선", soft:"연한 바탕",
+                typed:"직접 입력 (사실)", paste:"붙여넣기 · 기타 (사실)", ai:"AI 출처 (사실)", resource:"학습자료 창", work:"작업 창", other:"기타 창" };
+const COLORS = Object.keys(LABEL);
+let cur = "jagug", tokens = {};
+
+const root = document.documentElement;
+function apply() {
+  for (const k of COLORS) root.style.setProperty(`--${k}`, tokens[k]);
+  root.style.setProperty("--radius", tokens.radius + "px");
+  root.style.setProperty("--head", tokens.head);
+  document.getElementById("radius").value = tokens.radius; document.getElementById("radiusv").textContent = tokens.radius + "px";
+  document.getElementById("head").value = tokens.head;
+  for (const k of COLORS) { document.getElementById("c-" + k).value = tokens[k]; document.getElementById("t-" + k).value = tokens[k]; }
+  document.getElementById("desc").textContent = PRESETS[cur].desc;
+  document.querySelectorAll("#presets button").forEach((b) => b.classList.toggle("on", b.dataset.k === cur));
+  document.getElementById("swatches").innerHTML = COLORS.map((k) => `<div class="sw"><i style="background:${tokens[k]}"></i><b>${LABEL[k].split(" (")[0]}</b><span>${tokens[k]}</span></div>`).join("");
+  document.getElementById("out").value = css();
+  try { localStorage.setItem("trace-design", JSON.stringify({ cur, tokens })); } catch {}
+}
+function css() {
+  return `:root{\n` + COLORS.map((k) => `  --${k}:${tokens[k]};`).join("\n") + `\n  --radius:${tokens.radius}px;\n  --font:"Pretendard","Segoe UI","Malgun Gothic",sans-serif;\n  --head:${tokens.head};\n}`;
+}
+function tokensStudioJson() {          // Tokens Studio for Figma 형식 (color · dimension · fontFamilies)
+  const o = { trace: {} };
+  for (const k of COLORS) o.trace[k] = { value: tokens[k], type: "color", description: LABEL[k] };
+  o.trace.radius = { value: `${tokens.radius}px`, type: "borderRadius" };
+  o.trace.fontBody = { value: "Pretendard", type: "fontFamilies" };
+  o.trace.fontHead = { value: tokens.head.includes("Serif") ? "Noto Serif KR" : "Pretendard", type: "fontFamilies" };
+  return JSON.stringify(o, null, 2);
+}
+function load(k) { cur = k; tokens = { ...PRESETS[k].tokens }; apply(); }
+
+// 편집기 행
+document.getElementById("rows").innerHTML = COLORS.map((k) => `<div class="row"><label>${LABEL[k]} <code>--${k}</code></label><input type="color" id="c-${k}"><input type="text" id="t-${k}" maxlength="7"></div>`).join("");
+for (const k of COLORS) {
+  document.getElementById("c-" + k).addEventListener("input", (e) => { tokens[k] = e.target.value; apply(); });
+  document.getElementById("t-" + k).addEventListener("change", (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) { tokens[k] = e.target.value.toLowerCase(); apply(); } });
+}
+document.getElementById("radius").addEventListener("input", (e) => { tokens.radius = +e.target.value; apply(); });
+document.getElementById("head").addEventListener("change", (e) => { tokens.head = e.target.value; apply(); });
+document.getElementById("presets").innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-k="${k}">${p.name}</button>`).join("");
+document.querySelectorAll("#presets button").forEach((b) => b.addEventListener("click", () => load(b.dataset.k)));
+document.getElementById("reset").addEventListener("click", () => load(cur));
+document.getElementById("copyCss").addEventListener("click", async () => { await navigator.clipboard.writeText(css()); document.getElementById("copyCss").textContent = "복사됨 ✓"; setTimeout(() => document.getElementById("copyCss").textContent = "CSS 복사", 1200); });
+document.getElementById("copyJson").addEventListener("click", async () => { await navigator.clipboard.writeText(tokensStudioJson()); document.getElementById("copyJson").textContent = "복사됨 ✓"; setTimeout(() => document.getElementById("copyJson").textContent = "JSON 복사", 1200); });
+document.getElementById("dlJson").addEventListener("click", () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([tokensStudioJson()], { type: "application/json" })); a.download = `trace-tokens-${cur}.json`; a.click(); });
+
+// 세리프 후보용 글꼴
+const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap"; document.head.appendChild(l);
+
+// 시작 — 저장된 편집이 있으면 그것, 없으면 ① 자국
+const q = new URLSearchParams(location.search).get("preset");           // ?preset=meokji 로 바로 열기 (PNG 뽑을 때)
+if (q && PRESETS[q]) load(q);
+else { try { const s = JSON.parse(localStorage.getItem("trace-design") || "null"); if (s && PRESETS[s.cur]) { cur = s.cur; tokens = { ...PRESETS[cur].tokens, ...s.tokens }; apply(); } else load("jagug"); } catch { load("jagug"); } }
+</script>
+</body>
+</html>

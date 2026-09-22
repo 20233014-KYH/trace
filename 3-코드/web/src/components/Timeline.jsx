@@ -94,7 +94,7 @@ export default function Timeline({ s, width = 1000, markers = null, selected = n
             <circle cx={x} cy={yp0 - h} r="7" fill={c}>
               <title>{p.ts} {p.len}자 → {appName(p.target)}{p.src ? ` ← ${srcName(p.src)}` : ''}</title>
             </circle>
-            <text x={x} y={yp0 - h - 11 - lift} fontSize="12" fontWeight="700" fill={p.ai ? '#b91c1c' : '#b45309'} textAnchor="middle">{p.len}</text>
+            <text x={x} y={yp0 - h - 11 - lift} fontSize="12" fontWeight="700" fill={p.ai ? COLORS.pasteAI : '#b45309'} textAnchor="middle">{p.len}</text>
           </g>
         );
       })}

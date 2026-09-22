@@ -2,20 +2,20 @@
 // 판정 없음. AI 가 "흐름을 묶는" 일은 서버 리포트(report.process)가 하고, 여기선 사실만 늘어놓는다.
 
 /** 맥락 kind → 마커 모양. 목업 14 범례와 같은 순서 */
-export const KIND = {
+export const KIND = {   // 색은 디자인 기준(흑연): 오류·AI 출처 = 빨강, 직접·해결 = 초록, 질문·물어보기 = Learn 파랑, 참고 = 자료 파랑, 나머지 회색
   error:             { ic: '✕', c: '#ef4444', t: '오류' },
-  ai_question:       { ic: '?', c: '#0ea5e9', t: 'AI 질문' },
-  ai_answer_excerpt: { ic: '“', c: '#0ea5e9', t: '답변 발췌' },
-  page:              { ic: '▤', c: '#3b82f6', t: '참고' },
-  selection:         { ic: '▭', c: '#6b7280', t: '선택' },
+  ai_question:       { ic: '?', c: '#2563eb', t: 'AI 질문' },
+  ai_answer_excerpt: { ic: '“', c: '#2563eb', t: '답변 발췌' },
+  page:              { ic: '▤', c: '#60a5fa', t: '참고' },
+  selection:         { ic: '▭', c: '#71717a', t: '선택' },
   paste:             { ic: '▼', c: '#f59e0b', t: '붙여넣기' },
   paste_at:          { ic: '▼', c: '#f59e0b', t: '붙여넣기 (문서)' },
-  diff:              { ic: '✎', c: '#10b981', t: '직접 수정' },
-  run_result:        { ic: '▶', c: '#6b7280', t: '실행' },
-  solved:            { ic: '✓', c: '#059669', t: '해결' },
-  save_stats:        { ic: '💾', c: '#6b7280', t: '저장' },
-  chat:              { ic: '💬', c: '#0ea5e9', t: '물어보기' },
-  commit:            { ic: '⎇', c: '#0f766e', t: '커밋' },
+  diff:              { ic: '✎', c: '#16a34a', t: '직접 수정' },
+  run_result:        { ic: '▶', c: '#71717a', t: '실행' },
+  solved:            { ic: '✓', c: '#16a34a', t: '해결' },
+  save_stats:        { ic: '💾', c: '#71717a', t: '저장' },
+  chat:              { ic: '💬', c: '#2563eb', t: '물어보기' },
+  commit:            { ic: '⎇', c: '#18181b', t: '커밋' },
 };
 export const LEGEND = ['error', 'ai_question', 'page', 'paste', 'diff', 'run_result', 'solved', 'chat', 'commit'];
 
