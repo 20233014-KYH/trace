@@ -1,15 +1,17 @@
 // 맥락 패널 — 목업 14 오른쪽. 마커 하나를 누르면: 직전 오류 → 질문(또는 항목) → 답변 발췌 → 이후.
-// 사실만 늘어놓는다. "AI 를 썼다/안 썼다" 판정 없음.
+// 사실만 늘어놓는다. "AI 를 썼다/안 썼다" 판정 없음. 디자인 기준(흑연): 테두리 없는 연한 블록, 색은 사실(오류·AI=빨강, 직접=초록)에만.
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { KIND, contextAround, clock } from '../lib/learn.js';
 import { pasteText } from '../lib/format.jsx';
 
 export default function ContextPanel({ s, ctx, mk, onAsk }) {
   if (!mk) {
     return (
-      <aside className="ctxpanel empty">
-        <b>학습 흐름 마커를 누르면 여기에 맥락이 보입니다</b>
-        <p className="sub">직전 오류 → 내 질문 → 답변 발췌 → 이후 무엇을 직접 했나.</p>
-        <p className="note">이 맥락은 Learn 모드 · 맥락 수집 켜짐 상태에서 확장·Office 모듈이 저장한 것입니다. Proof 세션에는 없습니다.</p>
+      <aside className="rounded-2xl p-5 md:sticky md:top-4" style={{ background: 'var(--bg)' }}>
+        <div className="text-[14px] font-semibold">마커를 누르면 여기에 맥락이 보입니다</div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">직전 오류 → 내 질문 → 답변 발췌 → 이후 무엇을 직접 했나.</p>
+        <Note />
       </aside>
     );
   }
@@ -19,40 +21,53 @@ export default function ContextPanel({ s, ctx, mk, onAsk }) {
   const where = it?.meta?.domain || it?.meta?.file || it?.meta?.app || (mk.paste ? mk.paste.target : '');
 
   return (
-    <aside className="ctxpanel">
-      <div className="hd"><span className="ic" style={{ background: k.c }}>{k.ic}</span><b>{clock(mk.ts)} {k.t}</b>{where && <span className="badge">{where}</span>}</div>
+    <aside className="rounded-2xl p-5 text-[13.5px] md:sticky md:top-4" style={{ background: 'var(--bg)' }}>
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: k.c }}>{k.ic}</span>
+        <b className="text-[14px]">{clock(mk.ts)} {k.t}</b>
+        {where && <Badge variant="outline" className="ml-auto max-w-[150px] truncate font-mono text-[10.5px]">{where}</Badge>}
+      </div>
 
-      {c.before && mk.kind !== 'error' && (
-        <section><h5>직전 — {clock(c.before.ts)} 오류</h5><pre className="errbox">{c.before.text}</pre></section>
-      )}
+      {c.before && mk.kind !== 'error' && <Sec t={`직전 — ${clock(c.before.ts)} 오류`}><Err>{c.before.text}</Err></Sec>}
 
-      {mk.kind === 'error' && <section><h5>오류</h5><pre className="errbox">{it.text}</pre></section>}
-      {mk.kind === 'ai_question' && <section><h5>질문 — 내가 입력한 것</h5><blockquote>"{it.text}"</blockquote></section>}
-      {mk.kind === 'chat' && <section><h5>물어보기 — 알약 위 질문칸</h5><pre className="quote">{it.text}</pre></section>}
-      {mk.kind === 'page' && <section><h5>참고 페이지</h5><blockquote>{it.text}</blockquote></section>}
-      {mk.kind === 'commit' && <section><h5>커밋 {it.meta?.hash?.slice(0, 7)} · {it.meta?.repo} ({it.meta?.branch})</h5><pre className="quote">{it.text}</pre></section>}
-      {mk.kind === 'selection' && <section><h5>선택한 부분</h5><pre className="quote">{it.text}</pre></section>}
-      {mk.kind === 'diff' && <section><h5>직접 수정 — {it.meta?.where || it.meta?.file}{it.meta?.chars != null ? ` · ${it.meta.chars > 0 ? '+' : ''}${it.meta.chars}자` : ''}</h5><pre className="quote">{it.text}</pre></section>}
-      {mk.kind === 'paste_at' && <section><h5>문서에 붙여넣음 — {it.meta?.file} {it.meta?.where} · {it.meta?.chars}자</h5><pre className="quote">{it.text}</pre></section>}
-      {(mk.kind === 'run_result' || mk.kind === 'solved') && <section><h5>실행 결과</h5><blockquote>{it.text}</blockquote></section>}
+      {mk.kind === 'error' && <Sec t="오류"><Err>{it.text}</Err></Sec>}
+      {mk.kind === 'ai_question' && <Sec t="질문 — 내가 입력한 것"><Quote>"{it.text}"</Quote></Sec>}
+      {mk.kind === 'chat' && <Sec t="물어보기 — 알약 위 질문칸"><Quote mono>{it.text}</Quote></Sec>}
+      {mk.kind === 'page' && <Sec t="참고 페이지"><Quote>{it.text}</Quote></Sec>}
+      {mk.kind === 'commit' && <Sec t={`커밋 ${it.meta?.hash?.slice(0, 7)} · ${it.meta?.repo} (${it.meta?.branch})`}><Quote mono>{it.text}</Quote></Sec>}
+      {mk.kind === 'selection' && <Sec t="선택한 부분"><Quote mono>{it.text}</Quote></Sec>}
+      {mk.kind === 'diff' && <Sec t={`직접 수정 — ${it.meta?.where || it.meta?.file}${it.meta?.chars != null ? ` · ${it.meta.chars > 0 ? '+' : ''}${it.meta.chars}자` : ''}`}><Quote mono>{it.text}</Quote></Sec>}
+      {mk.kind === 'paste_at' && <Sec t={`문서에 붙여넣음 — ${it.meta?.file} ${it.meta?.where} · ${it.meta?.chars}자`}><Quote mono>{it.text}</Quote></Sec>}
+      {(mk.kind === 'run_result' || mk.kind === 'solved') && <Sec t="실행 결과"><Quote>{it.text}</Quote></Sec>}
       {mk.paste && (
-        <section><h5>붙여넣기 {mk.paste.len}자 → {mk.paste.target_title || mk.paste.target}</h5>
-          <p>{pasteText(mk.paste)}{mk.paste.after_typed != null && <> · 이후 3분 직접 입력 <b style={{ color: '#047857' }}>{mk.paste.after_typed}자</b></>}</p></section>
+        <Sec t={`붙여넣기 ${mk.paste.len}자 → ${mk.paste.target_title || mk.paste.target}`}>
+          <p className="leading-relaxed">{pasteText(mk.paste)}{mk.paste.after_typed != null && <> · 이후 3분 직접 입력 <b style={{ color: 'var(--typed)' }}>{mk.paste.after_typed}자</b></>}</p>
+        </Sec>
       )}
 
-      {c.answer && <section><h5>답변 발췌 — 복사한 {c.answer.text.length}자</h5><blockquote className="ans">{c.answer.text}</blockquote></section>}
+      {c.answer && <Sec t={`답변 발췌 — 복사한 ${c.answer.text.length}자`}><Quote className="max-h-40 overflow-auto">{c.answer.text}</Quote></Sec>}
 
       {c.after.length > 0 && (
-        <section><h5>이후</h5>
-          <ul className="after">{c.after.map((a, i) => (
-            <li key={i}><span className="mono dim">{a.ts}</span> <span style={{ color: a.kind === 'typed' || a.kind === 'diff' ? '#047857' : a.kind === 'solved' ? '#059669' : a.kind === 'error' ? '#b91c1c' : a.ai ? '#b91c1c' : undefined, fontWeight: a.kind === 'typed' || a.kind === 'diff' || a.kind === 'solved' ? 600 : 400 }}>{a.text}</span></li>
-          ))}</ul></section>
+        <Sec t="이후">
+          <ul className="space-y-1">{c.after.map((a, i) => {
+            const good = a.kind === 'typed' || a.kind === 'diff' || a.kind === 'solved';
+            const bad = a.kind === 'error' || a.ai;
+            return <li key={i} className="flex gap-2 leading-snug"><span className="shrink-0 font-mono text-[12px] text-muted-foreground tabular-nums">{a.ts}</span><span className={good ? 'font-semibold' : ''} style={good ? { color: 'var(--typed)' } : bad ? { color: 'var(--ai)' } : undefined}>{a.text}</span></li>;
+          })}</ul>
+        </Sec>
       )}
 
-      <div className="acts">
-        <button className="btn ask" onClick={() => onAsk && onAsk(it?.text || (mk.paste ? `${mk.paste.len}자 붙여넣기` : ''))}>물어보기에서 더 묻기</button>
-      </div>
-      <p className="note">이 맥락은 Learn 모드 · 맥락 수집 켜짐 상태에서 저장된 것입니다. Proof 세션에는 없습니다.</p>
+      <Button variant="outline" className="mt-5 w-full" onClick={() => onAsk && onAsk(it?.text || (mk.paste ? `${mk.paste.len}자 붙여넣기` : ''))}>물어보기에서 더 묻기</Button>
+      <Note />
     </aside>
   );
 }
+
+function Sec({ t, children }) { return <section className="mt-4"><h5 className="mb-1.5 text-[12px] font-semibold text-muted-foreground">{t}</h5>{children}</section>; }
+function Quote({ children, mono, className = '' }) {
+  return <blockquote className={`rounded-lg px-3 py-2.5 leading-relaxed whitespace-pre-wrap ${mono ? 'font-mono text-[12.5px]' : ''} ${className}`} style={{ background: 'var(--surface)' }}>{children}</blockquote>;
+}
+function Err({ children }) {
+  return <pre className="rounded-lg px-3 py-2.5 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap break-all" style={{ background: 'color-mix(in oklab, var(--ai) 8%, transparent)', color: 'var(--ai)' }}>{children}</pre>;
+}
+function Note() { return <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">이 맥락은 Learn 모드 · 맥락 수집 켜짐 상태에서 확장·Office 모듈이 저장한 것입니다. Proof 세션에는 없습니다.</p>; }

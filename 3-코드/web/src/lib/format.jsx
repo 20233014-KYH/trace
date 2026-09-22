@@ -1,13 +1,15 @@
 // 이름·문구 도우미 — viewer.html 과 같은 규칙. 화면 문구는 여기서만 바꾼다.
 
+// 디자인 기준(흑연) 값과 같다 — index.css :root 의 --resource --work --ai --other --typed --paste. SVG 안에서도 써야 해서 hex 로 둔다.
 export const COLORS = {
-  resource: '#3b82f6', work: '#10b981', ai: '#f59e0b', other: '#cbd5e1', gap: '#e5e7eb',
-  typed: '#10b981', del: '#9ca3af', pasteAI: '#ef4444', paste: '#f59e0b', undo: '#7c3aed',
+  resource: '#60a5fa', work: '#16a34a', ai: '#ef4444', other: '#d4d4d8', gap: '#e4e4e7',
+  typed: '#16a34a', del: '#a1a1aa', pasteAI: '#ef4444', paste: '#f59e0b', undo: '#71717a',
 };
 export const CAT = { resource: '학습자료', work: '작업', ai: 'AI', other: '기타' };
 export const TYPE = {
   session_start: '세션 시작', session_end: '세션 종료', window: '창 전환', copy: '복사', paste: '붙여넣기',
   file: '파일', keys: '입력', undo: '되돌리기', redo: '다시 실행', cut: '잘라내기', idle_start: '유휴', idle_end: '복귀',
+  tab: '탭', heartbeat: '살아있음', doc_change: '문서 변화', doc_paste_at: '붙여넣은 자리', doc_save: '문서 저장', commit: '커밋', push: '푸시',
 };
 const APP = {
   'claude.exe': 'Claude 앱', 'ChatGPT.exe': 'ChatGPT 앱', 'chrome.exe': 'Chrome', 'msedge.exe': 'Edge', 'firefox.exe': 'Firefox',
@@ -36,7 +38,7 @@ export const srcName = (src) => (src ? winName(src.app, src.title) : '');
 export function pasteText(p) {
   if (!p.matched) return '복사 기록 없음 (다른 기기·이전 세션·이미지)';
   const w = srcName(p.src);
-  return p.ai ? <><b style={{ color: '#b91c1c' }}>{w}</b>에서 복사한 것 (AI)</> : <>{w}에서 복사한 것</>;
+  return p.ai ? <><b style={{ color: 'var(--ai)' }}>{w}</b>에서 복사한 것 (AI)</> : <>{w}에서 복사한 것</>;
 }
 
 export const clockAt = (start, m) => {
