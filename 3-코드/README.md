@@ -57,6 +57,7 @@ start ui\viewer.html
 | `collector/keys.py` | 입력·삭제 **횟수**, Ctrl+V/Z/Y/X 감지. 어떤 키인지는 안 남김 — 파일 자체가 증거 | 동작 확인 |
 | `collector/classify.py` · `domains.json` | exe 이름 → 창 제목 키워드 → 분류(resource/work/ai/other) | 동작 확인 |
 | `collector/file_watch.py` | 감시 폴더 저장 이벤트(옵션, config에서 폴더 지정) | 동작 확인 |
+| `app/pill.py` · `pill.html` | **알약 창 시제품** (pywebview) — 항상 위 · 투명 · 드래그 · 질문칸 → `/chat`. 되는 것·안 되는 것은 `app/README.md` | 동작 확인 (윈도우 · 배율 200%) |
 | `collector/git_watch.py` | **git 커밋·푸시** — 감시 폴더 안 저장소. `commit {repo, hash, branch, files, added, removed}` · `git_push {repo, remote_ref, hash}` 체인, 커밋 메시지는 Learn 맥락(`commit`, source `git`). config `files.git` | 동작 확인 (커밋 · 푸시 · Learn) |
 | `collector/file_diff.py` | **저장 파일 diff — 편집기 무관.** 텍스트 파일이 저장되면 이전 내용과 비교: 숫자(`doc_change` n행 +a/-b · `doc_paste_at`)는 체인, 바뀐 줄은 Learn 맥락(`diff` · `paste_at`, source `editor`). config `files.diff` | 동작 확인 (VS Code · Learn) |
 | `collector/config.json` | 화이트리스트 앱 · keys.enabled(**true**) · 감시 폴더 · `learn_context` 항목 토글(office 포함) | 편집 가능 |
