@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trace 디자인 v2 — 한눈에</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* ── 규칙 (노션에서 배운 것) ──
+   1. 테두리로 나누지 않는다 — 여백과 머리선(hairline) 으로.  2. 색은 의미가 있을 때만, 작게.
+   3. 위계는 글자 굵기·크기·회색 단계로.  4. 큰 숫자는 검정. 색은 그 옆의 작은 표시에.
+   5. 그래프는 낮은 채도, 배경 없음.  6. 둥글기 6px, 선 1px #e9e9e7, 그림자 없음. */
+:root{
+  --ink:#37352f; --muted:#787774; --faint:#a3a29e; --line:#e9e9e7; --soft:#f7f7f5; --hover:#efefed; --bg:#fff;
+  --proof:#9065b0; --learn:#337ea9;
+  --typed:#448361; --paste:#cb7a1a; --ai:#d44c47; --resource:#5b8bd0; --other:#d3d1cb;
+  --font:"Pretendard","Segoe UI","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+/* 사이드바 — 노션식: 연한 바탕, 테두리 없음, 항목은 hover 로만 */
+.side{background:var(--soft);padding:14px 10px;font-size:13.5px}
+.side .brand{display:flex;align-items:center;gap:8px;padding:6px 8px 14px;font-weight:700;font-size:15px}
+.side .brand .mark{display:flex;align-items:flex-end;gap:2px}.side .brand .mark i{display:block;border-radius:50%;background:var(--ink)}
+.side .brand .mark i:nth-child(1){width:4px;height:4px;opacity:.3}.side .brand .mark i:nth-child(2){width:6px;height:6px;opacity:.55}.side .brand .mark i:nth-child(3){width:8px;height:8px}
+.side .sec{color:var(--faint);font-size:11.5px;font-weight:600;padding:12px 8px 4px;letter-spacing:.02em}
+.side a{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+.side a.on{background:var(--hover);font-weight:600}.side a .d{width:6px;height:6px;border-radius:50%;flex:none}
+.side a .r{margin-left:auto;color:var(--faint);font-size:12px}
+.main{padding:40px 64px 80px;max-width:980px}
+/* 제목 — 노션 페이지 제목처럼 크고 검정 */
+.crumb{color:var(--faint);font-size:13px;margin-bottom:6px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.meta{color:var(--muted);font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:4px;font-size:12.5px;background:var(--soft);color:var(--muted)}
+.tag .d{width:6px;height:6px;border-radius:50%}
+.acts{display:flex;gap:6px;margin:18px 0 0}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 11px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--soft)}.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+hr{border:0;border-top:1px solid var(--line);margin:28px 0}
+h2{font-size:15px;font-weight:600;margin:0 0 14px}
+h2 small{font-weight:400;color:var(--muted);margin-left:8px;font-size:13px}
+/* 두 숫자 — 테두리 없이 나란히. 숫자는 검정, 색은 점 하나 */
+.nums{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:28px}
+.num .k{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}.num .k .d{width:7px;height:7px;border-radius:2px}
+.num .v{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin:2px 0}
+.num .v small{font-size:14px;font-weight:500;color:var(--muted);margin-left:2px;letter-spacing:0}
+.num .s{color:var(--faint);font-size:12.5px}
+/* 구성 막대 — 얇게, 낮은 채도 */
+.comp{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:22px 0 8px;background:var(--soft)}.comp i{display:block}
+.legend{display:flex;gap:18px;font-size:12.5px;color:var(--muted)}.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:0}
+/* 그래프 — 배경·테두리 없음, 축은 머리선 */
+.chart{margin-top:6px}
+.lane{display:flex;gap:2px;height:18px;margin:0 0 10px}.lane i{display:block;border-radius:3px;font-size:10.5px;color:#fff;font-weight:600;padding:2px 6px;overflow:hidden;white-space:nowrap;opacity:.85}
+.bars{display:flex;gap:3px;align-items:flex-end;height:64px;border-bottom:1px solid var(--line)}.bars i{display:block;flex:1;background:var(--typed);opacity:.75;border-radius:2px 2px 0 0}
+.bars i.p{background:var(--paste)}.bars i.a{background:var(--ai)}
+.axis{display:flex;justify-content:space-between;color:var(--faint);font-size:11.5px;margin-top:4px;font-variant-numeric:tabular-nums}
+/* 표 — 노션 데이터베이스처럼: 머리선만, 행 hover */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:500;color:var(--muted);font-size:12.5px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:var(--soft)}
+td.n{font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:0}
+.src{color:var(--muted)}.src b{color:var(--ai);font-weight:600}
+/* 핵심 순간 — 목록. 카드 아님 */
+.mom{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.mom .t{color:var(--faint);font-variant-numeric:tabular-nums;font-size:12.5px;padding-top:2px}
+.mom b{font-weight:600}
+.toggle{color:var(--muted);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;margin-left:-6px}.toggle:hover{background:var(--soft)}
+.callout{display:flex;gap:10px;background:var(--soft);border-radius:6px;padding:12px 14px;font-size:13.5px;color:var(--muted);margin-top:24px}
+/* 알약 (참고) */
+.desk{margin-top:36px;background:linear-gradient(135deg,#e8e9ec,#d5d8de);border-radius:8px;height:110px;position:relative}
+.pill{position:absolute;right:14px;bottom:14px;width:156px;height:26px;display:flex;align-items:center;gap:7px;padding:0 8px 0 9px;background:#2b2a27;color:#fff;border-radius:13px;font-size:11px;font-variant-numeric:tabular-nums}
+.pill .d{width:6px;height:6px;border-radius:50%;background:var(--learn)}.pill .n{margin-left:auto;color:#a3a29e}.pill .st{width:12px;height:12px;border-radius:50%;border:1.5px solid #8b8a86}
+.ask{position:absolute;right:14px;bottom:48px;width:156px;height:28px;display:flex;align-items:center;gap:6px;padding:0 6px 0 10px;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--faint);font-size:12px}
+.ask .go{margin-left:auto;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px}
+.note{position:fixed;left:16px;bottom:14px;font-size:12px;color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Trace</div>
+    <div class="sec">내 기록</div>
+    <a class="on"><span class="d" style="background:var(--proof)"></span>Java 과제 2<span class="r">오늘</span></a>
+    <a><span class="d" style="background:var(--learn)"></span>기획안 정리<span class="r">9/19</span></a>
+    <a><span class="d" style="background:var(--proof)"></span>Java 과제 1<span class="r">9/17</span></a>
+    <div class="sec">과제</div>
+    <a>자료구조 · 김교수</a>
+    <a>창의프로젝트</a>
+    <div class="sec">설정</div>
+    <a>수집 항목</a>
+    <a>증명서</a>
+  </aside>
+
+  <main class="main">
+    <div class="crumb">내 기록 / Java 과제 2</div>
+    <h1>2026-09-22 세션</h1>
+    <div class="meta">
+      <span class="tag"><span class="d" style="background:var(--proof)"></span>Proof</span>
+      <span class="tag">봉인 · 앵커됨</span>
+      <span>14:00–14:20 · 20분 · 이벤트 37건 · 루트 4b1b92be…184fcb</span>
+    </div>
+    <div class="acts"><button class="btn dark">증명서 만들기</button><button class="btn">검증 파일</button><button class="btn">체인 원본</button></div>
+
+    <hr>
+
+    <div class="nums">
+      <div class="num"><div class="k"><span class="d" style="background:var(--typed)"></span>직접 입력</div><div class="v">42<small>%</small></div><div class="s">303자 · 27자/분</div></div>
+      <div class="num"><div class="k"><span class="d" style="background:var(--ai)"></span>붙여넣기</div><div class="v">58<small>%</small></div><div class="s">411자 · 4건 · AI 출처 320자</div></div>
+      <div class="num"><div class="k">AI 창 체류</div><div class="v">4<small>분</small></div><div class="s">2회 · 붙여넣기 최대 200자</div></div>
+      <div class="num"><div class="k">삭제 · 되돌리기</div><div class="v">18<small>자</small></div><div class="s">입력 대비 6% · 되돌리기 2회</div></div>
+    </div>
+    <div class="comp"><i style="width:42%;background:var(--typed)"></i><i style="width:45%;background:var(--ai)"></i><i style="width:13%;background:var(--paste)"></i></div>
+    <div class="legend"><span><i style="background:var(--typed)"></i>직접 입력 303자</span><span><i style="background:var(--ai)"></i>붙여넣기 · AI에서 복사 320자</span><span><i style="background:var(--paste)"></i>붙여넣기 · 기타 91자</span><span style="margin-left:auto">결과물 714자 기준</span></div>
+
+    <hr>
+
+    <h2>분당 활동<small>활성 창 · 직접 입력 · 붙여넣기</small></h2>
+    <div class="chart">
+      <div class="lane"><i style="flex:2.2;background:var(--resource)">학습자료 · 3주차_예외처리.pdf</i><i style="flex:2.5;background:var(--typed)">작업 · Main.java</i><i style="flex:1.2;background:var(--paste)">AI · chatgpt.com</i><i style="flex:2.3;background:var(--typed)">작업 · Main.java</i><i style="flex:1;background:var(--resource)">docs.oracle.com</i><i style="flex:.8;background:var(--other)"></i><i style="flex:2;background:var(--typed)">Word · 보고서</i></div>
+      <div class="bars"><i style="height:0"></i><i style="height:0"></i><i style="height:10%"></i><i style="height:30%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:0"></i><i style="height:0"></i><i class="a" style="height:95%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:0"></i><i style="height:0"></i><i style="height:0"></i><i class="p" style="height:30%"></i><i style="height:45%"></i><i class="a" style="height:65%"></i><i style="height:50%"></i><i style="height:35%"></i><i style="height:20%"></i></div>
+      <div class="axis"><span>14:00</span><span>14:05</span><span>14:10</span><span>14:15</span><span>14:20</span></div>
+    </div>
+
+    <hr>
+
+    <h2>앱별 활동<small>어디서 무엇을 했나</small></h2>
+    <table>
+      <thead><tr><th>앱</th><th style="text-align:right">체류</th><th style="text-align:right">직접 입력</th><th style="text-align:right">붙여넣기</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot" style="background:var(--typed)"></span>VS Code · Main.java</td><td class="n"><b>9분 40초</b></td><td class="n"><b>240자</b></td><td class="n">2건 214자</td><td class="src"><b>Chrome · ChatGPT</b>에서 복사한 것 200자 · 탐색기 14자</td></tr>
+        <tr><td><span class="dot" style="background:var(--typed)"></span>Word · 보고서.docx</td><td class="n">4분</td><td class="n">33자</td><td class="n">1건 120자</td><td class="src"><b>Chrome · ChatGPT</b>에서 복사한 것 (AI)</td></tr>
+        <tr><td><span class="dot" style="background:var(--paste)"></span>Chrome · ChatGPT</td><td class="n">2분 30초</td><td class="n">—</td><td class="n">—</td><td class="src">복사 2건</td></tr>
+        <tr><td><span class="dot" style="background:var(--resource)"></span>Acrobat · 3주차_예외처리.pdf</td><td class="n">5분</td><td class="n">—</td><td class="n">—</td><td class="src"></td></tr>
+        <tr><td><span class="dot" style="background:var(--other)"></span>카카오톡</td><td class="n">1분</td><td class="n">30자</td><td class="n">—</td><td class="src"></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px"><span class="toggle">▸ 상세 활동 보기 <span style="color:var(--faint)">창 전환 11회</span></span></div>
+
+    <hr>
+
+    <h2>핵심 순간<small>규칙으로 자동 추출 · 판정 아님</small></h2>
+    <div class="mom"><span class="t">14:09</span><span><b>AI 창 4분 → Main.java에 200자 붙여넣기</b> · Chrome · ChatGPT에서 복사한 것 · 이후 3분 직접 입력 84자</span></div>
+    <div class="mom"><span class="t">14:16</span><span><b>Word에 120자 붙여넣기</b> · 문단 4 · 이후 직접 33자 추가 · 저장 1,530자</span></div>
+    <div class="mom"><span class="t">14:05</span><span><b>가장 많이 친 구간</b> · 분당 55자 · Main.java</span></div>
+
+    <div class="callout">ⓘ 이 화면은 사실만 보여줍니다. "AI 사용 여부"를 판정하지 않습니다.</div>
+
+    <div class="desk"><div class="ask">AI에게 물어보기…<span class="go">↑</span></div><div class="pill"><span class="d"></span><span>00:23:40</span><span class="n">맥락 12</span><span class="st"></span></div></div>
+  </main>
+</div>
+<div class="note">Trace 디자인 v2 · 노션 규칙: 테두리 대신 여백·머리선 / 색은 의미 있을 때만 작게 / 위계는 글자로</div>
+</body>
+</html>

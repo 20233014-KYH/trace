@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import SessionView from './components/SessionView.jsx';
 import LearnView from './components/LearnView.jsx';
+import UiDemo from './components/UiDemo.jsx';
 import * as api from './lib/api.js';
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
   const [learn, setLearn] = useState(null);   // {ctx, report, live} — Learn 세션일 때만
   const [sid, setSid] = useState('');
   const [err, setErr] = useState('');
+  const [demo, setDemo] = useState(false);   // UI 라이브러리 연결 확인용
 
   const loadSample = () => fetch('/sample_session.json').then((r) => r.json()).then((d) => { setS(d); setLearn(null); }).catch((e) => setErr(String(e)));
   const loadLearnSample = () => fetch('/sample_learn.json').then((r) => r.json()).then((d) => { setS(d.session); setLearn({ ctx: d.context, report: d.report, live: false }); }).catch((e) => setErr(String(e)));
@@ -40,13 +42,14 @@ export default function App() {
         <span style={{ marginLeft: 'auto' }} />
         <input value={sid} onChange={(e) => setSid(e.target.value)} placeholder="서버 세션 id (UUID)" onKeyDown={(e) => e.key === 'Enter' && loadServer()} />
         <button className="btn" onClick={loadServer}>서버에서</button>
+        <button className="btn" onClick={() => setDemo(!demo)}>{demo ? '화면으로' : 'UI 데모'}</button>
         <button className="btn" onClick={loadSample}>샘플 · Proof</button>
         <button className="btn" onClick={loadLearnSample}>샘플 · Learn</button>
         <label className="btn primary">session.json 열기<input type="file" accept=".json" hidden onChange={(e) => readFile(e.target.files[0])} /></label>
       </header>
       <main>
         {err && <p className="err">{err}</p>}
-        {s ? (learn ? <LearnView key={s.id} s={s} ctx={learn.ctx} report={learn.report} live={learn.live} /> : <SessionView s={s} />) : (
+        {demo ? <UiDemo /> : s ? (learn ? <LearnView key={s.id} s={s} ctx={learn.ctx} report={learn.report} live={learn.live} /> : <SessionView s={s} />) : (
           <div className="drop">
             <div style={{ fontSize: 28 }}>⇩</div>
             <b>session.json 을 여기에 끌어다 놓으세요</b><br />

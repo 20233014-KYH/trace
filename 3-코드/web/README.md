@@ -38,6 +38,21 @@ const s = await fetch(`/api/sessions/${id}`).then(r => r.json());   // 계약 �
 ```
 `Timeline` 만 따로 쓰려면 `<Timeline s={s} />`. 입력 형식은 `3-코드/README.md` 4절(session.json).
 
+## UI 라이브러리 (9/22) — shadcn/ui · Magic UI · React Bits
+Tailwind v4 + shadcn/ui 를 깔았고, Magic UI 와 React Bits 를 **같은 CLI** 로 가져온다 (`components.json` 의 registries).
+
+```bash
+npx shadcn@latest add button card dialog          # shadcn/ui
+npx shadcn@latest add @magicui/shimmer-button     # Magic UI   (https://magicui.design/docs/components)
+npx shadcn@latest add @react-bits/BlurText-JS-TW  # React Bits (https://reactbits.dev — 이름 끝 JS-TW = JavaScript + Tailwind)
+```
+가져온 파일은 `src/components/ui/`(shadcn · Magic UI) 와 `src/components/`(React Bits)에 **복사**된다 — 우리 코드가 되므로 마음대로 고친다.
+헤더 [UI 데모] 로 세 곳 부품이 한 화면에 도는지 볼 수 있다 (`UiDemo.jsx`).
+
+Claude Code 에서 부품을 찾고 넣는 건 `.mcp.json`(저장소 루트)의 MCP 서버 2개 — `shadcn`(세 레지스트리 검색·설치 명령) · `magicui`(Magic UI 검색). 앱을 다시 켜면 붙는다.
+
+**토큰 주의:** shadcn 이 `--background --foreground --primary --muted --border --radius` 를 `:root` 에 넣었다. Trace 토큰은 `--ink --line --soft --bg --proof --learn`. `--muted` 는 shadcn 의 연한 배경색이므로 **보조 글자색은 `--muted-foreground`**.
+
 ## Learn 화면이 서버에서 쓰는 것 (계약 ③ 5절)
 | 호출 | 언제 | 비고 |
 |---|---|---|
