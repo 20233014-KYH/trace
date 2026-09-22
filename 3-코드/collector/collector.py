@@ -330,6 +330,8 @@ class Collector:
         self._last_paste = None     # (time, len) 마지막 Ctrl+V — 저장 파일 diff 가 붙여넣은 자리 판정에 씀
         self._fdiff = None
         self._git = None
+        self.started_at = time.time()   # 알약 창(app/pill.py)이 경과 시간·맥락 수를 읽는다
+        self.ctx_count = 0
         self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
@@ -507,7 +509,8 @@ class Collector:
     # ── 브라우저 확장 (bridge) ──
     def _status(self):
         return {"session_id": self.session_id, "mode": self.mode, "work_id": self.work_id, "recording": not self._stop.is_set(),
-                "learn_context": self.cfg.get("learn_context", {})}
+                "learn_context": self.cfg.get("learn_context", {}),
+                "elapsed_sec": int(time.time() - self.started_at), "events": self.sink._seq, "ctx_count": self.ctx_count}
 
     def _on_tab(self, body):
         """확장이 보낸 탭 전환. 도메인으로 분류해 체인에 넣는다 (창 제목 키워드보다 정확)."""
@@ -518,6 +521,7 @@ class Collector:
 
     def _on_context(self, items):
         """Learn 맥락 — 체인에 안 넣고 서버 /context 로만. 로컬에도 남긴다."""
+        self.ctx_count += len(items)
         for it in items:
             print(f"        ↳ 맥락 {it.get('kind')}  {(it.get('text') or '')[:40]!r}")
         if self.sender:
