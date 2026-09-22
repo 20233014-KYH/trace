@@ -179,6 +179,7 @@ npm install && npm run dev     # http://localhost:5173 · [샘플] 또는 sessio
 - **Learn 화면 React 뼈대** (`3-코드/web/`, 9/21): `LearnView`(탭 3개) · `Timeline` 에 학습 흐름 마커 레인 · `ContextPanel`(직전 오류 → 질문 → 답변 → 이후) · `ReportView`(열 때 GET, 다시 생성 POST, 3회) · `AskBox`(알약 위 질문칸 ↔ 채팅 패널). 샘플(`sample_learn.json`)과 A 서버 둘 다로 확인 — report·chat·Proof 403. A 가 `GET /context` 추가(9/21) → **실데이터로 확인** (ChatGPT 질문 → 답변 복사 → 메모장 붙여넣기 → 직접 수정이 마커·맥락 패널에 그대로). 시각 표기 차이(확장 UTC · 수집기 KST) 화면에서 흡수
 - **저장 파일 diff** (`3-코드/collector/file_diff.py`, 9/21): 감시 폴더의 텍스트 파일이 저장되면 이전 내용과 비교 — 숫자(`doc_change` n행 +a/-b · `doc_paste_at`)는 두 모드 체인에, 바뀐 줄은 Learn 맥락(`diff` · `paste_at`, source `editor`)으로. **편집기 무관**(VS Code·IntelliJ·메모장). 실테스트: "AI 창 복사 17자 → VS Code 5행 붙여넣기 → 저장"이 Word 때와 같은 형식으로 남음. 시작 스냅샷 최대 3000개, 파일 내용은 메모리에만
 - **git 커밋·푸시** (`3-코드/collector/git_watch.py`, 9/21): 감시 폴더 안 저장소를 5초마다 보고 — `commit 해시 · 브랜치 · n파일 +a/-b`, `git_push origin/main → 해시` 는 두 모드 체인에, 커밋 메시지는 Learn 맥락(`commit`, source `git`)으로만. 증명서에서 커밋 해시와 체인 대조 가능. 실테스트: 커밋 2 · 푸시 1 전부 잡힘
+- **디자인 기준 + UI 라이브러리** (9/22): 팔레트 후보 4개 편집 페이지(`2-디자인/디자인 기준.html`, CSS·피그마용 JSON 내보내기)와 노션 규칙으로 다시 그린 "한눈에" v2. 방향: 남의 디자인을 따라하지 않고 참고만, **shadcn/ui · Magic UI · React Bits** 를 섞어 유니크하게. React 에 Tailwind v4 + shadcn 설치, 세 라이브러리를 한 CLI(`npx shadcn add @magicui/… @react-bits/…`)로 가져오게 연결, Claude Code MCP 2개(`.mcp.json`)
 - **derive·chain 픽스처** (`3-코드/tests/`): 이벤트 30건 → 골든 session.json. 서버 이관 시 같은 출력 확인용. 한 글자 변조도 체인이 잡는 것 확인 (9/20)
 - **Word·PowerPoint 문서 변화** (`3-코드/collector/office.py`): 열린 문서를 5초마다 보고 — 숫자(문단 n +120자/-6자 · 붙여넣은 자리 · 저장 시 글자 수)는 **두 모드 공통 이벤트로 체인에**, 바뀐 텍스트는 Learn 맥락으로만. "AI 창 복사 100자 → Word 문단 2 +100자"가 Proof 체인에서 확인됨 (9/20)
 - **Learn AI 연결 뼈대** (`3-코드/core/llm.py` + 참고 서버 `/report` `/chat`): 리포트 5항목 JSON · Side Chat · Proof 403 · 횟수 상한. 공급자 어댑터 — **Qwen API(교수 추천 · 9/20)** 기본, Claude 비교 가능, 키 없으면 fake (9/20)
@@ -249,6 +250,7 @@ Trace/
 │  └─ 이전버전/                     v0.2 기획 시절 문서 (무시 가능)
 ├─ 2-디자인/                      화면 설계 — 디자이너에게 주는 것
 │  ├─ 목업 원본/trace-mockbook.html  화면 22장이 한 파일 (?screen=s07 로 열기) · build.py 로 PNG/PDF/zip 재생성
+│  ├─ 디자인 기준.html · 디자인 기준 v2.html   팔레트 후보 편집기(CSS·피그마 JSON) · 노션 규칙 한눈에 v2 · 디자인 후보 PNG/
 │  ├─ 목업 PNG/                     결과물. 00-전체흐름과-화면원칙.png 부터
 │  └─ 목업 PNG (디자이너 전달용).zip
 ├─ 3-코드/                        실제로 도는 것 — 수집기 · 체인 · 참고 서버 · 뷰어
@@ -258,10 +260,11 @@ Trace/
 │  ├─ server/      **진짜 서버 (A)** — app.py · db.py(SQLite/PostgreSQL) · test_contract.py(계약 검사 8개) · README.md
 │  ├─ core/        chain.py(공용 해시) · derive.py(이벤트 → 화면 데이터) · llm.py(Learn AI 어댑터 · Qwen/Claude/fake)
 │  ├─ ui/          viewer.html(테스트 뷰어 · HTML 한 장)
-│  ├─ web/         React (Vite) — Timeline.jsx · SessionView.jsx · README.md
+│  ├─ web/         React (Vite · Tailwind v4 · shadcn/ui + Magic UI + React Bits) — Timeline.jsx · SessionView.jsx · LearnView.jsx · README.md
 │  ├─ extension/   Chrome 확장 (MV3) — background.js(탭) · content.js(Learn 맥락) · popup · README.md
 │  ├─ tests/       derive·chain 픽스처 — events_basic.jsonl → expected_basic.json · test_derive.py
 │  └─ data/        sample_session.json · (실행하면 events-날짜.jsonl · session.json)
+├─ .mcp.json                      Claude Code MCP — shadcn(세 레지스트리) · magicui
 ├─ docs/                          A 쪽 문서 — api.md(확정 계약 ③) · 기획안 PDF · 작업 가이드 PDF
 └─ 9-옛버전/                      A의 9/19 이전 작업 (platform_mac.py 는 여기서 살려 옴)
 ```
