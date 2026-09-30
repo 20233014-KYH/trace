@@ -1,4 +1,4 @@
-# Trace API 계약 ③ (확정본 v2.0)
+# Trace API 계약 ③ (확정본 v2.1 · 9/30 AI 허용 과제만)
 
 **2026-09-28 개정** · v1.0(9/21 확정) → 기획 전면 개정(`1-기획/5-기획 수정사항 (2026-09-28).md`) 반영.
 바꿀 때는 **상대에게 먼저 말하고** 이 파일을 고칩니다. 코드가 아니라 **이 문서가 기준**입니다.
@@ -16,13 +16,13 @@
 | **삭제** | `GET/POST /sessions/{id}/report` | 없음 — Learning Report 기능 폐기 |
 | **삭제** | `POST /sessions/{id}/chat` | 없음 — Side Chat 폐기 |
 | **삭제** | `/sessions/{id}/certificate` · `certificate.pdf` · `proof.ots` · `POST /verify` | 요약 1장 + 공유 링크로 대체. 외부 시간 도장(OTS)은 이번 학기 제외 |
-| **수정** | `POST /works {title, mode:"learn"\|"proof"}` | `POST /works {title, ai_policy:"forbidden"\|"allowed"}` |
+| **수정** | `POST /works {title, mode:"learn"\|"proof"}` | `POST /works {title, ai_scope?}` — **v2.1(9/30):** `ai_policy` 삭제, AI 금지 과제는 대상 아님. `ai_scope` = 교수가 허용한 범위 메모(선택) |
 | **수정** | 세션 생성 요청에 `mode` | **`mode` 제거** — 세션에 모드 개념이 없음 |
 | **수정** | `/context` 는 Learn 세션에서만 (Proof 면 403) | **항상 받는다.** 403 없음. 의미도 "학습 맥락" → **"AI 대화 기록"** |
 | **추가** | — | `/works/{id}/summary` · `/links` · `/redactions` · `/share` · `GET /share/{token}` · `/import` |
 
 **서버 구현자에게:** `3-코드/server/app.py` 의 `_learn만()` 헬퍼와 `report`·`chat` 라우트를 지우고,
-`db.Work` 에 `ai_policy` 컬럼을 더하고, `db.Sess.mode` 는 남기되 쓰지 않습니다(옛 데이터 호환).
+`db.Work` 에 `ai_scope` 컬럼(선택 · 자유 텍스트)을 더하고, `db.Sess.mode` 는 남기되 쓰지 않습니다(옛 데이터 호환).
 
 ---
 
@@ -61,14 +61,15 @@ TRACE_REQUIRE_AUTH=1 python server/app.py   # 인증 강제
 ## 2. Work — 하나의 과제
 
 ```
-POST /works        {title, ai_policy:"forbidden"|"allowed"}   → {id, title, ai_policy, created_at}
-GET  /works                                                    → [{id, title, ai_policy, sessions:n, last_at}]
-GET  /works/{id}                                               → {id, title, ai_policy, sessions:[{id, start, end, dur, events, sealed}]}
-PATCH /works/{id}  {title?, ai_policy?}                        → {id, title, ai_policy}
+POST /works        {title, ai_scope?}                         → {id, title, ai_scope, created_at}
+GET  /works                                                    → [{id, title, ai_scope, sessions:n, last_at}]
+GET  /works/{id}                                               → {id, title, ai_scope, sessions:[{id, start, end, dur, events, sealed}]}
+PATCH /works/{id}  {title?, ai_scope?}                         → {id, title, ai_scope}
 ```
 
-- **`ai_policy` 는 기록을 바꾸지 않는다.** 요약 1장(4절)의 내용만 바꾼다.
-- 요약을 내기 직전에 바꿀 수 있으므로 `PATCH` 가 필요하다.
+- **`ai_scope`** 는 교수가 허용한 범위를 적는 선택 메모다(예: "코드 설명·디버깅만 허용"). 내역서 맨 위에 그대로 찍을 뿐, 서버가 이걸로 판단하지 않는다.
+- 대상은 **AI 허용 과제**뿐이다 (9/30). 과제 유형(`ai_policy`)은 없다.
+- 내역서를 내기 직전에 고칠 수 있으므로 `PATCH` 가 필요하다.
 - 한 과제(Work)는 여러 세션으로 이루어진다 — 며칠에 걸쳐 껐다 켰다 해도 한 과제다.
 
 ---
@@ -133,13 +134,12 @@ GET  /sessions/{id}/context                           ← 읽기
 
 ```
 GET  /works/{id}/summary                              ← 요약 1장 데이터 (규칙 기반 · AI 호출 없음)
-  응답  {work:{id, title, ai_policy}, sessions:n, span:{start, end}, active_min,
+  응답  {work:{id, title, ai_scope}, sessions:n, span:{start, end}, active_min,
          typed_chars, pasted:{count, from_ai:n, from_other:n},
          ai:{tools:[…], questions:n, links:{verbatim:n, edited:n}},
          unsourced:[{start, end, chars}],            ← "출처 기록 없음" 구간
          chain:{verified:true|false, sealed_sessions:n}}
   · 여기에 점수·확률·등급·퍼센트 유사도는 **없다** (원칙 1)
-  · ai_policy 에 따라 화면이 고르는 항목이 다를 뿐, 응답은 같다
 
 POST /works/{id}/links                                ← 연결 확인 결과 저장
   요청  {links:[{context_id, target:{session_id, event_id, offset?}, state:"confirmed"|"rejected", kind:"verbatim"|"edited"}]}
@@ -159,7 +159,7 @@ POST /works/{id}/share                                ← 공유 링크 만들�
 DELETE /works/{id}/share/{token}                       → {ok:true}       ← 되돌리기
 
 GET  /share/{token}                                   ← 교수용 · **인증 불필요 · 읽기 전용**
-  응답  {work:{title, ai_policy}, summary:{…}, links:[{ai_answer, result, kind}], 
+  응답  {work:{title, ai_scope}, summary:{…}, links:[{ai_answer, result, kind}], 
          redacted:n, chain:{verified, sealed_sessions}, generated_at}
   · 로그인 없이 링크만으로 열린다. 쓰기는 어떤 것도 안 된다
   · 학생이 가린 항목은 내용 없이 "가림"으로만 보인다
@@ -186,7 +186,7 @@ POST /works/{id}/import                               ← AI 대화 내보내기
 ## 7. 예시 — 한 과제의 왕복
 
 ```
-POST /works                    {title:"운영체제 과제 3", ai_policy:"allowed"}      → {id:"W1"}
+POST /works                    {title:"운영체제 과제 3", ai_scope:"코드 설명·디버깅만 허용"} → {id:"W1"}
 POST /works/W1/sessions        {id:"7f3a…", device:{os:"win"}, started_at:"…15:00:02+09:00"}
 POST /sessions/7f3a…/events    {events:[session_start, window, keys, copy, paste, …]}   × 여러 번
 POST /sessions/7f3a…/context   {items:[{kind:"ai_question", …}, {kind:"ai_answer", …}]}
@@ -229,7 +229,7 @@ GET  /share/s_9a2f…            ← 교수가 연다 (로그인 없이)
 
 | 테이블 | 왜 필요한가 |
 |---|---|
-| `users` `works` `devices` | 계약 1·2절. **`works.ai_policy` 추가 (v2.0)** |
+| `users` `works` `devices` | 계약 1·2절. **`works.ai_scope` 추가 (v2.1 · 선택)** |
 | `sessions` | 세션 메타 + `root` · `verified` · `sealed_at` · `last_heartbeat_at` |
 | `events` | **기본키 `(session_id, id)`** · 원본 JSON 보관 |
 | `batches` | **지연 수신 판정용.** 배치마다 `received_at` 과 `chain_head` |
@@ -253,7 +253,7 @@ GET  /share/s_9a2f…            ← 교수가 연다 (로그인 없이)
 
 | 계약 | 언제 |
 |---|---|
-| 1·2·3절 (인증 · Work · 세션 · 이벤트 · 봉인 · 조회) | **완료** — `ai_policy` 만 추가하면 됨 |
+| 1·2·3절 (인증 · Work · 세션 · 이벤트 · 봉인 · 조회) | **완료** — `ai_scope` 만 추가하면 됨 |
 | 4절 AI 대화 기록 | **완료** — 403 제거 · 길이 상한 제거만 |
 | 5절 요약 1장 (`/summary`) | 10주 |
 | 5절 연결 · 가리기 (`/links` · `/redactions`) | 11주 |

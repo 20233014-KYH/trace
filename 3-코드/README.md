@@ -10,7 +10,7 @@
 >
 > | 지운다 | `/report` · `/chat` · `LearnView` · `ReportView` · `AskBox` · 알약 질문칸 · `--mode` 옵션 |
 > |---|---|
-> | **바꾼다** | `mode` → Work 의 `ai_policy` · `if mode == "learn"` 분기 해제(항상 수집) · `ai_answer_excerpt` → 원문 |
+> | **바꾼다** | `mode` 제거 → Work 에 `ai_scope`(선택 메모, 9/30) · `if mode == "learn"` 분기 해제(항상 수집) · `ai_answer_excerpt` → 원문 |
 > | **그대로** | `core/chain.py` · `derive.py` · 기록기 · 파일 diff · git · Office(텍스트 층은 항상 켬) · 서버 3절 |
 >
 > 아래에서 **"Learn 맥락"** 이라고 쓰인 것은 개정 후 **"AI 대화 기록"** 이 되고, 모드와 무관하게 항상 수집됩니다.
