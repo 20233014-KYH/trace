@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 from core import chain as C          # noqa: E402
 
-BASE = "http://127.0.0.1:5000/api"
+BASE = f"http://127.0.0.1:{os.environ.get('TRACE_PORT', '5000')}/api"   # 맥은 5000 = AirPlay → TRACE_PORT=5050
 FIX = os.path.join(os.path.dirname(HERE), "tests", "fixtures", "events_basic.jsonl")
 
 
@@ -38,7 +38,11 @@ def 호출(경로, 몸=None):
         with urllib.request.urlopen(요청, timeout=10) as r:
             return r.status, json.loads(r.read())
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read())
+        본문 = e.read()
+        try:
+            return e.code, json.loads(본문)
+        except ValueError:                           # 없는 주소(404·405)면 Flask 가 HTML 을 돌려준다
+            return e.code, {"_html": 본문[:80].decode("utf-8", "replace")}
     except urllib.error.URLError as e:
         print(f"\n  서버에 연결하지 못했습니다 ({e.reason}).")
         print("  다른 창에서 먼저 켜 주세요:  python 3-코드/server/app.py\n")
@@ -78,7 +82,7 @@ def main():
     코드, 답 = 호출("/health")
     검사("1 health", 코드 == 200 and 답.get("ok"), f"세션 {답.get('sessions')}개 · 저장 {답.get('storage', '?')}")
 
-    몸 = {"id": sid, "mode": "proof",
+    몸 = {"id": sid,                                   # v2.1: mode 없음
           "device": {"name": "테스트", "os": "mac", "collector_version": "0.4"},
           "started_at": 이벤트[0]["ts"]}
     코드1, _ = 호출("/works/W-TEST/sessions", 몸)
@@ -136,6 +140,23 @@ def main():
     검사("8 조회 (session.json)", 코드 == 200 and not 빠짐,
          f"타자 {답.get('stats', {}).get('typed')}자 · 붙임 {len(답.get('pastes', []))}건"
          + (f" · 빠진 키 {빠짐}" if 빠짐 else ""))
+
+    # ── 계약 4절 · AI 대화 기록 (v2.1: 모든 세션에서 받음 · 500자로 자르지 않음 · 64KB 넘으면 413)
+    긴답 = "가" * 600                                # 옛 서버는 500자에서 잘랐다
+    코드, 답 = 호출(f"/sessions/{sid2}/context",
+                    {"items": [{"ts": 이벤트[0]["ts"], "source": "browser", "kind": "ai_answer", "text": 긴답}]})
+    코드2, 답2 = 호출(f"/sessions/{sid2}/context")
+    받은것 = [i for i in 답2.get("items", []) if i.get("kind") == "ai_answer"]
+    검사("9 AI 대화 기록 (모드 없이 · 안 잘림)",
+         코드 == 200 and 답.get("accepted") == 1 and 받은것 and len(받은것[-1]["text"]) == 600,
+         f"저장 {코드} · 조회 {코드2} · 글자 {len(받은것[-1]['text']) if 받은것 else 0}")
+
+    코드, _ = 호출(f"/sessions/{sid2}/context",
+                   {"items": [{"kind": "ai_answer", "text": "가" * (64 * 1024)}]})   # 한 글자 3바이트 → 64KB 넘음
+    검사("10 한 항목 64KB 넘으면 413", 코드 == 413, f"HTTP {코드}")
+
+    코드, _ = 호출(f"/sessions/{uuid.uuid4()}/context", {"items": []})
+    검사("11 없는 세션이면 404", 코드 == 404, f"HTTP {코드}")
 
     print("  " + "─" * 64)
     print(f"  {통과}개 통과, {실패}개 실패")
