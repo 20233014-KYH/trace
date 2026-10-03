@@ -133,7 +133,7 @@ python server/app.py                        # 인증 선택 (기본)
 TRACE_REQUIRE_AUTH=1 python server/app.py   # 인증 강제
 ```
 
-수집기가 토큰을 보내게 되면 그때 켭니다. 그때까지 `test_contract.py` 8개는 그대로 통과합니다.
+수집기가 토큰을 보내게 되면 그때 켭니다. 그때까지 `test_contract.py` 11개는 그대로 통과합니다 (10/3: AI 대화 기록 검사 3개 추가).
 
 ### 왜 JWT 가 아닌가
 
