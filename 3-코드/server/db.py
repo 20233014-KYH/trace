@@ -15,16 +15,48 @@ db.py — 저장소. SQLite (개발) / PostgreSQL (배포) 둘 다 같은 코드
   배치마다 받은 시각을 남겨야 나중에 증명서에 그대로 쓸 수 있다.
 """
 import os
+import sys
 
 from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
                         String, Text, UniqueConstraint, create_engine)
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_URL = "sqlite:///" + os.path.join(HERE, "trace.db")
-DB_URL = os.environ.get("TRACE_DB_URL", DEFAULT_URL)
+
+
+def _env_파일_읽기():
+    """server/.env 의 KEY=VALUE 를 환경변수로 (이미 정해진 환경변수가 이긴다).
+    DB 비밀번호가 든 주소를 코드나 저장소에 쓰지 않기 위해서다. .env 는 .gitignore 에 걸려 있다."""
+    p = os.path.join(HERE, ".env")
+    if not os.path.exists(p):
+        return
+    for 줄 in open(p, encoding="utf-8"):
+        줄 = 줄.strip()
+        if 줄 and not 줄.startswith("#") and "=" in 줄:
+            키, 값 = 줄.split("=", 1)
+            값 = 값.strip().strip('"').strip("'")
+            if 값:                                   # 빈 칸(TRACE_DB_URL=)이면 없는 것으로 친다
+                os.environ.setdefault(키.strip(), 값)
+
+
+_env_파일_읽기()
+DB_URL = os.environ.get("TRACE_DB_URL") or DEFAULT_URL     # 비어 있어도 기본(SQLite)으로
+
+# Supabase 가 주는 주소(postgresql:// 또는 postgres://) → SQLAlchemy 가 psycopg 로 붙게
+for 앞 in ("postgres://", "postgresql://"):
+    if DB_URL.startswith(앞):
+        DB_URL = "postgresql+psycopg://" + DB_URL[len(앞):]
+if "[YOUR-PASSWORD]" in DB_URL:
+    sys.exit("server/.env 의 주소에 [YOUR-PASSWORD] 가 그대로 있습니다 — 대괄호까지 지우고 진짜 DB 비밀번호로 바꿔 주세요.")
+
+# ★ 화면·로그에는 이것만 찍는다. Supabase 주소엔 DB 비밀번호가 들어 있다
+DB_URL_SAFE = make_url(DB_URL).render_as_string(hide_password=True)
+인터넷DB = DB_URL.startswith("postgresql")
 
 engine = create_engine(DB_URL, future=True,
+                       pool_pre_ping=인터넷DB,          # 인터넷 DB 는 쉬는 동안 연결이 끊길 수 있다 → 쓰기 전에 확인
                        connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 Session = sessionmaker(bind=engine, future=True)
 Base = declarative_base()
@@ -137,7 +169,23 @@ class Context(Base):
 def init():
     Base.metadata.create_all(engine)
     _칸_추가()
+    if 인터넷DB:
+        _행_보안_켜기()
     return engine
+
+
+def _행_보안_켜기():
+    """★ Supabase 는 public 스키마의 표를 '데이터 API'로 인터넷에 내놓는다 ★
+
+    SQL 로 만든 표는 행 보안(RLS)이 꺼진 채라, 프로젝트의 공개 키(anon key)만 있으면 표를 읽을 수 있다.
+    → 표마다 RLS 를 켜고 정책은 하나도 안 만든다 = 데이터 API 로는 아무것도 못 읽음.
+    우리 서버는 표의 주인(postgres)으로 붙으므로 RLS 와 상관없이 그대로 읽고 쓴다.
+    여러 번 켜도 안전하다.
+    """
+    from sqlalchemy import text
+    with engine.begin() as 연결:
+        for 표 in Base.metadata.sorted_tables:
+            연결.execute(text(f'ALTER TABLE "{표.name}" ENABLE ROW LEVEL SECURITY'))
 
 
 def _칸_추가():
@@ -158,6 +206,6 @@ def _칸_추가():
 
 if __name__ == "__main__":
     init()
-    print("만들었습니다:", DB_URL)
+    print("만들었습니다:", DB_URL_SAFE)
     for t in Base.metadata.sorted_tables:
         print(f"  {t.name:<12} {', '.join(c.name for c in t.columns)}")
