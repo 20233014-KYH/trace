@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-BASE = "http://127.0.0.1:5000/api"
+BASE = f"http://127.0.0.1:{os.environ.get('TRACE_PORT', '5000')}/api"   # 맥은 5000 = AirPlay → TRACE_PORT=5050
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 통과, 실패 = 0, 0
@@ -34,7 +34,11 @@ def 호출(경로, 몸=None, 토큰=None, 방법=None):
         with urllib.request.urlopen(요청, timeout=10) as r:
             return r.status, json.loads(r.read())
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read())
+        본문 = e.read()
+        try:
+            return e.code, json.loads(본문)
+        except ValueError:                           # 없는 주소(404·405)면 Flask 가 HTML 을 돌려준다
+            return e.code, {"_html": 본문[:80].decode("utf-8", "replace")}
     except urllib.error.URLError as e:
         print(f"\n  서버에 연결하지 못했습니다 ({e.reason}).")
         print("  다른 창에서 먼저 켜 주세요:  python 3-코드/server/app.py\n")
@@ -96,12 +100,13 @@ def main():
     코드, _ = 호출("/me")
     검사("9 토큰 없이 /me 막힘", 코드 == 401, f"HTTP {코드}")
 
-    코드, 답 = 호출("/works", {"title": "갑의 과제", "mode": "proof"}, 토큰=갑토큰)
+    코드, 답 = 호출("/works", {"title": "갑의 과제", "ai_scope": "코드 설명·디버깅만 허용"}, 토큰=갑토큰)
     갑작품 = 답.get("id")
-    검사("10 Work 만들기", 코드 == 201 and 답.get("mode") == "proof", f"HTTP {코드} · {답.get('title')}")
+    검사("10 Work 만들기 (ai_scope 메모)", 코드 == 201 and 답.get("ai_scope") == "코드 설명·디버깅만 허용",
+         f"HTTP {코드} · {답.get('title')}")
 
-    코드, 답 = 호출("/works", {"title": "잘못된 모드", "mode": "hybrid"}, 토큰=갑토큰)
-    검사("11 잘못된 mode 거부", 코드 == 400, f"HTTP {코드}")
+    코드, 답 = 호출("/works", {"title": "메모가 숫자", "ai_scope": 42}, 토큰=갑토큰)
+    검사("11 ai_scope 가 글자가 아니면 거부", 코드 == 400, f"HTTP {코드}")
 
     # ★ 남의 Work 가 보이나
     호출("/auth/signup", 을)
@@ -113,6 +118,17 @@ def main():
     코드, 목록 = 호출("/works", 토큰=을토큰)
     검사("13 목록에도 안 보임", 코드 == 200 and all(w["id"] != 갑작품 for w in 목록),
          f"을의 Work {len(목록)}개")
+
+    # ★ 과제가 있는 상태에서 /me — 옛 코드는 여기서 w.mode 를 읽다가 500 이 났다 (과제가 0개일 땐 안 드러남)
+    코드, 답 = 호출("/me", 토큰=갑토큰)
+    검사("15 /me 의 과제 목록에 ai_scope", 코드 == 200 and 답.get("works") and "ai_scope" in 답["works"][0],
+         f"HTTP {코드} · 과제 {len(답.get('works') or [])}개")
+
+    코드, 답 = 호출(f"/works/{갑작품}", {"ai_scope": "자료 조사만 허용"}, 토큰=갑토큰, 방법="PATCH")
+    검사("16 PATCH 로 메모 고치기", 코드 == 200 and 답.get("ai_scope") == "자료 조사만 허용", f"HTTP {코드}")
+
+    코드, _ = 호출(f"/works/{갑작품}", {"title": "가로채기"}, 토큰=을토큰, 방법="PATCH")
+    검사("17 남의 Work 는 못 고침", 코드 == 404, f"HTTP {코드} (404 여야 함)")
 
     코드, _ = 호출("/auth/logout", {}, 토큰=갑토큰)
     코드2, _ = 호출("/me", 토큰=갑토큰)

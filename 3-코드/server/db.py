@@ -15,16 +15,48 @@ db.py — 저장소. SQLite (개발) / PostgreSQL (배포) 둘 다 같은 코드
   배치마다 받은 시각을 남겨야 나중에 증명서에 그대로 쓸 수 있다.
 """
 import os
+import sys
 
 from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
                         String, Text, UniqueConstraint, create_engine)
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_URL = "sqlite:///" + os.path.join(HERE, "trace.db")
-DB_URL = os.environ.get("TRACE_DB_URL", DEFAULT_URL)
+
+
+def _env_파일_읽기():
+    """server/.env 의 KEY=VALUE 를 환경변수로 (이미 정해진 환경변수가 이긴다).
+    DB 비밀번호가 든 주소를 코드나 저장소에 쓰지 않기 위해서다. .env 는 .gitignore 에 걸려 있다."""
+    p = os.path.join(HERE, ".env")
+    if not os.path.exists(p):
+        return
+    for 줄 in open(p, encoding="utf-8"):
+        줄 = 줄.strip()
+        if 줄 and not 줄.startswith("#") and "=" in 줄:
+            키, 값 = 줄.split("=", 1)
+            값 = 값.strip().strip('"').strip("'")
+            if 값:                                   # 빈 칸(TRACE_DB_URL=)이면 없는 것으로 친다
+                os.environ.setdefault(키.strip(), 값)
+
+
+_env_파일_읽기()
+DB_URL = os.environ.get("TRACE_DB_URL") or DEFAULT_URL     # 비어 있어도 기본(SQLite)으로
+
+# Supabase 가 주는 주소(postgresql:// 또는 postgres://) → SQLAlchemy 가 psycopg 로 붙게
+for 앞 in ("postgres://", "postgresql://"):
+    if DB_URL.startswith(앞):
+        DB_URL = "postgresql+psycopg://" + DB_URL[len(앞):]
+if "[YOUR-PASSWORD]" in DB_URL:
+    sys.exit("server/.env 의 주소에 [YOUR-PASSWORD] 가 그대로 있습니다 — 대괄호까지 지우고 진짜 DB 비밀번호로 바꿔 주세요.")
+
+# ★ 화면·로그에는 이것만 찍는다. Supabase 주소엔 DB 비밀번호가 들어 있다
+DB_URL_SAFE = make_url(DB_URL).render_as_string(hide_password=True)
+인터넷DB = DB_URL.startswith("postgresql")
 
 engine = create_engine(DB_URL, future=True,
+                       pool_pre_ping=인터넷DB,          # 인터넷 DB 는 쉬는 동안 연결이 끊길 수 있다 → 쓰기 전에 확인
                        connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 Session = sessionmaker(bind=engine, future=True)
 Base = declarative_base()
@@ -56,12 +88,12 @@ class Token(Base):
 
 
 class Work(Base):
-    """하나의 과제·작업. 한 Work = 한 모드 (learn 또는 proof)."""
+    """하나의 과제. 9/30 개정: 모드·과제 유형 없음. ai_scope = 교수가 허용한 범위 메모(선택, 판단에 안 씀)."""
     __tablename__ = "works"
     id = Column(String(64), primary_key=True)
     user_id = Column(String(64), ForeignKey("users.id"))
     title = Column(String(255))
-    mode = Column(String(16))
+    ai_scope = Column(Text)
     created_at = Column(DateTime)
     sessions = relationship("Sess", back_populates="work")
 
@@ -81,7 +113,7 @@ class Sess(Base):
     id = Column(String(64), primary_key=True)
     work_id = Column(String(64), ForeignKey("works.id"))
     device_id = Column(String(64))
-    mode = Column(String(16))
+    mode = Column(String(16))              # 쓰지 않음 — 9/28 이전 기록을 읽기 위해 칸만 남김 (계약 v2.1)
     started_at = Column(String(40))
     ended_at = Column(String(40))
     sealed_at = Column(String(40))
@@ -123,7 +155,7 @@ class Batch(Base):
 
 
 class Context(Base):
-    """Learn 맥락. Proof 세션에는 저장하지 않는다 (계약 5절)."""
+    """AI 대화 기록 (옛 Learn 맥락). 9/28 부터 모든 세션에서 받는다 (계약 4절)."""
     __tablename__ = "contexts"
     id = Column(String(64), primary_key=True)
     session_id = Column(String(64), ForeignKey("sessions.id"))
@@ -134,23 +166,46 @@ class Context(Base):
     meta = Column(JSON)
 
 
-class Report(Base):
-    __tablename__ = "reports"
-    session_id = Column(String(64), ForeignKey("sessions.id"), primary_key=True)
-    body = Column(JSON)
-    generated_at = Column(String(40))
-    provider = Column(String(32))
-    runs = Column(Integer, default=0)
-    chat_turns = Column(Integer, default=0)
-
-
 def init():
     Base.metadata.create_all(engine)
+    _칸_추가()
+    if 인터넷DB:
+        _행_보안_켜기()
     return engine
+
+
+def _행_보안_켜기():
+    """★ Supabase 는 public 스키마의 표를 '데이터 API'로 인터넷에 내놓는다 ★
+
+    SQL 로 만든 표는 행 보안(RLS)이 꺼진 채라, 프로젝트의 공개 키(anon key)만 있으면 표를 읽을 수 있다.
+    → 표마다 RLS 를 켜고 정책은 하나도 안 만든다 = 데이터 API 로는 아무것도 못 읽음.
+    우리 서버는 표의 주인(postgres)으로 붙으므로 RLS 와 상관없이 그대로 읽고 쓴다.
+    여러 번 켜도 안전하다.
+    """
+    from sqlalchemy import text
+    with engine.begin() as 연결:
+        for 표 in Base.metadata.sorted_tables:
+            연결.execute(text(f'ALTER TABLE "{표.name}" ENABLE ROW LEVEL SECURITY'))
+
+
+def _칸_추가():
+    """★ 마이그레이션 — 이미 있는 DB 파일에 새 칸을 넣는다 ★
+
+    create_all 은 '없는 표'만 만든다. 이미 있는 표에 칸이 늘어난 것은 모른다.
+    그래서 9/23 에 만든 trace.db 의 works 표에는 ai_scope 칸이 없고,
+    그대로 켜면 "no such column: works.ai_scope" 로 서버가 죽는다.
+    → 칸이 없으면 ALTER TABLE 로 붙인다. 이미 있으면 아무것도 안 한다 (여러 번 켜도 안전).
+    """
+    from sqlalchemy import inspect, text
+    있는칸 = {c["name"] for c in inspect(engine).get_columns("works")}
+    if "ai_scope" not in 있는칸:
+        with engine.begin() as 연결:
+            연결.execute(text("ALTER TABLE works ADD COLUMN ai_scope TEXT"))
+        print("  DB: works 표에 ai_scope 칸을 붙였습니다 (한 번만)")
 
 
 if __name__ == "__main__":
     init()
-    print("만들었습니다:", DB_URL)
+    print("만들었습니다:", DB_URL_SAFE)
     for t in Base.metadata.sorted_tables:
         print(f"  {t.name:<12} {', '.join(c.name for c in t.columns)}")

@@ -133,7 +133,7 @@ python server/app.py                        # 인증 선택 (기본)
 TRACE_REQUIRE_AUTH=1 python server/app.py   # 인증 강제
 ```
 
-수집기가 토큰을 보내게 되면 그때 켭니다. 그때까지 `test_contract.py` 8개는 그대로 통과합니다.
+수집기가 토큰을 보내게 되면 그때 켭니다. 그때까지 `test_contract.py` 11개는 그대로 통과합니다 (10/3: AI 대화 기록 검사 3개 추가).
 
 ### 왜 JWT 가 아닌가
 
@@ -153,6 +153,24 @@ JWT 는 서버가 들고 있지 않아 **로그아웃·강제 만료를 못 합�
 **3주차 관통에 필요한 3절(세션·이벤트·봉인·조회)은 다 됐습니다.**
 
 ---
+
+## 인터넷 DB (Supabase) — 10/4
+
+맥·PC 안의 파일(`trace.db`) 대신 **Supabase(PostgreSQL · 서울 지역)** 에 저장한다. 서버 코드는 같다. 저장하는 곳만 바뀐다.
+
+```bash
+cp server/.env.example server/.env     # 그다음 .env 의 TRACE_DB_URL= 뒤에 주소를 넣는다 (비우면 trace.db)
+python server/app.py                   # 첫 줄 "저장: postgresql+psycopg://postgres.…:***@…" 이면 Supabase
+```
+
+| 꼭 지킬 것 | 왜 |
+|---|---|
+| 주소는 Supabase **Connect → Direct → Session pooler** (포트 5432) | 무료 플랜의 Direct connection 은 IPv6 전용이라 집·학교 인터넷에서 안 붙을 수 있다 |
+| 주소·비밀번호는 **`.env` 에만** | `.env` 는 `.gitignore` 에 걸려 저장소에 안 올라간다. 서버는 비밀번호를 `***` 로 가려서 찍는다 |
+| 프로젝트의 **Data API 는 끔** | 우리 서버가 DB 에 직접 붙으므로 필요 없다. 서버는 켜질 때 표마다 행 보안(RLS)도 켠다 (예비 잠금) |
+| **없는 과제로 세션이 와도 됨** | 기록기는 과제를 안 만들고 바로 세션을 보낸다. SQLite 는 받아 주지만 PostgreSQL 은 거절(500)해서, 서버가 없는 과제를 먼저 만든다 |
+
+`pip install "psycopg[binary]"` 가 필요하다 (`requirements.txt` 에 있음).
 
 ## 배포할 때 (9주차)
 
