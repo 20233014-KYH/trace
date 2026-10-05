@@ -50,7 +50,9 @@ def summary(e: dict) -> str:
     if t in ("idle_start", "idle_end"):
         return t
     if t == "ai_msg":   # AI 질문·답 — 원문은 PC 에만, 체인엔 해시 전체 (제출 때 원문과 맞춰 봄 · docs/api.md 10-3)
-        return f"{e.get('tool','')} · {e.get('conv','')} · {e.get('turn','')} · {e.get('role','')} · {e.get('len',0)}자 · {e.get('hash','')}"
+        # history(이전 대화 · 받은 시각 모름)는 해석을 바꾸는 값이라 요약에 넣어 체인으로 보호한다 (PR #20 검토 ②)
+        return (f"{e.get('tool','')} · {e.get('conv','')} · {e.get('turn','')} · {e.get('role','')} · {e.get('len',0)}자 · {e.get('hash','')}"
+                + (" · 이전 대화" if e.get("history") else ""))
     return ""
 
 
