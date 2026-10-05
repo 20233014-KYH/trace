@@ -1,8 +1,10 @@
 // background.js — 탭이 바뀔 때마다 도메인을 수집기 다리(127.0.0.1:5077)에 알린다.
 // 서버 주소·세션 id·로그인은 모른다. 수집기가 받아서 체인에 넣고 서버로 보낸다.
-// 보내는 것: {type:"tab", domain, title}  — URL 전체·페이지 내용은 보내지 않는다.
+// 보내는 것: {type:"tab", browser, domain, title}  — URL 전체·페이지 내용은 보내지 않는다.
+//   browser 는 수집기가 이 도메인을 "이 브라우저 창"에만 쓰라고 (확장 없는 다른 브라우저 창에 섞이지 않게)
 
 const BRIDGE = "http://127.0.0.1:5077";
+const BROWSER = /Edg\//.test(navigator.userAgent) ? "edge" : /Firefox\//.test(navigator.userAgent) ? "firefox" : "chrome";
 let last = null;            // 같은 도메인 연속 전환은 한 번만
 let status = { recording: false, mode: null };
 
@@ -26,7 +28,7 @@ async function report(tab) {
   const domain = domainOf(tab.url);
   if (domain === last) return;
   last = domain;
-  const ev = { type: "tab", domain, title: domain ? (tab.title || "").slice(0, 80) : "(브라우저 내부 페이지)" };
+  const ev = { type: "tab", browser: BROWSER, domain, title: domain ? (tab.title || "").slice(0, 80) : "(브라우저 내부 페이지)" };
   try {
     const r = await fetch(BRIDGE + "/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ev) });
     console.log("[Trace] tab →", domain, r.status);

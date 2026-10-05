@@ -9,6 +9,7 @@ test_paste_source.py — 붙여넣기 출처가 "어느 사이트에서 복사�
   · 문서 제목에 "ChatGPT" · "Claude" 가 있어도 확장이 알려준 도메인이 이긴다 (AI 답으로 세지 않음)
   · 맥(창 제목 없음 · 앱 이름 "Google Chrome")에서도 확장 도메인으로 분류·출처 표기
   · 확장이 없으면 예전처럼 창 제목 키워드로 판별
+  · 크롬에만 확장이 있을 때, 크롬 탭 도메인이 확장 없는 엣지 창에 섞이지 않는다
 """
 import glob
 import json
@@ -35,7 +36,7 @@ from core.derive import derive                   # noqa: E402
 
 
 def run(steps):
-    """steps: ("win", 앱, 제목) · ("tab", 도메인, 제목) · ("copy", 글) · ("paste", 앱, 제목). 탭 이벤트 뒤엔 폴링 1번 (실제 1초 주기)."""
+    """steps: ("win", 앱, 제목) · ("tab", 도메인, 제목[, browser]) · ("copy", 글) · ("paste", 앱, 제목). 탭 이벤트 뒤엔 폴링 1번 (실제 1초 주기)."""
     with open(os.path.join(ROOT, "collector", "config.json"), encoding="utf-8") as f:
         cfg = json.load(f)
     cfg["data_dir"] = tempfile.mkdtemp()
@@ -48,7 +49,10 @@ def run(steps):
         if s[0] == "win":
             fg["v"] = (s[1], s[2]); c._tick()
         elif s[0] == "tab":
-            c._on_tab({"domain": s[1], "title": s[2]}); c._tick()
+            body = {"domain": s[1], "title": s[2], "browser": s[3] if len(s) > 3 else "chrome"}
+            if body["browser"] is None:
+                del body["browser"]                      # browser 를 안 보내는 옛 확장
+            c._on_tab(body); c._tick()
         elif s[0] == "copy":
             c._on_copy_key(); clip["t"] = s[1]; c._tick()
         elif s[0] == "paste":
@@ -84,6 +88,22 @@ CASES = [
     ("확장 없음 — 창 제목 키워드로 AI",
      [("win", "chrome.exe", "ChatGPT - Chrome"), ("copy", "AI 답"), ("paste", "Code.exe", "a.md")],
      True, "ai", "ChatGPT"),
+    ("엣지(확장 없음) 나무위키 — 창 제목으로 출처",
+     [("win", "Code.exe", "a.md"), ("win", "msedge.exe", "고양이 - 나무위키 - 개인 - Microsoft\u200b Edge"),
+      ("copy", "고양이는 동물"), ("paste", "Code.exe", "a.md")],
+     False, "other", "나무위키"),
+    ("크롬(확장) chatgpt → 엣지(확장 없음) 나무위키",
+     [("win", "chrome.exe", "ChatGPT - Chrome"), ("tab", "chatgpt.com", "ChatGPT"),
+      ("win", "msedge.exe", "고양이 - 나무위키 - 개인 - Microsoft\u200b Edge"), ("copy", "고양이는 동물"), ("paste", "Code.exe", "a.md")],
+     False, "other", "나무위키"),
+    ("엣지에도 확장 — 엣지 탭 도메인 사용",
+     [("win", "msedge.exe", "파이썬 예외 질문 - 개인 - Microsoft\u200b Edge"), ("tab", "chatgpt.com", "파이썬 예외 질문", "edge"),
+      ("copy", "AI 답변"), ("paste", "Code.exe", "a.md")],
+     True, "ai", "파이썬"),
+    ("옛 확장(browser 없음) — 브라우저 아무거나 (예전 동작)",
+     [("win", "chrome.exe", "대화 제목 - Chrome"), ("tab", "chatgpt.com", "대화 제목", None),
+      ("copy", "AI 답변"), ("paste", "Code.exe", "a.md")],
+     True, "ai", "대화 제목"),
 ]
 
 
