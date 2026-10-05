@@ -1,12 +1,12 @@
 // 분당 활동 레인 그래프 — 활성 창 / 직접 입력 / 붙여넣기 / 삭제·되돌리기
 // viewer.html 의 lanes() 를 그대로 옮김. 입력: session (계약 ②). 출력: SVG.
 import { COLORS, CAT, catColor, appName, srcName } from '../lib/format.jsx';
-import { KIND, clock } from '../lib/learn.js';
+import { KIND, clock } from '../lib/context.js';
 
 const LANE = { win: 26, mark: 30, typed: 110, paste: 90, edit: 40 };
 const GAP = 18;
 
-/** markers(Learn): [{id, m, kind}] → 활성 창 아래에 '학습 흐름' 레인. onMarker(id) · selected 로 맥락 패널과 연결 */
+/** markers: [{id, m, kind}] → 활성 창 아래에 AI 대화·내용 레인. onMarker(id) · selected 로 맥락 패널과 연결 */
 export default function Timeline({ s, width = 1000, markers = null, selected = null, onMarker = null }) {
   const W = width, L = 110, R = 20, M = s.minutes;
   const X = (m) => L + (m / M) * (W - L - R);
@@ -57,7 +57,7 @@ export default function Timeline({ s, width = 1000, markers = null, selected = n
         );
       })}
 
-      {/* 1b 학습 흐름 (Learn) — 맥락 마커. 누르면 오른쪽에 맥락 */}
+      {/* 1b AI 대화·내용 마커 — 누르면 오른쪽에 내용 */}
       {markers && <>
         <Label yy={y.mark + 15} t="학습 흐름" sub="오류·질문·참고·적용" />
         <line x1={L} y1={y.mark + LANE.mark / 2} x2={W - R} y2={y.mark + LANE.mark / 2} stroke="#eef0f3" />

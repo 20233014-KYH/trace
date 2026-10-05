@@ -1,14 +1,14 @@
 """
 pill.py — 알약 창 시제품 (목업 03·13·13b·13c · 결정 10·11).
 
-콘솔 대신 화면 오른쪽 아래에 작은 창 하나: [질문칸 (Learn 만)] 위, [알약] 아래.
+콘솔 대신 화면 오른쪽 아래에 작은 알약 하나 (9/28 개정: 질문칸·채팅 패널은 Learn 과 함께 삭제).
   · 프레임 없음 · 항상 위(on_top) · 투명 배경 · 알약을 잡아 끌면 옮겨짐
   · 알약 클릭 → 점 하나로 줄어드는 최소 모드 · ■ → 세션 종료(봉인) 후 창 닫힘
-  · 질문칸 클릭 → 그 자리 위로 채팅 패널 (서버 POST /chat) → ✕ 로 접힘
   · 모션은 없음 (9/22 결정 — 투명 창 크기를 단계별로 바꾸면 WebView 가 튄다. 나중에)
 
-수집기(collector.Collector)는 이 프로세스 안 스레드에서 그대로 돈다. 알약은 그 상태(경과·이벤트·맥락 수)를 1초마다 읽는다.
-    python app/pill.py --mode learn        (서버 켜져 있으면 /chat 도 됨 · --dry-run 이면 채팅은 안 됨)
+수집기(collector.Collector)는 이 프로세스 안 스레드에서 그대로 돈다. 알약은 그 상태(경과·기록 수·AI 대화 수)를 1초마다 읽는다.
+    python app/pill.py              (서버로 보냄 · config.json 의 server)
+    python app/pill.py --dry-run    (서버 없이 PC 에만)
 
 A 의 pywebview 골격에 넣을 때 참고용. 창 크기·API 이름은 pill.html 과 짝.
 """
@@ -28,16 +28,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "collector"))
 from collector import Collector  # noqa: E402
 
-# 창 크기 — pill.html 의 레이아웃과 짝 (논리 px). open = 패널 392 + 알약 26 + 여백
-SIZE = {"mini": (34, 34), "pill": (168, 34), "learn": (168, 72), "open": (368, 442)}
+# 창 크기 — pill.html 의 레이아웃과 짝 (논리 px)
+SIZE = {"mini": (34, 34), "pill": (168, 34)}
 MARGIN = 12
 
 
 class Api:
     """pill.html 이 pywebview.api.* 로 부르는 것. Collector·Window 는 밑줄로 숨긴다 (pywebview 가 공개 속성을 JS 에 노출하려 든다)"""
 
-    def __init__(self, c: Collector, server: str | None):
-        self._c, self._server, self._win = c, server, None
+    def __init__(self, c: Collector):
+        self._c, self._win = c, None
 
     def status(self):
         s = self._c._status()
@@ -46,7 +46,7 @@ class Api:
         return s
 
     def layout(self, name: str, dock: bool = False):
-        """창 크기를 바꾼다 — mini · pill · learn · open. 오른쪽 아래 모서리는 그 자리에 둔다 (끌어다 놓은 위치 유지).
+        """창 크기를 바꾼다 — mini · pill. 오른쪽 아래 모서리는 그 자리에 둔다 (끌어다 놓은 위치 유지).
         dock=True(처음 한 번)면 화면 오른쪽 아래에 붙인다."""
         w, h = SIZE[name]
         self._win.resize(w, h, FixPoint.SOUTH | FixPoint.EAST)   # 물리 픽셀로 계산 → 배율 오차 없음
@@ -54,21 +54,6 @@ class Api:
             ww, wh = _work_area()
             self._win.move(ww - w - MARGIN, wh - h - MARGIN)
         return name
-
-    def chat(self, question: str):
-        if not self._server:
-            return {"error": "dry-run — 서버 없이 실행 중이라 AI 답을 받을 수 없습니다"}
-        try:
-            import requests
-            r = requests.post(f"{self._server}/sessions/{self._c.session_id}/chat", json={"selection": "", "question": question}, timeout=60)
-            if r.status_code == 403:
-                return {"error": "Proof 세션에는 AI 기능이 없습니다"}
-            if r.status_code == 429:
-                return {"error": "이 세션의 채팅 상한(30회)에 닿았습니다"}
-            r.raise_for_status()
-            return r.json()
-        except Exception as e:
-            return {"error": f"서버 오류: {e}"}
 
     def stop(self):
         """■ — 봉인하고 창을 닫는다"""
@@ -120,18 +105,16 @@ def _make_transparent(window):
 def main():
     ap = argparse.ArgumentParser(description="Trace 알약 창 (시제품)")
     ap.add_argument("--config", default=os.path.join(HERE, "..", "collector", "config.json"))
-    ap.add_argument("--mode", choices=["proof", "learn"])
     ap.add_argument("--work")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     with open(a.config, encoding="utf-8") as f:
         cfg = json.load(f)
-    mode = a.mode or cfg.get("mode", "proof")
-    c = Collector(cfg, mode, a.work or cfg.get("work_id", "W_local"), a.dry_run)
+    c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
     threading.Thread(target=c.run, daemon=True, name="collector").start()
 
-    api = Api(c, None if a.dry_run else cfg["server"])
-    w, h = SIZE["learn" if mode == "learn" else "pill"]
+    api = Api(c)
+    w, h = SIZE["pill"]
     ww, wh = _work_area()
     api._win = webview.create_window(
         "Trace", os.path.join(HERE, "pill.html"), js_api=api,

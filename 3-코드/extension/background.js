@@ -4,13 +4,13 @@
 
 const BRIDGE = "http://127.0.0.1:5077";
 let last = null;            // 같은 도메인 연속 전환은 한 번만
-let status = { recording: false, mode: null };
+let status = { recording: false };
 
 async function refreshStatus() {
   try {
     const r = await fetch(BRIDGE + "/status");
-    status = r.ok ? await r.json() : { recording: false, mode: null };
-  } catch { status = { recording: false, mode: null }; }
+    status = r.ok ? await r.json() : { recording: false };
+  } catch { status = { recording: false }; }
   chrome.storage.session.set({ status });
   return status;
 }

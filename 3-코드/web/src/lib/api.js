@@ -10,14 +10,11 @@ async function call(method, path, body) {
 }
 
 export const getSession = (id) => call('GET', `/sessions/${id}`);                      // 4절 · session.json
-export const getContext = (id) => call('GET', `/sessions/${id}/context`);               // ★ 제안: 아직 계약에 없음 — {items:[…]} (Learn 만 · Proof 403)
-export const getReport  = (id) => call('GET', `/sessions/${id}/report`);                // 5절 · 없으면 이때 생성
-export const regenReport = (id) => call('POST', `/sessions/${id}/report`);              // 5절 · 세션당 3회 · 초과 429
-export const chat = (id, question, selection = '') => call('POST', `/sessions/${id}/chat`, { selection, question });   // 5절 · 30회
+export const getContext = (id) => call('GET', `/sessions/${id}/context`);               // 계약 4절 · {items:[…]} — 모든 세션 (9/28 개정 · 403 없음). 원문 PC 보관 뒤엔 은퇴 예정
 
 /** 오류 → 사람 말. 계약의 상태 코드 그대로 */
 export function explain(e) {
-  if (e.status === 403) return 'Proof 세션에는 AI 기능이 없습니다.';
+  if (e.status === 403) return '이 기록을 볼 권한이 없습니다.';
   if (e.status === 429) return '이 세션의 횟수 상한에 닿았습니다 (리포트 3회 · 채팅 30회).';
   if (e.status === 502) return 'AI 응답 실패 — 잠시 뒤 다시 시도하세요.';
   if (e.status === 404) return '세션이 없습니다.';

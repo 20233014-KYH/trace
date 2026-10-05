@@ -7,7 +7,7 @@ bridge.py — 브라우저 확장 → 수집기 로컬 다리 (127.0.0.1:5077)
                     그 밖의 맥락은 Learn 모드일 때만 옛 경로 (수집기가 거름)
 이렇게 하면 체인의 순서를 정하는 곳이 수집기 하나뿐이라 "PC 체인 = 서버 재계산" 이 유지된다.
 
-  GET  /status            → {session_id, mode, recording:true, learn_context:{...}}
+  GET  /status            → {session_id, work_id, recording:true, capture:{항목별 토글}}
   POST /event   {type:"tab", domain, title?, url?}            → 202
   POST /context {items:[{kind, text, meta}]}                  → 202 (기록 중이면 받음 · 거르는 건 수집기)
 """

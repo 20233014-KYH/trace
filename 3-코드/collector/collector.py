@@ -18,8 +18,8 @@ collector.py — Trace Tier 0 수집기 (윈도우 · 맥 상주 프로그램)
   시작: POST /api/works/{work}/sessions      종료: POST /api/sessions/{id}/end (root)
 
 실행:
-  python collector.py                          # config.json 의 mode / work_id / server
-  python collector.py --mode learn --work W1
+  python collector.py                          # config.json 의 work_id / server
+  python collector.py --work W1
   python collector.py --dry-run                # 서버 없이 콘솔 + 로컬 파일만
 """
 import argparse
@@ -311,8 +311,10 @@ class Sink:
 
 # ─────────────────────────── 수집기 본체 ───────────────────────────
 class Collector:
-    def __init__(self, cfg: dict, mode: str, work_id: str, dry_run: bool):
-        self.cfg, self.mode, self.work_id = cfg, mode, work_id
+    def __init__(self, cfg: dict, work_id: str, dry_run: bool):
+        # 9/28 개정: 모드(learn/proof) 없음 — 기록은 한 가지. 무엇을 담을지는 config 의 capture 항목별 토글만
+        self.cfg, self.work_id = cfg, work_id
+        self.capture = cfg.get("capture") or cfg.get("learn_context") or {}   # learn_context = 옛 이름 (옛 config 호환)
         self.clf = Classifier(os.path.join(HERE, "domains.json"))
         self.whitelist = {a.lower() for a in cfg.get("whitelist_apps", [])}
         data_dir = os.path.normpath(os.path.join(HERE, cfg.get("data_dir", "../data")))
@@ -336,6 +338,7 @@ class Collector:
         self._git = None
         self.started_at = time.time()   # 알약 창(app/pill.py)이 경과 시간·맥락 수를 읽는다
         self.ctx_count = 0
+        self.ai_count = 0           # AI 질문·답 수 (알약·팝업에 보임)
         self._ai_seen = set()       # (role, hash) — 같은 질문·답을 두 번 기록하지 않음 (새로고침·탭 재방문)
         self._ai_lock = threading.Lock()   # 다리는 요청마다 스레드 — 질문·답이 동시에 오면 파일 한 줄이 덮였다 (10/4 실사이트 시험)
         self._copy_at = 0.0
@@ -359,7 +362,7 @@ class Collector:
 
     def run(self):
         cfg = self.cfg
-        print(f"Trace collector v{VERSION}  mode={self.mode}  work={self.work_id}  session={self.session_id[:8]}…")
+        print(f"Trace collector v{VERSION}  work={self.work_id}  session={self.session_id[:8]}…")
         print(f"  server={'(dry-run)' if not self.sender else cfg['server']}"
               f"  keys={'on' if cfg.get('keys', {}).get('enabled') else 'off'}"
               f"  files={cfg.get('files', {}).get('watch_dirs') or 'off'}  data={self.sink.data_dir}")
@@ -367,9 +370,9 @@ class Collector:
 
         if self.sender:
             self.sender.start()
-            self.sender.session_start({"id": self.session_id, "mode": self.mode, "started_at": now_iso(),
+            self.sender.session_start({"id": self.session_id, "started_at": now_iso(),
                                        "device": {"name": platform.node(), "os": "win", "collector_version": VERSION}})
-        self.sink.emit({"type": "session_start", "mode": self.mode, "work_id": self.work_id, "idle_after_sec": self.idle_after})
+        self.sink.emit({"type": "session_start", "work_id": self.work_id, "idle_after_sec": self.idle_after})
 
         if cfg.get("clipboard", {}).get("enabled", True):
             self._clip_hash = self._read_clip_hash()
@@ -396,12 +399,12 @@ class Collector:
         if cfg.get("office", {}).get("enabled", True) and sys.platform == "win32":
             try:
                 from office import OfficeWatcher
-                with_text = self.mode == "learn" and cfg.get("learn_context", {}).get("office", False)
+                with_text = self.capture.get("office", True)          # 문서 텍스트 — 결과물–AI 답 비교 재료 (PC 에만)
                 self._office = OfficeWatcher(self.sink.emit, lambda exe: bool(self._cur) and self._cur[0].lower() == exe.lower(),
                                              poll_sec=cfg.get("office", {}).get("poll_sec", 5),
                                              emit_context=self._on_context if with_text else None)
                 self._office.start()
-                print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트 맥락' if with_text else '만'})")
+                print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트(PC 에만)' if with_text else '만'})")
             except Exception as e:
                 print(f"  Office 감시 실패 ({e}) — 없이 계속")
         fcfg = cfg.get("files", {})
@@ -409,10 +412,10 @@ class Collector:
             from file_watch import FileWatcher
             on_saved = None
             if fcfg.get("diff", True):
-                # 저장 파일 diff — 에디터 무관. 숫자는 두 모드 체인에, 바뀐 텍스트는 Learn 맥락으로만 (Office 와 같은 원칙)
+                # 저장 파일 diff — 에디터 무관. 숫자는 체인에, 바뀐 텍스트는 PC 의 context 파일에만 (Office 와 같은 원칙)
                 from file_diff import FileDiff
                 self._fdiff = FileDiff(self.sink.emit, lambda: self._cur[0] if self._cur else "", lambda: self._last_paste,
-                                       emit_context=self._on_context if self.mode == "learn" else None)
+                                       emit_context=self._on_context)
                 on_saved = self._fdiff.on_saved
             self._files = FileWatcher(fcfg["watch_dirs"], fcfg.get("ignore_patterns", []), self.sink.emit, base=HERE, on_saved=on_saved)
             if on_saved:
@@ -420,9 +423,9 @@ class Collector:
                 print(f"  저장 파일 diff 켜짐 · 기준 스냅샷 {n}개 (텍스트 파일 · 내용은 메모리에만)")
             self._files.start()
             if fcfg.get("git", True):
-                # git 커밋·푸시 — 숫자(해시·파일·줄 수)는 체인, 커밋 메시지는 Learn 맥락만 (결정 13)
+                # git 커밋·푸시 — 숫자(해시·파일·줄 수)는 체인, 커밋 메시지는 PC 의 context 파일에만 (결정 13)
                 from git_watch import GitWatcher
-                self._git = GitWatcher(self._files.dirs, self.sink.emit, emit_context=self._on_context if self.mode == "learn" else None)
+                self._git = GitWatcher(self._files.dirs, self.sink.emit, emit_context=self._on_context)
                 if self._git.repos:
                     self._git.start()
                     print(f"  git 감시 켜짐 · 저장소 {len(self._git.repos)}개 ({', '.join(os.path.basename(r) for r in self._git.repos[:5])})")
@@ -514,9 +517,9 @@ class Collector:
 
     # ── 브라우저 확장 (bridge) ──
     def _status(self):
-        return {"session_id": self.session_id, "mode": self.mode, "work_id": self.work_id, "recording": not self._stop.is_set(),
-                "learn_context": self.cfg.get("learn_context", {}),
-                "elapsed_sec": int(time.time() - self.started_at), "events": self.sink._seq, "ctx_count": self.ctx_count}
+        return {"session_id": self.session_id, "work_id": self.work_id, "recording": not self._stop.is_set(),
+                "capture": self.capture, "learn_context": self.capture,   # learn_context = 옛 이름 (확장 0.3.0 이 읽음)
+                "elapsed_sec": int(time.time() - self.started_at), "events": self.sink._seq, "ctx_count": self.ctx_count, "ai_count": self.ai_count}
 
     def _on_tab(self, body):
         """확장이 보낸 탭 전환. 도메인으로 분류해 체인에 넣는다 (창 제목 키워드보다 정확)."""
@@ -528,21 +531,20 @@ class Collector:
     AI_KINDS = {"ai_question": "question", "ai_answer": "answer"}
 
     def _on_context(self, items):
-        """확장이 보낸 항목.
-        · AI 질문·답 원문 → 모드와 상관없이 _on_ai_msg (원문은 PC 에만, 체인엔 해시 · docs/api.md 10절)
-        · 그 밖의 맥락(선택 텍스트·복사 발췌·문서 diff) → 옛 Learn 경로 그대로 (모드 정리 때 같이 바꿈)"""
+        """확장·Office·파일 diff·git 이 보낸 내용 항목. 원문은 전부 PC 에만 (docs/api.md 10절 · 10/1 결정).
+        · AI 질문·답 → _on_ai_msg (가림 → 해시 → ai-messages 파일 + 체인 ai_msg)
+        · 그 밖(선택 텍스트·복사 발췌·문서 텍스트·바뀐 줄·커밋 메시지) → context-날짜.jsonl 에만.
+          서버 /context 로는 보내지 않는다 (예전 Learn 은 보냈음). 제출 때 학생이 고른 것만 나간다"""
         ai = [it for it in items if it.get("kind") in self.AI_KINDS]
         for it in ai:
             self._on_ai_msg(it)
         items = [it for it in items if it.get("kind") not in self.AI_KINDS]
-        if not items or self.mode != "learn":
+        if not items:
             return
         self.ctx_count += len(items)
         for it in items:
-            print(f"        ↳ 맥락 {it.get('kind')}  {(it.get('text') or '')[:40]!r}")
-        if self.sender:
-            self.sender.context(items)
-        with open(os.path.join(self.sink.data_dir, f"context-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
+            print(f"        ↳ 내용 {it.get('kind')}  {(it.get('text') or '')[:40]!r}  (PC 에만)")
+        with self._ai_lock, open(os.path.join(self.sink.data_dir, f"context-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             for it in items:
                 f.write(json.dumps({"session_id": self.session_id, **it}, ensure_ascii=False) + "\n")
 
@@ -571,6 +573,7 @@ class Collector:
             ev["history"] = True        # 확장이 켜지기 전부터 화면에 있던 대화 — 받은 시각은 모름
         ev = self.sink.emit(ev)
         self.ctx_count += 1
+        self.ai_count += 1
         with open(os.path.join(self.sink.data_dir, f"ai-messages-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"session_id": self.session_id, "event_id": ev["id"], "ts": ev["ts"], "seen_at": it.get("ts"),
                                 "tool": ev["tool"], "model": meta.get("model", ""), "conv": ev["conv"], "turn": ev["turn"],
@@ -605,14 +608,13 @@ class Collector:
 def main():
     ap = argparse.ArgumentParser(description="Trace Tier 0 collector")
     ap.add_argument("--config", default=os.path.join(HERE, "config.json"))
-    ap.add_argument("--mode", choices=["proof", "learn"], help="기본: config.mode")
     ap.add_argument("--work", help="work id (기본: config.work_id)")
     ap.add_argument("--dry-run", action="store_true", help="서버로 보내지 않고 콘솔·로컬 파일만")
     ap.add_argument("--seconds", type=int, default=0, help="테스트용: N초 뒤 자동 종료(봉인)")
     a = ap.parse_args()
     with open(a.config, encoding="utf-8") as f:
         cfg = json.load(f)
-    c = Collector(cfg, a.mode or cfg.get("mode", "proof"), a.work or cfg.get("work_id", "W_local"), a.dry_run)
+    c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
     signal.signal(signal.SIGINT, lambda *_: c.stop())
     try:
         signal.signal(signal.SIGBREAK, lambda *_: c.stop())

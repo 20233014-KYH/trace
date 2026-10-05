@@ -1,6 +1,5 @@
 {
   "_comment": "Trace 수집기 설정. 학생이 직접 고친다. 여기 없는 앱은 '기타'로만 기록되고 창 제목은 남지 않는다.",
-  "mode": "proof",
   "work_id": "W_local",
   "server": "http://127.0.0.1:5000/api",
   "poll_interval_sec": 1.0,
@@ -57,8 +56,8 @@
     "_comment": "브라우저 확장이 이벤트를 던지는 로컬 포트 127.0.0.1:5077",
     "enabled": true
   },
-  "learn_context": {
-    "_comment": "Learn 모드에서 확장이 보내는 맥락 항목별 토글 (목업 17). Proof 세션에는 적용 안 됨.",
+  "capture": {
+    "_comment": "내용(원문) 항목별 토글 — 첫 실행 동의 화면(목업 17)에서 학생이 고른다. 원문은 전부 PC 에만 저장되고 서버엔 해시만 간다. ai_question·ai_answer = AI 사이트의 질문·답 원문 · ai_answer_excerpt = 복사한 발췌 · selection = AI 로 가기 전 드래그한 글 · office = Word·PowerPoint 텍스트",
     "ai_question": true,
     "ai_answer": true,
     "ai_answer_excerpt": true,
@@ -67,7 +66,7 @@
     "office": true
   },
   "office": {
-    "_comment": "Word·PowerPoint 문서 변화. 숫자(+n자/-m자·붙여넣은 자리·저장 통계)는 두 모드 공통 이벤트, 텍스트는 learn_context.office 가 켜진 Learn 세션에서만",
+    "_comment": "Word·PowerPoint 문서 변화. 숫자(+n자/-m자·붙여넣은 자리·저장 통계)는 체인에, 텍스트는 capture.office 가 켜져 있으면 PC 에만",
     "enabled": true,
     "poll_sec": 5
   },
