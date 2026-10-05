@@ -56,12 +56,12 @@ class Token(Base):
 
 
 class Work(Base):
-    """하나의 과제·작업. 한 Work = 한 모드 (learn 또는 proof)."""
+    """하나의 과제. 9/30 개정: 모드·과제 유형 없음. ai_scope = 교수가 허용한 범위 메모(선택, 판단에 안 씀)."""
     __tablename__ = "works"
     id = Column(String(64), primary_key=True)
     user_id = Column(String(64), ForeignKey("users.id"))
     title = Column(String(255))
-    mode = Column(String(16))
+    ai_scope = Column(Text)
     created_at = Column(DateTime)
     sessions = relationship("Sess", back_populates="work")
 
@@ -81,7 +81,7 @@ class Sess(Base):
     id = Column(String(64), primary_key=True)
     work_id = Column(String(64), ForeignKey("works.id"))
     device_id = Column(String(64))
-    mode = Column(String(16))
+    mode = Column(String(16))              # 쓰지 않음 — 9/28 이전 기록을 읽기 위해 칸만 남김 (계약 v2.1)
     started_at = Column(String(40))
     ended_at = Column(String(40))
     sealed_at = Column(String(40))
@@ -123,7 +123,7 @@ class Batch(Base):
 
 
 class Context(Base):
-    """Learn 맥락. Proof 세션에는 저장하지 않는다 (계약 5절)."""
+    """AI 대화 기록 (옛 Learn 맥락). 9/28 부터 모든 세션에서 받는다 (계약 4절)."""
     __tablename__ = "contexts"
     id = Column(String(64), primary_key=True)
     session_id = Column(String(64), ForeignKey("sessions.id"))
@@ -134,19 +134,26 @@ class Context(Base):
     meta = Column(JSON)
 
 
-class Report(Base):
-    __tablename__ = "reports"
-    session_id = Column(String(64), ForeignKey("sessions.id"), primary_key=True)
-    body = Column(JSON)
-    generated_at = Column(String(40))
-    provider = Column(String(32))
-    runs = Column(Integer, default=0)
-    chat_turns = Column(Integer, default=0)
-
-
 def init():
     Base.metadata.create_all(engine)
+    _칸_추가()
     return engine
+
+
+def _칸_추가():
+    """★ 마이그레이션 — 이미 있는 DB 파일에 새 칸을 넣는다 ★
+
+    create_all 은 '없는 표'만 만든다. 이미 있는 표에 칸이 늘어난 것은 모른다.
+    그래서 9/23 에 만든 trace.db 의 works 표에는 ai_scope 칸이 없고,
+    그대로 켜면 "no such column: works.ai_scope" 로 서버가 죽는다.
+    → 칸이 없으면 ALTER TABLE 로 붙인다. 이미 있으면 아무것도 안 한다 (여러 번 켜도 안전).
+    """
+    from sqlalchemy import inspect, text
+    있는칸 = {c["name"] for c in inspect(engine).get_columns("works")}
+    if "ai_scope" not in 있는칸:
+        with engine.begin() as 연결:
+            연결.execute(text("ALTER TABLE works ADD COLUMN ai_scope TEXT"))
+        print("  DB: works 표에 ai_scope 칸을 붙였습니다 (한 번만)")
 
 
 if __name__ == "__main__":

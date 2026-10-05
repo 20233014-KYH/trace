@@ -9,10 +9,8 @@ A 가 진짜 Backend 를 만들 때 "서버가 해야 할 일" 의 기준. DB �
   POST /api/sessions/<id>/events          batch 수신 → core/chain.py 로 체인 재계산 → chain_head 대조 → received_at 기록 → 지연 판정
   POST /api/sessions/<id>/end             루트 재계산 · 대조 · 봉인 · (흉내) 앵커 pending
   GET  /api/sessions/<id>                 core/derive.py 로 session.json 구조 반환 (화면용)
-  POST /api/sessions/<id>/context         Learn 맥락 (learn 세션만, proof 면 403)
-  GET  /api/sessions/<id>/report          리포트 — 없으면 **열 때 생성** (Learn 만 · core/llm.py · 세션 종료 시 자동 생성 없음)
-  POST /api/sessions/<id>/report          다시 생성 (세션당 3회 상한에 포함)
-  POST /api/sessions/<id>/chat            Side Chat 한 턴 (Learn 만 · 세션당 30회)
+  POST /api/sessions/<id>/context         AI 대화 기록 (9/28: 모든 세션 · 항목 64KB · 요청 1MB 넘으면 413)
+  GET  /api/sessions/<id>/context         AI 대화 기록 읽기
   GET  /api/sessions/<id>/events          원본 이벤트
   GET  /api/health
 """
@@ -27,7 +25,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 from core import chain as C          # noqa: E402
 from core.derive import derive       # noqa: E402
-from core import llm                 # noqa: E402  Learn 만 · 키는 환경변수 · 기본 fake
 
 KST = timezone(timedelta(hours=9))
 LATE_SEC = 5 * 60                    # 이벤트 시각 vs 수신 시각 차이가 이보다 크면 "지연 수신"
@@ -65,10 +62,10 @@ def health():
 def create_session(work):
     b = request.get_json(force=True)
     s = sess(b["id"], create=True)
-    existed = "mode" in s["meta"]
-    s["meta"].update({"work_id": work, "mode": b.get("mode"), "device": b.get("device"), "started_at": b.get("started_at")})
-    print(f"← session {b['id'][:8]}…  work={work} mode={b.get('mode')}  {'(이미 있음)' if existed else ''}")
-    return jsonify(id=b["id"], work_id=work, mode=b.get("mode"), started_at=b.get("started_at")), 200 if existed else 201
+    existed = "work_id" in s["meta"]
+    s["meta"].update({"work_id": work, "device": b.get("device"), "started_at": b.get("started_at")})
+    print(f"← session {b['id'][:8]}…  work={work}  {'(이미 있음)' if existed else ''}")
+    return jsonify(id=b["id"], work_id=work, started_at=b.get("started_at")), 200 if existed else 201
 
 
 @app.post("/api/sessions/<sid>/events")
@@ -131,9 +128,11 @@ def context(sid):
     s = sess(sid)
     if not s:
         return jsonify(error="not_found"), 404
-    if s["meta"].get("mode") != "learn":
-        return jsonify(error="not_learn_mode"), 403
+    if (request.content_length or 0) > 1024 * 1024:
+        return jsonify(error="too_large", message="한 요청은 1MB 까지입니다"), 413
     items = request.get_json(force=True).get("items", [])
+    if any(len((it.get("text") or "").encode("utf-8")) > 64 * 1024 for it in items):
+        return jsonify(error="too_large", message="한 항목은 64KB 까지입니다"), 413
     s.setdefault("context", []).extend(items)
     with open(os.path.join(DATA, f"{sid}.context.jsonl"), "a", encoding="utf-8") as f:
         for it in items:
@@ -142,68 +141,13 @@ def context(sid):
     return jsonify(accepted=len(items))
 
 
-REPORT_MAX, CHAT_MAX = 3, 30      # 요금 상한 — 한 명이 다 쓰지 못하게
-
-
-def _learn_only(sid):
+@app.get("/api/sessions/<sid>/context")
+def get_context(sid):
+    """실제 서버(server/app.py)에는 9/21 에 들어갔는데 여기엔 없었다 → 계약 4절대로 맞춤 (10/3)"""
     s = sess(sid)
     if not s:
-        return None, (jsonify(error="not_found"), 404)
-    if s["meta"].get("mode") != "learn":
-        return None, (jsonify(error="not_learn_mode", message="Proof 세션은 AI 를 부르지 않는다"), 403)
-    return s, None
-
-
-@app.post("/api/sessions/<sid>/report")
-def make_report(sid):
-    s, err = _learn_only(sid)
-    if err:
-        return err
-    if s.get("report_runs", 0) >= REPORT_MAX:
-        return jsonify(error="quota", message=f"리포트 재생성 {REPORT_MAX}회 초과"), 429
-    s["report_runs"] = s.get("report_runs", 0) + 1
-    session = derive(s["events"]) if s["events"] else {"flow": []}
-    try:
-        rep = llm.make_report(session, s.get("context", []))
-    except Exception as e:
-        return jsonify(error="llm_failed", message=str(e)), 502
-    s["report"] = {"status": "ready", **rep, "generated_at": now().isoformat(timespec="seconds"),
-                   "provider": llm.PROVIDER, "runs": s["report_runs"]}
-    print(f"← report {sid[:8]}…  {llm.PROVIDER}  topics {len(rep['topics'])} · struggles {len(rep['struggles'])}")
-    return jsonify(s["report"])
-
-
-@app.get("/api/sessions/<sid>/report")
-def get_report(sid):
-    """리포트는 학생이 열 때 만든다 (세션 종료 시 자동 생성 안 함 — 안 여는 세션에 AI 비용을 안 쓰기 위해).
-    처음 열면 여기서 생성(1회로 셈), 이후엔 저장된 것을 준다. 다시 만들려면 POST."""
-    s, err = _learn_only(sid)
-    if err:
-        return err
-    if s.get("report"):
-        return jsonify(s["report"])
-    return make_report(sid)
-
-
-@app.post("/api/sessions/<sid>/chat")
-def chat(sid):
-    s, err = _learn_only(sid)
-    if err:
-        return err
-    if s.get("chat_turns", 0) >= CHAT_MAX:
-        return jsonify(error="quota", message=f"Side Chat {CHAT_MAX}회 초과"), 429
-    b = request.get_json(force=True)
-    hist = s.setdefault("chat", [])
-    try:
-        answer = llm.side_chat(b.get("selection", ""), b.get("question", ""), hist, s.get("context", []))
-    except Exception as e:
-        return jsonify(error="llm_failed", message=str(e)), 502
-    s["chat_turns"] = s.get("chat_turns", 0) + 1
-    hist += [{"role": "user", "content": b.get("question", "")}, {"role": "assistant", "content": answer}]
-    # Side Chat 대화도 맥락으로 남긴다 (목업 17 의 항목 · 리포트의 "추가 학습" 에 반영)
-    s.setdefault("context", []).append({"ts": now().isoformat(timespec="seconds"), "source": "sidechat", "kind": "chat",
-                                        "text": f"Q: {b.get('question','')[:200]} / A: {answer[:300]}", "meta": {}})
-    return jsonify(answer=answer, turns=s["chat_turns"])
+        return jsonify(error="not_found"), 404
+    return jsonify(items=sorted(s.get("context", []), key=lambda i: i.get("ts") or ""))
 
 
 @app.get("/api/sessions/<sid>")
@@ -212,7 +156,7 @@ def get_session(sid):
     if not s or not s["events"]:
         return jsonify(error="not_found"), 404
     out = derive(s["events"])
-    out.update({"work_id": s["meta"].get("work_id"), "mode": s["meta"].get("mode"),
+    out.update({"work_id": s["meta"].get("work_id"),
                 "sealed_at": (s["sealed"] or {}).get("sealed_at"),
                 "anchor": (s["sealed"] or {}).get("anchor", {}).get("status", "none"),
                 "integrity_ok": s["integrity_ok"], "late_batches": sum(1 for x in s["batches"] if x["late"])})
