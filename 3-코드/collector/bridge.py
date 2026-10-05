@@ -3,12 +3,13 @@ bridge.py — 브라우저 확장 → 수집기 로컬 다리 (127.0.0.1:5077)
 
 확장은 서버 주소도, 세션 id도, 로그인도 모른다. 그냥 이 다리에 던진다. 수집기가 받아서
   · tab 이벤트   → 자기 체인에 넣고(창 전환과 같은 순서로) 서버로 batch 전송
-  · context 항목 → Learn 모드일 때만 서버 /sessions/{id}/context 로 전달 (체인에는 안 넣음)
+  · context 항목 → AI 질문·답 원문은 가려서 PC 에 저장 + 체인엔 해시만(ai_msg) — 모드 상관없이
+                    그 밖의 맥락은 Learn 모드일 때만 옛 경로 (수집기가 거름)
 이렇게 하면 체인의 순서를 정하는 곳이 수집기 하나뿐이라 "PC 체인 = 서버 재계산" 이 유지된다.
 
   GET  /status            → {session_id, mode, recording:true, learn_context:{...}}
   POST /event   {type:"tab", domain, title?, url?}            → 202
-  POST /context {items:[{kind, text, meta}]}                  → 202 (learn 모드가 아니면 403)
+  POST /context {items:[{kind, text, meta}]}                  → 202 (기록 중이면 받음 · 거르는 건 수집기)
 """
 import json
 import threading
@@ -52,8 +53,8 @@ def start(on_tab, on_context, status):
                     return self._json(400, {"error": "only_tab_events"})
                 on_tab(body); return self._json(202, {"ok": True})
             if self.path == "/context":
-                if status().get("mode") != "learn":
-                    return self._json(403, {"error": "not_learn_mode"})
+                if not status().get("recording"):
+                    return self._json(409, {"error": "not_recording"})
                 items = body.get("items") or []
                 on_context(items); return self._json(202, {"accepted": len(items)})
             self._json(404, {"error": "not_found"})

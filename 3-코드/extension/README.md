@@ -20,7 +20,7 @@ Learn 모드일 때만 맥락(AI 질문 · 답변 발췌 · 선택 텍스트)을
 |---|---|---|
 | `manifest.json` | 권한: tabs·storage · 다리(127.0.0.1:5077) · AI 사이트 5곳에 content.js | 뼈대 |
 | `background.js` | 탭 활성화·주소 변경·창 포커스 → 도메인 → `/event`. 같은 도메인 연속은 한 번만 | **동작** (다리 테스트 완료) |
-| `content.js` | AI 사이트에서 선택 텍스트 · 복사한 답변 · Enter 로 보낸 질문 → `/context`. 수집기가 Learn 모드일 때만 | 뼈대 — 사이트별 입력창 셀렉터 TODO |
+| `content.js` | **AI 질문·답 원문** — 복사 안 해도 화면의 질문·답 덩어리를 지켜보다가, 글이 멈추고(질문 0.6초·답 2초) 생성 중 표시가 사라지면 `/context` 로. 사이트별 셀렉터는 ChatGPT·Claude·Gemini (`SITES`), 나머지 사이트는 입력창으로 질문만. 대화를 연 직후 뜬 메시지는 `history`(이전 대화). 수집기가 가려서(API 키·이메일·전화·주민번호) PC 에 저장하고 체인엔 `ai_msg`(해시만) — 모드 상관없음 | **동작** — ChatGPT 실사이트 확인(10/4: 이전 대화 4건 history · 새 질문·답 · 해시·체인 일치) · Claude·Gemini 는 시험대만 |
 | `popup.html/js` | 수집기 상태 · 모드 · 맥락 토글 표시 | 뼈대 |
 | `domains.json` | 분류표 (수집기와 같은 파일) | 복사본 — 수집기 것을 기준으로 동기화 |
 
@@ -28,6 +28,14 @@ Learn 모드일 때만 맥락(AI 질문 · 답변 발췌 · 선택 텍스트)을
 - URL 전체·페이지 내용은 보내지 않는다. 탭 이벤트는 **도메인 + 제목 80자**.
 - 맥락은 항목별 토글(수집기 `config.json`의 `learn_context`)을 따르고, 꺼진 항목은 content.js 가 아예 안 보낸다.
 - 수집기가 꺼져 있으면 이벤트를 버린다 (확장이 따로 쌓지 않음 — 기록의 원본은 항상 수집기).
+
+## 알아둘 것 (10/4 실사이트 시험에서)
+- **ChatGPT 는 화면에 안 보이는 탭에서는 답을 그리지 않는다** (`*-render-state="pending"`). 학생이 질문하고 바로 다른 탭으로 가면, 돌아와서 답이 그려질 때 잡힌다 — 그래서 ai_msg 시각은 "받은 시각"이 아니라 "화면에 완성된 시각"이다.
+- ChatGPT 는 2026-10 화면에서 `.markdown` 이 없다. 답 덩어리 `[data-message-author-role=assistant]` 의 `*-render-state="ready"` + 위쪽 `*-response-state="complete"` 를 생성 끝으로 본다 (속성 이름 가운데 글자가 바뀌므로 끝부분으로 찾음).
+- **진단:** 그 사이트에서 `localStorage.traceDebug = "1"` 을 넣고 새로고침하면 `<html data-trace-debug>` 에 `{ver, site, recording, scans, msgs, sent, lastErr}` 가 뜬다. 평소엔 아무것도 안 남긴다.
+
+## 시험대 (사이트 없이 content.js 확인)
+`python -m http.server 5180` 을 이 폴더에서 켜고 `http://localhost:5180/test/harness.html` (ChatGPT 흉내) · `?site=Claude` — 이전 대화 · 질문 · 생성 중인 답 · 생성 끝 · 다시 생성을 흉내 내고 8가지를 판정한다.
 
 ## 다음
 - 사이트별 질문 입력창 셀렉터 (claude.ai · chatgpt.com · gemini) → `ai_question` 정확도

@@ -56,6 +56,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # ../core
 from core import chain as C          # noqa: E402
 from classify import Classifier      # noqa: E402
+from mask import mask                # noqa: E402
 
 VERSION = "0.2.0"
 BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}   # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
@@ -270,6 +271,7 @@ class Sink:
         self._print(ev)
         if self.sender:
             self.sender.event(ev)
+        return ev
 
     def _print(self, ev):
         t, k = ev["ts"][11:19], ev["type"]
@@ -293,6 +295,8 @@ class Sink:
             body = f"{ev['app']} · {ev['file'][:30]} · 붙여넣은 자리: {ev['where']}"
         elif k == "doc_save":
             body = f"{ev['app']} · {ev['file'][:30]} · 저장 · " + " · ".join(f"{k2} {v}" for k2, v in ev.items() if k2 in ('chars', 'words', 'slides', 'paragraphs'))
+        elif k == "ai_msg":
+            body = f"{ev['tool']} · {ev['role']:8} · 턴 {ev.get('turn', '')} · {ev['len']}자 · {ev['hash'][:23]}…" + (f" · 가림 {ev['masked']}" if ev.get('masked') else "") + (" · (이전 대화)" if ev.get('history') else "")
         elif k == "heartbeat":
             body = ""
         else:
@@ -332,6 +336,8 @@ class Collector:
         self._git = None
         self.started_at = time.time()   # 알약 창(app/pill.py)이 경과 시간·맥락 수를 읽는다
         self.ctx_count = 0
+        self._ai_seen = set()       # (role, hash) — 같은 질문·답을 두 번 기록하지 않음 (새로고침·탭 재방문)
+        self._ai_lock = threading.Lock()   # 다리는 요청마다 스레드 — 질문·답이 동시에 오면 파일 한 줄이 덮였다 (10/4 실사이트 시험)
         self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
         self._keys = None
@@ -519,8 +525,18 @@ class Collector:
         self._tab = (domain, cat, body.get("title", ""))
         self.sink.emit({"type": "tab", "domain": domain, "category": cat, "title": (body.get("title") or "")[:80]})
 
+    AI_KINDS = {"ai_question": "question", "ai_answer": "answer"}
+
     def _on_context(self, items):
-        """Learn 맥락 — 체인에 안 넣고 서버 /context 로만. 로컬에도 남긴다."""
+        """확장이 보낸 항목.
+        · AI 질문·답 원문 → 모드와 상관없이 _on_ai_msg (원문은 PC 에만, 체인엔 해시 · docs/api.md 10절)
+        · 그 밖의 맥락(선택 텍스트·복사 발췌·문서 diff) → 옛 Learn 경로 그대로 (모드 정리 때 같이 바꿈)"""
+        ai = [it for it in items if it.get("kind") in self.AI_KINDS]
+        for it in ai:
+            self._on_ai_msg(it)
+        items = [it for it in items if it.get("kind") not in self.AI_KINDS]
+        if not items or self.mode != "learn":
+            return
         self.ctx_count += len(items)
         for it in items:
             print(f"        ↳ 맥락 {it.get('kind')}  {(it.get('text') or '')[:40]!r}")
@@ -529,6 +545,37 @@ class Collector:
         with open(os.path.join(self.sink.data_dir, f"context-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             for it in items:
                 f.write(json.dumps({"session_id": self.session_id, **it}, ensure_ascii=False) + "\n")
+
+    def _on_ai_msg(self, it):
+        """AI 질문·답 원문 하나. ① 가린다 ② 가린 글로 해시 ③ 원문은 PC 의 ai-messages-날짜.jsonl
+        ④ 체인엔 ai_msg{tool, conv, turn, role, len, hash} 만 → 서버로는 해시만 간다. 원문은 제출 때 학생이 고른 것만."""
+        with self._ai_lock:
+            self._on_ai_msg_locked(it)
+
+    def _on_ai_msg_locked(self, it):
+        text = (it.get("text") or "").strip()
+        if not text:
+            return
+        role = self.AI_KINDS[it["kind"]]
+        text, n_masked = mask(text)
+        h = sha256_text(text)
+        if (role, h) in self._ai_seen:
+            return
+        self._ai_seen.add((role, h))
+        meta = it.get("meta") or {}
+        ev = {"type": "ai_msg", "tool": meta.get("tool") or meta.get("domain", ""), "conv": meta.get("conv", ""),
+              "turn": meta.get("turn", ""), "role": role, "len": len(text), "hash": h}
+        if n_masked:
+            ev["masked"] = n_masked
+        if meta.get("history"):
+            ev["history"] = True        # 확장이 켜지기 전부터 화면에 있던 대화 — 받은 시각은 모름
+        ev = self.sink.emit(ev)
+        self.ctx_count += 1
+        with open(os.path.join(self.sink.data_dir, f"ai-messages-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"session_id": self.session_id, "event_id": ev["id"], "ts": ev["ts"], "seen_at": it.get("ts"),
+                                "tool": ev["tool"], "model": meta.get("model", ""), "conv": ev["conv"], "turn": ev["turn"],
+                                "role": role, "hash": h, "masked": n_masked, "history": bool(meta.get("history")),
+                                "url": meta.get("url", ""), "text": text}, ensure_ascii=False) + "\n")
 
     def stop(self):
         self._stop.set()

@@ -8,7 +8,7 @@ chrome.runtime.sendMessage({ type: "status" }).then((s) => {
   html += `<div class="row"><span>탭 전환</span><span>보냄</span></div>`;
   if (s.mode === "learn") {
     const lc = s.learn_context || {};
-    const names = { ai_question: "AI 질문", ai_answer_excerpt: "답변 발췌", selection: "선택 텍스트", page: "학습 페이지" };
+    const names = { ai_question: "AI 질문", ai_answer: "AI 답 원문", ai_answer_excerpt: "답변 발췌", selection: "선택 텍스트", page: "학습 페이지" };
     for (const k of Object.keys(names)) html += `<div class="row"><span>${names[k]}</span><span style="color:${lc[k] ? "#047857" : "#9ca3af"}">${lc[k] ? "켜짐" : "꺼짐"}</span></div>`;
   } else {
     html += `<div class="row muted">Proof 모드 — 내용(맥락)은 보내지 않습니다.</div>`;

@@ -1,0 +1,99 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Trace content.js 시험대</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; }
+  #chat { border: 1px solid #ccc; padding: 8px; margin-bottom: 12px; }
+  #chat > div { margin: 6px 0; padding: 6px; background: #f5f5f5; }
+  pre { background: #111; color: #eee; padding: 8px; white-space: pre-wrap; }
+  .ok { color: #0a0; font-weight: bold; } .bad { color: #c00; font-weight: bold; }
+</style>
+<p>시험대 — <b id="site"></b> 흉내 화면. 약 12초 뒤 결과가 아래에 뜬다. <code>?site=Claude</code> 로 바꿀 수 있음.</p>
+<div id="chat"></div>
+<div id="verdict"></div>
+<pre id="out">(진행 중…)</pre>
+
+<script>
+// ── chrome 흉내: 수집기는 "기록 중", AI 질문·답 토글 켬 ──
+window.__sent = [];
+window.chrome = { runtime: { sendMessage: async (msg) => {
+  if (msg.type === "status") return { recording: true, learn_context: { ai_question: true, ai_answer: true } };
+  if (msg.type === "context") return { ok: true };
+} } };
+const SITE = new URLSearchParams(location.search).get("site") || "ChatGPT";
+window.__TRACE_SITE = SITE;
+document.getElementById("site").textContent = SITE;
+
+// ── 사이트별 메시지 덩어리 만들기 ──
+const chat = document.getElementById("chat");
+function addMsg(role, text, opt = {}) {
+  const el = document.createElement("div");
+  if (SITE === "ChatGPT") {
+    el.setAttribute("data-message-author-role", role === "q" ? "user" : "assistant");
+    el.setAttribute("data-message-id", opt.id || crypto.randomUUID());
+    if (role === "a") el.setAttribute("data-message-model-slug", "gpt-5-6-luna");
+    const body = document.createElement("div");
+    body.className = role === "q" ? "whitespace-pre-wrap" : "markdown";
+    body.innerText = text;
+    el.appendChild(body);
+  } else {   // Claude
+    if (role === "q") { el.setAttribute("data-testid", "user-message"); el.innerText = text; }
+    else {
+      el.setAttribute("data-is-streaming", opt.streaming ? "true" : "false");
+      const body = document.createElement("div"); body.className = "font-claude-response"; body.innerText = text;
+      el.appendChild(body);
+    }
+  }
+  chat.appendChild(el);
+  return el;
+}
+const bodyOf = (el) => el.querySelector(".markdown, .font-claude-response") || el;
+
+// ① 이전 대화 — content.js 가 뜨기 전부터 화면에 있음
+addMsg("q", "옛 질문: 파이썬 리스트 정렬은?", { id: "old-q" });
+addMsg("a", "옛 답: sorted(리스트) 를 쓰면 됩니다.", { id: "old-a" });
+</script>
+<script src="../content.js"></script>
+<script>
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const FINAL = "SQLite 는 한 번에 하나만 쓸 수 있습니다.\n\n```\npython\n코드 복사\nconn.execute('BEGIN IMMEDIATE')\n```\n\n그래서 동시 요청이 많으면 대기가 생깁니다.";
+const REGEN = "다시 생성한 답: SQLite 는 쓰기 잠금이 하나뿐이라 동시 쓰기가 줄을 섭니다.";
+
+(async () => {
+  await sleep(4500);                                   // 대화를 연 지 3.5초가 지난 뒤 = 지금부터는 새 대화
+  // ② 학생이 질문을 보냄 (Enter)
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  addMsg("q", "SQLite 동시 쓰기가 왜 느려?");
+  // ③ 답이 조금씩 생성됨 — 생성 중 표시가 있는 동안
+  let stop = null;
+  if (SITE === "ChatGPT") { stop = document.createElement("button"); stop.setAttribute("data-testid", "stop-button"); stop.textContent = "■"; document.body.appendChild(stop); }
+  const a = addMsg("a", "", { streaming: true });
+  for (let i = 1; i <= FINAL.length; i += 6) { bodyOf(a).innerText = FINAL.slice(0, i); await sleep(60); }
+  bodyOf(a).innerText = FINAL;
+  await sleep(2500);                                   // 생성은 끝났지만 표시가 아직 남아 있는 2.5초 — 이때 보내면 안 됨
+  if (stop) stop.remove(); else a.setAttribute("data-is-streaming", "false");
+  await sleep(3000);
+  // ④ 다시 생성 — 같은 자리의 글이 바뀜
+  bodyOf(a).innerText = REGEN;
+  await sleep(3000);
+
+  // ── 판정 ──
+  const S = window.__traceSent || [];
+  const q = S.filter((x) => x.kind === "ai_question"), ans = S.filter((x) => x.kind === "ai_answer");
+  const checks = [
+    ["이전 질문·답 2건이 '이전 대화' 로 표시", S.filter((x) => x.meta.history).length === 2],
+    ["새 질문 1번만, 이전 대화 아님", q.filter((x) => !x.meta.history).length === 1 && q.some((x) => x.text.includes("SQLite 동시 쓰기"))],
+    ["답은 생성이 끝난 뒤 완성본으로", ans.some((x) => !x.meta.history && x.text.startsWith("SQLite 는") && x.text.endsWith("대기가 생깁니다."))],
+    ["생성 중의 반쪽 답은 안 보냄", !ans.some((x) => !x.meta.history && x.text.length < FINAL.length - 30 && !x.text.startsWith("다시"))],
+    ["'코드 복사' 같은 버튼 글자는 뺌", !ans.some((x) => x.text.includes("코드 복사"))],
+    ["다시 생성한 답도 보냄", ans.some((x) => x.text === REGEN)],
+    ["턴 번호 (질문 3 · 답 4)", q.some((x) => x.meta.turn === 3) && ans.some((x) => x.meta.turn === 4)],
+    ["모델 이름 (ChatGPT 만)", SITE !== "ChatGPT" || ans.some((x) => x.meta.model === "gpt-5-6-luna")],
+  ];
+  const ok = checks.every((c) => c[1]);
+  document.getElementById("verdict").innerHTML = checks.map(([n, v]) => `<div class="${v ? "ok" : "bad"}">${v ? "✓" : "✗"} ${n}</div>`).join("")
+    + `<p class="${ok ? "ok" : "bad"}">${ok ? "전부 통과" : "실패 있음"} — 보낸 항목 ${S.length}개</p>`;
+  document.getElementById("out").textContent = JSON.stringify(S.map((x) => ({ kind: x.kind, turn: x.meta.turn, history: x.meta.history, model: x.meta.model, text: x.text })), null, 2);
+  window.__verdict = { ok, checks };
+})();
+</script>
