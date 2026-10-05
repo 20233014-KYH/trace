@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core import chain as C  # noqa: E402
 
 GENESIS = C.GENESIS
-BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}
+BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe", "Google Chrome", "Microsoft Edge", "Firefox"}   # 맥은 앱 이름
 
 
 def load(paths):

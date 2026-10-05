@@ -8,6 +8,7 @@ python tests/test_derive.py --json     # 실패 상세를 JSON 으로 (다른 �
 python tests/make_fixture.py           # 시나리오(이벤트)를 바꿨을 때 픽스처 재생성
 python tests/test_derive.py --update   # 골든만 갱신 (derive 정의를 의도적으로 바꿨을 때)
 python tests/기술테스트_제안서.py      # 제안서 4장 기술 테스트 — ① 붙여넣기 출처 4/4 ② 조작 2건 탐지
+python tests/test_paste_source.py      # 수집기→derive 한 바퀴 · 나무위키 등 사이트별 붙여넣기 출처 6건
 ```
 
 ## 파일
@@ -17,6 +18,7 @@ python tests/기술테스트_제안서.py      # 제안서 4장 기술 테스트
 | `fixtures/expected_basic.json` | 기대 출력 — 계약 ② session.json 골든 (segments · typed · deleted · pastes · undos · flow · chain · root · stats) |
 | `make_fixture.py` | 시나리오 정의 + 생성기 |
 | `test_derive.py` | 비교. 체인 재계산 · derive 결과 · root 세 가지 |
+| `test_paste_source.py` | 실제 수집기(창·클립보드만 가짜)를 돌려 붙여넣기 출처 확인. 나무위키(목록 밖 → 기타 + 도메인) · 문서 제목에 "ChatGPT" 가 있어도 도메인 우선 · 맥 크롬(창 제목 없음) · 확장 없을 때 제목 키워드 |
 | `기술테스트_제안서.py` | 서비스 제안서 4장 증거 코드. 같은 픽스처로 ① 붙여넣기 4건 출처 판정 ② 글자 수 1 변경·기록 1개 삭제를 체인이 잡는지 |
 
 ## 시나리오가 덮는 것

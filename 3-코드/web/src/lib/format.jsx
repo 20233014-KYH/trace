@@ -17,7 +17,7 @@ const APP = {
   'WINWORD.EXE': 'Word', 'POWERPNT.EXE': 'PowerPoint', 'EXCEL.EXE': 'Excel', 'Acrobat.exe': 'Acrobat', 'AcroRd32.exe': 'Acrobat',
   'SumatraPDF.exe': 'PDF 뷰어', 'notepad++.exe': 'Notepad++', 'WindowsTerminal.exe': '터미널', '?': '(알 수 없음)',
 };
-const BROWSERS = ['chrome.exe', 'msedge.exe', 'firefox.exe'];
+const BROWSERS = ['chrome.exe', 'msedge.exe', 'firefox.exe', 'Google Chrome', 'Microsoft Edge', 'Firefox'];   // 맥은 앱 이름
 
 export const fmt = (n) => (n || 0).toLocaleString('ko-KR');
 export const catColor = (c) => COLORS[CAT[c] ? c : 'other'];

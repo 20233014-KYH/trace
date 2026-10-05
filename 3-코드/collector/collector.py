@@ -58,7 +58,8 @@ from core import chain as C          # noqa: E402
 from classify import Classifier      # noqa: E402
 
 VERSION = "0.2.0"
-BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}   # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
+BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe",            # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
+            "google chrome", "microsoft edge", "firefox"}     # 맥은 exe 대신 앱 이름 (소문자로 비교)
 KST = timezone(timedelta(hours=9))
 
 
@@ -346,9 +347,11 @@ class Collector:
         if exe.lower() not in self.whitelist:
             return {"app": exe, "title": "", "category": "other"}
         cat = self.clf.by_app(exe, title)
-        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지
-        if exe.lower() in BROWSERS and self._tab and cat == "other":
+        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — 도메인을 알면 제목 키워드보다 앞선다.
+        #   ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지 · 나무위키 "ChatGPT" 문서는 ai 가 아니라 도메인 분류
+        if exe.lower() in BROWSERS and self._tab and self._tab[0]:
             cat = self._tab[1]
+            title = title or self._tab[0]   # 맥은 창 제목을 못 읽는다 → 출처 표기용으로 도메인을 제목 자리에
         return {"app": exe, "title": title, "category": cat}
 
     def run(self):
