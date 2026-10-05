@@ -258,6 +258,14 @@ def health():
 def create_session(work):
     b = request.get_json(force=True)
     with db.Session() as d:
+        if d.get(db.Work, work) is None:
+            # ★ 기록기는 과제를 따로 만들지 않고 config 의 work_id 로 바로 세션을 보낸다.
+            #   SQLite 는 없는 과제를 가리키는 세션도 받아 주지만, PostgreSQL(Supabase) 은 외래키로 거절한다 (500).
+            #   → 없으면 여기서 만들어 둔다. 토큰이 왔으면 그 사람 과제로. (10/4 Supabase 로 옮기다 발견)
+            주인 = 토큰_사용자(d)
+            d.add(db.Work(id=work, user_id=주인.id if 주인 else None, title=work,
+                          created_at=now().replace(tzinfo=None)))
+            d.flush()
         s = 세션_가져오기(d, b["id"], create=True)
         existed = s.work_id is not None              # 전에는 mode 로 판단했다. 이제 mode 가 없으니 work_id 로
         장치 = b.get("device") or {}
@@ -434,7 +442,7 @@ if __name__ == "__main__":
     #   맥에서는 포트를 바꾸는 쪽이 낫다:  TRACE_PORT=5050 python server/app.py
     #   (윈도우는 이 문제가 없어 5000 그대로 쓰면 된다)
     PORT = int(os.environ.get("TRACE_PORT", "5000"))
-    print(f"Trace Backend  http://127.0.0.1:{PORT}/api   저장: {db.DB_URL}")
+    print(f"Trace Backend  http://127.0.0.1:{PORT}/api   저장: {db.DB_URL_SAFE}")
     print("  계약: docs/api.md   ·  참고 구현과 같은 응답을 내야 합니다")
     print(f"  인증: {'강제' if 인증_강제 else '선택 (TRACE_REQUIRE_AUTH=1 로 켬)'}")
     app.run(host="127.0.0.1", port=PORT, debug=False)
