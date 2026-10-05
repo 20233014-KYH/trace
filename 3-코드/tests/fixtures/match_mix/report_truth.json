@@ -1,0 +1,91 @@
+{
+ "_comment": "섞어 쓴 녹화 시험 (10/5) — 세 AI(Claude·Gemini·ChatGPT) 답을 한 보고서에. 정답은 녹화 전에 씀. 확장 0.3.1(Gemini 출처 칩 빼기 전)이 기록한 답 그대로 씀. 기준 손대지 않음.",
+ "_how_recorded": "복사 = 각 AI 탭에서 문장 선택 + Ctrl+C (Claude in Chrome) · 붙여넣기 = Word 앞에 두고 진짜 Ctrl+V · 입력·고치기 = Word COM",
+ "title": "컴퓨터네트워크 과제 1 — 웹 페이지가 열리기까지",
+ "answer_ids": {
+  "A1": "Claude HTTP·HTTPS",
+  "A2": "Gemini DNS",
+  "A3": "ChatGPT TCP 3-way handshake"
+ },
+ "paragraphs": [
+  [
+   {
+    "label": "none",
+    "pasted": false,
+    "how": "직접 입력 (도입)"
+   }
+  ],
+  [
+   {
+    "label": "exact",
+    "src": "A2",
+    "sents": [
+     0
+    ],
+    "pasted": true,
+    "how": "Gemini 복사 → 붙여넣기 그대로"
+   },
+   {
+    "label": "edited",
+    "src": "A2",
+    "sents": [
+     2
+    ],
+    "pasted": true,
+    "how": "Gemini 복사 → 붙여넣기 → 앞뒤 고침"
+   }
+  ],
+  [
+   {
+    "label": "viewed",
+    "src": "A3",
+    "sents": [
+     1
+    ],
+    "pasted": false,
+    "how": "ChatGPT 답을 보고 다시 입력 (앞에 내 말 붙임)"
+   },
+   {
+    "label": "none",
+    "pasted": false,
+    "how": "직접 입력 — 같은 주제(SYN·ACK 겹침), 내 실습 경험"
+   }
+  ],
+  [
+   {
+    "label": "edited",
+    "src": "A1",
+    "sents": [
+     1
+    ],
+    "pasted": true,
+    "how": "Claude 복사 → 붙여넣기 → 앞뒤 고침"
+   },
+   {
+    "label": "viewed",
+    "src": "A1",
+    "sents": [
+     2
+    ],
+    "pasted": false,
+    "how": "Claude 답을 보고 줄여 다시 입력"
+   },
+   {
+    "label": "exact",
+    "src": "A1",
+    "sents": [
+     4
+    ],
+    "pasted": false,
+    "how": "Claude 답을 보고 그대로 옮겨 입력 (붙여넣기 없음)"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "pasted": false,
+    "how": "직접 입력 (맺음말)"
+   }
+  ]
+ ]
+}

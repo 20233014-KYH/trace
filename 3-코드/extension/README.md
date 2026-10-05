@@ -20,7 +20,7 @@ Learn 모드일 때만 맥락(AI 질문 · 답변 발췌 · 선택 텍스트)을
 |---|---|---|
 | `manifest.json` | 권한: tabs·storage · 다리(127.0.0.1:5077) · AI 사이트 5곳에 content.js | 뼈대 |
 | `background.js` | 탭 활성화·주소 변경·창 포커스 → 도메인 → `/event`. 같은 도메인 연속은 한 번만 | **동작** (다리 테스트 완료) |
-| `content.js` | **AI 질문·답 원문** — 복사 안 해도 화면의 질문·답 덩어리를 지켜보다가, 글이 멈추고(질문 0.6초·답 2초) 생성 중 표시가 사라지면 `/context` 로. 사이트별 셀렉터는 ChatGPT·Claude·Gemini (`SITES`), 나머지 사이트는 입력창으로 질문만. 대화를 연 직후 뜬 메시지는 `history`(이전 대화). 수집기가 가려서(API 키·이메일·전화·주민번호) PC 에 저장하고 체인엔 `ai_msg`(해시만) — 모드 상관없음 | **동작** — ChatGPT 실사이트 확인(10/4: 이전 대화 4건 history · 새 질문·답 · 해시·체인 일치) · Claude·Gemini 는 시험대만 |
+| `content.js` | **AI 질문·답 원문** — 복사 안 해도 화면의 질문·답 덩어리를 지켜보다가, 글이 멈추고(질문 0.6초·답 2초) 생성 중 표시가 사라지면 `/context` 로. 사이트별 셀렉터는 ChatGPT·Claude·Gemini (`SITES`), 나머지 사이트는 입력창으로 질문만. 대화를 연 직후 뜬 메시지는 `history`(이전 대화). 수집기가 가려서(API 키·이메일·전화·주민번호) PC 에 저장하고 체인엔 `ai_msg`(해시만) — 모드 상관없음 | **동작** — 세 곳 다 실사이트 확인. ChatGPT(10/4: 이전 대화 4건 history · 새 질문·답 · 해시·체인 일치) · Claude·Gemini(10/5, 0.3.2: 화면낭독용 숨은 글자 · 시각 · Gemini 출처 칩·동영상 카드를 빼고 본문만, 새 대화 주소가 늦게 붙어도 같은 대화). 모델 이름은 ChatGPT 만 화면에 있음 |
 | `popup.html/js` | 수집기 상태 · 모드 · 맥락 토글 표시 | 뼈대 |
 | `domains.json` | 분류표 (수집기와 같은 파일) | 복사본 — 수집기 것을 기준으로 동기화 |
 
@@ -35,7 +35,7 @@ Learn 모드일 때만 맥락(AI 질문 · 답변 발췌 · 선택 텍스트)을
 - **진단:** 그 사이트에서 `localStorage.traceDebug = "1"` 을 넣고 새로고침하면 `<html data-trace-debug>` 에 `{ver, site, recording, scans, msgs, sent, lastErr}` 가 뜬다. 평소엔 아무것도 안 남긴다.
 
 ## 시험대 (사이트 없이 content.js 확인)
-`python -m http.server 5180` 을 이 폴더에서 켜고 `http://localhost:5180/test/harness.html` (ChatGPT 흉내) · `?site=Claude` — 이전 대화 · 질문 · 생성 중인 답 · 생성 끝 · 다시 생성을 흉내 내고 8가지를 판정한다.
+`python -m http.server 5180` 을 이 폴더에서 켜고 `http://localhost:5180/test/harness.html` (ChatGPT 흉내) · `?site=Claude` · `?site=Gemini` — 이전 대화 · 질문 · 생성 중인 답 · 생성 끝 · 다시 생성 · 시각만 바뀜 · (Gemini) 주소가 늦게 바뀜 · 출처 칩을 흉내 내고 10가지를 판정한다. 화면 구조는 10/5 실제 사이트를 보고 맞춤.
 
 ## 다음
 - 사이트별 질문 입력창 셀렉터 (claude.ai · chatgpt.com · gemini) → `ai_question` 정확도

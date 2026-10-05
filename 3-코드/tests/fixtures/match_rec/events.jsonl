@@ -1,0 +1,11 @@
+{"id": "evt_000014", "ts": "2026-10-05T15:21:26+09:00", "source": "collector", "type": "paste", "len": 71, "hash": "sha256:f6b9bf16f52c69482370086a375c4791ad3abddb26ae5e9cf4e5d3df05fd968c", "app": "WINWORD.EXE", "target_title": "문서2 - Word"}
+{"id": "evt_000022", "ts": "2026-10-05T15:22:13+09:00", "source": "collector", "type": "copy", "len": 67, "hash": "sha256:e01d9bc4a530ac14f39a04fd2b31734c54fbb4b9bf7271d3f6e5ca328814f1f3", "app": "chrome.exe", "category": "other"}
+{"id": "evt_000029", "ts": "2026-10-05T15:23:26+09:00", "source": "collector", "type": "paste", "len": 67, "hash": "sha256:e01d9bc4a530ac14f39a04fd2b31734c54fbb4b9bf7271d3f6e5ca328814f1f3", "app": "WINWORD.EXE", "target_title": "DB과제_보고서.docx - Word"}
+{"id": "evt_000032", "ts": "2026-10-05T15:23:28+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "DB과제_보고서.docx", "where": "문단 3"}
+{"id": "evt_000033", "ts": "2026-10-05T15:23:48+09:00", "source": "collector", "type": "copy", "len": 52, "hash": "sha256:ae5139f2b4ab64aa77305be344c2166c0a0996fb51695bf912bf615de6c97473", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000034", "ts": "2026-10-05T15:23:53+09:00", "source": "collector", "type": "paste", "len": 52, "hash": "sha256:ae5139f2b4ab64aa77305be344c2166c0a0996fb51695bf912bf615de6c97473", "app": "WINWORD.EXE", "target_title": "DB과제_보고서.docx - Word"}
+{"id": "evt_000036", "ts": "2026-10-05T15:23:53+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "DB과제_보고서.docx", "where": "문단 3"}
+{"id": "evt_000043", "ts": "2026-10-05T15:24:40+09:00", "source": "collector", "type": "copy", "len": 94, "hash": "sha256:2088bc6ef70586c7564faf598a7b3c5dae505713d7eeb259b6a686c50a1270c4", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000044", "ts": "2026-10-05T15:24:46+09:00", "source": "collector", "type": "paste", "len": 94, "hash": "sha256:2088bc6ef70586c7564faf598a7b3c5dae505713d7eeb259b6a686c50a1270c4", "app": "WINWORD.EXE", "target_title": "DB과제_보고서.docx - Word"}
+{"id": "evt_000046", "ts": "2026-10-05T15:24:47+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "DB과제_보고서.docx", "where": "문단 5"}
+{"id": "evt_000051", "ts": "2026-10-05T15:25:06+09:00", "source": "collector", "type": "doc_save", "app": "Word", "file": "DB과제_보고서.docx", "chars": 564, "words": 159, "paragraphs": 6}

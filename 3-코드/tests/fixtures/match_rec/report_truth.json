@@ -1,0 +1,82 @@
+{
+ "_comment": "녹화 시험 (10/5 · 실제 기록기 + 실제 ChatGPT 답 2개 + 실제 Word). 정답은 돌리기 전에 시나리오대로 적음. exact=그대로 · edited=붙여넣고 고침 · viewed=AI 답 보고 씀 · none=출처 기록 없음. src·sents = 정답 AI 답·문장 위치 · pasted = 붙여넣기 기록이 있어야 하는지",
+ "_how_recorded": "복사 = Chrome ChatGPT 탭에서 문장 선택 + Ctrl+C (Claude in Chrome) · 붙여넣기 = Word 앞에 두고 진짜 Ctrl+V 키 · 입력·고치기 = Word COM(TypeText/찾아 바꾸기) — 키 입력 수는 안 셈. 복사 때 Word 가 앞에 있어서 copy 의 app 이 WINWORD 로 찍힘(시험 환경 탓).",
+ "title": "데이터베이스 과제 2 — 정규화와 인덱스",
+ "paragraphs": [
+  [
+   {
+    "label": "none",
+    "pasted": false,
+    "how": "직접 입력"
+   }
+  ],
+  [
+   {
+    "label": "exact",
+    "src": "A1",
+    "sents": [
+     0
+    ],
+    "pasted": true,
+    "how": "복사 → 붙여넣기 그대로"
+   },
+   {
+    "label": "edited",
+    "src": "A1",
+    "sents": [
+     1
+    ],
+    "pasted": true,
+    "how": "복사 → 붙여넣기 → 앞뒤 고침"
+   }
+  ],
+  [
+   {
+    "label": "viewed",
+    "src": "A1",
+    "sents": [
+     2,
+     3
+    ],
+    "pasted": false,
+    "how": "답의 2NF·3NF 두 문장을 보고 한 문장으로 다시 입력"
+   }
+  ],
+  [
+   {
+    "label": "exact",
+    "src": "A2",
+    "sents": [
+     1
+    ],
+    "pasted": false,
+    "how": "보고 그대로 옮겨 입력 (붙여넣기 없음)"
+   },
+   {
+    "label": "viewed",
+    "src": "A2",
+    "sents": [
+     2
+    ],
+    "pasted": false,
+    "how": "보고 줄여서 다시 입력"
+   },
+   {
+    "label": "edited",
+    "src": "A2",
+    "sents": [
+     3
+    ],
+    "pasted": true,
+    "how": "복사 → 붙여넣기 → 많이 고침"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "pasted": false,
+    "how": "직접 입력 (맺음말 · 주제는 인덱스)"
+   }
+  ]
+ ]
+}

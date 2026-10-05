@@ -30,6 +30,25 @@ function isBusyChatGPT(el) {
   if (rs === null && resp === null) return undefined;
   return (rs !== null && rs !== "ready") || (resp !== null && resp !== "complete");
 }
+// Claude (2026-10 화면): 답 본문 = .standard-markdown. 바깥 덩어리를 통째로 읽으면 화면낭독용 제목("Claude 응답: …")·버튼·시각("지금")이 섞인다.
+// 웹 검색 등 도구를 쓰면 본문이 여러 덩어리로 나뉘어서 다 이어 붙인다. 못 찾으면 null → 덩어리 전체(clean)로.
+function claudeAnswer(el) {
+  const parts = [...el.querySelectorAll(".standard-markdown, .font-claude-response")]
+    .filter((p) => !p.parentElement.closest(".standard-markdown, .font-claude-response"));
+  return parts.length ? parts.map(clean).filter(Boolean).join("\n\n") : null;
+}
+// Gemini (2026-10 화면): 답 안에 출처 칩("Medium +1" · "YouTube")과 동영상 카드가 섞여 있다. Gemini 자기 복사 버튼이 빼는 것
+// (.hide-from-message-actions) 과 칩·첨부를 지운 사본에서 글자를 읽는다. 사본은 화면에 없어서 innerText 대신 줄바꿈을 직접 넣는다.
+const GEMINI_DROP = "sources-carousel-inline, source-inline-chip, .source-inline-chip-container, .attachment-container, .hide-from-message-actions, .cdk-visually-hidden";
+function geminiAnswer(el) {
+  const mc = el.querySelector("message-content");
+  if (!mc) return null;
+  const c = (mc.querySelector(".markdown") || mc).cloneNode(true);
+  c.querySelectorAll(GEMINI_DROP).forEach((x) => x.remove());
+  c.querySelectorAll("br").forEach((b) => b.replaceWith("\n"));
+  c.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, tr, blockquote").forEach((b) => b.append("\n"));
+  return cleanText(c.textContent.split("\n").map((l) => l.trim()).join("\n"));   // 칩을 지운 자리의 빈칸까지 정리
+}
 const SITES = [
   {
     tool: "ChatGPT",
@@ -54,7 +73,7 @@ const SITES = [
     messages: () => [...document.querySelectorAll('[data-testid="user-message"], [data-is-streaming]')].map((el) =>
       el.matches('[data-testid="user-message"]')
         ? { el, role: "question", body: el }
-        : { el, role: "answer", body: el.querySelector(".font-claude-response, .font-claude-message") || el,
+        : { el, role: "answer", body: el, text: claudeAnswer(el),
             streaming: el.getAttribute("data-is-streaming") === "true" }),
     generating: () => !!document.querySelector('[data-is-streaming="true"]'),
     conv: () => (location.pathname.match(/\/chat\/([\w-]+)/) || [])[1] || "",
@@ -64,8 +83,10 @@ const SITES = [
     host: /(^|\.)gemini\.google\.com$/,
     messages: () => [...document.querySelectorAll("user-query, model-response")].map((el) =>
       el.tagName.toLowerCase() === "user-query"
-        ? { el, role: "question", body: el.querySelector(".query-text") || el }
-        : { el, role: "answer", body: el.querySelector("message-content") || el.querySelector(".markdown") || el }),
+        // 2026-10 화면: .query-text 안에 화면낭독용 제목("말씀하신 내용 …" — 질문이 한 번 더 들어 있음)이 숨어 있어서 줄(.query-text-line)만 읽는다
+        ? { el, role: "question", body: el.querySelector(".query-text") || el,
+            text: [...el.querySelectorAll(".query-text-line")].map((p) => p.innerText.trim()).join("\n") || null }
+        : { el, role: "answer", body: el.querySelector("message-content") || el.querySelector(".markdown") || el, text: geminiAnswer(el) }),
     generating: () => false,                // 생성 중 표시를 못 찾으면 "2초 동안 안 바뀜" 만으로 판단
     conv: () => (location.pathname.match(/\/app\/([\w-]+)/) || [])[1] || "",
   },
@@ -77,7 +98,10 @@ const site = SITES.find((s) => s.tool === globalThis.__TRACE_SITE) || SITES.find
 let toggles = null;                          // null = 기록 중 아님 → 아무것도 안 보냄
 async function loadToggles() {
   const s = await chrome.runtime.sendMessage({ type: "status" }).catch(() => null);
+  const was = toggles;
   toggles = s?.recording ? (s.capture || s.learn_context || {}) : null;   // learn_context = 옛 수집기 이름
+  // 기록을 켜기 전부터 화면에 있던(못 보낸) 메시지 = 이전 대화. 탭을 미리 열어 둔 채 기록을 켜면 옛 질문·답이 새것처럼 들어가던 문제 (10/5)
+  if (!was && toggles) for (const st of seen.values()) if (!st.sent && st.text) st.history = true;
 }
 loadToggles();
 setInterval(loadToggles, 30000);
@@ -95,25 +119,35 @@ function send(kind, text, meta = {}) {
 }
 
 function clean(body) {
-  return (body.innerText || "").split("\n").filter((l) => !UI_LINES.has(l.trim())).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return cleanText(body.innerText || "");
+}
+function cleanText(s) {
+  return s.split("\n").filter((l) => !UI_LINES.has(l.trim())).join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // ───────────── 질문·답 덩어리 지켜보기 ─────────────
 const seen = new Map();                      // key → {text, changedAt, firstAt, sent, history}
-let navAt = Date.now(), lastPath = location.pathname, lastSendAt = 0;
+let navAt = Date.now(), lastPath = location.pathname, lastConv = site ? site.conv() : "", lastSendAt = 0;
 const SEND_NAV_MS = 5000;                   // 보내고 5초 안에 주소가 바뀌면(새 대화의 첫 질문 → /c/id) 같은 대화로 본다
 
 function scan() {
   if (!site) return false;
-  if (location.pathname !== lastPath) { lastPath = location.pathname; if (Date.now() - lastSendAt > SEND_NAV_MS) navAt = Date.now(); }
-  const now = Date.now(), conv = site.conv(), msgs = site.messages().filter((m) => m.role);
+  const conv = site.conv();
+  if (location.pathname !== lastPath) {
+    // 새 대화 화면(대화 id 없음) → 첫 질문 뒤 id 가 붙는 건 같은 대화. Gemini 는 답이 나오기 시작한 뒤(5초 넘어) 주소가 바뀐다 (10/5)
+    const sameChat = !lastConv && conv;
+    if (sameChat) for (const [k, v] of [...seen]) if (k.startsWith("|")) { seen.delete(k); seen.set(conv + k, v); }   // id 없던 열쇠("|0|question")를 새 id 로 옮김 — 안 옮기면 다 다시 보냄
+    lastPath = location.pathname; lastConv = conv;
+    if (!sameChat && Date.now() - lastSendAt > SEND_NAV_MS) navAt = Date.now();
+  }
+  const now = Date.now(), msgs = site.messages().filter((m) => m.role);
   let pending = false;
   msgs.forEach((m, i) => {
     const key = m.id || `${conv}|${i}|${m.role}`;
     let st = seen.get(key);
     const tail = i >= msgs.length - 3;
     if (st && st.sent && !tail) return;      // 이미 보냈고 끝부분이 아니면 다시 안 읽음 (긴 대화에서 가볍게)
-    const text = clean(m.body);
+    const text = m.text ?? clean(m.body);      // 사이트가 본문을 직접 골라 주면(text) 그걸 쓴다
     if (!st) {
       st = { text: "", changedAt: now, firstAt: now, sent: "",
              history: lastSendAt < navAt };
