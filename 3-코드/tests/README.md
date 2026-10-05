@@ -9,6 +9,8 @@ python tests/make_fixture.py           # 시나리오(이벤트)를 바꿨을 �
 python tests/test_derive.py --update   # 골든만 갱신 (derive 정의를 의도적으로 바꿨을 때)
 python tests/기술테스트_제안서.py      # 제안서 4장 기술 테스트 — ① 붙여넣기 출처 4/4 ② 조작 2건 탐지
 python tests/연결시제품.py             # 결과물(Word) 문장 ↔ AI 답 연결 시험 4개 + 색칠한 화면 (data/연결시제품/*.html)
+python tests/test_paste_source.py      # 수집기→derive 한 바퀴 · 나무위키 등 사이트별 붙여넣기 출처 10건
+xvfb-run -a -s "-screen 0 1440x900x24" python tests/녹화시험_위키.py   # 실제 Chromium+확장+수집기로 나무위키·위키백과 복사 녹화 (결과: 녹화시험_결과.md)
 ```
 
 ## 파일
@@ -18,6 +20,8 @@ python tests/연결시제품.py             # 결과물(Word) 문장 ↔ AI 답 
 | `fixtures/expected_basic.json` | 기대 출력 — 계약 ② session.json 골든 (segments · typed · deleted · pastes · undos · flow · chain · root · stats) |
 | `make_fixture.py` | 시나리오 정의 + 생성기 |
 | `test_derive.py` | 비교. 체인 재계산 · derive 결과 · root 세 가지 |
+| `test_paste_source.py` | 실제 수집기(창·클립보드만 가짜)를 돌려 붙여넣기 출처 확인. 나무위키(목록 밖 → 기타 + 도메인) · 문서 제목에 "ChatGPT" 가 있어도 도메인 우선 · 맥 크롬(창 제목 없음) · 확장 없을 때 제목 키워드 |
+| `녹화시험_위키.py` | 실제 Chromium + Trace 확장 + 수집기(다리 5077) + X 클립보드로 나무위키·위키백과·chatgpt.com 복사→붙여넣기, 화면 녹화. 사이트 내용만 로컬 흉내(주소·탭 제목은 실제와 같음), 전경 창은 시험이 지정 |
 | `기술테스트_제안서.py` | 서비스 제안서 4장 증거 코드. 같은 픽스처로 ① 붙여넣기 4건 출처 판정 ② 글자 수 1 변경·기록 1개 삭제를 체인이 잡는지 |
 | `연결시제품.py` · `fixtures/match*` | 문장 연결 시험 (`core/match.py`). match = 만든 보고서 12문장 · match3 = 경제 14문장(정답 먼저) · match_rec = 녹화(실제 기록기 + ChatGPT + Word) 8문장 · match_mix = 세 AI 섞어 쓴 녹화 9문장. 녹화 폴더엔 `report.docx` · `events.jsonl`(복사·붙여넣기) · `context.jsonl`(복사 발췌) 도. `--edit-cover 0.35` 로 기준 바꿔 보기. 10/5 결과 39/43 · 직접 쓴 문장 잘못 잡음 0 |
 
