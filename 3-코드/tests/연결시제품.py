@@ -32,7 +32,7 @@ from core import match as M          # noqa: E402
 
 FIXTURES = os.path.join(HERE, "fixtures")
 CASES = ["match", "match_rec", "match3", "match_mix", "match_web", "match_proc", "match_view", "match_app"]
-LABEL = {"exact": "그대로", "web": "붙여넣음", "noproc": "과정 없음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
+LABEL = {"exact": "일치·유사", "web": "붙여넣음", "noproc": "과정 없음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
 
 
 # ───────────── Word (.docx) 쓰기·읽기 — zipfile 만 ─────────────
@@ -163,7 +163,7 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 <header><div class="bar">
   <h1>결과물 출처 보기</h1>
   <div class="legend">
-    <span><i style="background:var(--exact)"></i>AI 답 그대로 · 다른 곳에서 붙여넣음 · 쓴 과정 기록 없음 <em>__N_EXACT__</em></span>
+    <span><i style="background:var(--exact)"></i>AI 답과 일치·유사 · 다른 곳에서 붙여넣음 · 쓴 과정 기록 없음 <em>__N_EXACT__</em></span>
     <span><i style="background:var(--edited)"></i>붙여넣고 고침 <em>__N_EDITED__</em></span>
     <span><i style="background:var(--viewed)"></i>AI 답 보고 씀 <em>__N_VIEWED__</em></span>
     <span><i style="background:var(--none)"></i>출처 기록 없음 <em>__N_NONE__</em></span>
@@ -181,9 +181,12 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 </main>
 <script>
 const D = __DATA__;
-const L = {exact: "그대로", web: "붙여넣음", noproc: "과정 없음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
-const K = {exact: "AI 답 그대로", web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
+const L = {exact: "유사", web: "붙여넣음", noproc: "과정 없음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
+const K = {exact: "AI 답과 유사", web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
 const hm = (ts) => ts ? ts.slice(11, 16) : "";
+// AI 답과 100% 같으면 "일치", 90~99% 면 "유사" (10/7 사용자 결정 · 숫자는 안 냄)
+const lab = (s) => s.label === "exact" && s.full ? "일치" : L[s.label];
+const kind = (s) => s.label === "exact" && s.full ? "AI 답과 일치" : K[s.label];
 // AI 답 원문 — 문단(빈 줄)·줄(목록 항목 · 소제목)대로, 이어진 문장은 번호로 칠한다 (두 문장을 합친 것도)
 const answerHTML = (a, s) => {
   if (!a.blocks) return esc(a.text);
@@ -198,17 +201,17 @@ const answerHTML = (a, s) => {
 // 출처 — 오른쪽 칸 맨 아래 (10/5 결정). 과정 기록이 없는 시험(D.rec=false)에선 안 보여 준다
 const pasteLine = (s) => !D.rec ? "" : s.paste
   ? `<p class="lab">출처</p><p class="q src"><b>${esc(s.paste.domain || s.paste.source || "복사한 곳 기록 없음")}</b>${s.paste.copied_at ? ` · ${hm(s.paste.copied_at)} 복사` : ""} → ${hm(s.paste.pasted_at)} ${esc(s.paste.where || "문서")}에 붙여넣음</p>`
-  : `<p class="lab">출처</p><p class="q">붙여넣기 기록 없음 — ${s.label === "exact" ? "글자는 같지만 붙여넣지 않고 입력함" : "AI 답을 보고 다시 썼거나 옮겨 친 것으로 보임 (어느 쪽인지는 가리지 않음)"}</p>`;
+  : `<p class="lab">출처</p><p class="q">붙여넣기 기록 없음 — ${s.label === "exact" ? (s.full ? "글자는 같지만" : "글자는 거의 같지만") + " 붙여넣지 않고 입력함" : "AI 답을 보고 다시 썼거나 옮겨 친 것으로 보임 (어느 쪽인지는 가리지 않음)"}</p>`;
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const doc = document.getElementById("doc"), side = document.getElementById("side"), tg = document.getElementById("tg");
 doc.innerHTML = `<h2>${esc(D.title)}</h2>` + D.paras.map((p, pi) =>
-  `<p>${p.map((s, si) => `<span class="s ${s.label}" data-p="${pi}" data-s="${si}" data-l="${L[s.label]}" title="${K[s.label]}" tabindex="0">${esc(s.text)}</span>`).join(" ")}</p>`).join("");
+  `<p>${p.map((s, si) => `<span class="s ${s.label}" data-p="${pi}" data-s="${si}" data-l="${lab(s)}" title="${kind(s)}" tabindex="0">${esc(s.text)}</span>`).join(" ")}</p>`).join("");
 tg.onclick = () => { const on = doc.classList.toggle("tags"); tg.setAttribute("aria-pressed", on); };   // 색을 구분하기 어려운 사람용
 function show(el) {
   document.querySelectorAll(".s.sel").forEach((x) => x.classList.remove("sel"));
   el.classList.add("sel");
   const s = D.paras[+el.dataset.p][+el.dataset.s];
-  const head = `<p class="kind"><i style="background:var(--${s.label})"></i>${K[s.label]}</p>`;
+  const head = `<p class="kind"><i style="background:var(--${s.label})"></i>${kind(s)}</p>`;
   if (s.label === "none") {
     side.innerHTML = head + `<p class="meta">이어지는 AI 답·붙여넣기를 찾지 못했습니다</p><p class="lab">결과물</p><div class="well">${esc(s.text)}</div>`;
   } else if (s.label === "noproc") {

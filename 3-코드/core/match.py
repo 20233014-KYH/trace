@@ -3,7 +3,8 @@ match.py — 결과물 문장 ↔ AI 답 연결 "제안" (기록기·서버 공�
 
 결과물(보고서·코드)을 문장으로 나누고, 문장마다 저장해 둔 AI 답 원문과 비교해 넷 중 하나를 붙인다.
 
-  exact   AI 답 그대로     — 글자 순서까지 거의 같음 (붙여넣기 기록이 있든 없든 · 화면에 기록 유무를 따로 보여 줌)
+  exact   AI 답과 일치·유사 — 글자 순서까지 90% 이상 같음 (붙여넣기 기록이 있든 없든 · 화면에 기록 유무를 따로 보여 줌)
+                         full=True(공백·문장부호 빼고 100% 같음)면 화면에 "일치", 아니면 "유사" (10/7 사용자 결정 · 숫자는 안 냄)
   edited  붙여넣고 고침    — 내용이 AI 답에서 왔고, 그 AI 답 문장을 복사해 붙여넣은 **기록이 있음**
   viewed  AI 답 보고 씀    — 내용이 AI 답에서 왔지만 붙여넣은 기록은 없음 (참고해 다시 씀 · 보고 옮겨 침 — 둘을 가르지 않는다)
   web     다른 곳에서 붙여넣음 — AI 답은 아니지만 다른 사이트·프로그램(나무위키 · 위키백과 · PDF …)에서 복사해 붙여넣은 글.
@@ -250,6 +251,7 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
         row = []
         for s in split_sentences(para):
             r = {"text": s, **link_sentence(s, cands), "paste": None}
+            r["full"] = r["label"] == "exact" and norm(s) == norm(r["ai_text"])     # 100% 같음 → "일치" · 90~99% → "유사"
             if r["label"] != "none" and pasted is not None:
                 r["paste"] = next((pasted_at[(r["answer"], i)] for i in r["sents"] if (r["answer"], i) in pasted_at), None)
                 if r["label"] == "edited" and r["paste"] is None:
@@ -257,12 +259,12 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
                 if w["label"] != "none":
-                    r.update(label="web", answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
+                    r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
             # 붙여넣기 기록이 없는데 타이핑 기록도 없이 문서에 나타난 글 → 쓴 과정 기록 없음 (10/7)
             if ncands and r["label"] in ("none", "viewed") and link_sentence(s, tcands)["label"] == "none":
                 x = link_sentence(s, ncands)
                 if x["label"] != "none":
-                    r.update(label="noproc", answer=None, sents=None, ai_text=x["ai_text"], proc=proc["noproc"][x["answer"]])
+                    r.update(label="noproc", full=False, answer=None, sents=None, ai_text=x["ai_text"], proc=proc["noproc"][x["answer"]])
             row.append(r)
         out.append(row)
     return out
