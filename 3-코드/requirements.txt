@@ -6,6 +6,7 @@ pyperclip
 watchdog
 requests
 pynput
+comtypes  ; sys_platform == "win32"   # 데스크톱 AI 앱 읽기 (UI Automation · collector/desktop_ai.py)
 openai    # Qwen (알리바바 Model Studio · OpenAI 호환 엔드포인트)
 pywebview  # 알약 창 (app/pill.py) — 프레임 없음 · 항상 위
 anthropic # Claude 비교용 (선택)
