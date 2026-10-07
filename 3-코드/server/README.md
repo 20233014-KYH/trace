@@ -174,6 +174,8 @@ python server/app.py                   # 첫 줄 "저장: postgresql+psycopg://p
 
 ## 배포 (Render · 10/7)
 
+**쓰는 법(기록기 연결)은 [`../서버_이용가이드.md`](../서버_이용가이드.md).** 주소: `https://trace-server-8aa0.onrender.com/api`
+
 저장소 맨 위 `render.yaml` 이 설정 전부다. Render → **New → Blueprint** → 이 저장소 → `TRACE_DB_URL` 하나만 넣는다 (Supabase Session pooler 주소 · 비밀번호 포함 · 저장소엔 안 씀).
 
 | | |
