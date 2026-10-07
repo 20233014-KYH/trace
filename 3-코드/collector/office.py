@@ -47,13 +47,19 @@ class OfficeWatcher(threading.Thread):
         self._stop = threading.Event()
         self._snap = {}          # key(app,file) -> {"units": {unit_id: text}, "saved": bool, "stats": {...}}
         self._paste_pending = None
+        self._paste_app = ""
+        self._wake = threading.Event()
 
     def stop(self):
         self._stop.set()
+        self._wake.set()
 
-    def on_paste(self):
-        """수집기의 Ctrl+V 감지에서 호출 — 다음 tick 에 붙여넣은 자리를 읽는다."""
+    def on_paste(self, app: str = ""):
+        """수집기의 Ctrl+V 감지에서 호출 — 바로(0.3초 뒤) 붙여넣은 자리를 읽는다.
+        10/7 녹화 시험: 붙여넣고 1초 안에 다른 창으로 가면, 2초마다 '앞에 있을 때만' 읽던 방식으론 붙여넣은 글을 놓쳤다."""
         self._paste_pending = time.time()
+        self._paste_app = (app or "").upper()
+        self._wake.set()
 
     # ── 루프 ──
     def run(self):
@@ -61,14 +67,18 @@ class OfficeWatcher(threading.Thread):
         pythoncom.CoInitialize()
         try:
             while not self._stop.is_set():
+                # 붙여넣기 직후엔 그 창이 이미 뒤로 갔어도 한 번은 읽는다 (붙여넣은 곳이 Word/PPT 일 때만)
+                pend = self._paste_pending and time.time() - self._paste_pending < self.poll * 2
                 try:
-                    if self.is_active("WINWORD.EXE"):
+                    if self.is_active("WINWORD.EXE") or (pend and self._paste_app == "WINWORD.EXE"):
                         self._tick_word()
-                    elif self.is_active("POWERPNT.EXE"):
+                    elif self.is_active("POWERPNT.EXE") or (pend and self._paste_app == "POWERPNT.EXE"):
                         self._tick_ppt()
                 except Exception as e:      # COM 이 모달 상태이거나 문서가 닫히는 중
                     self._note(f"office 건너뜀: {type(e).__name__}")
-                self._stop.wait(self.poll)
+                if self._wake.wait(self.poll):           # Ctrl+V 가 오면 기다림을 끊고
+                    self._wake.clear()
+                    self._stop.wait(0.3)                 # Word 가 글을 넣을 틈만 주고 바로 읽는다
         finally:
             pythoncom.CoUninitialize()
 

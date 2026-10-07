@@ -1,0 +1,61 @@
+{"id": "evt_000002", "ts": "2026-10-07T11:04:56+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000008", "ts": "2026-10-07T11:07:18+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000009", "ts": "2026-10-07T11:07:19+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000010", "ts": "2026-10-07T11:07:25+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "확장 프로그램 - Chrome", "category": "other"}
+{"id": "evt_000011", "ts": "2026-10-07T11:07:25+09:00", "source": "collector", "type": "tab", "domain": "", "category": "other", "title": "(브라우저 내부 페이지)"}
+{"id": "evt_000012", "ts": "2026-10-07T11:07:27+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "DNS - 나무위키 - Chrome", "category": "other"}
+{"id": "evt_000013", "ts": "2026-10-07T11:07:27+09:00", "source": "collector", "type": "tab", "domain": "namu.wiki", "category": "other", "title": "DNS - 나무위키"}
+{"id": "evt_000015", "ts": "2026-10-07T11:07:31+09:00", "source": "collector", "type": "tab", "domain": "", "category": "other", "title": "(브라우저 내부 페이지)"}
+{"id": "evt_000016", "ts": "2026-10-07T11:07:32+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "확장 프로그램 - Chrome", "category": "other"}
+{"id": "evt_000017", "ts": "2026-10-07T11:07:33+09:00", "source": "collector", "type": "tab", "domain": "ko.wikipedia.org", "category": "resource", "title": "HTTP - 위키백과, 우리 모두의 백과사전"}
+{"id": "evt_000018", "ts": "2026-10-07T11:07:34+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "HTTP - 위키백과, 우리 모두의 백과사전 - Chrome", "category": "resource"}
+{"id": "evt_000019", "ts": "2026-10-07T11:07:36+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000020", "ts": "2026-10-07T11:07:36+09:00", "source": "collector", "type": "copy", "len": 153, "hash": "sha256:70d42d7aaf22a7a8e37938c338d7ca5d1b4ce362731b3b0f656642411eb8c614", "app": "chrome.exe", "category": "resource"}
+{"id": "evt_000021", "ts": "2026-10-07T11:07:37+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000022", "ts": "2026-10-07T11:07:37+09:00", "source": "collector", "type": "paste", "len": 153, "hash": "sha256:70d42d7aaf22a7a8e37938c338d7ca5d1b4ce362731b3b0f656642411eb8c614", "app": "WINWORD.EXE", "target_title": "인터넷과제_보고서.docx - Word"}
+{"id": "evt_000024", "ts": "2026-10-07T11:07:39+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "인터넷과제_보고서.docx", "where": "문단 3"}
+{"id": "evt_000025", "ts": "2026-10-07T11:07:40+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "HTTP - 위키백과, 우리 모두의 백과사전 - Chrome", "category": "resource"}
+{"id": "evt_000026", "ts": "2026-10-07T11:07:41+09:00", "source": "collector", "type": "tab", "domain": "namu.wiki", "category": "other", "title": "DNS - 나무위키"}
+{"id": "evt_000027", "ts": "2026-10-07T11:07:41+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "DNS - 나무위키 - Chrome", "category": "other"}
+{"id": "evt_000028", "ts": "2026-10-07T11:07:43+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000029", "ts": "2026-10-07T11:07:43+09:00", "source": "collector", "type": "copy", "len": 72, "hash": "sha256:41de4b5334ee21b4cc9cf99e399bf00b2ae13d2bb634132f3922445b21bb1248", "app": "chrome.exe", "category": "other"}
+{"id": "evt_000030", "ts": "2026-10-07T11:07:43+09:00", "source": "collector", "type": "paste", "len": 72, "hash": "sha256:41de4b5334ee21b4cc9cf99e399bf00b2ae13d2bb634132f3922445b21bb1248", "app": "WINWORD.EXE", "target_title": "인터넷과제_보고서.docx - Word"}
+{"id": "evt_000031", "ts": "2026-10-07T11:07:45+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "DNS - 나무위키 - Chrome", "category": "other"}
+{"id": "evt_000032", "ts": "2026-10-07T11:07:47+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000033", "ts": "2026-10-07T11:07:47+09:00", "source": "collector", "type": "copy", "len": 27, "hash": "sha256:58782207dbc696de539f3db1187f49d1d10874b371508118ed3e0ec3e9a8633d", "app": "chrome.exe", "category": "other"}
+{"id": "evt_000035", "ts": "2026-10-07T11:07:47+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "인터넷과제_보고서.docx", "where": "문단 4"}
+{"id": "evt_000036", "ts": "2026-10-07T11:07:48+09:00", "source": "collector", "type": "paste", "len": 27, "hash": "sha256:58782207dbc696de539f3db1187f49d1d10874b371508118ed3e0ec3e9a8633d", "app": "WINWORD.EXE", "target_title": "인터넷과제_보고서.docx - Word"}
+{"id": "evt_000037", "ts": "2026-10-07T11:07:49+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000038", "ts": "2026-10-07T11:07:50+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000042", "ts": "2026-10-07T11:08:44+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000043", "ts": "2026-10-07T11:08:45+09:00", "source": "collector", "type": "window", "app": "KakaoTalk.exe", "title": "", "category": "other"}
+{"id": "evt_000044", "ts": "2026-10-07T11:08:46+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000045", "ts": "2026-10-07T11:08:47+09:00", "source": "collector", "type": "window", "app": "KakaoTalk.exe", "title": "", "category": "other"}
+{"id": "evt_000046", "ts": "2026-10-07T11:08:48+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000002", "ts": "2026-10-07T11:09:39+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000006", "ts": "2026-10-07T11:11:04+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000007", "ts": "2026-10-07T11:11:06+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000009", "ts": "2026-10-07T11:11:10+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000010", "ts": "2026-10-07T11:11:12+09:00", "source": "collector", "type": "tab", "domain": "namu.wiki", "category": "other", "title": "DNS - 나무위키"}
+{"id": "evt_000011", "ts": "2026-10-07T11:11:12+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "DNS - 나무위키 - Chrome", "category": "other"}
+{"id": "evt_000012", "ts": "2026-10-07T11:11:14+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000013", "ts": "2026-10-07T11:11:16+09:00", "source": "collector", "type": "window", "app": "chrome.exe", "title": "DNS - 나무위키 - Chrome", "category": "other"}
+{"id": "evt_000014", "ts": "2026-10-07T11:11:18+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000015", "ts": "2026-10-07T11:11:20+09:00", "source": "collector", "type": "window", "app": "explorer.exe", "title": "", "category": "other"}
+{"id": "evt_000016", "ts": "2026-10-07T11:11:21+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000017", "ts": "2026-10-07T11:11:21+09:00", "source": "collector", "type": "paste", "len": 27, "hash": "sha256:58782207dbc696de539f3db1187f49d1d10874b371508118ed3e0ec3e9a8633d", "app": "WINWORD.EXE", "target_title": "인터넷과제_보고서.docx - Word"}
+{"id": "evt_000019", "ts": "2026-10-07T11:11:22+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "인터넷과제_보고서.docx", "where": "문단 5"}
+{"id": "evt_000020", "ts": "2026-10-07T11:11:23+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000021", "ts": "2026-10-07T11:11:39+09:00", "source": "collector", "type": "window", "app": "KakaoTalk.exe", "title": "", "category": "other"}
+{"id": "evt_000023", "ts": "2026-10-07T11:11:43+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000024", "ts": "2026-10-07T11:11:44+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000025", "ts": "2026-10-07T11:11:45+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000026", "ts": "2026-10-07T11:11:47+09:00", "source": "collector", "type": "window", "app": "KakaoTalk.exe", "title": "", "category": "other"}
+{"id": "evt_000027", "ts": "2026-10-07T11:11:48+09:00", "source": "collector", "type": "window", "app": "claude.exe", "title": "Claude", "category": "ai"}
+{"id": "evt_000029", "ts": "2026-10-07T11:12:22+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "문서2 - Word", "category": "work"}
+{"id": "evt_000030", "ts": "2026-10-07T11:12:25+09:00", "source": "collector", "type": "window", "app": "WINWORD.EXE", "title": "인터넷과제_보고서.docx - Word", "category": "work"}
+{"id": "evt_000032", "ts": "2026-10-07T11:12:41+09:00", "source": "collector", "type": "cut", "app": "WINWORD.EXE"}
+{"id": "evt_000035", "ts": "2026-10-07T11:12:41+09:00", "source": "collector", "type": "copy", "len": 50, "hash": "sha256:3f18f8384eeb1bfa993978f1d844684371f610e31652d369774504d2b39e867d", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000036", "ts": "2026-10-07T11:12:46+09:00", "source": "collector", "type": "paste", "len": 50, "hash": "sha256:3f18f8384eeb1bfa993978f1d844684371f610e31652d369774504d2b39e867d", "app": "WINWORD.EXE", "target_title": "인터넷과제_보고서.docx - Word"}
+{"id": "evt_000038", "ts": "2026-10-07T11:12:46+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "인터넷과제_보고서.docx", "where": "문단 7"}
+{"id": "evt_000039", "ts": "2026-10-07T11:13:00+09:00", "source": "collector", "type": "doc_save", "app": "Word", "file": "인터넷과제_보고서.docx", "chars": 400, "words": 126, "paragraphs": 7}

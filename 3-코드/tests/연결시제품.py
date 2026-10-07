@@ -31,8 +31,8 @@ sys.path.insert(0, os.path.dirname(HERE))
 from core import match as M          # noqa: E402
 
 FIXTURES = os.path.join(HERE, "fixtures")
-CASES = ["match", "match_rec", "match3", "match_mix"]
-LABEL = {"exact": "그대로", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
+CASES = ["match", "match_rec", "match3", "match_mix", "match_web"]
+LABEL = {"exact": "그대로", "web": "붙여넣음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
 
 
 # ───────────── Word (.docx) 쓰기·읽기 — zipfile 만 ─────────────
@@ -79,7 +79,9 @@ def render(path, title, linked, answers, rec=False):
                 del s[k]                     # 점수는 화면으로 보내지 않는다
     counts = {k: sum(s["label"] == k for p in linked for s in p) for k in LABEL}
     page = TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
-    page = page.replace("__N_EXACT__", str(counts["exact"])).replace("__N_EDITED__", str(counts["edited"])).replace("__N_NONE__", str(counts["none"])).replace("__N_VIEWED__", str(counts["viewed"]))
+    # 빨강 = AI 답 그대로 + 다른 곳에서 붙여넣음
+    for k, n in {"EXACT": counts["exact"] + counts["web"], "EDITED": counts["edited"], "VIEWED": counts["viewed"], "NONE": counts["none"]}.items():
+        page = page.replace(f"__N_{k}__", str(n))
     with open(path, "w", encoding="utf-8") as f:
         f.write(page)
 
@@ -90,7 +92,7 @@ TEMPLATE = r"""<!doctype html>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
 :root{--ink:#18191b;--sub:#5f6368;--faint:#9aa0a6;--line:#ececee;--bg:#f6f6f7;--paper:#fff;--well:#f6f6f7;
-  --exact:#e5484d;--exact-t:#fdecec;--exact-s:#f9d3d4;
+  --exact:#e5484d;--exact-t:#fdecec;--exact-s:#f9d3d4;--web:#e5484d;--web-s:#f9d3d4;
   --edited:#3e63dd;--edited-t:#eaf0fd;--edited-s:#d3defa;
   --viewed:#8e4ec6;--viewed-t:#f4ecfb;--viewed-s:#e6d4f8;
   --none:#5c9a1b;--none-t:#eff7e3;--none-s:#dcedc4}
@@ -113,13 +115,13 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 .doc h2{font-size:17px;font-weight:650;margin:0 0 20px;letter-spacing:-.02em}
 .doc p{margin:0 0 16px;font-size:14px;line-height:1.95}
 .s{border-radius:3px;padding:2px 1px;cursor:pointer;transition:background .12s;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.s.exact{background:var(--exact-t)}.s.exact:hover,.s.exact.sel{background:var(--exact-s)}
+.s.exact,.s.web{background:var(--exact-t)}.s.exact:hover,.s.exact.sel,.s.web:hover,.s.web.sel{background:var(--exact-s)}
 .s.edited{background:var(--edited-t)}.s.edited:hover,.s.edited.sel{background:var(--edited-s)}
 .s.viewed{background:var(--viewed-t)}.s.viewed:hover,.s.viewed.sel{background:var(--viewed-s)}
 .s.none{background:var(--none-t)}.s.none:hover,.s.none.sel{background:var(--none-s)}
 .s:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .tags .s::after{content:attr(data-l);font-size:10.5px;font-weight:600;margin-left:4px;vertical-align:1px}
-.tags .s.exact::after{color:var(--exact)}.tags .s.edited::after{color:var(--edited)}.tags .s.viewed::after{color:var(--viewed)}.tags .s.none::after{color:var(--none)}
+.tags .s.exact::after,.tags .s.web::after{color:var(--exact)}.tags .s.edited::after{color:var(--edited)}.tags .s.viewed::after{color:var(--viewed)}.tags .s.none::after{color:var(--none)}
 .side{position:sticky;top:72px;align-self:start;max-height:calc(100vh - 92px);overflow:auto;
   background:var(--paper);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px var(--line);padding:22px 22px}
 @media (max-width:860px){.side{position:static;max-height:none}}
@@ -128,6 +130,7 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 .meta{font-size:11.5px;color:var(--faint);margin:0 0 16px}
 .lab{font-size:11px;font-weight:600;color:var(--faint);margin:16px 0 6px}
 .q{font-size:12.5px;color:var(--sub);margin:0}
+.q.src b{color:var(--ink);font-weight:600}
 .well{background:var(--well);border-radius:8px;padding:11px 13px;font-size:13px;line-height:1.8}
 .well .hit{border-radius:3px;padding:1px 0}
 .empty{color:var(--sub);font-size:12.5px;line-height:1.8;margin:0}
@@ -138,7 +141,7 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 <header><div class="bar">
   <h1>결과물 출처 보기</h1>
   <div class="legend">
-    <span><i style="background:var(--exact)"></i>AI 답 그대로 <em>__N_EXACT__</em></span>
+    <span><i style="background:var(--exact)"></i>AI 답 그대로 · 다른 곳에서 붙여넣음 <em>__N_EXACT__</em></span>
     <span><i style="background:var(--edited)"></i>붙여넣고 고침 <em>__N_EDITED__</em></span>
     <span><i style="background:var(--viewed)"></i>AI 답 보고 씀 <em>__N_VIEWED__</em></span>
     <span><i style="background:var(--none)"></i>출처 기록 없음 <em>__N_NONE__</em></span>
@@ -156,13 +159,13 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 </main>
 <script>
 const D = __DATA__;
-const L = {exact: "그대로", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
-const K = {exact: "AI 답 그대로", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
+const L = {exact: "그대로", web: "붙여넣음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
+const K = {exact: "AI 답 그대로", web: "다른 곳에서 붙여넣음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
 const hm = (ts) => ts ? ts.slice(11, 16) : "";
-// 붙여넣기 기록 한 줄 — 과정 기록이 없는 시험(D.rec=false)에선 안 보여 준다
+// 출처 — 오른쪽 칸 맨 아래 (10/5 결정). 과정 기록이 없는 시험(D.rec=false)에선 안 보여 준다
 const pasteLine = (s) => !D.rec ? "" : s.paste
-  ? `<p class="lab">붙여넣기 기록</p><p class="q">${hm(s.paste.copied_at)} ${esc(s.paste.domain || "AI")} 에서 복사 → ${hm(s.paste.pasted_at)} ${esc(s.paste.where || "문서")}에 붙여넣음</p>`
-  : `<p class="lab">붙여넣기 기록</p><p class="q">없음 — ${s.label === "exact" ? "글자는 같지만 붙여넣지 않고 입력함" : "AI 답을 보고 다시 썼거나 옮겨 친 것으로 보임 (어느 쪽인지는 가리지 않음)"}</p>`;
+  ? `<p class="lab">출처</p><p class="q src"><b>${esc(s.paste.domain || s.paste.source || "복사한 곳 기록 없음")}</b>${s.paste.copied_at ? ` · ${hm(s.paste.copied_at)} 복사` : ""} → ${hm(s.paste.pasted_at)} ${esc(s.paste.where || "문서")}에 붙여넣음</p>`
+  : `<p class="lab">출처</p><p class="q">붙여넣기 기록 없음 — ${s.label === "exact" ? "글자는 같지만 붙여넣지 않고 입력함" : "AI 답을 보고 다시 썼거나 옮겨 친 것으로 보임 (어느 쪽인지는 가리지 않음)"}</p>`;
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const doc = document.getElementById("doc"), side = document.getElementById("side"), tg = document.getElementById("tg");
 doc.innerHTML = `<h2>${esc(D.title)}</h2>` + D.paras.map((p, pi) =>
@@ -174,7 +177,11 @@ function show(el) {
   const s = D.paras[+el.dataset.p][+el.dataset.s];
   const head = `<p class="kind"><i style="background:var(--${s.label})"></i>${K[s.label]}</p>`;
   if (s.label === "none") {
-    side.innerHTML = head + `<p class="meta">이어지는 AI 답을 찾지 못했습니다</p><p class="lab">결과물</p><div class="well">${esc(s.text)}</div>`;
+    side.innerHTML = head + `<p class="meta">이어지는 AI 답·붙여넣기를 찾지 못했습니다</p><p class="lab">결과물</p><div class="well">${esc(s.text)}</div>`;
+  } else if (s.label === "web") {
+    side.innerHTML = head + `<p class="meta">AI 답이 아닌 곳에서 복사해 붙여넣은 글</p>
+      <p class="lab">결과물</p><div class="well">${esc(s.text)}</div>
+      <p class="lab">붙여넣은 글 (붙여넣은 순간 문서에 들어온 글)</p><div class="well">${esc(s.paste.text)}</div>` + pasteLine(s);
   } else {
     const a = D.answers[s.answer];
     const hl = esc(a.text.replace(/\*\*/g, "")).replace(esc(s.ai_text), (m) => `<span class="hit" style="background:var(--${s.label}-s)">${m}</span>`);
@@ -216,21 +223,25 @@ def run_case(case, out):
         write_docx(docx, truth["title"], [" ".join(s["text"] for s in p) for p in truth["paragraphs"]])
     events, context = jsonl(os.path.join(fx, "events.jsonl")), jsonl(os.path.join(fx, "context.jsonl"))
     pasted = M.pasted_from_ai(events, context or []) if events is not None else None
+    others = M.pasted_from_other(events, context or []) if events is not None else None
 
     title, body = doc_body(docx)
-    linked = M.link_document(body, answers, pasted)
+    linked = M.link_document(body, answers, pasted, others)
 
     flat = [s for p in truth["paragraphs"] for s in p]
     got = [s for p in linked for s in p]
-    print(f"━━ {case} · 문장 {len(got)}개 (정답 {len(flat)}개) · 과정 기록 {'있음 · AI 답에서 붙여넣기 ' + str(len(pasted)) + '번' if pasted is not None else '없음'}")
+    print(f"━━ {case} · 문장 {len(got)}개 (정답 {len(flat)}개) · 과정 기록 {'있음 · AI 답에서 붙여넣기 ' + str(len(pasted)) + '번 · 다른 곳에서 ' + str(len(others)) + '번' if pasted is not None else '없음'}")
     print(f"   기준: 그대로 ≥ {M.EXACT_RATIO} · 이어짐 ≥ {M.EDIT_COVER} · 두 문장 ≥ {M.PAIR_GAIN}배\n")
     hit = 0
     for t, g in zip(flat, got):
-        same = g["label"] == t["label"] and (t["label"] == "none" or (g["answer"] == t.get("src") and list(g["sents"]) == t.get("sents")))
+        if t["label"] == "web":                    # 다른 곳 붙여넣기: 출처(도메인)가 맞는지
+            same = g["label"] == "web" and (g["paste"] or {}).get("source") == t.get("src")
+        else:
+            same = g["label"] == t["label"] and (t["label"] == "none" or (g["answer"] == t.get("src") and list(g["sents"]) == t.get("sents")))
         if "pasted" in t and pasted is not None:
             same = same and (g["paste"] is not None) == t["pasted"]
         hit += same
-        where = f"{g['answer'] or '':3} {'' if g['sents'] is None else str(list(g['sents'])):7}"
+        where = f"{(g['paste'] or {}).get('source', ''):11}" if g["label"] == "web" else f"{g['answer'] or '':3} {'' if g['sents'] is None else str(list(g['sents'])):7}"
         print(f"  {'✓' if same else '✗'} 정답 {LABEL[t['label']]:5} 결과 {LABEL[g['label']]:5} {where} {'붙임' if g.get('paste') else '    '}  {t['how']}")
         if not same:
             print(f"      └ {g['text'][:60]}")

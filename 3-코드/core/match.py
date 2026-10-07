@@ -6,7 +6,9 @@ match.py — 결과물 문장 ↔ AI 답 연결 "제안" (기록기·서버 공�
   exact   AI 답 그대로     — 글자 순서까지 거의 같음 (붙여넣기 기록이 있든 없든 · 화면에 기록 유무를 따로 보여 줌)
   edited  붙여넣고 고침    — 내용이 AI 답에서 왔고, 그 AI 답 문장을 복사해 붙여넣은 **기록이 있음**
   viewed  AI 답 보고 씀    — 내용이 AI 답에서 왔지만 붙여넣은 기록은 없음 (참고해 다시 씀 · 보고 옮겨 침 — 둘을 가르지 않는다)
-  none    출처 기록 없음   — 이어지는 AI 답이 없음. "직접 씀" 이라고 단정하지 않는다 (휴대폰 등은 못 봄 · 원칙 2)
+  web     다른 곳에서 붙여넣음 — AI 답은 아니지만 다른 사이트·프로그램(나무위키 · 위키백과 · PDF …)에서 복사해 붙여넣은 글.
+                         고쳤든 안 고쳤든 하나로 (10/5 결정 · 화면 색은 그대로와 같은 빨강 · 출처는 오른쪽 칸 맨 아래)
+  none    출처 기록 없음   — 이어지는 AI 답·붙여넣기가 없음. "직접 씀" 이라고 단정하지 않는다 (휴대폰 등은 못 봄 · 원칙 2)
 
 edited / viewed 는 글자 비교가 아니라 **과정 기록**으로 가른다 (10/5 결정 — 글자만으로는 "고쳤다" 와 "보고 다시 썼다" 를 못 가름).
 과정 기록이 없으면(pasted=None) 둘을 가르지 않고 edited 로 둔다 (글자 비교만 한 시험용).
@@ -122,10 +124,61 @@ def pasted_from_ai(events, context):
     for i, e in enumerate(evs):
         if e.get("type") != "paste" or e.get("hash") not in copies:
             continue
-        at = next((d for d in evs[i + 1:i + 40] if d.get("type") == "doc_paste_at" and _secs(e["ts"], d["ts"]) <= 10), {})
+        at = _paste_spot(evs, i) or {}
         out.append({"text": excerpts[e["hash"]]["text"], "copied_at": copies[e["hash"]]["ts"], "pasted_at": e["ts"],
                     "file": at.get("file", ""), "where": at.get("where", ""), "domain": excerpts[e["hash"]].get("meta", {}).get("domain", "")})
     return out
+
+
+BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe", "whale.exe", "google chrome", "microsoft edge", "firefox", "safari"}
+
+
+def pasted_from_other(events, context):
+    """과정 기록 → AI 답이 **아닌** 곳에서 복사해 문서에 붙여넣은 글 [{"text", "source", "category", "copied_at", "pasted_at", "file", "where"}]
+
+    · AI 답 붙여넣기(pasted_from_ai 의 해시 고리)는 뺀다.
+    · 출처: 복사한 순간의 앱이 브라우저면 그때 보던 탭 도메인(확장 tab 이벤트), 아니면 앱 이름. 복사 기록이 없으면(기록 시작 전 복사) "".
+    · **자기 글 옮기기는 뺀다**: 복사한 곳 = 붙여넣은 곳(같은 앱 · 브라우저면 같은 도메인) — Word 안에서 잘라 붙이기 등.
+    · 글자: 원문이 따로 없어서 붙여넣은 순간 문서에 새로 들어온 글(context kind=diff · doc_paste_at 과 같은 시각·자리)을 쓴다.
+      capture.office 가 꺼져 있으면 글자가 없어서 문장과 잇지 못한다 (붙여넣기 사실은 과정 기록 화면에 그대로 남음)."""
+    ai = {_sha256(c["text"]) for c in context if c.get("kind") == "ai_answer_excerpt" and c.get("text")}
+    diffs = [c for c in context if c.get("kind") == "diff" and c.get("text")]
+    evs = sorted(events, key=lambda e: e.get("ts", ""))
+    tab = ("", "other")                      # 지금 보던 탭 (domain, category)
+    copies, out = {}, []
+    for i, e in enumerate(evs):
+        t = e.get("type")
+        if t == "tab":
+            tab = (e.get("domain", ""), e.get("category", "other"))
+        elif t == "copy":
+            browser = e.get("app", "").lower() in BROWSERS
+            copies[e.get("hash")] = {"ts": e["ts"], "app": e.get("app", ""), "domain": tab[0] if browser else "",
+                                     "category": tab[1] if browser else e.get("category", "other")}
+        elif t == "paste" and e.get("hash") and e["hash"] not in ai:
+            c = copies.get(e["hash"])
+            if c and c["app"].lower() == e.get("app", "").lower() and (c["app"].lower() not in BROWSERS or c["domain"] == tab[0]):
+                continue                     # 같은 곳에서 복사해 같은 곳에 붙임 = 자기 글 옮기기
+            at = _paste_spot(evs, i)
+            if not at:
+                continue
+            text = " ".join(d["text"] for d in diffs if d["ts"] == at["ts"] and d.get("meta", {}).get("where") == at.get("where"))
+            if not text.strip():
+                continue
+            src = (c["domain"] or c["app"].removesuffix(".exe").removesuffix(".EXE")) if c else ""
+            out.append({"text": text.strip(), "source": src, "category": c["category"] if c else "",
+                        "copied_at": c["ts"] if c else "", "pasted_at": e["ts"], "file": at.get("file", ""), "where": at.get("where", "")})
+    return out
+
+
+def _paste_spot(evs, i):
+    """evs[i](paste) 의 붙여넣은 자리 = 그 뒤 10초 안의 첫 doc_paste_at. 단 다음 붙여넣기보다 앞이어야 한다
+    (10/7: 빨리 연달아 붙여넣으면 뒤 붙여넣기의 자리를 앞 것이 가져가던 위험)."""
+    for d in evs[i + 1:i + 40]:
+        if d.get("type") == "paste":
+            return None
+        if d.get("type") == "doc_paste_at":
+            return d if _secs(evs[i]["ts"], d["ts"]) <= 10 else None
+    return None
 
 
 def _secs(a: str, b: str) -> float:
@@ -133,11 +186,16 @@ def _secs(a: str, b: str) -> float:
     return (datetime.fromisoformat(b) - datetime.fromisoformat(a)).total_seconds()
 
 
-def link_document(paragraphs, answers, pasted=None):
+def link_document(paragraphs, answers, pasted=None, others=None):
     """paragraphs: [문단 텍스트] · answers: [{"id","text",...}] · pasted: pasted_from_ai() 결과 (없으면 None = 과정 기록 없음)
+    others: pasted_from_other() 결과 (AI 아닌 곳에서 붙여넣은 글)
     → [[{"text", "label", "answer", "sents", "ai_text", "paste", ...} 문장마다] 문단마다]
-    paste = 이 문장의 AI 답 문장을 붙여넣은 기록 (없으면 None) — 화면에 "언제 복사 → 언제 붙여넣음" 으로 보여 준다."""
+    paste = 이 문장을 붙여넣은 기록 (없으면 None) — 화면에 "어디서 · 언제 복사 → 언제 붙여넣음" 으로 보여 준다.
+
+    순서: AI 답 붙여넣기(기록 있음) > 다른 곳 붙여넣기(기록 있음) > AI 답 보고 씀·옮겨 침(글자만) > 출처 기록 없음.
+    다른 곳 붙여넣기도 같은 글자 비교 규칙으로 잇는다 (고쳐도 이어짐 기준을 넘으면 web)."""
     cands = candidates(answers)
+    wcands = candidates([{"id": k, "text": p["text"]} for k, p in enumerate(others or [])])
     # 붙여넣은 글이 어느 AI 답의 몇 번째 문장인지 — 붙여넣은 글도 같은 규칙으로 잇는다
     pasted_at = {}
     for p in pasted or []:
@@ -155,6 +213,10 @@ def link_document(paragraphs, answers, pasted=None):
                 r["paste"] = next((pasted_at[(r["answer"], i)] for i in r["sents"] if (r["answer"], i) in pasted_at), None)
                 if r["label"] == "edited" and r["paste"] is None:
                     r["label"] = "viewed"
+            if wcands and r["paste"] is None:
+                w = link_sentence(s, wcands)
+                if w["label"] != "none":
+                    r.update(label="web", answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
             row.append(r)
         out.append(row)
     return out

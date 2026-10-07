@@ -512,7 +512,7 @@ class Collector:
         if src:
             print(f"        ↳ {src[0]}({src[1]}) 에서 복사한 것과 같은 해시")
         if self._office:
-            self._office.on_paste()
+            self._office.on_paste(exe)
 
     def _on_edit(self, kind: str):
         exe, _ = foreground()
