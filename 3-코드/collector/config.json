@@ -60,6 +60,7 @@
   "learn_context": {
     "_comment": "Learn 모드에서 확장이 보내는 맥락 항목별 토글 (목업 17). Proof 세션에는 적용 안 됨.",
     "ai_question": true,
+    "ai_answer": true,
     "ai_answer_excerpt": true,
     "selection": false,
     "page": true,

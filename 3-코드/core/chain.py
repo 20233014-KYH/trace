@@ -6,7 +6,7 @@ chain.py — 해시 체인. 수집기(PC) · derive.py · 서버(dev_receiver / 
   h₀ = "0" × 64
 
 heartbeat 는 체인에 넣지 않는다 (공백 계산용일 뿐, 5초마다 생기는 잡음).
-summary 에는 내용이 없다 — 앱·제목·횟수·길이·해시만.
+summary 에는 내용이 없다 — 앱·제목·횟수·길이·해시만. (ai_msg 도 원문 대신 해시 — 원문은 PC 의 ai-messages-날짜.jsonl)
 """
 import hashlib
 
@@ -49,6 +49,10 @@ def summary(e: dict) -> str:
         return "세션 종료"
     if t in ("idle_start", "idle_end"):
         return t
+    if t == "ai_msg":   # AI 질문·답 — 원문은 PC 에만, 체인엔 해시 전체 (제출 때 원문과 맞춰 봄 · docs/api.md 10-3)
+        # history(이전 대화 · 받은 시각 모름)는 해석을 바꾸는 값이라 요약에 넣어 체인으로 보호한다 (PR #20 검토 ②)
+        return (f"{e.get('tool','')} · {e.get('conv','')} · {e.get('turn','')} · {e.get('role','')} · {e.get('len',0)}자 · {e.get('hash','')}"
+                + (" · 이전 대화" if e.get("history") else ""))
     return ""
 
 
