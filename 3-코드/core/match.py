@@ -299,7 +299,9 @@ def _link_short_lines(out, cands):
             continue
         for nb in (_near(flat, k, -1), _near(flat, k, 1)):
             p = nb.get("paste") if nb else None
-            if not p or n not in norm(p.get("text", "")):
+            # 붙여넣은 원문의 **한 줄 전체**와 같을 때만 — 글 안 어딘가에 들어 있기만 하면(부분 문자열) 직접 친 소제목
+            # "현재" 가 붙여넣은 "현재 하린은 23살." 에 걸렸다 (10/7 첫 연결 보고서에서 찾음)
+            if not p or not any(norm(line) == n for line in p.get("text", "").split("\n")):
                 continue
             if nb["label"] == "web":
                 r.update(label="web", full=False, answer=None, sents=None, ai_text=r["text"], paste=p)
