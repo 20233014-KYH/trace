@@ -63,6 +63,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "status") { refreshStatus().then(sendResponse); return true; }
 });
 
+// 확장을 설치·새로고침·업데이트하면 **이미 열려 있던 AI 탭**에 content.js 를 다시 넣는다.
+// 크롬은 새로고침해도 열린 탭엔 안 넣어 줘서, 그 탭의 질문·답·복사 발췌가 하나도 안 왔다 (이슈 #26-1 · 10/7 첫 연결 ai_msg 0건).
+// 크롬 자체 업데이트(chrome_update)는 탭에 이미 들어 있으니 건너뛴다.
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== "install" && reason !== "update") return;
+  const matches = chrome.runtime.getManifest().content_scripts.flatMap((c) => c.matches);
+  const tabs = await chrome.tabs.query({ url: matches }).catch(() => []);
+  for (const t of tabs) {
+    chrome.scripting.executeScript({ target: { tabId: t.id }, files: ["content.js"] })
+      .then(() => console.log("[Trace] content.js 다시 넣음", domainOf(t.url)))
+      .catch((e) => console.log("[Trace] 다시 넣기 실패", domainOf(t.url), e?.message));
+  }
+});
+
 chrome.alarms?.create?.("status", { periodInMinutes: 0.5 });
 chrome.alarms?.onAlarm?.addListener(() => refreshStatus());
 refreshStatus();

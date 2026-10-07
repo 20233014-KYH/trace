@@ -95,7 +95,7 @@ class OfficeWatcher(threading.Thread):
         key = ("Word", doc.Name)
         units = {}
         for i, p in enumerate(doc.Paragraphs, 1):
-            t = p.Range.Text.rstrip("\r\x07").strip()
+            t = p.Range.Text.rstrip("\r\x07").replace("\x0b", "\n").strip()   # Shift+Enter 줄바꿈(\x0b) = 줄바꿈 (이슈 #26-2)
             if t:
                 units[i] = t
             if i >= 2000:                       # 아주 긴 문서는 앞 2000문단까지만

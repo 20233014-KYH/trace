@@ -61,8 +61,10 @@ def read_docx(path):
     out = []
     for p in re.findall(r"<w:p[ >].*?</w:p>|<w:p/>", x, re.S):
         style = (re.search(r'<w:pStyle w:val="([^"]+)"', p) or [None, ""])[1]
-        p = re.sub(r"<w:tab/>", "\t", p)
-        p = re.sub(r"<w:br/>", "\n", p)
+        # 줄바꿈·탭은 글자 칸(<w:t>) 안으로 넣어야 아래에서 모인다 — 칸 밖에 넣으면 버려져서 두 문장이 붙었다 (이슈 #26-2)
+        # <w:tab/> 은 글 안의 탭만 (문단 설정의 <w:tab w:val=…/> 탭 위치는 속성이 있어서 안 걸림)
+        p = re.sub(r"<w:tab\s*/>", "<w:t>\t</w:t>", p)
+        p = re.sub(r"<w:br\b[^>]*/>|<w:cr\s*/>", "<w:t>\n</w:t>", p)
         text = html.unescape("".join(re.findall(r"<w:t(?: [^>]*)?>(.*?)</w:t>", p, re.S)))
         if text.strip():
             out.append((style, text.strip()))

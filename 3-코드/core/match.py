@@ -107,6 +107,23 @@ def link_sentence(sentence: str, cands):
     return one or best
 
 
+def latest_messages(records):
+    """ai-messages 기록 → 생성 도중 잘린 답을 뺀 것 (이슈 #26-4).
+    · 기록기가 "replaces"(이 글이 대체한 앞 글의 해시)를 남겼으면 그 앞 글을 뺀다
+    · 예전 기록(replaces 없음)도: 같은 도구·턴·역할에서 뒤 글이 앞 글을 그대로 품고 더 길면 앞 글을 뺀다"""
+    gone = {r["replaces"] for r in records if r.get("replaces")}
+    out = []
+    for i, r in enumerate(records):
+        if r.get("hash") in gone:
+            continue
+        t = r.get("text", "")
+        if any(o is not r and (o.get("tool"), o.get("turn"), o.get("role")) == (r.get("tool"), r.get("turn"), r.get("role"))
+               and len(o.get("text", "")) > len(t) and o.get("text", "").startswith(t) for o in records[i + 1:]):
+            continue
+        out.append(r)
+    return out
+
+
 def _sha256(s: str) -> str:
     return "sha256:" + hashlib.sha256(s.encode("utf-8", "surrogatepass")).hexdigest()   # 수집기 sha256_text 와 같게
 
@@ -267,4 +284,38 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                     r.update(label="noproc", full=False, answer=None, sents=None, ai_text=x["ai_text"], proc=proc["noproc"][x["answer"]])
             row.append(r)
         out.append(row)
+    _link_short_lines(out, cands)
     return out
+
+
+def _link_short_lines(out, cands):
+    """8자 미만 짧은 줄("나이: 24세" · "예를 들어") — 유사도 비교는 여전히 안 한다. 다만 바로 앞·뒤 문장이 붙여넣기(AI 답 · 다른 곳)에
+    이어졌고 **그 붙여넣은 원문 안에 이 줄이 그대로 있으면** 같은 붙여넣기로 잇는다 (이슈 #26-3).
+    붙여넣은 글 안에서만 찾으니 우연히 겹칠 위험이 없다 — 직접 친 짧은 제목("어린 시절")은 붙여넣은 글에 없으니 그대로 둔다."""
+    flat = [r for row in out for r in row]
+    for k, r in enumerate(flat):
+        n = norm(r["text"])
+        if r["label"] != "none" or not n or len(n) >= MIN_CHARS:
+            continue
+        for nb in (_near(flat, k, -1), _near(flat, k, 1)):
+            p = nb.get("paste") if nb else None
+            if not p or n not in norm(p.get("text", "")):
+                continue
+            if nb["label"] == "web":
+                r.update(label="web", full=False, answer=None, sents=None, ai_text=r["text"], paste=p)
+            else:                                   # AI 답 붙여넣기 — 원문에서 이 줄이 든 문장을 칠한다
+                i = next((c["sents"][0] for c in cands
+                          if c["answer"] == nb["answer"] and len(c["sents"]) == 1 and n in norm(c["text"])), None)
+                r.update(label="exact", full=True, answer=nb["answer"], sents=(i,) if i is not None else nb["sents"],
+                         ai_text=r["text"], paste=p)
+            break
+
+
+def _near(flat, k, step):
+    """k 에서 step 쪽으로 가장 가까운 짧지 않은 문장 — 짧은 줄이 연달아 있어도 붙여넣은 덩어리의 양 끝 문장을 본다"""
+    j = k + step
+    while 0 <= j < len(flat):
+        if len(norm(flat[j]["text"])) >= MIN_CHARS:
+            return flat[j]
+        j += step
+    return None

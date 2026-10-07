@@ -10,6 +10,7 @@ python tests/test_derive.py --update   # 골든만 갱신 (derive 정의를 의�
 python tests/기술테스트_제안서.py      # 제안서 4장 기술 테스트 — ① 붙여넣기 출처 4/4 ② 조작 2건 탐지
 python tests/연결시제품.py             # 결과물(Word) 문장 ↔ AI 답 연결 시험 4개 + 색칠한 화면 (data/연결시제품/*.html)
 python tests/test_paste_source.py      # 수집기→derive 한 바퀴 · 나무위키 등 사이트별 붙여넣기 출처 10건
+python tests/test_issue26.py           # 이슈 #26 — Word 줄바꿈 · 붙여넣은 글 안의 짧은 줄 · 생성 도중 잘린 답 (12건)
 xvfb-run -a -s "-screen 0 1440x900x24" python tests/녹화시험_위키.py   # 실제 Chromium+확장+수집기로 나무위키·위키백과 복사 녹화 (결과: 녹화시험_결과.md)
 ```
 
