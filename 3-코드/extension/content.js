@@ -77,7 +77,7 @@ const site = SITES.find((s) => s.tool === globalThis.__TRACE_SITE) || SITES.find
 let toggles = null;                          // null = 기록 중 아님 → 아무것도 안 보냄
 async function loadToggles() {
   const s = await chrome.runtime.sendMessage({ type: "status" }).catch(() => null);
-  toggles = s?.recording ? (s.learn_context || {}) : null;
+  toggles = s?.recording ? (s.capture || s.learn_context || {}) : null;   // learn_context = 옛 수집기 이름
 }
 loadToggles();
 setInterval(loadToggles, 30000);

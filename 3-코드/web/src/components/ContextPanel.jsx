@@ -2,7 +2,7 @@
 // 사실만 늘어놓는다. "AI 를 썼다/안 썼다" 판정 없음. 디자인 기준(흑연): 테두리 없는 연한 블록, 색은 사실(오류·AI=빨강, 직접=초록)에만.
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { KIND, contextAround, clock } from '../lib/learn.js';
+import { KIND, contextAround, clock } from '../lib/context.js';
 import { pasteText } from '../lib/format.jsx';
 
 export default function ContextPanel({ s, ctx, mk, onAsk }) {
@@ -70,4 +70,4 @@ function Quote({ children, mono, className = '' }) {
 function Err({ children }) {
   return <pre className="rounded-lg px-3 py-2.5 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap break-all" style={{ background: 'color-mix(in oklab, var(--ai) 8%, transparent)', color: 'var(--ai)' }}>{children}</pre>;
 }
-function Note() { return <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">이 맥락은 Learn 모드 · 맥락 수집 켜짐 상태에서 확장·Office 모듈이 저장한 것입니다. Proof 세션에는 없습니다.</p>; }
+function Note() { return <p className="mt-3 text-[11.5px] leading-relaxed text-muted-foreground">이 내용은 학생 PC 에만 있는 원문입니다 — 서버엔 해시만 있고, 제출할 때 학생이 고른 것만 나갑니다.</p>; }

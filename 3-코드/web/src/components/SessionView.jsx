@@ -1,5 +1,5 @@
-// 한눈에 화면(Proof) — 목업 07 구성을 디자인 기준(흑연)으로 다시 그림: 두 숫자 → 구성 막대 → 숫자 세 개 → 01 분당 활동 → 02 앱별 → 03 핵심 순간 → (접힌) 상세 → 04 이벤트 원본
-// 문서 부품은 Doc.jsx (Learn 리포트와 공유). 사실만 보여준다 — 판정 없음.
+// 한눈에 화면 — 목업 07 구성을 디자인 기준(흑연)으로 다시 그림: 두 숫자 → 구성 막대 → 숫자 세 개 → 01 분당 활동 → 02 앱별 → 03 핵심 순간 → (접힌) 상세 → 04 이벤트 원본
+// 문서 부품은 Doc.jsx. 사실만 보여준다 — 판정 없음.
 import { useState } from 'react';
 import Timeline, { Legend } from './Timeline.jsx';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ export default function SessionView({ s }) {
 
   return (
     <Sheet wide>
-      <Head kicker={`PROOF · ${s.date}`} title={`${s.work_id || s.date} 세션`}
+      <Head kicker={`기록 · ${s.date}`} title={`${s.work_id || s.date} 세션`}
             sub={<>{s.start} – {s.end} · {s.dur} · 이벤트 {fmt(st.events)}건 · 루트 해시 <span className="font-mono">{s.root.slice(0, 12)}…{s.root.slice(-8)}</span></>}
             right={sealed ? <Badge variant="secondary"><Dot c="var(--typed)" />봉인 · 앵커 {s.anchor}</Badge> : <Badge variant="outline">봉인 전 · 테스트</Badge>} />
 

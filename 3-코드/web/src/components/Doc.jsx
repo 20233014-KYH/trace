@@ -1,4 +1,4 @@
-// 문서 부품 — Proof 한눈에(SessionView)·Learn 리포트(ReportView)가 같이 쓴다. 디자인 기준(흑연):
+// 문서 부품 — 한눈에(SessionView)가 쓰고, 내역서 화면이 같이 쓸 예정. 디자인 기준(흑연):
 // 흰 종이 한 장 위에 머리선으로 나눈 섹션, 테두리 없음, 위계는 글자 크기·굵기, 색은 사실(초록·주황·빨강)에만, 큰 숫자만 굴린다.
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { BlurFade } from '@/components/ui/blur-fade';

@@ -43,8 +43,8 @@ def summary(e: dict) -> str:
         return f"{e.get('app','')} · {e.get('file','')} · {e.get('where','')}"
     if t == "doc_save":
         return f"{e.get('app','')} · {e.get('file','')} · " + " · ".join(f"{k}={e.get(k)}" for k in ("chars", "words", "slides") if k in e)
-    if t == "session_start":
-        return f"세션 시작 · {e.get('mode','')}"
+    if t == "session_start":   # 9/28 뒤엔 mode 가 없다. mode 가 있는 옛 기록은 예전과 같은 글 → 지난 해시 그대로
+        return "세션 시작" + (f" · {e['mode']}" if e.get("mode") else "")
     if t == "session_end":
         return "세션 종료"
     if t in ("idle_start", "idle_end"):

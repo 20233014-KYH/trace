@@ -20,7 +20,7 @@ Proof 모드에서는 ①만 낸다 — 문서를 읽기는 하지만 글자는 
   · 문서가 저장되면(Saved 가 False→True) save_stats 하나.
   · COM 이 막히면(모달 대화상자 등) 그 tick 은 건너뛴다.
 
-config.json:  "office": {"enabled": true, "poll_sec": 5}   ·  텍스트(맥락)는 "learn_context": {"office": true} 이고 Learn 모드일 때만
+config.json:  "office": {"enabled": true, "poll_sec": 5}   ·  텍스트는 "capture": {"office": true} 일 때 PC 의 context 파일에만 (9/28 개정: 모드 없음)
 """
 import threading
 import time
