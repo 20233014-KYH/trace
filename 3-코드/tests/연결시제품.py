@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 from core import match as M          # noqa: E402
 
 FIXTURES = os.path.join(HERE, "fixtures")
-CASES = ["match", "match_rec", "match3", "match_mix", "match_web", "match_proc", "match_view"]
+CASES = ["match", "match_rec", "match3", "match_mix", "match_web", "match_proc", "match_view", "match_app"]
 LABEL = {"exact": "그대로", "web": "붙여넣음", "noproc": "과정 없음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
 
 
@@ -70,8 +70,27 @@ def read_docx(path):
 
 
 # ───────────── 색칠한 화면 (HTML 한 장) ─────────────
+def answer_blocks(text):
+    """AI 답 → 문단[줄[[문장 번호, 문장]]] — 번호는 match.split_sentences 와 같은 순서.
+    화면에서 이어진 문장을 **번호로** 칠한다 (10/7: 글자로 찾으면 두 문장·목록 항목 사이 줄바꿈 때문에 못 찾았다).
+    빈 줄 = 문단 끝 · 줄바꿈 = 줄 끝 (목록 항목 · 소제목이 제 줄에 보이게)"""
+    blocks, para, i = [], [], 0
+    for line in text.replace("**", "").replace("\r", "").split("\n"):
+        if not line.strip():
+            if para:
+                blocks.append(para)
+                para = []
+            continue
+        sents = [s.strip() for s in re.split(r"(?<=[.!?。])\s+", line) if s.strip()]
+        para.append([[i + k, s] for k, s in enumerate(sents)])
+        i += len(sents)
+    if para:
+        blocks.append(para)
+    return blocks if i == len(M.split_sentences(text)) else None      # 번호가 어긋나면 칠하지 않는다 (틀리게 칠하느니)
+
+
 def render(path, title, linked, answers, rec=False):
-    data = {"title": title, "paras": linked, "answers": {a["id"]: a for a in answers},
+    data = {"title": title, "paras": linked, "answers": {a["id"]: {**a, "blocks": answer_blocks(a["text"])} for a in answers},
             "rec": any(s.get("paste") is not None for p in linked for s in p) or rec}
     for para in data["paras"]:
         for s in para:
@@ -133,6 +152,9 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 .q.src b{color:var(--ink);font-weight:600}
 .well{background:var(--well);border-radius:8px;padding:11px 13px;font-size:13px;line-height:1.8}
 .well .hit{border-radius:3px;padding:1px 0}
+.well.ans{position:relative;max-height:52vh;overflow:auto}
+.well.ans p{margin:0 0 10px}.well.ans p:last-child{margin:0}
+.well.ans b.h{font-weight:600;color:var(--ink)}
 .empty{color:var(--sub);font-size:12.5px;line-height:1.8;margin:0}
 .empty p{margin:0 0 10px}
 .empty b{color:var(--ink);font-weight:600}
@@ -162,6 +184,17 @@ const D = __DATA__;
 const L = {exact: "그대로", web: "붙여넣음", noproc: "과정 없음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
 const K = {exact: "AI 답 그대로", web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
 const hm = (ts) => ts ? ts.slice(11, 16) : "";
+// AI 답 원문 — 문단(빈 줄)·줄(목록 항목 · 소제목)대로, 이어진 문장은 번호로 칠한다 (두 문장을 합친 것도)
+const answerHTML = (a, s) => {
+  if (!a.blocks) return esc(a.text);
+  const on = new Set(s.sents || []);
+  // "4. 채널 운영" 같은 번호 소제목 — "4." 가 마침표 때문에 따로 한 문장으로 나뉘어서 줄 전체로 본다 · 짧은 줄만
+  const head = (line) => { const t = line.map((x) => x[1]).join(" "); return /^(\d+[.)]|#+)\s/.test(t) && t.length <= 40; };
+  return a.blocks.map((p) => `<p>${p.map((line, li) => {
+    const t = line.map(([i, x]) => on.has(i) ? `<span class="hit" style="background:var(--${s.label}-s)">${esc(x)}</span>` : esc(x)).join(" ");
+    return head(line) ? `${li ? "</p><p>" : ""}<b class="h">${t}</b>` : (li ? "<br>" : "") + t;   // 소제목은 새 문단으로
+  }).join("")}</p>`).join("");
+};
 // 출처 — 오른쪽 칸 맨 아래 (10/5 결정). 과정 기록이 없는 시험(D.rec=false)에선 안 보여 준다
 const pasteLine = (s) => !D.rec ? "" : s.paste
   ? `<p class="lab">출처</p><p class="q src"><b>${esc(s.paste.domain || s.paste.source || "복사한 곳 기록 없음")}</b>${s.paste.copied_at ? ` · ${hm(s.paste.copied_at)} 복사` : ""} → ${hm(s.paste.pasted_at)} ${esc(s.paste.where || "문서")}에 붙여넣음</p>`
@@ -190,11 +223,12 @@ function show(el) {
       <p class="lab">붙여넣은 글 (붙여넣은 순간 문서에 들어온 글)</p><div class="well">${esc(s.paste.text)}</div>` + pasteLine(s);
   } else {
     const a = D.answers[s.answer];
-    const hl = esc(a.text.replace(/\*\*/g, "")).replace(esc(s.ai_text), (m) => `<span class="hit" style="background:var(--${s.label}-s)">${m}</span>`);
     side.innerHTML = head + `<p class="meta">${esc(a.tool)}${a.model ? " · " + esc(a.model) : ""}</p>
       <p class="lab">질문</p><p class="q">${esc(a.question || "")}</p>
       <p class="lab">결과물</p><div class="well">${esc(s.text)}</div>
-      <p class="lab">AI 답 원문</p><div class="well">${hl}</div>` + pasteLine(s);
+      <p class="lab">AI 답 원문</p><div class="well ans">${answerHTML(a, s)}</div>` + pasteLine(s);
+    const box = side.querySelector(".ans"), hit = box.querySelector(".hit");
+    if (hit) box.scrollTop = Math.max(0, hit.offsetTop - 48);          // 긴 답: 이어진 문장이 보이게 상자 안에서 내림
   }
   if (innerWidth <= 860) side.scrollIntoView({behavior: "smooth", block: "start"});   // 좁은 화면: 아래로 내려 보여 줌
 }
@@ -241,7 +275,9 @@ def run_case(case, out):
     print(f"   기준: 그대로 ≥ {M.EXACT_RATIO} · 이어짐 ≥ {M.EDIT_COVER} · 두 문장 ≥ {M.PAIR_GAIN}배\n")
     hit = 0
     for t, g in zip(flat, got):
-        if t["label"] == "web":                    # 다른 곳 붙여넣기: 출처(도메인)가 맞는지
+        if "label_any" in t:                       # 손으로 옮겨 친 문장: '그대로'(90%↑)·'보고 씀' 어느 쪽이든 맞는 AI 답이면 맞음
+            same = g["label"] in t["label_any"] and g["answer"] == t.get("src")
+        elif t["label"] == "web":                  # 다른 곳 붙여넣기: 출처(도메인)가 맞는지
             same = g["label"] == "web" and (g["paste"] or {}).get("source") == t.get("src")
         else:
             same = g["label"] == t["label"] and (t["label"] in ("none", "noproc") or (g["answer"] == t.get("src") and list(g["sents"]) == t.get("sents")))

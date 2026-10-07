@@ -46,7 +46,8 @@ function geminiAnswer(el) {
   const c = (mc.querySelector(".markdown") || mc).cloneNode(true);
   c.querySelectorAll(GEMINI_DROP).forEach((x) => x.remove());
   c.querySelectorAll("br").forEach((b) => b.replaceWith("\n"));
-  c.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, pre, tr, blockquote").forEach((b) => b.append("\n"));
+  c.querySelectorAll("li, tr").forEach((b) => b.append("\n"));                                  // 목록 항목 · 표 줄 = 줄바꿈
+  c.querySelectorAll("p, h1, h2, h3, h4, h5, h6, pre, blockquote, ul, ol, table").forEach((b) => b.append("\n\n"));   // 문단 = 빈 줄 (10/7 · 결과물 화면에서 문단대로 보이게)
   return cleanText(c.textContent.split("\n").map((l) => l.trim()).join("\n"));   // 칩을 지운 자리의 빈칸까지 정리
 }
 const SITES = [

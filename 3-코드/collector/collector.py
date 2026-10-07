@@ -353,6 +353,7 @@ class Collector:
         self._bridge = None
         self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title, browser)
         self._office = None         # Learn 모드 · Word/PPT 맥락 (office.py)
+        self._desktop = None        # 데스크톱 AI 앱 질문·답 (desktop_ai.py · 10/7)
 
     def describe(self, exe: str, title: str) -> dict:
         # 화이트리스트 밖 앱은 분류·제목 없이 other 로만 남긴다 (개인정보)
@@ -419,6 +420,17 @@ class Collector:
                 print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트(PC 에만)' if with_text else '만'})")
             except Exception as e:
                 print(f"  Office 감시 실패 ({e}) — 없이 계속")
+        # 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱) 질문·답 — 윈도우 화면 읽기(UI Automation). 앱이 앞에 있을 때만 읽고 원문은 PC 에만
+        dcfg = cfg.get("desktop_ai", {})
+        if dcfg.get("enabled", True) and sys.platform == "win32" and (self.capture.get("ai_question", True) or self.capture.get("ai_answer", True)):
+            try:
+                from desktop_ai import DesktopAIWatcher
+                self._desktop = DesktopAIWatcher(self._on_context, self.capture, poll_sec=dcfg.get("poll_sec", 2),
+                                                 data_dir=self.sink.data_dir, debug=bool(dcfg.get("debug")))
+                self._desktop.start()
+                print("  데스크톱 AI 앱 읽기 켜짐 (Claude 앱 · ChatGPT 앱 · 앞에 있을 때만 · 원문은 PC 에만)")
+            except Exception as e:
+                print(f"  데스크톱 AI 앱 읽기 실패 ({e}) — 없이 계속 (pip install comtypes)")
         fcfg = cfg.get("files", {})
         if fcfg.get("watch_dirs"):
             from file_watch import FileWatcher
@@ -607,6 +619,8 @@ class Collector:
             self._bridge.shutdown()
         if self._office:
             self._office.stop()
+        if self._desktop:
+            self._desktop.stop()
         self.sink.emit({"type": "session_end"})
         root, n = self.sink.head, self.sink.chain_len
         print(f"\n체인 {n}건 · 루트 {root[:16]}…")

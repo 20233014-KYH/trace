@@ -1,0 +1,144 @@
+{
+ "_comment": "데스크톱 Claude 앱 보고 손으로 옮겨 친 시험 (10/7) — 사용자가 Claude 앱 채팅에 직접 묻고, 답을 보며 Word 에 손으로 침(붙여넣기 0). 마지막 문단은 사용자가 직접 씀. 정답은 결과 보기 전에 씀. label_any = '그대로'(90% 넘게 같음)·'보고 씀' 어느 쪽이든 AI 답에서 온 것으로 맞음. 8자 미만 짧은 줄은 규칙상 비교하지 않으므로 '기록 없음' 이 정답.",
+ "_answer": "AI 답 원문은 그날 첫 버전 앱 읽기(문서 영역 TextPattern)가 기록한 것 — 화면낭독 제목·시각 같은 화면 글자가 섞여 있음 (뒤에 고침). 비교엔 영향 거의 없음.",
+ "paragraphs": [
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "답 첫 문장 — 화살표를 쉼표로 · '돼요' → '된다'"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "소제목 '1. 컨셉·페르소나 기획' 을 '컨셉, 페르소나 단계' 로"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "how": "'가장 중요한 단계.' — 8자 미만이라 비교 안 함 (규칙)"
+   },
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "답 문장을 줄여 옮김"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "소제목 '2. 비주얼 아이덴티티 만들기' 그대로"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "답 문장을 고쳐 옮김 ('것(일관성)이에요' → '일관성이다')"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "소제목 '3. 콘텐츠 제작 파이프라인' 에 쉼표"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "목록 항목 이름만 모음 (이미지 · 영상 · 목소리 · 글) — 많이 줄임"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "how": "'채널 운영' — 8자 미만"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "목록 항목 이름만 모음 (플랫폼 선택 · 업로드 계획 · 소통 · 성과 분석)"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "how": "'법, 윤리 체크' — 8자 미만"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "목록 항목 이름만 모음 (AI 생성물 표시 · 저작권 · 광고)"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "how": "'수익화' — 8자 미만"
+   }
+  ],
+  [
+   {
+    "label_any": [
+     "exact",
+     "viewed"
+    ],
+    "label": "viewed",
+    "src": "A1",
+    "how": "답 문장 거의 그대로 ('확장할 수 있어요' → '확장 가능')"
+   }
+  ],
+  [
+   {
+    "label": "none",
+    "how": "사용자가 직접 씀 — 같은 주제(AI 인플루언서 · 수익화) 단어 겹침"
+   }
+  ]
+ ]
+}

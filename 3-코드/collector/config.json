@@ -70,6 +70,12 @@
     "enabled": true,
     "poll_sec": 5
   },
+  "desktop_ai": {
+    "_comment": "데스크톱 AI 앱(Claude 앱 · ChatGPT 앱) 질문·답 — 윈도우 화면 읽기(UI Automation). 그 앱이 앞에 있을 때만 읽는다. 원문은 PC 에만 · 체인엔 해시(ai_msg). 원문 토글은 capture.ai_question · ai_answer. debug=true 면 메시지를 못 찾을 때 화면 구조를 data/desktop-ai-debug.txt 에",
+    "enabled": true,
+    "poll_sec": 2,
+    "debug": false
+  },
   "keys": {
     "_comment": "pynput 키 훅. 입력·삭제 횟수 + Ctrl+V/Z/Y/X 감지만. 어떤 키인지는 절대 기록하지 않음. Proof Mode 에서는 필수.",
     "enabled": true,
