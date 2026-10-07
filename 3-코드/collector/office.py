@@ -10,9 +10,10 @@ office.py — Word · PowerPoint 문서 변화 수집 (Office COM 자동화)
   ② 맥락 (Learn 만 · 텍스트 · 서버 /context 로)
      diff          바뀐 문단/도형의 새 텍스트 (≤500자)
      paste_at      붙여넣은 자리 주변 텍스트 (≤200자)
+     doc_open      문서를 처음 볼 때 이미 있던 글 (≤20000자) — "쓴 과정 기록 없음" 재료 (10/7)
 
-Proof 모드에서는 ①만 낸다 — 문서를 읽기는 하지만 글자는 **저장하지 않는다** (클립보드를 읽고 해시만 남기는 것과 같은 구조).
-안 하는 것: 문서 전체 저장, 화면 캡처. 삭제는 두 모드 모두 글자 수만.
+텍스트(②)는 capture.office 가 켜져 있을 때 **PC 의 context 파일에만** — 서버엔 안 간다 (9/28 개정: 모드 없음).
+안 하는 것: 화면 캡처. 삭제는 글자 수만.
 
 동작:
   · 별도 스레드. Word/PPT 가 실행 중이고 그 창이 활성일 때만 읽는다 (COM GetActiveObject — 프로그램을 새로 띄우지 않는다).
@@ -29,6 +30,7 @@ from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 MAX_DIFF, MAX_PASTE = 500, 200
+MAX_OPEN = 20000          # 열었을 때 이미 있던 글 (doc_open) — 긴 문서도 거의 다
 
 
 def _now():
@@ -47,13 +49,19 @@ class OfficeWatcher(threading.Thread):
         self._stop = threading.Event()
         self._snap = {}          # key(app,file) -> {"units": {unit_id: text}, "saved": bool, "stats": {...}}
         self._paste_pending = None
+        self._paste_app = ""
+        self._wake = threading.Event()
 
     def stop(self):
         self._stop.set()
+        self._wake.set()
 
-    def on_paste(self):
-        """수집기의 Ctrl+V 감지에서 호출 — 다음 tick 에 붙여넣은 자리를 읽는다."""
+    def on_paste(self, app: str = ""):
+        """수집기의 Ctrl+V 감지에서 호출 — 바로(0.3초 뒤) 붙여넣은 자리를 읽는다.
+        10/7 녹화 시험: 붙여넣고 1초 안에 다른 창으로 가면, 2초마다 '앞에 있을 때만' 읽던 방식으론 붙여넣은 글을 놓쳤다."""
         self._paste_pending = time.time()
+        self._paste_app = (app or "").upper()
+        self._wake.set()
 
     # ── 루프 ──
     def run(self):
@@ -61,14 +69,18 @@ class OfficeWatcher(threading.Thread):
         pythoncom.CoInitialize()
         try:
             while not self._stop.is_set():
+                # 붙여넣기 직후엔 그 창이 이미 뒤로 갔어도 한 번은 읽는다 (붙여넣은 곳이 Word/PPT 일 때만)
+                pend = self._paste_pending and time.time() - self._paste_pending < self.poll * 2
                 try:
-                    if self.is_active("WINWORD.EXE"):
+                    if self.is_active("WINWORD.EXE") or (pend and self._paste_app == "WINWORD.EXE"):
                         self._tick_word()
-                    elif self.is_active("POWERPNT.EXE"):
+                    elif self.is_active("POWERPNT.EXE") or (pend and self._paste_app == "POWERPNT.EXE"):
                         self._tick_ppt()
                 except Exception as e:      # COM 이 모달 상태이거나 문서가 닫히는 중
                     self._note(f"office 건너뜀: {type(e).__name__}")
-                self._stop.wait(self.poll)
+                if self._wake.wait(self.poll):           # Ctrl+V 가 오면 기다림을 끊고
+                    self._wake.clear()
+                    self._stop.wait(0.3)                 # Word 가 글을 넣을 틈만 주고 바로 읽는다
         finally:
             pythoncom.CoUninitialize()
 
@@ -144,6 +156,11 @@ class OfficeWatcher(threading.Thread):
         if prev is None:
             self._snap[app] = {"file": file, "units": units, "saved": saved, "stats": stats}
             self._note(f"{app} 감시 시작 · {file} · {stats}")
+            # 열었을 때 이미 있던 글 (10/7) — "쓴 과정 기록 없음" 의 재료: 다른 데서 만든 파일(AI 가 만든 Word 등)은
+            # 여기에만 나타나고 타이핑·붙여넣기 기록이 없다. PC 의 context 에만 (capture.office) · 체인 형식은 그대로
+            if units and self.emit_context:
+                text = "\n".join(units[k] for k in units)
+                self.emit_context([_item("doc_open", text[:MAX_OPEN], {"app": app, "file": file, "chars": stats.get("chars", len(text))})])
             return
         # 바뀐 단위 → 이벤트는 +n자/-m자, 맥락(Learn)은 새 텍스트. 사라진 단위는 두 층 모두 글자 수만
         for uid, text in units.items():

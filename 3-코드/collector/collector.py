@@ -59,7 +59,11 @@ from classify import Classifier      # noqa: E402
 from mask import mask                # noqa: E402
 
 VERSION = "0.2.0"
-BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe"}   # 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음)
+# 확장 탭 분류를 창 분류에 우선 적용하는 앱 (derive.py 와 같음). 맥은 exe 대신 앱 이름 (소문자로 비교)
+#   키 = 확장이 tab 이벤트에 실어 보내는 browser — 확장이 깔린 브라우저의 도메인을 다른 브라우저 창에 쓰지 않으려고
+BROWSER_APPS = {"chrome": {"chrome.exe", "google chrome"}, "edge": {"msedge.exe", "microsoft edge"},
+                "firefox": {"firefox.exe", "firefox"}}
+BROWSERS = set().union(*BROWSER_APPS.values())
 KST = timezone(timedelta(hours=9))
 
 
@@ -347,7 +351,7 @@ class Collector:
         self._last_keys_flush = time.time()
         self._files = None
         self._bridge = None
-        self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title)
+        self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title, browser)
         self._office = None         # Learn 모드 · Word/PPT 맥락 (office.py)
 
     def describe(self, exe: str, title: str) -> dict:
@@ -355,10 +359,18 @@ class Collector:
         if exe.lower() not in self.whitelist:
             return {"app": exe, "title": "", "category": "other"}
         cat = self.clf.by_app(exe, title)
-        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지
-        if exe.lower() in BROWSERS and self._tab and cat == "other":
+        # 브라우저는 확장이 알려준 탭 도메인이 창 제목보다 정확하다 — 도메인을 알면 제목 키워드보다 앞선다.
+        #   ChatGPT 가 대화 제목으로 창 제목을 바꿔도 ai 유지 · 나무위키 "ChatGPT" 문서는 ai 가 아니라 도메인 분류
+        #   확장이 없는 다른 브라우저 창(크롬엔 확장 · 엣지엔 없음)에는 크롬 탭 도메인을 쓰지 않는다 → 제목 키워드로
+        if exe.lower() in BROWSERS and self._tab and self._tab[0] and self._tab_fits(exe):
             cat = self._tab[1]
+            title = title or self._tab[0]   # 맥은 창 제목을 못 읽는다 → 출처 표기용으로 도메인을 제목 자리에
         return {"app": exe, "title": title, "category": cat}
+
+    def _tab_fits(self, exe: str) -> bool:
+        """지금 창이 확장이 보낸 그 브라우저인가. browser 를 안 보내는 옛 확장이면 브라우저 아무거나."""
+        b = self._tab[3]
+        return not b or exe.lower() in BROWSER_APPS.get(b, ())
 
     def run(self):
         cfg = self.cfg
@@ -500,7 +512,7 @@ class Collector:
         if src:
             print(f"        ↳ {src[0]}({src[1]}) 에서 복사한 것과 같은 해시")
         if self._office:
-            self._office.on_paste()
+            self._office.on_paste(exe)
 
     def _on_edit(self, kind: str):
         exe, _ = foreground()
@@ -525,7 +537,7 @@ class Collector:
         """확장이 보낸 탭 전환. 도메인으로 분류해 체인에 넣는다 (창 제목 키워드보다 정확)."""
         domain = (body.get("domain") or "").lower()
         cat = self.clf.by_domain(domain) if domain else "other"   # "" = 새 탭·chrome:// 등 내부 페이지
-        self._tab = (domain, cat, body.get("title", ""))
+        self._tab = (domain, cat, body.get("title", ""), body.get("browser"))
         self.sink.emit({"type": "tab", "domain": domain, "category": cat, "title": (body.get("title") or "")[:80]})
 
     AI_KINDS = {"ai_question": "question", "ai_answer": "answer"}

@@ -8,7 +8,8 @@
   pre { background: #111; color: #eee; padding: 8px; white-space: pre-wrap; }
   .ok { color: #0a0; font-weight: bold; } .bad { color: #c00; font-weight: bold; }
 </style>
-<p>시험대 — <b id="site"></b> 흉내 화면. 약 12초 뒤 결과가 아래에 뜬다. <code>?site=Claude</code> 로 바꿀 수 있음.</p>
+<p>시험대 — <b id="site"></b> 흉내 화면. 약 15초 뒤 결과가 아래에 뜬다. <code>?site=Claude</code> · <code>?site=Gemini</code> 로 바꿀 수 있음.
+화면 구조는 10/5 실제 사이트를 보고 맞춤 (Claude: .standard-markdown + 화면낭독 제목 + 시각 · Gemini: 숨은 "말씀하신 내용" + .query-text-line · 답 뒤 주소 바뀜).</p>
 <div id="chat"></div>
 <div id="verdict"></div>
 <pre id="out">(진행 중…)</pre>
@@ -36,18 +37,32 @@ function addMsg(role, text, opt = {}) {
     body.className = role === "q" ? "whitespace-pre-wrap" : "markdown";
     body.innerText = text;
     el.appendChild(body);
-  } else {   // Claude
+  } else if (SITE === "Claude") {
     if (role === "q") { el.setAttribute("data-testid", "user-message"); el.innerText = text; }
     else {
       el.setAttribute("data-is-streaming", opt.streaming ? "true" : "false");
-      const body = document.createElement("div"); body.className = "font-claude-response"; body.innerText = text;
-      el.appendChild(body);
+      el.innerHTML = '<h2 class="sr-only"></h2><div><div class="standard-markdown"></div></div>'
+        + '<div data-testid="message-actions"><button>복사</button><button>다시 시도</button><time>지금</time></div>';
+      el.querySelector("h2").textContent = "Claude 응답: " + text.slice(0, 40);
+      el.querySelector(".standard-markdown").innerText = text;
     }
+  } else {   // Gemini
+    if (role === "q") {
+      const q = document.createElement("user-query");
+      q.innerHTML = '<div class="query-text"><h5 class="cdk-visually-hidden"></h5><p class="query-text-line"></p></div>';
+      q.querySelector("h5").textContent = "말씀하신 내용 " + text;
+      q.querySelector("p").textContent = text;
+      chat.appendChild(q); return q;
+    }
+    const r = document.createElement("model-response");
+    r.innerHTML = '<h6 class="cdk-visually-hidden">Gemini의 응답</h6><message-content></message-content>';
+    r.querySelector("message-content").innerText = text;
+    chat.appendChild(r); return r;
   }
   chat.appendChild(el);
   return el;
 }
-const bodyOf = (el) => el.querySelector(".markdown, .font-claude-response") || el;
+const bodyOf = (el) => el.querySelector(".markdown, .standard-markdown, message-content") || el;
 
 // ① 이전 대화 — content.js 가 뜨기 전부터 화면에 있음
 addMsg("q", "옛 질문: 파이썬 리스트 정렬은?", { id: "old-q" });
@@ -70,8 +85,14 @@ const REGEN = "다시 생성한 답: SQLite 는 쓰기 잠금이 하나뿐이라
   const a = addMsg("a", "", { streaming: true });
   for (let i = 1; i <= FINAL.length; i += 6) { bodyOf(a).innerText = FINAL.slice(0, i); await sleep(60); }
   bodyOf(a).innerText = FINAL;
+  if (SITE === "Gemini") bodyOf(a).insertAdjacentHTML("beforeend",   // 출처 칩 · 동영상 카드 (10/5 실제 화면) — 답 글자에 들어가면 안 됨
+    '<sources-carousel-inline><source-inline-chip>Medium<br>+ 1</source-inline-chip></sources-carousel-inline>'
+    + '<div class="attachment-container youtube"><div class="hide-from-message-actions">How DNS works · 19만 조회수</div></div>');
   await sleep(2500);                                   // 생성은 끝났지만 표시가 아직 남아 있는 2.5초 — 이때 보내면 안 됨
-  if (stop) stop.remove(); else a.setAttribute("data-is-streaming", "false");
+  if (stop) stop.remove(); else if (SITE === "Claude") a.setAttribute("data-is-streaming", "false");
+  if (SITE === "Gemini") history.pushState(null, "", "/app/abc123def");   // Gemini: 답이 나온 뒤(5초 넘어) 새 대화 주소가 붙음
+  await sleep(3000);
+  const time = a.querySelector("time"); if (time) time.textContent = "1분 전";   // 시각 글자만 바뀜 — 다시 보내면 안 됨
   await sleep(3000);
   // ④ 다시 생성 — 같은 자리의 글이 바뀜
   bodyOf(a).innerText = REGEN;
@@ -89,6 +110,8 @@ const REGEN = "다시 생성한 답: SQLite 는 쓰기 잠금이 하나뿐이라
     ["다시 생성한 답도 보냄", ans.some((x) => x.text === REGEN)],
     ["턴 번호 (질문 3 · 답 4)", q.some((x) => x.meta.turn === 3) && ans.some((x) => x.meta.turn === 4)],
     ["모델 이름 (ChatGPT 만)", SITE !== "ChatGPT" || ans.some((x) => x.meta.model === "gpt-5-6-luna")],
+    ["화면낭독 글자·시각·출처 칩·동영상 카드 안 들어감", !S.some((x) => /Claude 응답|말씀하신 내용|Gemini의 응답|(^|\n)지금$|1분 전|Medium|조회수/.test(x.text))],
+    ["시각만 바뀐 답은 다시 안 보냄 (새 답은 완성본 1번 + 다시 생성 1번)", ans.filter((x) => !x.meta.history && x.text !== REGEN).length === 1],
   ];
   const ok = checks.every((c) => c[1]);
   document.getElementById("verdict").innerHTML = checks.map(([n, v]) => `<div class="${v ? "ok" : "bad"}">${v ? "✓" : "✗"} ${n}</div>`).join("")

@@ -1,0 +1,10 @@
+{"id": "evt_000067", "ts": "2026-10-05T15:55:11+09:00", "source": "collector", "type": "copy", "len": 135, "hash": "sha256:51264ceb083429af7f1f38a3ea7ec9bd4ccc0e93a9def4e45635fddc40e9453f", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000068", "ts": "2026-10-05T15:55:15+09:00", "source": "collector", "type": "paste", "len": 135, "hash": "sha256:51264ceb083429af7f1f38a3ea7ec9bd4ccc0e93a9def4e45635fddc40e9453f", "app": "WINWORD.EXE", "target_title": "네트워크과제_보고서.docx - Word"}
+{"id": "evt_000071", "ts": "2026-10-05T15:55:17+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "네트워크과제_보고서.docx", "where": "문단 3"}
+{"id": "evt_000072", "ts": "2026-10-05T15:55:31+09:00", "source": "collector", "type": "paste", "len": 110, "hash": "sha256:7ffdb5b84b20f7cebabca7bc2ee8e7f8b4d9dedf59e4f546ecb8a36d517c6fe0", "app": "WINWORD.EXE", "target_title": "네트워크과제_보고서.docx - Word"}
+{"id": "evt_000073", "ts": "2026-10-05T15:55:31+09:00", "source": "collector", "type": "copy", "len": 110, "hash": "sha256:7ffdb5b84b20f7cebabca7bc2ee8e7f8b4d9dedf59e4f546ecb8a36d517c6fe0", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000075", "ts": "2026-10-05T15:55:32+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "네트워크과제_보고서.docx", "where": "문단 3"}
+{"id": "evt_000081", "ts": "2026-10-05T15:56:03+09:00", "source": "collector", "type": "copy", "len": 106, "hash": "sha256:7e88737beb3c13a54e7c0fcd2d67f2ad26507cc902a032f4beb6520ded66ed76", "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000083", "ts": "2026-10-05T15:56:10+09:00", "source": "collector", "type": "paste", "len": 106, "hash": "sha256:7e88737beb3c13a54e7c0fcd2d67f2ad26507cc902a032f4beb6520ded66ed76", "app": "WINWORD.EXE", "target_title": "네트워크과제_보고서.docx - Word"}
+{"id": "evt_000085", "ts": "2026-10-05T15:56:10+09:00", "source": "collector", "type": "doc_paste_at", "app": "Word", "file": "네트워크과제_보고서.docx", "where": "문단 5"}
+{"id": "evt_000091", "ts": "2026-10-05T15:56:34+09:00", "source": "collector", "type": "doc_save", "app": "Word", "file": "네트워크과제_보고서.docx", "chars": 816, "words": 252, "paragraphs": 6}
