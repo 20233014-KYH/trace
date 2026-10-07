@@ -31,8 +31,8 @@ sys.path.insert(0, os.path.dirname(HERE))
 from core import match as M          # noqa: E402
 
 FIXTURES = os.path.join(HERE, "fixtures")
-CASES = ["match", "match_rec", "match3", "match_mix", "match_web"]
-LABEL = {"exact": "그대로", "web": "붙여넣음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
+CASES = ["match", "match_rec", "match3", "match_mix", "match_web", "match_proc", "match_view"]
+LABEL = {"exact": "그대로", "web": "붙여넣음", "noproc": "과정 없음", "edited": "고침", "viewed": "보고 씀", "none": "기록 없음"}
 
 
 # ───────────── Word (.docx) 쓰기·읽기 — zipfile 만 ─────────────
@@ -80,7 +80,7 @@ def render(path, title, linked, answers, rec=False):
     counts = {k: sum(s["label"] == k for p in linked for s in p) for k in LABEL}
     page = TEMPLATE.replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/"))
     # 빨강 = AI 답 그대로 + 다른 곳에서 붙여넣음
-    for k, n in {"EXACT": counts["exact"] + counts["web"], "EDITED": counts["edited"], "VIEWED": counts["viewed"], "NONE": counts["none"]}.items():
+    for k, n in {"EXACT": counts["exact"] + counts["web"] + counts["noproc"], "EDITED": counts["edited"], "VIEWED": counts["viewed"], "NONE": counts["none"]}.items():
         page = page.replace(f"__N_{k}__", str(n))
     with open(path, "w", encoding="utf-8") as f:
         f.write(page)
@@ -115,13 +115,13 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 .doc h2{font-size:17px;font-weight:650;margin:0 0 20px;letter-spacing:-.02em}
 .doc p{margin:0 0 16px;font-size:14px;line-height:1.95}
 .s{border-radius:3px;padding:2px 1px;cursor:pointer;transition:background .12s;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.s.exact,.s.web{background:var(--exact-t)}.s.exact:hover,.s.exact.sel,.s.web:hover,.s.web.sel{background:var(--exact-s)}
+.s.exact,.s.web,.s.noproc{background:var(--exact-t)}.s.exact:hover,.s.exact.sel,.s.web:hover,.s.web.sel,.s.noproc:hover,.s.noproc.sel{background:var(--exact-s)}
 .s.edited{background:var(--edited-t)}.s.edited:hover,.s.edited.sel{background:var(--edited-s)}
 .s.viewed{background:var(--viewed-t)}.s.viewed:hover,.s.viewed.sel{background:var(--viewed-s)}
 .s.none{background:var(--none-t)}.s.none:hover,.s.none.sel{background:var(--none-s)}
 .s:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .tags .s::after{content:attr(data-l);font-size:10.5px;font-weight:600;margin-left:4px;vertical-align:1px}
-.tags .s.exact::after,.tags .s.web::after{color:var(--exact)}.tags .s.edited::after{color:var(--edited)}.tags .s.viewed::after{color:var(--viewed)}.tags .s.none::after{color:var(--none)}
+.tags .s.exact::after,.tags .s.web::after,.tags .s.noproc::after{color:var(--exact)}.tags .s.edited::after{color:var(--edited)}.tags .s.viewed::after{color:var(--viewed)}.tags .s.none::after{color:var(--none)}
 .side{position:sticky;top:72px;align-self:start;max-height:calc(100vh - 92px);overflow:auto;
   background:var(--paper);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px var(--line);padding:22px 22px}
 @media (max-width:860px){.side{position:static;max-height:none}}
@@ -141,7 +141,7 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 <header><div class="bar">
   <h1>결과물 출처 보기</h1>
   <div class="legend">
-    <span><i style="background:var(--exact)"></i>AI 답 그대로 · 다른 곳에서 붙여넣음 <em>__N_EXACT__</em></span>
+    <span><i style="background:var(--exact)"></i>AI 답 그대로 · 다른 곳에서 붙여넣음 · 쓴 과정 기록 없음 <em>__N_EXACT__</em></span>
     <span><i style="background:var(--edited)"></i>붙여넣고 고침 <em>__N_EDITED__</em></span>
     <span><i style="background:var(--viewed)"></i>AI 답 보고 씀 <em>__N_VIEWED__</em></span>
     <span><i style="background:var(--none)"></i>출처 기록 없음 <em>__N_NONE__</em></span>
@@ -159,8 +159,8 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 </main>
 <script>
 const D = __DATA__;
-const L = {exact: "그대로", web: "붙여넣음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
-const K = {exact: "AI 답 그대로", web: "다른 곳에서 붙여넣음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
+const L = {exact: "그대로", web: "붙여넣음", noproc: "과정 없음", edited: "고침", viewed: "보고 씀", none: "기록 없음"};
+const K = {exact: "AI 답 그대로", web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀", none: "출처 기록 없음"};
 const hm = (ts) => ts ? ts.slice(11, 16) : "";
 // 출처 — 오른쪽 칸 맨 아래 (10/5 결정). 과정 기록이 없는 시험(D.rec=false)에선 안 보여 준다
 const pasteLine = (s) => !D.rec ? "" : s.paste
@@ -178,6 +178,12 @@ function show(el) {
   const head = `<p class="kind"><i style="background:var(--${s.label})"></i>${K[s.label]}</p>`;
   if (s.label === "none") {
     side.innerHTML = head + `<p class="meta">이어지는 AI 답·붙여넣기를 찾지 못했습니다</p><p class="lab">결과물</p><div class="well">${esc(s.text)}</div>`;
+  } else if (s.label === "noproc") {
+    const how = s.proc.how === "open" ? `${hm(s.proc.ts)} 문서를 열었을 때 이미 있던 글` : `${hm(s.proc.ts)} 키 입력 없이 한꺼번에 들어온 글`;
+    side.innerHTML = head + `<p class="meta">이 PC 에서 타이핑·붙여넣기 없이 문서에 나타난 글</p>
+      <p class="lab">결과물</p><div class="well">${esc(s.text)}</div>
+      <p class="lab">출처</p><p class="q src"><b>쓴 과정 기록 없음</b> · ${how}${s.proc.file ? " (" + esc(s.proc.file) + ")" : ""}</p>
+      <p class="q" style="margin-top:8px">다른 곳에서 만든 파일(AI 가 만든 Word 등)이거나 프로그램이 넣은 글일 수 있습니다. 학생이 내역서에서 설명합니다.</p>`;
   } else if (s.label === "web") {
     side.innerHTML = head + `<p class="meta">AI 답이 아닌 곳에서 복사해 붙여넣은 글</p>
       <p class="lab">결과물</p><div class="well">${esc(s.text)}</div>
@@ -226,7 +232,8 @@ def run_case(case, out):
     others = M.pasted_from_other(events, context or []) if events is not None else None
 
     title, body = doc_body(docx)
-    linked = M.link_document(body, answers, pasted, others)
+    proc = M.process_evidence(events, context or []) if events is not None else None
+    linked = M.link_document(body, answers, pasted, others, proc)
 
     flat = [s for p in truth["paragraphs"] for s in p]
     got = [s for p in linked for s in p]
@@ -237,7 +244,7 @@ def run_case(case, out):
         if t["label"] == "web":                    # 다른 곳 붙여넣기: 출처(도메인)가 맞는지
             same = g["label"] == "web" and (g["paste"] or {}).get("source") == t.get("src")
         else:
-            same = g["label"] == t["label"] and (t["label"] == "none" or (g["answer"] == t.get("src") and list(g["sents"]) == t.get("sents")))
+            same = g["label"] == t["label"] and (t["label"] in ("none", "noproc") or (g["answer"] == t.get("src") and list(g["sents"]) == t.get("sents")))
         if "pasted" in t and pasted is not None:
             same = same and (g["paste"] is not None) == t["pasted"]
         hit += same

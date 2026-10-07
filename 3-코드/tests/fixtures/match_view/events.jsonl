@@ -1,0 +1,119 @@
+{"id": "evt_000008", "ts": "2026-10-07T11:35:40+09:00", "source": "collector", "type": "tab", "domain": "", "category": "other", "title": "(브라우저 내부 페이지)"}
+{"id": "evt_000010", "ts": "2026-10-07T11:35:42+09:00", "source": "collector", "type": "tab", "domain": "chatgpt.com", "category": "ai", "title": "chatgpt.com"}
+{"id": "evt_000014", "ts": "2026-10-07T11:35:56+09:00", "source": "collector", "type": "keys", "count": 29, "deleted": 2, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000015", "ts": "2026-10-07T11:36:03+09:00", "source": "collector", "type": "keys", "count": 16, "deleted": 5, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000017", "ts": "2026-10-07T11:36:04+09:00", "source": "collector", "type": "ai_msg", "tool": "ChatGPT", "turn": 1, "role": "question", "len": 22, "hash": "sha256:6f9381845a81145e0275fa57fe74e2845ff64f9753dc0787c067d590dfec5810"}
+{"id": "evt_000018", "ts": "2026-10-07T11:36:06+09:00", "source": "collector", "type": "ai_msg", "tool": "ChatGPT", "turn": 2, "role": "answer", "len": 228, "hash": "sha256:02c3953770c9cbb88091e13959ae95817462c06bff1b2ae73044d65084eea97c"}
+{"id": "evt_000024", "ts": "2026-10-07T11:36:13+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 1", "added": 2, "removed": 0}
+{"id": "evt_000025", "ts": "2026-10-07T11:36:14+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 2, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000028", "ts": "2026-10-07T11:36:17+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 1", "added": 4, "removed": 2}
+{"id": "evt_000029", "ts": "2026-10-07T11:36:19+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 1", "added": 6, "removed": 0}
+{"id": "evt_000030", "ts": "2026-10-07T11:36:21+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 1", "added": 7, "removed": 0}
+{"id": "evt_000032", "ts": "2026-10-07T11:36:22+09:00", "source": "collector", "type": "keys", "count": 29, "deleted": 2, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000034", "ts": "2026-10-07T11:36:23+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000036", "ts": "2026-10-07T11:36:25+09:00", "source": "collector", "type": "keys", "count": 11, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000038", "ts": "2026-10-07T11:36:25+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 7, "removed": 0}
+{"id": "evt_000039", "ts": "2026-10-07T11:36:26+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000041", "ts": "2026-10-07T11:36:27+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 7, "removed": 0}
+{"id": "evt_000042", "ts": "2026-10-07T11:36:29+09:00", "source": "collector", "type": "keys", "count": 18, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000044", "ts": "2026-10-07T11:36:30+09:00", "source": "collector", "type": "keys", "count": 5, "deleted": 0, "app": "explorer.exe", "category": "other"}
+{"id": "evt_000046", "ts": "2026-10-07T11:36:31+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 10, "removed": 1}
+{"id": "evt_000047", "ts": "2026-10-07T11:36:32+09:00", "source": "collector", "type": "keys", "count": 9, "deleted": 1, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000049", "ts": "2026-10-07T11:36:33+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000051", "ts": "2026-10-07T11:36:33+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 4, "removed": 0}
+{"id": "evt_000052", "ts": "2026-10-07T11:36:35+09:00", "source": "collector", "type": "keys", "count": 7, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000054", "ts": "2026-10-07T11:36:36+09:00", "source": "collector", "type": "keys", "count": 4, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000056", "ts": "2026-10-07T11:36:37+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 10, "removed": 0}
+{"id": "evt_000057", "ts": "2026-10-07T11:36:38+09:00", "source": "collector", "type": "keys", "count": 7, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000059", "ts": "2026-10-07T11:36:39+09:00", "source": "collector", "type": "keys", "count": 5, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000061", "ts": "2026-10-07T11:36:39+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 4, "removed": 0}
+{"id": "evt_000062", "ts": "2026-10-07T11:36:41+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 7, "removed": 0}
+{"id": "evt_000063", "ts": "2026-10-07T11:36:43+09:00", "source": "collector", "type": "keys", "count": 22, "deleted": 2, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000065", "ts": "2026-10-07T11:36:44+09:00", "source": "collector", "type": "keys", "count": 4, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000067", "ts": "2026-10-07T11:36:45+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 8, "removed": 1}
+{"id": "evt_000068", "ts": "2026-10-07T11:36:48+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 11, "removed": 1}
+{"id": "evt_000069", "ts": "2026-10-07T11:36:49+09:00", "source": "collector", "type": "keys", "count": 26, "deleted": 1, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000071", "ts": "2026-10-07T11:36:50+09:00", "source": "collector", "type": "keys", "count": 4, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000074", "ts": "2026-10-07T11:36:52+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 9, "removed": 0}
+{"id": "evt_000075", "ts": "2026-10-07T11:36:52+09:00", "source": "collector", "type": "keys", "count": 7, "deleted": 1, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000077", "ts": "2026-10-07T11:36:53+09:00", "source": "collector", "type": "keys", "count": 1, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000079", "ts": "2026-10-07T11:36:54+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 2, "removed": 0}
+{"id": "evt_000080", "ts": "2026-10-07T11:36:56+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 0}
+{"id": "evt_000081", "ts": "2026-10-07T11:36:56+09:00", "source": "collector", "type": "keys", "count": 12, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000083", "ts": "2026-10-07T11:36:57+09:00", "source": "collector", "type": "keys", "count": 4, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000085", "ts": "2026-10-07T11:36:58+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 4, "removed": 0}
+{"id": "evt_000086", "ts": "2026-10-07T11:37:02+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 0}
+{"id": "evt_000087", "ts": "2026-10-07T11:37:03+09:00", "source": "collector", "type": "keys", "count": 17, "deleted": 1, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000090", "ts": "2026-10-07T11:37:05+09:00", "source": "collector", "type": "keys", "count": 6, "deleted": 0, "app": "explorer.exe", "category": "other"}
+{"id": "evt_000092", "ts": "2026-10-07T11:37:06+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 11, "removed": 1}
+{"id": "evt_000093", "ts": "2026-10-07T11:37:08+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 0}
+{"id": "evt_000094", "ts": "2026-10-07T11:37:10+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 2, "removed": 1}
+{"id": "evt_000095", "ts": "2026-10-07T11:37:10+09:00", "source": "collector", "type": "keys", "count": 16, "deleted": 3, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000097", "ts": "2026-10-07T11:37:11+09:00", "source": "collector", "type": "keys", "count": 4, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000099", "ts": "2026-10-07T11:37:12+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 0}
+{"id": "evt_000100", "ts": "2026-10-07T11:37:14+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 7, "removed": 1}
+{"id": "evt_000101", "ts": "2026-10-07T11:37:16+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 0}
+{"id": "evt_000102", "ts": "2026-10-07T11:37:16+09:00", "source": "collector", "type": "keys", "count": 27, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000106", "ts": "2026-10-07T11:37:22+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 0, "removed": 5}
+{"id": "evt_000107", "ts": "2026-10-07T11:37:25+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 1, "removed": 1}
+{"id": "evt_000108", "ts": "2026-10-07T11:37:26+09:00", "source": "collector", "type": "keys", "count": 16, "deleted": 14, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000111", "ts": "2026-10-07T11:37:29+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 8, "removed": 1}
+{"id": "evt_000112", "ts": "2026-10-07T11:37:31+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 5, "removed": 1}
+{"id": "evt_000113", "ts": "2026-10-07T11:37:32+09:00", "source": "collector", "type": "keys", "count": 13, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000115", "ts": "2026-10-07T11:37:33+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000117", "ts": "2026-10-07T11:37:33+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 2, "removed": 0}
+{"id": "evt_000118", "ts": "2026-10-07T11:37:35+09:00", "source": "collector", "type": "keys", "count": 12, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000121", "ts": "2026-10-07T11:37:37+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 11, "removed": 0}
+{"id": "evt_000122", "ts": "2026-10-07T11:37:39+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 10, "removed": 0}
+{"id": "evt_000123", "ts": "2026-10-07T11:37:40+09:00", "source": "collector", "type": "keys", "count": 26, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000125", "ts": "2026-10-07T11:37:41+09:00", "source": "collector", "type": "keys", "count": 3, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000127", "ts": "2026-10-07T11:37:41+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 4, "removed": 0}
+{"id": "evt_000128", "ts": "2026-10-07T11:37:43+09:00", "source": "collector", "type": "keys", "count": 10, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000130", "ts": "2026-10-07T11:37:44+09:00", "source": "collector", "type": "keys", "count": 1, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000132", "ts": "2026-10-07T11:37:45+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 11, "removed": 0}
+{"id": "evt_000133", "ts": "2026-10-07T11:37:47+09:00", "source": "collector", "type": "keys", "count": 17, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000136", "ts": "2026-10-07T11:37:49+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 11, "removed": 1}
+{"id": "evt_000137", "ts": "2026-10-07T11:37:50+09:00", "source": "collector", "type": "keys", "count": 13, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000140", "ts": "2026-10-07T11:37:51+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 4, "removed": 1}
+{"id": "evt_000142", "ts": "2026-10-07T11:37:53+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 8, "removed": 1}
+{"id": "evt_000143", "ts": "2026-10-07T11:37:54+09:00", "source": "collector", "type": "keys", "count": 16, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000145", "ts": "2026-10-07T11:37:55+09:00", "source": "collector", "type": "keys", "count": 2, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000147", "ts": "2026-10-07T11:37:55+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 3, "removed": 0}
+{"id": "evt_000148", "ts": "2026-10-07T11:37:57+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 2", "added": 8, "removed": 1}
+{"id": "evt_000149", "ts": "2026-10-07T11:37:58+09:00", "source": "collector", "type": "keys", "count": 17, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000152", "ts": "2026-10-07T11:38:02+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 3, "removed": 0}
+{"id": "evt_000153", "ts": "2026-10-07T11:38:02+09:00", "source": "collector", "type": "keys", "count": 6, "deleted": 1, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000155", "ts": "2026-10-07T11:38:03+09:00", "source": "collector", "type": "keys", "count": 5, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000157", "ts": "2026-10-07T11:38:04+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 7, "removed": 0}
+{"id": "evt_000158", "ts": "2026-10-07T11:38:06+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 3, "removed": 0}
+{"id": "evt_000159", "ts": "2026-10-07T11:38:06+09:00", "source": "collector", "type": "keys", "count": 13, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000161", "ts": "2026-10-07T11:38:07+09:00", "source": "collector", "type": "keys", "count": 6, "deleted": 0, "app": "chrome.exe", "category": "ai"}
+{"id": "evt_000163", "ts": "2026-10-07T11:38:08+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 7, "removed": 0}
+{"id": "evt_000164", "ts": "2026-10-07T11:38:10+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 8, "removed": 1}
+{"id": "evt_000165", "ts": "2026-10-07T11:38:11+09:00", "source": "collector", "type": "keys", "count": 23, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000168", "ts": "2026-10-07T11:38:14+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 1, "removed": 0}
+{"id": "evt_000169", "ts": "2026-10-07T11:38:16+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 3, "removed": 0}
+{"id": "evt_000170", "ts": "2026-10-07T11:38:17+09:00", "source": "collector", "type": "keys", "count": 7, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000173", "ts": "2026-10-07T11:38:18+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 4, "removed": 1}
+{"id": "evt_000174", "ts": "2026-10-07T11:38:19+09:00", "source": "collector", "type": "keys", "count": 5, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000176", "ts": "2026-10-07T11:38:20+09:00", "source": "collector", "type": "keys", "count": 3, "deleted": 0, "app": "explorer.exe", "category": "other"}
+{"id": "evt_000178", "ts": "2026-10-07T11:38:20+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 3, "removed": 0}
+{"id": "evt_000179", "ts": "2026-10-07T11:38:22+09:00", "source": "collector", "type": "keys", "count": 11, "deleted": 0, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000183", "ts": "2026-10-07T11:38:24+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 11, "removed": 1}
+{"id": "evt_000184", "ts": "2026-10-07T11:38:27+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 2, "removed": 0}
+{"id": "evt_000185", "ts": "2026-10-07T11:38:29+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 3", "added": 10, "removed": 1}
+{"id": "evt_000186", "ts": "2026-10-07T11:38:29+09:00", "source": "collector", "type": "keys", "count": 34, "deleted": 4, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000197", "ts": "2026-10-07T11:38:47+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 5, "removed": 0}
+{"id": "evt_000198", "ts": "2026-10-07T11:38:49+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 8, "removed": 0}
+{"id": "evt_000199", "ts": "2026-10-07T11:38:51+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 5, "removed": 0}
+{"id": "evt_000201", "ts": "2026-10-07T11:38:53+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 4, "removed": 0}
+{"id": "evt_000202", "ts": "2026-10-07T11:38:54+09:00", "source": "collector", "type": "keys", "count": 47, "deleted": 3, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000203", "ts": "2026-10-07T11:38:55+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 6, "removed": 1}
+{"id": "evt_000204", "ts": "2026-10-07T11:38:57+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 8, "removed": 0}
+{"id": "evt_000205", "ts": "2026-10-07T11:38:59+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 4, "removed": 0}
+{"id": "evt_000206", "ts": "2026-10-07T11:39:01+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 4, "removed": 0}
+{"id": "evt_000207", "ts": "2026-10-07T11:39:04+09:00", "source": "collector", "type": "doc_change", "app": "Word", "file": "보고씀_시험.docx", "where": "문단 4", "added": 8, "removed": 0}
+{"id": "evt_000208", "ts": "2026-10-07T11:39:04+09:00", "source": "collector", "type": "keys", "count": 49, "deleted": 3, "app": "WINWORD.EXE", "category": "work"}
+{"id": "evt_000212", "ts": "2026-10-07T11:39:17+09:00", "source": "collector", "type": "keys", "count": 15, "deleted": 1, "app": "claude.exe", "category": "ai"}
+{"id": "evt_000214", "ts": "2026-10-07T11:39:28+09:00", "source": "collector", "type": "keys", "count": 32, "deleted": 10, "app": "claude.exe", "category": "ai"}
+{"id": "evt_000215", "ts": "2026-10-07T11:39:38+09:00", "source": "collector", "type": "keys", "count": 13, "deleted": 0, "app": "claude.exe", "category": "ai"}
