@@ -15,7 +15,7 @@ html,body{margin:0;background:transparent;font-family:"Segoe UI","Malgun Gothic"
 </style></head>
 <body>
 <div id="root">
-  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="n" id="n"></span><span class="stop" id="stop" title="세션 마치기 (봉인)"><i></i></span></div>
+  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="n" id="n"></span><span class="stop" id="stop" title="작업 마치기"><i></i></span></div>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -24,7 +24,7 @@ let mini = false, first = true;
 async function tick() {
   try {
     const s = await pywebview.api.status();
-    $("t").textContent = s.recording ? s.elapsed : "봉인 중…";
+    $("t").textContent = s.recording ? s.elapsed : "기록 마무리 중…";
     $("n").textContent = s.ai_count ? `${s.events}건 · AI ${s.ai_count}` : `${s.events}건`;
   } catch (e) { /* api 준비 전 */ }
 }
@@ -42,6 +42,6 @@ $("pill").addEventListener("mouseup", (e) => {
   if (downAt && Math.hypot(e.screenX - downAt[0], e.screenY - downAt[1]) < 4) { mini = !mini; layout(); }
   downAt = null;
 });
-$("stop").addEventListener("click", async () => { $("t").textContent = "봉인 중…"; await pywebview.api.stop(); });
+$("stop").addEventListener("click", async () => { $("t").textContent = "기록 마무리 중…"; await pywebview.api.stop(); });
 </script>
 </body></html>
