@@ -183,6 +183,7 @@ class Statement(Base):
     sentence = Column(Text)                # 요약 문장 (학생이 쓴 것 · 나중에 GPT 초안)
     verified = Column(Boolean)             # 올라온 원문이 전부 체인과 맞고, 쓰인 세션이 전부 봉인·검증됐는가
     problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
+    summary = Column(JSON)                 # 만들 당시의 요약 숫자 (core/summary.py) — 뒤에 세션이 늘어도 이 내역서의 숫자는 그대로
 
 
 class Message(Base):
@@ -268,11 +269,13 @@ def _칸_추가():
     → 칸이 없으면 ALTER TABLE 로 붙인다. 이미 있으면 아무것도 안 한다 (여러 번 켜도 안전).
     """
     from sqlalchemy import inspect, text
-    있는칸 = {c["name"] for c in inspect(engine).get_columns("works")}
-    if "ai_scope" not in 있는칸:
-        with engine.begin() as 연결:
-            연결.execute(text("ALTER TABLE works ADD COLUMN ai_scope TEXT"))
-        print("  DB: works 표에 ai_scope 칸을 붙였습니다 (한 번만)")
+    for 표, 칸, 형 in (("works", "ai_scope", "TEXT"),           # 9/30
+                       ("statements", "summary", "JSON")):      # 10/8 — 내역서 표는 만든 날 바로 칸이 늘었다
+        있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
+        if 칸 not in 있는칸:
+            with engine.begin() as 연결:
+                연결.execute(text(f"ALTER TABLE {표} ADD COLUMN {칸} {형}"))
+            print(f"  DB: {표} 표에 {칸} 칸을 붙였습니다 (한 번만)")
 
 
 if __name__ == "__main__":

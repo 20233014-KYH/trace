@@ -358,8 +358,13 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 ### 10-5. API (5절 대체안)
 
 ```
-GET  /works/{id}/summary          ← 서버가 체인 이벤트로 센다 (규칙 기반 · PC 가 보낸 숫자를 믿지 않음)
-                                     작업 시간 · 붙여넣기 · AI 질문 수(ai_msg) · 연결 수(link_decision) · 출처 기록 없음 구간
+GET  /works/{id}/summary          ← 서버가 체인 이벤트로 센다 (core/summary.py · PC 가 보낸 숫자를 믿지 않음)   ✅ 10/8 구현
+  응답  {work_id, sessions, sealed_verified, first_at, last_at, minutes, idle_minutes, typed, deleted, undo,
+         pastes:{count, chars, from_ai_count, from_ai_chars, unknown_count, unknown_chars},   ← unknown = 출처 기록 없음
+         ai:{questions, answers, history, tools:{도구: 수}, window_minutes, window_visits},
+         links:{confirmed, rejected}, by_session:[…세션별 같은 칸 + id, sealed, verified]}
+  · 로그인 · 내 과제만 · 비율·점수는 없다 (원칙 1) · 세션 하나의 숫자는 derive.py 그대로
+  · 내역서를 만들 때 이 값을 statements.summary 에 함께 남긴다 (뒤에 세션이 늘어도 그 내역서 숫자는 그대로)
 POST /works/{id}/statements       ← 내역서 만들기. 원문은 여기서 처음 서버로 온다   ✅ 10/8 구현 (server/app.py)
   요청  {ai_scope?, sentence?,
          messages:   [{session_id, event_id, text}],                       ← 이벤트 id 는 세션 안에서만 고유 → 둘 다
@@ -381,10 +386,11 @@ GET    /works/{id}/statements/latest          ← 학생용 (아니다·가림�
 POST   /statements/{id}/share    {expires_in_days? 1~90, 기본 14}  → 201 {token, path, expires_at}
 DELETE /shares/{token}                        ← 학생이 끊기
 GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전용 · 없음·끊음·만료는 똑같이 404
-  응답  {work:{title}, ai_scope, sentence, verified, problems,
+  응답  {work:{title}, ai_scope, sentence, verified, problems:[{why}], summary,
          links:[{question, answer:{text, tool, ts, history, ok}, result:{text, location}, kind, origin}],
          rejected:n, redacted:n, created_at, expires_at}
-  ✳ 아직: GET /works/{id}/summary (체인 이벤트로 센 숫자) · link_decision 이벤트 확인 (기록기가 아직 안 냄)
+  · 교수 화면엔 summary 도 담긴다 — 단 세션·이벤트 id 는 빼고 (id 를 알면 /sessions/{id}/events 로 기록 전체가 읽힘)
+  ✳ 아직: link_decision 이벤트 확인 (기록기가 아직 안 냄)
 ```
 
 | 5절 (9/28) | 이 초안 |

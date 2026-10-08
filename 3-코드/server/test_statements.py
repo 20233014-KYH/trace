@@ -198,6 +198,26 @@ def main():
     코드, _ = 호출("/share/nosuchtoken123")
     검사("24 없는 링크 404", 코드 == 404, f"HTTP {코드}")
 
+    # ⑨ 요약 숫자 — 서버가 체인 이벤트로 센다
+    코드, r = 호출(f"/works/{wid}/summary", 토큰=갑)
+    검사("25 요약 숫자", 코드 == 200 and r.get("sessions") == 2 and r["ai"]["questions"] == 2
+         and r["ai"]["answers"] == 2 and r["ai"]["tools"] == {"chatgpt": 4},
+         f"세션 {r.get('sessions')} · 질문 {r.get('ai', {}).get('questions')} · 답 {r.get('ai', {}).get('answers')}")
+    검사("26 봉인·검증된 세션만 따로 셈", r.get("sealed_verified") == 1, f"{r.get('sealed_verified')} / {r.get('sessions')}")
+    글전부 = json.dumps(r, ensure_ascii=False)
+    검사("27 요약엔 비율·점수 없음", "pct" not in 글전부 and "ratio" not in 글전부 and "score" not in 글전부, "")
+    코드, _ = 호출(f"/works/{wid}/summary", 토큰=을)
+    코드2, _ = 호출(f"/works/{wid}/summary")
+    검사("28 남·로그인 없이 요약 못 봄", 코드 == 404 and 코드2 == 401, f"남 {코드} · 로그인 없이 {코드2}")
+    _, r = 호출(f"/works/{wid}/statements/latest", 토큰=갑)
+    검사("29 내역서에 요약이 함께 남음", (r.get("summary") or {}).get("sessions") == 2, "")
+    _, sh2 = 호출(f"/statements/{st_last}/share", {}, 토큰=갑)
+    코드, r = 호출(f"/share/{sh2.get('token')}")
+    글전부 = json.dumps(r, ensure_ascii=False)
+    검사("30 교수 화면에 세션 id 없음 ★", 코드 == 200 and sid not in 글전부 and sid3 not in 글전부
+         and (r.get("summary") or {}).get("ai", {}).get("questions") == 2,
+         "세션 id 를 알면 작업 기록 전체를 읽을 수 있어서")
+
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")
     print()

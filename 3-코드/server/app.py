@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.dirname(HERE))          # 3-코드/ 를 경로에 넣
 from core import chain as C          # noqa: E402  ★ 해시는 여기서만
 from core.derive import derive       # noqa: E402
 from core.texthash import sha256_text  # noqa: E402  ★ 원문 해시도 여기서만 (내역서 검증)
+from core.summary import work_summary  # noqa: E402  요약 숫자 — 체인 이벤트로 센다
 import db                            # noqa: E402
 
 KST = timezone(timedelta(hours=9))
@@ -470,6 +471,25 @@ def _쌍(x, 이름):
     return str(x["session_id"]), str(x["event_id"])
 
 
+def _과제_요약(d, wid):
+    """과제의 세션 전부를 체인 이벤트로 센다 (core/summary.py). PC 가 보낸 숫자는 쓰지 않는다."""
+    세션들 = d.query(db.Sess).filter(db.Sess.work_id == wid).all()
+    return work_summary([({"id": s.id, "sealed": bool(s.sealed_at),
+                           "verified": bool(s.verified) and bool(s.integrity_ok)}, 이벤트들(d, s.id))
+                         for s in 세션들])
+
+
+@app.get("/api/works/<wid>/summary")
+@로그인_필요
+def summary(wid):
+    """내역서 맨 위 숫자. 작업 시간 · 입력 · 붙여넣기(출처 기록 없음 포함) · AI 질문·답 · 연결. 비율·점수는 없다."""
+    with db.Session() as d:
+        if not 내_과제(d, wid):
+            return jsonify(error="not_found"), 404
+        답 = _과제_요약(d, wid)
+    return jsonify(work_id=wid, **답)
+
+
 @app.post("/api/works/<wid>/statements")
 @로그인_필요
 def create_statement(wid):
@@ -576,6 +596,7 @@ def create_statement(wid):
                 문제들.append({"session_id": sid, "why": "session_not_sealed" if not s.sealed_at else "session_not_verified"})
 
         st.problems, st.verified = 문제들, not 문제들
+        st.summary = _과제_요약(d, wid)                   # 만들 당시 숫자를 함께 남긴다
         d.commit()
         답 = {"id": st.id, "work_id": wid, "created_at": st.created_at, "verified": st.verified,
               "problems": 문제들, "sessions": 세션상태,
@@ -606,8 +627,16 @@ def _내역서_내용(d, st, 학생용):
              "result": {"text": l.result_text, "location": l.location},
              "kind": l.kind, "origin": l.origin} for l in 연결 if l.decision == "confirmed"]
     out = {"id": st.id, "created_at": st.created_at, "ai_scope": st.ai_scope, "sentence": st.sentence,
-           "verified": bool(st.verified), "problems": st.problems or [], "links": 맞다,
+           "verified": bool(st.verified), "problems": st.problems or [], "summary": st.summary, "links": 맞다,
            "rejected": sum(l.decision == "rejected" for l in 연결), "redacted": len(가림)}
+    if not 학생용:
+        # ★ 교수 화면엔 세션·이벤트 id 를 내보내지 않는다. 세션 id 를 알면 /sessions/<id>/events 로
+        #   작업 기록 전체(창 이름 포함)를 읽을 수 있다 — 학생이 공유한 건 내역서뿐이다.
+        out["problems"] = [{"why": p.get("why")} for p in out["problems"]]
+        if out["summary"]:
+            out["summary"] = {**out["summary"],
+                              "by_session": [{k: v for k, v in s.items() if k != "id"}
+                                             for s in out["summary"].get("by_session", [])]}
     if 학생용:
         out["rejected_links"] = [{"answer_hash": l.answer_hash, "result_hash": l.result_hash, "location": l.location}
                                  for l in 연결 if l.decision == "rejected"]
