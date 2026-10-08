@@ -89,7 +89,12 @@ def 토큰_사용자(d):
 
 
 def 로그인_필요(f):
-    """인증이 강제일 때만 막는다. 아니면 통과시키되 g.user 는 채운다."""
+    """★ 사람 화면용 주소(과제 목록·과제·/me)는 언제나 로그인이 필요하다 (10/7 · 배포 전)
+
+    전엔 TRACE_REQUIRE_AUTH=1 일 때만 막아서, 로그인 없이도 과제 목록 → 과제(이름 추측 가능) → 세션 id
+    → 기록(창 이름 포함)이 줄줄이 읽혔다. 인터넷에 올리면 누구나 학생 기록을 보게 된다.
+    기록기가 쓰는 주소(세션·이벤트·봉인·맥락)는 여기 안 걸린다 — 기록기가 아직 토큰을 안 보내서.
+    그쪽은 TRACE_REQUIRE_AUTH 로 나중에 막는다."""
     @functools.wraps(f)
     def 감싼것(*a, **kw):
         with db.Session() as d:
@@ -97,7 +102,7 @@ def 로그인_필요(f):
             d.commit()
             g.user_id = u.id if u else None
             g.user_name = u.name if u else None
-        if 인증_강제 and not g.user_id:
+        if not g.user_id:
             return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
         return f(*a, **kw)
     return 감싼것

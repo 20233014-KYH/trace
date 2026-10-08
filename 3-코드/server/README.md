@@ -172,11 +172,24 @@ python server/app.py                   # 첫 줄 "저장: postgresql+psycopg://p
 
 `pip install "psycopg[binary]"` 가 필요하다 (`requirements.txt` 에 있음).
 
-## 배포할 때 (9주차)
+## 배포 (Render · 10/7)
 
-주소만 바꾸면 PostgreSQL 로 갑니다. 코드는 그대로입니다.
+**쓰는 법(기록기 연결)은 [`../서버_이용가이드.md`](../서버_이용가이드.md).** 주소: `https://trace-server-8aa0.onrender.com/api`
 
+저장소 맨 위 `render.yaml` 이 설정 전부다. Render → **New → Blueprint** → 이 저장소 → `TRACE_DB_URL` 하나만 넣는다 (Supabase Session pooler 주소 · 비밀번호 포함 · 저장소엔 안 씀).
+
+| | |
+|---|---|
+| 지역 | 싱가포르 (Render 지역 중 서울 Supabase 에 가장 가까움) |
+| 실행 | `gunicorn --workers 1 --threads 4` — **서버는 하나만.** 여럿이면 처음 켤 때 동시에 표를 만들다 하나가 죽는다 (10/7 시험) |
+| 부품 | `server/requirements.txt` (서버에 필요한 것만 · 기록기 부품은 안 깔림) |
+| 무료 플랜 | 15분 안 쓰면 잠들고 첫 요청이 1분쯤 걸린다. 기록기는 실패하면 큐에 쌓았다가 다시 보내서 기록은 안 잃는다 |
+| 확인 | `https://<주소>/api/health` → `"storage":"db"` |
+
+**인터넷에 올리기 전에 막은 것 (10/7):** 과제 목록·과제 조회·`/me` 는 **언제나 로그인이 필요**하다(401). 전엔 로그인 없이도 과제 목록 → 과제 → 세션 id → 기록(창 이름 포함)이 줄줄이 읽혔다. 기록기가 쓰는 주소(세션·이벤트·봉인·맥락)는 기록기가 토큰을 보내게 되면 `TRACE_REQUIRE_AUTH=1` 로 막는다. 그 전까지 세션 기록은 추측할 수 없는 세션 id(UUID)를 알아야만 읽힌다.
+
+로컬에서 Render 와 똑같이 돌려 보기:
 ```bash
-export TRACE_DB_URL="postgresql://..."
-python server/app.py
+pip install -r 3-코드/server/requirements.txt
+gunicorn --chdir "3-코드/server" app:app --bind 127.0.0.1:5052 --workers 1 --threads 4
 ```

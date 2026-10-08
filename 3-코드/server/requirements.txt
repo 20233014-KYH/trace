@@ -1,0 +1,5 @@
+# 서버만 — 배포(Render)에서 쓴다. 기록기 부품은 3-코드/requirements.txt
+flask
+sqlalchemy
+psycopg[binary]   # Supabase (PostgreSQL)
+gunicorn          # 배포용 웹 서버 (python app.py 는 개발용)

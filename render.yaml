@@ -1,0 +1,16 @@
+# Render 배포 설정 (Blueprint) — 3-코드/server 의 Flask 서버를 올린다. DB 는 Supabase(서울)에 이미 있다.
+# Render → New → Blueprint → 이 저장소 → TRACE_DB_URL 만 넣으면 된다 (Supabase Session pooler 주소 · 비밀번호 포함 · 저장소엔 안 씀)
+services:
+  - type: web
+    name: trace-server
+    runtime: python
+    region: singapore            # 서울(Supabase)에 가장 가까운 Render 지역
+    plan: free                   # 15분 안 쓰면 잠듦 → 첫 요청 1분쯤. 기록기는 실패하면 큐에 쌓았다 다시 보냄
+    buildCommand: pip install -r "3-코드/server/requirements.txt"
+    startCommand: gunicorn --chdir "3-코드/server" app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60   # 서버 하나: 여럿이면 처음 켤 때 동시에 표를 만들다 죽음 (10/7 시험)
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: TRACE_DB_URL
+        sync: false              # 비밀 — Render 화면에서 직접 넣음
