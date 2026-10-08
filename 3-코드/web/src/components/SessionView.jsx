@@ -18,7 +18,9 @@ export default function SessionView({ s }) {
     <Sheet wide>
       <Head kicker={`기록 · ${s.date}`} title={`${s.work_id || s.date} 세션`}
             sub={<>{s.start} – {s.end} · {s.dur} · 이벤트 {fmt(st.events)}건 · 루트 해시 <span className="font-mono">{s.root.slice(0, 12)}…{s.root.slice(-8)}</span></>}
-            right={sealed ? <Badge variant="secondary"><Dot c="var(--typed)" />봉인 · 앵커 {s.anchor}</Badge> : <Badge variant="outline">봉인 전 · 테스트</Badge>} />
+            right={!sealed ? <Badge variant="outline">서버 확인 전 · 테스트</Badge>
+                   : s.integrity_ok === false ? <Badge variant="destructive">⚠ 서버 기록과 다릅니다</Badge>
+                   : <Badge variant="secondary"><Dot c="var(--typed)" />서버 기록과 일치합니다</Badge>} />
 
       {/* 두 숫자 + 구성 막대 */}
       <Nums cols={2}>

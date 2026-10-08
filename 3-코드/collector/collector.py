@@ -190,7 +190,7 @@ class Sender(threading.Thread):
             body = e.response.json()
         except Exception:
             body = {}
-        what = {"session": "세션 등록", "events": f"batch {len(op.get('events', []))}건", "end": "봉인", "context": f"맥락 {len(op.get('items', []))}건"}.get(op["op"], op["op"])
+        what = {"session": "세션 등록", "events": f"batch {len(op.get('events', []))}건", "end": "작업 마무리", "context": f"맥락 {len(op.get('items', []))}건"}.get(op["op"], op["op"])
         print(f"        · {what} 거절됨 HTTP {code} {body.get('error', '')} — 로컬 기록은 남아 있음"
               + (f" (server_root {body['server_root'][:8]}…)" if body.get("server_root") else ""))
 
@@ -202,7 +202,12 @@ class Sender(threading.Thread):
         elif op["op"] == "context" and res:
             print(f"        · 맥락 {res.get('accepted', 0)}건 전송")
         elif op["op"] == "end" and res:
-            print(f"        · 봉인 {'검증됨' if res.get('verified') else '검증 실패 ⚠'} · 지연 배치 {res.get('late_batches', 0)} · 앵커 {res.get('anchor', {}).get('status', '-')}")
+            # 학생이 보는 말 (10/8 사용자 결정) — "봉인 검증됨" 대신
+            if res.get("verified"):
+                print("\n  ✓ 작업 기록이 완료되었습니다 · 서버 기록과 일치합니다")
+            else:
+                print("\n  ⚠ 서버 기록과 다릅니다 — 내 PC 의 기록은 그대로 남아 있습니다")
+            print(f"        · 지연 배치 {res.get('late_batches', 0)} · 앵커 {res.get('anchor', {}).get('status', '-')}")
 
     # ── 오프라인 큐 ──
     def _park(self, op):
@@ -380,7 +385,7 @@ class Collector:
         print(f"  server={'(dry-run)' if not self.sender else cfg['server']}"
               f"  keys={'on' if cfg.get('keys', {}).get('enabled') else 'off'}"
               f"  files={cfg.get('files', {}).get('watch_dirs') or 'off'}  data={self.sink.data_dir}")
-        print("  Ctrl+C 로 종료 (봉인)\n")
+        print("  Ctrl+C 로 작업 마치기\n")
 
         if self.sender:
             self.sender.start()
@@ -644,7 +649,7 @@ def main():
     ap.add_argument("--config", default=os.path.join(HERE, "config.json"))
     ap.add_argument("--work", help="work id (기본: config.work_id)")
     ap.add_argument("--dry-run", action="store_true", help="서버로 보내지 않고 콘솔·로컬 파일만")
-    ap.add_argument("--seconds", type=int, default=0, help="테스트용: N초 뒤 자동 종료(봉인)")
+    ap.add_argument("--seconds", type=int, default=0, help="테스트용: N초 뒤 자동으로 작업 마치기")
     a = ap.parse_args()
     with open(a.config, encoding="utf-8") as f:
         cfg = json.load(f)
