@@ -269,16 +269,17 @@ GET  /share/s_9a2f…            ← 교수가 연다 (로그인 없이)
 ## 10. ★ 초안 (10/3 · 김용현) — 원문은 학생 PC, 서버엔 해시만: 테이블 설계
 
 > **상태: 초안.** 로드맵 이번 주 김용현 4번. 박상진 확인 후 확정 → 그때 4·5절을 이 기준으로 고친다.
-> **전제 (10/1 결정 · 수정사항 8절 제안 채택):** 실시간으로 서버에 가는 건 해시·횟수·시각뿐 / 원문은 학생 PC / 제출할 때 학생이 확인·가린 **연결된 부분의 원문만** 서버로.
+> **10/8 이름 결정 (박상진 합의):** 학생 화면의 버튼은 "제출" 대신 **"내역서 만들기"**. 누른다고 교수에게 가지 않고(학생이 링크를 따로 냄), 과제 밖 결과물(공모전·자소서 등)에도 맞게. 코드 이름도 `submissions` → **`statements`** (AI 활용 내역서).
+> **전제 (10/1 결정 · 수정사항 8절 제안 채택):** 실시간으로 서버에 가는 건 해시·횟수·시각뿐 / 원문은 학생 PC / 내역서를 만들 때 학생이 확인·가린 **연결된 부분의 원문만** 서버로.
 
 ### 10-1. 핵심 — "원문은 늦게 와도, 기록 당시 그대로인지 확인된다"
 
 원문을 나중에 받으면 "그동안 고친 것 아닌가?" 가 문제다. 그래서 **기록하는 순간 원문의 해시만 체인에 넣는다.**
-제출 때 원문이 오면 서버가 같은 함수로 해시를 계산해 체인에 있는 해시와 비교한다.
+내역서를 만들 때 원문이 오면 서버가 같은 함수로 해시를 계산해 체인에 있는 해시와 비교한다.
 
 ```
 기록 중 (실시간)   PC: 원문 저장 + 해시 계산 → 체인 이벤트 ai_msg{hash, len}  ──▶  서버: 해시만 받음
-제출할 때          PC: 학생이 확인·가린 연결의 원문  ──▶  서버: sha256_text(원문) == 체인의 hash ?
+내역서 만들 때     PC: 학생이 확인·가린 연결의 원문  ──▶  서버: sha256_text(원문) == 체인의 hash ?
                                                               같음 → "기록 당시 그대로" · 다름 → "조작됨"
 ```
 
@@ -286,7 +287,7 @@ GET  /share/s_9a2f…            ← 교수가 연다 (로그인 없이)
 
 ### 10-2. 무엇이 어디에 있나
 
-| 데이터 | 학생 PC | 서버 (실시간) | 서버 (제출 뒤) |
+| 데이터 | 학생 PC | 서버 (실시간) | 서버 (내역서 뒤) |
 |---|---|---|---|
 | 창·키 횟수·복사 해시 등 이벤트 | ✅ `events-날짜.jsonl` | ✅ `events` (지금 그대로) | |
 | **AI 질문·답 원문** | ✅ | **해시만** (`ai_msg` 이벤트) | 확인된 연결에 쓰인 것만 |
@@ -306,7 +307,7 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 ```
 
 - **해시 함수는 하나만:** 기록기의 `sha256_text()` (`3-코드/collector/collector.py` 69행 · `"sha256:" + SHA-256(UTF-8)`) 를 `core/` 로 옮겨 서버도 import 한다. 해시를 두 곳에서 짜지 않는다 — `chain.py` 와 같은 원칙.
-- **자동 가리기 → 그다음 해시.** 그래야 API 키가 PC 파일에도 안 남고, 제출 때 검증도 맞는다.
+- **자동 가리기 → 그다음 해시.** 그래야 API 키가 PC 파일에도 안 남고, 내역서를 만들 때 검증도 맞는다.
 - **⚠️ `core/chain.py` 의 `summary()` 에 새 종류 3줄을 추가해야 한다.** 모르는 종류는 마지막 줄 `return ""` 로 요약이 빈 칸이 돼서, `hash` 가 체인으로 보호되지 않는다. **기존 줄은 안 건드리므로** 골든 픽스처·지난 기록의 해시는 그대로다 (추가 후 `tests/test_derive.py` 로 확인).
 
 ### 10-4. 서버 테이블
@@ -315,20 +316,20 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 
 **새로 5개**
 
-`submissions` — 한 과제의 **제출 한 번**. 다시 내면 새 줄, 마지막 것이 유효.
+`statements` — 한 과제의 **내역서 한 번** (학생이 "내역서 만들기"를 누른 한 번). 다시 만들면 새 줄, 마지막 것이 유효.
 
 | 칸 | 뜻 |
 |---|---|
 | `id` · `work_id` · `created_at` | |
-| `ai_scope` | 제출 당시 허용 범위 메모의 사본 |
+| `ai_scope` | 만들 당시 허용 범위 메모의 사본 |
 | `sentence` · `sentence_edited` | GPT 요약 문장 (학생이 켰을 때만) · 학생이 고친 최종 문장 |
 | `verified` | 올라온 원문이 **전부** 체인 해시와 맞는가 |
 
-`messages` — 제출된 AI 질문·답 원문 (**확인된 연결에 쓰인 것만**)
+`messages` — 내역서에 담긴 AI 질문·답 원문 (**확인된 연결에 쓰인 것만**)
 
 | 칸 | 뜻 |
 |---|---|
-| `id` · `submission_id` · `session_id` | |
+| `id` · `statement_id` · `session_id` | |
 | `event_id` | 이 원문의 해시가 있는 체인 이벤트 (`ai_msg`) |
 | `tool` · `role` · `ts` · `text` | ChatGPT·Claude·Claude Code… · question/answer · 시각 · 원문 |
 | `match` | `sha256_text(text)` 가 체인의 해시와 같은가 (다르면 화면에 "조작됨") |
@@ -337,7 +338,7 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 
 | 칸 | 뜻 |
 |---|---|
-| `id` · `submission_id` | |
+| `id` · `statement_id` | |
 | `answer_msg_id` · `question_msg_id` | 맞다일 때만 — 위 `messages` 를 가리킴 |
 | `answer_hash` · `result_hash` | 언제나 (아니다여도) |
 | `result_text` | 결과물 발췌 — **맞다일 때만** |
@@ -347,19 +348,19 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 
 → "아니다" 는 원문 없이 해시·위치·결정만 남는다: **"제안했고 학생이 연결하지 않음" 은 남되 내용은 나가지 않는다.**
 
-`redactions` — 가린 것: `id` · `submission_id` · `event_id` · `ts`. 내용은 서버에 아예 오지 않는다. 해시는 체인에 있으니 검증은 계속된다.
+`redactions` — 가린 것: `id` · `statement_id` · `event_id` · `ts`. 내용은 서버에 아예 오지 않는다. 해시는 체인에 있으니 검증은 계속된다.
 
-`shares` — 교수 확인 링크: `token`(기본키 · 무작위) · `submission_id` · `created_at` · `expires_at`(기본 14일) · `revoked_at`
+`shares` — 교수 확인 링크: `token`(기본키 · 무작위) · `statement_id` · `created_at` · `expires_at`(기본 14일) · `revoked_at`
 
 **은퇴 예정 1개:** `contexts` — 원문을 실시간으로 받는 표. **이 결정과 반대 방향이다.**
-이번 주 로드맵 김용현 3번(PR #19: `/context` 원문 전체 저장)도 같은 이유로 결정과 어긋난다 → **PC 저장이 생길 때까지(10/7 첫 연결 · 9주 시연 준비)만 임시 경로**로 쓰고, 제출 경로가 생기면 끈다.
+이번 주 로드맵 김용현 3번(PR #19: `/context` 원문 전체 저장)도 같은 이유로 결정과 어긋난다 → **PC 저장이 생길 때까지(10/7 첫 연결 · 9주 시연 준비)만 임시 경로**로 쓰고, 내역서 경로가 생기면 끈다.
 
 ### 10-5. API (5절 대체안)
 
 ```
 GET  /works/{id}/summary          ← 서버가 체인 이벤트로 센다 (규칙 기반 · PC 가 보낸 숫자를 믿지 않음)
                                      작업 시간 · 붙여넣기 · AI 질문 수(ai_msg) · 연결 수(link_decision) · 출처 기록 없음 구간
-POST /works/{id}/submissions      ← 제출. 원문은 여기서 처음 서버로 온다
+POST /works/{id}/statements       ← 내역서 만들기. 원문은 여기서 처음 서버로 온다
   요청  {ai_scope, sentence?,
          messages:   [{event_id, session_id, tool, role, ts, text}],
          links:      [{answer_event_id?, question_event_id?, answer_hash, result_hash, result_text?,
@@ -368,8 +369,8 @@ POST /works/{id}/submissions      ← 제출. 원문은 여기서 처음 서버�
   응답  {id, verified, problems:[{event_id, why:"hash_mismatch"|"not_in_chain"}]}
   · messages 하나하나 sha256_text(text) 를 체인의 ai_msg.hash 와 비교. 다르면 저장은 하되 그 항목을 "조작됨" — 숨기지 않는다
   · 한 요청 5MB
-GET    /works/{id}/submissions/latest
-POST   /submissions/{id}/share    {expires_in_days?}  → {token, url, expires_at}
+GET    /works/{id}/statements/latest
+POST   /statements/{id}/share    {expires_in_days?}  → {token, url, expires_at}
 DELETE /shares/{token}
 GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전용
   응답  {work:{title}, ai_scope, summary, sentence, links:[{question, answer, result, kind}],
@@ -379,15 +380,15 @@ GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전�
 | 5절 (9/28) | 이 초안 |
 |---|---|
 | `GET /works/{id}/summary` | 그대로 — 단 **체인 이벤트로** 센다 |
-| `POST /works/{id}/links` | 제출의 `links` 로 합침 (결정은 PC 에서 일어나므로) |
-| `POST /works/{id}/redactions` | 제출의 `redactions` 로 합침 |
-| `POST /works/{id}/share` | `POST /submissions/{id}/share` (무엇을 공유하는지가 "제출 한 번" 이므로) |
+| `POST /works/{id}/links` | 내역서 만들기의 `links` 로 합침 (결정은 PC 에서 일어나므로) |
+| `POST /works/{id}/redactions` | 내역서 만들기의 `redactions` 로 합침 |
+| `POST /works/{id}/share` | `POST /statements/{id}/share` (무엇을 공유하는지가 "내역서 한 번" 이므로) |
 | `GET /share/{token}` | 그대로 |
 | `POST /works/{id}/import` (추가 과제 D) | **PC 에서 읽는다.** 대화 내보내기 파일은 원문 덩어리라 서버로 보내지 않는다 |
 
 ### 10-6. GPT 맥락 요약은 여기서 생긴다
 
-"과제의 이 부분을 만들 때 어느 AI 에 어떻게 묻고 어떤 답을 받아 이렇게 썼는가" — 이 요약은 **제출로 확인된 질문·답·결과가 서버에 생긴 뒤에만** 만들 수 있다.
+"과제의 이 부분을 만들 때 어느 AI 에 어떻게 묻고 어떤 답을 받아 이렇게 썼는가" — 이 요약은 **내역서 만들기로 확인된 질문·답·결과가 서버에 생긴 뒤에만** 만들 수 있다.
 사실은 `links`·`messages` 가 주고 GPT 는 문장만 다듬는다 · 학생이 켤 때만 · 결과는 학생이 확인·수정 (`sentence_edited`) ·
 OpenAI 로 내용이 나가므로 **국외 이전 동의**가 필요하다. (설계 자리만. 구현은 10주)
 
@@ -397,13 +398,13 @@ OpenAI 로 내용이 나가므로 **국외 이전 동의**가 필요하다. (설
 |---|---|---|
 | 1 | 새 체인 이벤트 3개의 이름·필드 + `chain.py` 요약 3줄 추가 | 10-3 그대로 (`chain.py` 는 고치기 전 말하기 규칙) |
 | 2 | `sha256_text()` 를 `core/` 로 옮기기 | `core/texthash.py` — 기록기·서버가 같이 import |
-| 3 | PC 쪽 저장 형태 | `data/local.db` (SQLite) 에 `ai_messages` · `doc_versions` · `suggestions` · `redactions`. **서버는 제출 형식만 알면 되므로 PC 쪽은 박상진이 정함** |
+| 3 | PC 쪽 저장 형태 | `data/local.db` (SQLite) 에 `ai_messages` · `doc_versions` · `suggestions` · `redactions`. **서버는 내역서 요청 형식만 알면 되므로 PC 쪽은 박상진이 정함** |
 | 4 | 결과물 "부분" 의 단위 | 문서 = 문단 · 코드 = 줄 범위 |
-| 5 | 실시간 `/context` 를 끄는 시점 | PC 저장 + 제출 경로가 돌아가는 날 |
+| 5 | 실시간 `/context` 를 끄는 시점 | PC 저장 + 내역서 경로가 돌아가는 날 |
 
 ### 10-8. 만드는 순서 (제안)
 
 1. **같이** — 골든 픽스처에 `ai_msg` 이벤트 하나를 넣고, PC 와 서버가 같은 해시를 내는지부터 확인
 2. **박상진** — 기록기 `_on_context` 를 "서버로 보냄" → "PC 에 저장 + `ai_msg` 이벤트" 로 · `link_decision` · `doc_save.hash`
-3. **김용현** — 테이블 5개 + `POST /submissions`(해시 검증) + 공유 3개 + 테스트 (10~11주, 로드맵 일정)
+3. **김용현** — 테이블 5개 + `POST /statements`(해시 검증) + 공유 3개 + 테스트 (10~11주, 로드맵 일정)
 
