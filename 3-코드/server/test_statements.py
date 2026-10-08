@@ -201,7 +201,7 @@ def main():
     # ⑨ 요약 숫자 — 서버가 체인 이벤트로 센다
     코드, r = 호출(f"/works/{wid}/summary", 토큰=갑)
     검사("25 요약 숫자", 코드 == 200 and r.get("sessions") == 2 and r["ai"]["questions"] == 2
-         and r["ai"]["answers"] == 2 and r["ai"]["tools"] == {"chatgpt": 4},
+         and r["ai"]["answers"] == 2 and r["ai"]["tools"] == {"chatgpt": 2},
          f"세션 {r.get('sessions')} · 질문 {r.get('ai', {}).get('questions')} · 답 {r.get('ai', {}).get('answers')}")
     검사("26 봉인·검증된 세션만 따로 셈", r.get("sealed_verified") == 1, f"{r.get('sealed_verified')} / {r.get('sessions')}")
     글전부 = json.dumps(r, ensure_ascii=False)
@@ -217,6 +217,16 @@ def main():
     검사("30 교수 화면에 세션 id 없음 ★", 코드 == 200 and sid not in 글전부 and sid3 not in 글전부
          and (r.get("summary") or {}).get("ai", {}).get("questions") == 2,
          "세션 id 를 알면 작업 기록 전체를 읽을 수 있어서")
+
+    # ⑩ 교수가 여는 화면 (/s/<token>) — HTML 한 장 + 주소가 새지 않게 하는 머리
+    검사("31 공유 응답에 교수용 url", str(sh2.get("url", "")).endswith(f"/s/{sh2.get('token')}"), f"{sh2.get('url')}")
+    try:
+        with urllib.request.urlopen(BASE[:-4] + f"/s/{sh2.get('token')}", timeout=30) as resp:
+            본문, 머리 = resp.read().decode("utf-8"), resp.headers
+        검사("32 교수 화면 HTML", "AI 활용 내역서" in 본문 and 머리.get("Referrer-Policy") == "no-referrer"
+             and "noindex" in (머리.get("X-Robots-Tag") or ""), "Referrer-Policy · X-Robots-Tag")
+    except urllib.error.URLError as e:
+        검사("32 교수 화면 HTML", False, str(e))
 
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")

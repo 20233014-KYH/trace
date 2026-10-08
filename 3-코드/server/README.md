@@ -156,12 +156,13 @@ JWT 는 서버가 들고 있지 않아 **로그아웃·강제 만료를 못 합�
 | `POST /api/statements/<id>/share` | 학생 | 교수 확인 링크 (기본 14일 · 최대 90일) |
 | `DELETE /api/shares/<token>` | 학생 | 링크 끊기 |
 | `GET /api/share/<token>` | 교수 (로그인 없음) | 확인된 연결만 읽기 · 없음/끊음/만료는 똑같이 404 |
+| `GET /s/<token>` | 교수 | **교수가 여는 화면** (`server/static/share.html` 한 장이 위 API 를 읽어 그림 · 휴대폰 OK). 학생에게 주는 주소는 링크 만들기 응답의 `url` |
 
 **지키는 것:** "아니다"로 고른 연결의 결과물 원문은 받아도 버린다 · 가린 이벤트는 위치만 · 도구·역할·시각은 학생이 보낸 값이 아니라 체인의 값.
 
 ```bash
 TRACE_DB_URL=sqlite:///test.db TRACE_PORT=5050 python server/app.py   # ★ 시험은 따로 만든 SQLite 로 (Supabase 에 시험 기록이 쌓이지 않게)
-TRACE_PORT=5050 python server/test_statements.py                       # 검사 30개
+TRACE_PORT=5050 python server/test_statements.py                       # 검사 32개
 ```
 
 ## 아직 안 만든 것
@@ -170,7 +171,7 @@ TRACE_PORT=5050 python server/test_statements.py                       # 검사 
 |---|---|
 | 4절 증명서 · proof.json · .ots · `/verify` | 7~8주차 |
 | 앵커 실제 제출 (OpenTimestamps) | 7주차 |
-| 교수 화면 · `link_decision` 확인 | 다음 |
+| 학생이 내역서를 만드는 화면 · `link_decision` 확인 | 다음 |
 | 기록기가 토큰을 보내기 (그전엔 기록기가 만든 과제는 주인이 없어 내역서를 못 만든다) | 박상진과 정할 것 |
 
 **3주차 관통에 필요한 3절(세션·이벤트·봉인·조회)은 다 됐습니다.**

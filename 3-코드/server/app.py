@@ -20,8 +20,9 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, g, jsonify, request, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))          # 3-코드/ 를 경로에 넣어 core 를 쓴다
@@ -36,6 +37,8 @@ KST = timezone(timedelta(hours=9))
 LATE_SEC = 5 * 60                    # 이벤트 시각 vs 수신 시각 차이가 이보다 크면 "지연 수신"
 
 app = Flask(__name__)
+# Render 는 앞단(프록시)이 https 를 받고 우리에겐 http 로 넘긴다. 이걸 안 하면 교수용 링크가 http:// 로 만들어진다
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 db.init()
 
 
@@ -678,7 +681,9 @@ def create_share(stid):
                       expires_at=(지금 + timedelta(days=일수)).isoformat(timespec="seconds"))
         d.add(sh)
         d.commit()
-        답 = {"token": sh.token, "path": f"/api/share/{sh.token}", "expires_at": sh.expires_at}
+        답 = {"token": sh.token, "path": f"/api/share/{sh.token}", "page": f"/s/{sh.token}",
+              "url": request.host_url.rstrip("/") + f"/s/{sh.token}",      # 학생이 교수에게 보내는 주소
+              "expires_at": sh.expires_at}
     print(f"← 공유 링크 만듦  내역서 {stid[:8]}…  {일수}일")
     return jsonify(답), 201
 
@@ -711,6 +716,24 @@ def read_share(token):
         답["work"] = {"title": w.title if w else None}
         답["expires_at"] = sh.expires_at
     return jsonify(답)
+
+
+@app.get("/s/<token>")
+def share_page(token):
+    """교수가 여는 화면. HTML 한 장이 /api/share/<token> 을 읽어 그린다 (server/static/share.html).
+    토큰이 맞는지는 여기서 보지 않는다 — 화면이 API 를 부르고, 없으면 "볼 수 없는 링크"를 그린다."""
+    return send_from_directory(os.path.join(HERE, "static"), "share.html")
+
+
+@app.after_request
+def 공유_머리(resp):
+    """공유 링크는 주소 자체가 열쇠다. 다른 사이트로 새지 않게(Referer) · 검색에 안 잡히게 · 저장 안 되게."""
+    if request.path.startswith(("/s/", "/api/share/")):
+        resp.headers["Referrer-Policy"] = "no-referrer"
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        resp.headers["Cache-Control"] = "no-store"
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 if __name__ == "__main__":

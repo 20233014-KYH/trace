@@ -56,7 +56,9 @@ def session_summary(sid, evs):
         "ai": {"questions": sum(e.get("role") == "question" for e in ai),
                "answers": sum(e.get("role") == "answer" for e in ai),
                "history": sum(bool(e.get("history")) for e in ai),          # 이전 대화 — 받은 시각 모름
-               "tools": dict(Counter(e.get("tool") or "?" for e in ai)),
+               # 도구별 '질문' 수 (답만 잡힌 도구도 0 으로 보이게 — 어느 AI 를 썼는지는 남는다)
+               "tools": {t: sum(1 for e in ai if (e.get("tool") or "?") == t and e.get("role") == "question")
+                         for t in dict.fromkeys(e.get("tool") or "?" for e in ai)},
                "window_minutes": st["ai_min"], "window_visits": st["ai_visits"]},
         "links": {"confirmed": sum(e.get("decision") == "confirmed" for e in 링크),
                   "rejected": sum(e.get("decision") == "rejected" for e in 링크)},
