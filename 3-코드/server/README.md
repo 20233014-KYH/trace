@@ -172,7 +172,7 @@ TRACE_PORT=5050 python server/test_statements.py                       # 검사 
 | 4절 증명서 · proof.json · .ots · `/verify` | 7~8주차 |
 | 앵커 실제 제출 (OpenTimestamps) | 7주차 |
 | 학생이 내역서를 만드는 화면 · `link_decision` 확인 | 다음 |
-| 기록기가 토큰을 보내기 (그전엔 기록기가 만든 과제는 주인이 없어 내역서를 못 만든다) | 박상진과 정할 것 |
+| 기록 읽기 주소(`/sessions/<id>/events` 등) 로그인 강제 — 웹 화면도 토큰을 보내야 해서 박상진과 같이 | 다음 |
 
 **3주차 관통에 필요한 3절(세션·이벤트·봉인·조회)은 다 됐습니다.**
 

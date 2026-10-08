@@ -75,6 +75,16 @@ def sha256_text(s: str) -> str:
     return "sha256:" + hashlib.sha256(s.encode("utf-8", "surrogatepass")).hexdigest()
 
 
+def load_token(data_dir: str, server: str):
+    """data/auth.json 의 로그인 토큰 — 같은 서버에 로그인한 것일 때만. (내역서 화면 app/statement.py 가 만든다)"""
+    try:
+        with open(os.path.join(data_dir, "auth.json"), encoding="utf-8") as f:
+            a = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return a.get("token") if (a.get("server") or "").rstrip("/") == server.rstrip("/") else None
+
+
 # ─────────────────────────── 전송 (백그라운드) ───────────────────────────
 class Sender(threading.Thread):
     """op 를 순서대로 서버에 보낸다. op = {"op":"session"|"events"|"end", ...}
@@ -84,9 +94,12 @@ class Sender(threading.Thread):
     BATCH_SEC = 5
     BATCH_MAX = 50
 
-    def __init__(self, base: str, session_id: str, work_id: str, queue_path: str):
+    def __init__(self, base: str, session_id: str, work_id: str, queue_path: str, token: str | None = None):
         super().__init__(daemon=True)
         self.base, self.sid, self.work, self.queue_path = base.rstrip("/"), session_id, work_id, queue_path
+        # 로그인 토큰 (10/8 · 김용현) — 내역서 화면(app/statement.py)에서 로그인하면 data/auth.json 에 생긴다.
+        # 붙여 보내면 서버가 이 과제를 학생 것으로 만든다 → 그 과제로 내역서를 만들 수 있다. 없으면 예전처럼 그냥 보낸다
+        self.token = token
         self.q: queue.Queue = queue.Queue()
         self.online = None
         self._next_retry = 0.0
@@ -101,6 +114,7 @@ class Sender(threading.Thread):
 
     # ── 루프: 이벤트를 5초/50건으로 묶는다 ──
     def run(self):
+        self._check_login()
         pending, t0 = [], time.time()
         while True:
             try:
@@ -137,8 +151,26 @@ class Sender(threading.Thread):
         self._send_or_park({"op": "events", "sid": self.sid, "events": evs, "chain_head": self.head, "chain_len": self.chain_len})
 
     # ── 전송 ──
+    def _headers(self):
+        return {"Authorization": f"Bearer {self.token}"} if self.token else {}
+
+    def _check_login(self):
+        """토큰이 아직 살아 있나 한 번만 본다 (백그라운드 · 서버가 꺼져 있으면 그냥 넘어감).
+        죽은 토큰이면 서버는 로그인 안 한 것으로 받는다 → 과제에 주인이 안 생겨 내역서를 못 만든다. 그걸 미리 알려 준다."""
+        if not self.token:
+            return
+        try:
+            r = requests.get(self.base + "/me", headers=self._headers(), timeout=10)
+        except requests.RequestException:
+            return
+        if r.status_code == 401:
+            print("        · ⚠ 로그인이 끝났습니다 — 내역서 화면에서 다시 로그인한 뒤 기록을 켜 주세요"
+                  " (이대로면 이번 기록으로 내역서를 만들 수 없습니다)")
+        elif r.ok:
+            print(f"        · 로그인: {r.json().get('name', '')}")
+
     def _post(self, path, body):
-        r = requests.post(self.base + path, json=body, timeout=3)
+        r = requests.post(self.base + path, json=body, headers=self._headers(), timeout=3)
         r.raise_for_status()
         return r.json() if r.content else {}
 
@@ -328,7 +360,9 @@ class Collector:
         self.whitelist = {a.lower() for a in cfg.get("whitelist_apps", [])}
         data_dir = os.path.normpath(os.path.join(HERE, cfg.get("data_dir", "../data")))
         self.session_id = str(uuid.uuid4())
-        self.sender = None if dry_run else Sender(cfg["server"], self.session_id, work_id, os.path.join(data_dir, "queue.jsonl"))
+        self.token = load_token(data_dir, cfg.get("server", ""))
+        self.sender = None if dry_run else Sender(cfg["server"], self.session_id, work_id, os.path.join(data_dir, "queue.jsonl"),
+                                                  token=self.token)
         self.sink = Sink(data_dir, self.session_id, self.sender)
 
         self.poll = float(cfg.get("poll_interval_sec", 1.0))

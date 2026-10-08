@@ -224,7 +224,7 @@ def list_works():
 def get_work(wid):
     with db.Session() as d:
         w = d.get(db.Work, wid)
-        if not w or (g.user_id and w.user_id and w.user_id != g.user_id):
+        if not w or w.user_id != g.user_id:        # 주인 없는 과제(기록기가 로그인 없이 만든 것)도 남은 못 본다 (10/8)
             return jsonify(error="not_found"), 404
         세션들 = []
         for s in d.query(db.Sess).filter(db.Sess.work_id == wid).all():
@@ -244,7 +244,7 @@ def update_work(wid):
         return jsonify(error="bad_request", message="ai_scope 는 글자(메모)여야 합니다"), 400
     with db.Session() as d:
         w = d.get(db.Work, wid)
-        if not w or (g.user_id and w.user_id and w.user_id != g.user_id):
+        if not w or w.user_id != g.user_id:        # 주인 없는 과제(기록기가 로그인 없이 만든 것)도 남은 못 본다 (10/8)
             return jsonify(error="not_found"), 404
         if "title" in b:
             w.title = b["title"] or "제목 없음"
