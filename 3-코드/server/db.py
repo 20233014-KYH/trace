@@ -166,6 +166,77 @@ class Context(Base):
     meta = Column(JSON)
 
 
+# ─────────────── AI 활용 내역서 (docs/api.md 10-4 · 10/8 이름: 제출 → 내역서 만들기) ───────────────
+#
+# ★ 원문은 여기서 처음 서버에 온다 ★
+#   기록하는 동안 서버엔 해시만 있다 (events 의 ai_msg.hash). 학생이 "내역서 만들기"를 누르면
+#   학생이 고른 질문·답·결과물 발췌의 원문이 오고, 서버가 해시를 다시 계산해 체인과 맞춰 본다.
+
+class Statement(Base):
+    """내역서 한 번. 다시 만들면 새 줄 — 마지막 것이 유효. 공유 링크는 만든 그 내역서를 가리킨다."""
+    __tablename__ = "statements"
+    id = Column(String(64), primary_key=True)
+    work_id = Column(String(64), ForeignKey("works.id"))
+    user_id = Column(String(64), ForeignKey("users.id"))
+    created_at = Column(String(40))
+    ai_scope = Column(Text)                # 만들 당시 허용 범위 메모의 사본 (나중에 과제 메모를 고쳐도 이건 그대로)
+    sentence = Column(Text)                # 요약 문장 (학생이 쓴 것 · 나중에 GPT 초안)
+    verified = Column(Boolean)             # 올라온 원문이 전부 체인과 맞고, 쓰인 세션이 전부 봉인·검증됐는가
+    problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
+
+
+class Message(Base):
+    """내역서에 담긴 AI 질문·답 원문 하나. tool·role·ts 는 학생이 보낸 값이 아니라 체인 이벤트의 값."""
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    statement_id = Column(String(64), ForeignKey("statements.id"))
+    session_id = Column(String(64))
+    event_id = Column(String(64))          # 이 원문의 해시가 있는 체인 이벤트 (ai_msg)
+    tool = Column(String(64))
+    role = Column(String(16))              # question | answer
+    ts = Column(String(40))
+    text = Column(Text)
+    hash = Column(String(80))              # 서버가 원문으로 다시 계산한 값
+    history = Column(Boolean)              # 확장이 켜지기 전부터 있던 대화 — 받은 시각을 모른다 (체인 ai_msg.history)
+    match = Column(Boolean)                # 그 값이 체인의 해시와 같은가 (다르면 화면에 "조작됨")
+
+
+class Link(Base):
+    """학생의 결정 하나 — 결과물의 이 부분이 이 AI 답에서 왔다 (맞다) / 아니다.
+    "아니다"는 원문 없이 해시·위치·결정만 남는다."""
+    __tablename__ = "links"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    statement_id = Column(String(64), ForeignKey("statements.id"))
+    answer_hash = Column(String(80))
+    question_hash = Column(String(80))
+    result_hash = Column(String(80))
+    result_text = Column(Text)             # 결과물 발췌 — 맞다일 때만
+    location = Column(JSON)                # {file, paragraph} 또는 {file, lines}
+    kind = Column(String(16))              # exact | edited
+    origin = Column(String(16))            # auto | suggested
+    decision = Column(String(16))          # confirmed | rejected
+    decision_event_id = Column(String(64))  # 체인의 link_decision (기록기가 아직 안 냄 → 비어 있을 수 있다)
+
+
+class Redaction(Base):
+    """학생이 가린 것. 내용은 서버에 오지 않는다 — 어느 이벤트인지만. 해시는 체인에 있어 검증은 계속된다."""
+    __tablename__ = "redactions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    statement_id = Column(String(64), ForeignKey("statements.id"))
+    session_id = Column(String(64))
+    event_id = Column(String(64))
+
+
+class Share(Base):
+    """교수 확인 링크. token 을 아는 사람만 읽는다 (로그인 없음 · 읽기 전용). 학생이 끊을 수 있다."""
+    __tablename__ = "shares"
+    token = Column(String(64), primary_key=True)
+    statement_id = Column(String(64), ForeignKey("statements.id"))
+    created_at = Column(String(40))
+    expires_at = Column(String(40))
+    revoked_at = Column(String(40))
+
+
 def init():
     Base.metadata.create_all(engine)
     _칸_추가()
