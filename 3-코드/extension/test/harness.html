@@ -83,7 +83,14 @@ const REGEN = "다시 생성한 답: SQLite 는 쓰기 잠금이 하나뿐이라
   let stop = null;
   if (SITE === "ChatGPT") { stop = document.createElement("button"); stop.setAttribute("data-testid", "stop-button"); stop.textContent = "■"; document.body.appendChild(stop); }
   const a = addMsg("a", "", { streaming: true });
-  for (let i = 1; i <= FINAL.length; i += 6) { bodyOf(a).innerText = FINAL.slice(0, i); await sleep(60); }
+  for (let i = 1; i <= FINAL.length; i += 6) {
+    bodyOf(a).innerText = FINAL.slice(0, i); await sleep(60);
+    // ChatGPT: 생성이 중간에 2.5초 멈추고, 완료 속성은 "ready" 인데 생성 중지 버튼은 그대로 (이슈 #26-4 · 맥에서 잘린 답이 저장됨)
+    if (SITE === "ChatGPT" && i > FINAL.length / 2 && !a.hasAttribute("data-message-x-render-state")) {
+      a.setAttribute("data-message-x-render-state", "ready"); await sleep(2500); a.setAttribute("data-message-x-render-state", "streaming");
+    }
+  }
+  if (SITE === "ChatGPT") a.setAttribute("data-message-x-render-state", "ready");
   bodyOf(a).innerText = FINAL;
   if (SITE === "Gemini") bodyOf(a).insertAdjacentHTML("beforeend",   // 출처 칩 · 동영상 카드 (10/5 실제 화면) — 답 글자에 들어가면 안 됨
     '<sources-carousel-inline><source-inline-chip>Medium<br>+ 1</source-inline-chip></sources-carousel-inline>'

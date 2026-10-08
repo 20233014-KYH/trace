@@ -3,7 +3,8 @@ match.py — 결과물 문장 ↔ AI 답 연결 "제안" (기록기·서버 공�
 
 결과물(보고서·코드)을 문장으로 나누고, 문장마다 저장해 둔 AI 답 원문과 비교해 넷 중 하나를 붙인다.
 
-  exact   AI 답 그대로     — 글자 순서까지 거의 같음 (붙여넣기 기록이 있든 없든 · 화면에 기록 유무를 따로 보여 줌)
+  exact   AI 답과 일치·유사 — 글자 순서까지 90% 이상 같음 (붙여넣기 기록이 있든 없든 · 화면에 기록 유무를 따로 보여 줌)
+                         full=True(공백·문장부호 빼고 100% 같음)면 화면에 "일치", 아니면 "유사" (10/7 사용자 결정 · 숫자는 안 냄)
   edited  붙여넣고 고침    — 내용이 AI 답에서 왔고, 그 AI 답 문장을 복사해 붙여넣은 **기록이 있음**
   viewed  AI 답 보고 씀    — 내용이 AI 답에서 왔지만 붙여넣은 기록은 없음 (참고해 다시 씀 · 보고 옮겨 침 — 둘을 가르지 않는다)
   web     다른 곳에서 붙여넣음 — AI 답은 아니지만 다른 사이트·프로그램(나무위키 · 위키백과 · PDF …)에서 복사해 붙여넣은 글.
@@ -104,6 +105,23 @@ def link_sentence(sentence: str, cands):
     if two and (one is None or two["_cover"] >= one["_cover"] * PAIR_GAIN):
         return two
     return one or best
+
+
+def latest_messages(records):
+    """ai-messages 기록 → 생성 도중 잘린 답을 뺀 것 (이슈 #26-4).
+    · 기록기가 "replaces"(이 글이 대체한 앞 글의 해시)를 남겼으면 그 앞 글을 뺀다
+    · 예전 기록(replaces 없음)도: 같은 도구·턴·역할에서 뒤 글이 앞 글을 그대로 품고 더 길면 앞 글을 뺀다"""
+    gone = {r["replaces"] for r in records if r.get("replaces")}
+    out = []
+    for i, r in enumerate(records):
+        if r.get("hash") in gone:
+            continue
+        t = r.get("text", "")
+        if any(o is not r and (o.get("tool"), o.get("turn"), o.get("role")) == (r.get("tool"), r.get("turn"), r.get("role"))
+               and len(o.get("text", "")) > len(t) and o.get("text", "").startswith(t) for o in records[i + 1:]):
+            continue
+        out.append(r)
+    return out
 
 
 def _sha256(s: str) -> str:
@@ -250,6 +268,7 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
         row = []
         for s in split_sentences(para):
             r = {"text": s, **link_sentence(s, cands), "paste": None}
+            r["full"] = r["label"] == "exact" and norm(s) == norm(r["ai_text"])     # 100% 같음 → "일치" · 90~99% → "유사"
             if r["label"] != "none" and pasted is not None:
                 r["paste"] = next((pasted_at[(r["answer"], i)] for i in r["sents"] if (r["answer"], i) in pasted_at), None)
                 if r["label"] == "edited" and r["paste"] is None:
@@ -257,12 +276,48 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
                 if w["label"] != "none":
-                    r.update(label="web", answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
+                    r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
             # 붙여넣기 기록이 없는데 타이핑 기록도 없이 문서에 나타난 글 → 쓴 과정 기록 없음 (10/7)
             if ncands and r["label"] in ("none", "viewed") and link_sentence(s, tcands)["label"] == "none":
                 x = link_sentence(s, ncands)
                 if x["label"] != "none":
-                    r.update(label="noproc", answer=None, sents=None, ai_text=x["ai_text"], proc=proc["noproc"][x["answer"]])
+                    r.update(label="noproc", full=False, answer=None, sents=None, ai_text=x["ai_text"], proc=proc["noproc"][x["answer"]])
             row.append(r)
         out.append(row)
+    _link_short_lines(out, cands)
     return out
+
+
+def _link_short_lines(out, cands):
+    """8자 미만 짧은 줄("나이: 24세" · "예를 들어") — 유사도 비교는 여전히 안 한다. 다만 바로 앞·뒤 문장이 붙여넣기(AI 답 · 다른 곳)에
+    이어졌고 **그 붙여넣은 원문 안에 이 줄이 그대로 있으면** 같은 붙여넣기로 잇는다 (이슈 #26-3).
+    붙여넣은 글 안에서만 찾으니 우연히 겹칠 위험이 없다 — 직접 친 짧은 제목("어린 시절")은 붙여넣은 글에 없으니 그대로 둔다."""
+    flat = [r for row in out for r in row]
+    for k, r in enumerate(flat):
+        n = norm(r["text"])
+        if r["label"] != "none" or not n or len(n) >= MIN_CHARS:
+            continue
+        for nb in (_near(flat, k, -1), _near(flat, k, 1)):
+            p = nb.get("paste") if nb else None
+            # 붙여넣은 원문의 **한 줄 전체**와 같을 때만 — 글 안 어딘가에 들어 있기만 하면(부분 문자열) 직접 친 소제목
+            # "현재" 가 붙여넣은 "현재 하린은 23살." 에 걸렸다 (10/7 첫 연결 보고서에서 찾음)
+            if not p or not any(norm(line) == n for line in p.get("text", "").split("\n")):
+                continue
+            if nb["label"] == "web":
+                r.update(label="web", full=False, answer=None, sents=None, ai_text=r["text"], paste=p)
+            else:                                   # AI 답 붙여넣기 — 원문에서 이 줄이 든 문장을 칠한다
+                i = next((c["sents"][0] for c in cands
+                          if c["answer"] == nb["answer"] and len(c["sents"]) == 1 and n in norm(c["text"])), None)
+                r.update(label="exact", full=True, answer=nb["answer"], sents=(i,) if i is not None else nb["sents"],
+                         ai_text=r["text"], paste=p)
+            break
+
+
+def _near(flat, k, step):
+    """k 에서 step 쪽으로 가장 가까운 짧지 않은 문장 — 짧은 줄이 연달아 있어도 붙여넣은 덩어리의 양 끝 문장을 본다"""
+    j = k + step
+    while 0 <= j < len(flat):
+        if len(norm(flat[j]["text"])) >= MIN_CHARS:
+            return flat[j]
+        j += step
+    return None

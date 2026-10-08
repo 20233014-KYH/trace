@@ -97,12 +97,17 @@ const site = SITES.find((s) => s.tool === globalThis.__TRACE_SITE) || SITES.find
 
 // ───────────── 수집기 상태 · 보내기 ─────────────
 let toggles = null;                          // null = 기록 중 아님 → 아무것도 안 보냄
+let offAt = 0;                               // 기록이 꺼진(것으로 보인) 시각
 async function loadToggles() {
   const s = await chrome.runtime.sendMessage({ type: "status" }).catch(() => null);
-  const was = toggles;
+  const was = toggles, now = Date.now();
   toggles = s?.recording ? (s.capture || s.learn_context || {}) : null;   // learn_context = 옛 수집기 이름
+  if (was && !toggles) { offAt = now; dbg.offs++; }
   // 기록을 켜기 전부터 화면에 있던(못 보낸) 메시지 = 이전 대화. 탭을 미리 열어 둔 채 기록을 켜면 옛 질문·답이 새것처럼 들어가던 문제 (10/5)
-  if (!was && toggles) for (const st of seen.values()) if (!st.sent && st.text) st.history = true;
+  // 단 잠깐(60초 안) 상태를 못 받은 건 기록이 꺼진 게 아니다 — 숨은 탭에서 상태 확인이 한 번 빗나간 사이
+  // 생성 중이던 지금 대화의 답을 이전 대화로 표시했다 (10/7 · 이슈 #26 고치며 확인)
+  if (!was && toggles && (!offAt || now - offAt > 60000))
+    for (const st of seen.values()) if (!st.sent && st.text) st.history = true;
 }
 loadToggles();
 setInterval(loadToggles, 30000);
@@ -157,7 +162,9 @@ function scan() {
     if (text !== st.text) { st.text = text; st.changedAt = now; }
     if (!text || text === st.sent) return;
     const still = now - st.changedAt >= STABLE_MS[m.role];
-    const busy = m.role === "answer" && (m.streaming ?? (i === msgs.length - 1 && site.generating()));
+    // 둘 중 하나라도 "생성 중" 이면 기다린다 — 완료 속성만 보고 "생성 중지" 버튼을 안 보면,
+    // 생성이 2초 넘게 멈춘 사이 잘린 답이 한 번 더 저장됐다 (이슈 #26-4 · 맥 ChatGPT 새 채팅 201자 → 269자)
+    const busy = m.role === "answer" && (m.streaming === true || (i === msgs.length - 1 && site.generating()));
     if (!still || busy) { pending = true; return; }
     if (send(m.role === "question" ? "ai_question" : "ai_answer", text,
              { tool: site.tool, conv, turn: i + 1, model: m.model || "", history: st.history, msg_id: m.id || "" }))
@@ -171,7 +178,7 @@ function scan() {
 // 진단 — 그 사이트의 localStorage 에 traceDebug=1 이 있을 때만 <html data-trace-debug> 에 상태를 적는다 (평소엔 아무것도 안 남김)
 let DEBUG = false;
 try { DEBUG = localStorage.getItem("traceDebug") === "1"; } catch {}
-const dbg = { ver: chrome.runtime.getManifest?.().version, site: site?.tool || null, recording: null, scans: 0, msgs: 0, sent: 0, lastErr: "" };
+const dbg = { ver: chrome.runtime.getManifest?.().version, site: site?.tool || null, recording: null, scans: 0, msgs: 0, sent: 0, offs: 0, lastErr: "" };
 function debugMark() { if (DEBUG) document.documentElement.setAttribute("data-trace-debug", JSON.stringify(dbg)); }
 debugMark();
 

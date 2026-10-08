@@ -344,6 +344,7 @@ class Collector:
         self.ctx_count = 0
         self.ai_count = 0           # AI 질문·답 수 (알약·팝업에 보임)
         self._ai_seen = set()       # (role, hash) — 같은 질문·답을 두 번 기록하지 않음 (새로고침·탭 재방문)
+        self._ai_last = {}          # (도구, 턴, 역할) → (해시, 글) — 생성 도중 잘린 답을 나중 완성본이 대체할 때 (이슈 #26-4)
         self._ai_lock = threading.Lock()   # 다리는 요청마다 스레드 — 질문·답이 동시에 오면 파일 한 줄이 덮였다 (10/4 실사이트 시험)
         self._copy_at = 0.0
         self._copies = {}          # hash → (app, category)  콘솔 힌트용 (판단은 서버·derive 가 한다)
@@ -598,11 +599,18 @@ class Collector:
         ev = self.sink.emit(ev)
         self.ctx_count += 1
         self.ai_count += 1
+        # 같은 도구·턴·역할의 글이 앞 글을 그대로 품고 더 길게 다시 오면 = 앞 것은 생성 도중 잘린 답 → 이 기록이 대체한다 (PC 파일에만 ·
+        # 체인 형식은 그대로). 결과물 연결·내역서는 대체된 것을 뺀다 (core/match.latest_messages) — 이슈 #26-4
+        slot = (ev["tool"], ev["turn"], role)
+        prev = self._ai_last.get(slot)
+        replaces = prev[0] if prev and len(text) > len(prev[1]) and text.startswith(prev[1]) else ""
+        self._ai_last[slot] = (h, text)
         with open(os.path.join(self.sink.data_dir, f"ai-messages-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"session_id": self.session_id, "event_id": ev["id"], "ts": ev["ts"], "seen_at": it.get("ts"),
                                 "tool": ev["tool"], "model": meta.get("model", ""), "conv": ev["conv"], "turn": ev["turn"],
                                 "role": role, "hash": h, "masked": n_masked, "history": bool(meta.get("history")),
-                                "url": meta.get("url", ""), "text": text}, ensure_ascii=False) + "\n")
+                                "url": meta.get("url", ""), **({"replaces": replaces} if replaces else {}), "text": text},
+                               ensure_ascii=False) + "\n")
 
     def stop(self):
         self._stop.set()

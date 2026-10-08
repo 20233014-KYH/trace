@@ -10,6 +10,7 @@ python tests/test_derive.py --update   # 골든만 갱신 (derive 정의를 의�
 python tests/기술테스트_제안서.py      # 제안서 4장 기술 테스트 — ① 붙여넣기 출처 4/4 ② 조작 2건 탐지
 python tests/연결시제품.py             # 결과물(Word) 문장 ↔ AI 답 연결 시험 4개 + 색칠한 화면 (data/연결시제품/*.html)
 python tests/test_paste_source.py      # 수집기→derive 한 바퀴 · 나무위키 등 사이트별 붙여넣기 출처 10건
+python tests/test_issue26.py           # 이슈 #26 — Word 줄바꿈 · 붙여넣은 글 안의 짧은 줄 · 생성 도중 잘린 답 (12건)
 xvfb-run -a -s "-screen 0 1440x900x24" python tests/녹화시험_위키.py   # 실제 Chromium+확장+수집기로 나무위키·위키백과 복사 녹화 (결과: 녹화시험_결과.md)
 ```
 
@@ -23,7 +24,7 @@ xvfb-run -a -s "-screen 0 1440x900x24" python tests/녹화시험_위키.py   # �
 | `test_paste_source.py` | 실제 수집기(창·클립보드만 가짜)를 돌려 붙여넣기 출처 확인. 나무위키(목록 밖 → 기타 + 도메인) · 문서 제목에 "ChatGPT" 가 있어도 도메인 우선 · 맥 크롬(창 제목 없음) · 확장 없을 때 제목 키워드 |
 | `녹화시험_위키.py` | 실제 Chromium + Trace 확장 + 수집기(다리 5077) + X 클립보드로 나무위키·위키백과·chatgpt.com 복사→붙여넣기, 화면 녹화. 사이트 내용만 로컬 흉내(주소·탭 제목은 실제와 같음), 전경 창은 시험이 지정 |
 | `기술테스트_제안서.py` | 서비스 제안서 4장 증거 코드. 같은 픽스처로 ① 붙여넣기 4건 출처 판정 ② 글자 수 1 변경·기록 1개 삭제를 체인이 잡는지 |
-| `연결시제품.py` · `fixtures/match*` | 문장 연결 시험 (`core/match.py`). match = 만든 보고서 12문장 · match3 = 경제 14문장(정답 먼저) · match_rec = 녹화(실제 기록기 + ChatGPT + Word) 8문장 · match_mix = 세 AI 섞어 쓴 녹화 9문장. · match_web = **실제 나무위키·위키백과 + 사람이 직접 Ctrl+C·V** 녹화 7문장 (다른 곳 붙여넣기 = 빨강 + 출처 · Word 안 잘라 옮기기는 자기 글) · match_proc = **AI 가 만든 Word 파일을 열고** 사람이 직접 치고 프로그램이 한 문장 넣은 녹화 5문장 (열 때부터 있던 글 · 키 입력 없이 들어온 글 = 빨강 "쓴 과정 기록 없음") · match_view = **사람이 ChatGPT 에 직접 묻고 답을 보며 손으로 고쳐 친** 녹화 5문장 (90% 넘게 같으면 "그대로" · 그 아래는 "보고 씀" · 10/7 결정) · match_app = **데스크톱 Claude 앱** 답을 보며 손으로 옮겨 친 녹화 15줄 (collector/desktop_ai.py 가 앱 화면에서 답 원문을 읽음 · 8자 미만 짧은 줄은 비교 안 함) 녹화 폴더엔 `report.docx` · `events.jsonl`(복사·붙여넣기) · `context.jsonl`(복사 발췌) 도. `--edit-cover 0.35` 로 기준 바꿔 보기. 10/7 결과 71/75 · 직접 쓴 문장 잘못 잡음 0 |
+| `연결시제품.py` · `fixtures/match*` | 문장 연결 시험 (`core/match.py`). match = 만든 보고서 12문장 · match3 = 경제 14문장(정답 먼저) · match_rec = 녹화(실제 기록기 + ChatGPT + Word) 8문장 · match_mix = 세 AI 섞어 쓴 녹화 9문장. · match_web = **실제 나무위키·위키백과 + 사람이 직접 Ctrl+C·V** 녹화 7문장 (다른 곳 붙여넣기 = 빨강 + 출처 · Word 안 잘라 옮기기는 자기 글) · match_proc = **AI 가 만든 Word 파일을 열고** 사람이 직접 치고 프로그램이 한 문장 넣은 녹화 5문장 (열 때부터 있던 글 · 키 입력 없이 들어온 글 = 빨강 "쓴 과정 기록 없음") · match_view = **사람이 ChatGPT 에 직접 묻고 답을 보며 손으로 고쳐 친** 녹화 5문장 (90% 넘게 같으면 빨강 — 100% 같으면 "일치" · 90~99% 는 "유사" — 그 아래는 "보고 씀" · 10/7 결정) · match_app = **데스크톱 Claude 앱** 답을 보며 손으로 옮겨 친 녹화 15줄 (collector/desktop_ai.py 가 앱 화면에서 답 원문을 읽음 · 8자 미만 짧은 줄은 비교 안 함) 녹화 폴더엔 `report.docx` · `events.jsonl`(복사·붙여넣기) · `context.jsonl`(복사 발췌) 도. `--edit-cover 0.35` 로 기준 바꿔 보기. 10/7 결과 71/75 · 직접 쓴 문장 잘못 잡음 0 |
 
 ## 시나리오가 덮는 것
 - 붙여넣기 3종: **AI 출처와 해시 일치**(빨강) · **일치하지만 AI 아님**(주황) · **복사 기록 없음**
