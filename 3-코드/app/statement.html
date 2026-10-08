@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>내역서 만들기 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 학생 PC 의 내역서 만들기 — 2-디자인/디자인 기준 v2 (교수 화면 server/static/share.html 과 같은 말투·색)
+   ★ 점수·퍼센트를 그리지 않는다. "일치·유사·고침·보고 씀"은 판정이 아니라 제안 — 학생이 맞다/아니다를 고른다. */
+:root{
+  --ink:#37352f; --muted:#787774; --faint:#a3a29e; --line:#e9e9e7; --soft:#f7f7f5; --hover:#efefed; --bg:#fff;
+  --typed:#448361; --paste:#cb7a1a; --ai:#d44c47; --view:#9065b0; --blue:#337ea9; --warn:#d44c47; --warn-soft:#fbecea; --ok:#448361; --ok-soft:#edf3ec;
+  --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.page{max-width:860px;margin:0 auto;padding:32px 20px 120px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.brand .mark{display:flex;align-items:flex-end;gap:2px}
+.brand .mark i{display:block;border-radius:50%;background:var(--ink)}
+.brand .mark i:nth-child(1){width:4px;height:4px;opacity:.3}.brand .mark i:nth-child(2){width:6px;height:6px;opacity:.55}.brand .mark i:nth-child(3){width:8px;height:8px}
+.brand small{font-weight:400;color:var(--muted);font-size:13px}
+.who{color:var(--muted);font-size:13px;display:flex;gap:10px;align-items:center}
+h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:26px 0 4px}
+.lede{color:var(--muted);margin:0 0 8px;font-size:14px}
+section{padding:22px 0;border-bottom:1px solid var(--line)}
+section[hidden]{display:none!important}
+h2{font-size:16px;font-weight:600;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
+h2 .no{font-size:12px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+h2 small{font-weight:400;color:var(--muted);font-size:13px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input[type=email],input[type=password],select,textarea{width:100%;max-width:420px;font:inherit;font-size:14.5px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+textarea{max-width:none;min-height:76px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:7px 14px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--soft)}.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.msg{font-size:13.5px;margin-top:10px;min-height:1.2em}
+.msg.err{color:var(--warn)}.msg.ok{color:var(--ok)}
+.note{background:var(--soft);border-radius:6px;padding:10px 12px;font-size:13.5px;color:var(--muted);margin-top:12px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.counts{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:4px 0 14px}
+.counts b{color:var(--ink);font-weight:600}
+.lg{display:inline-flex;align-items:center;gap:5px}.lg i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.card{padding:16px 0;border-top:1px solid var(--line);display:grid;gap:8px}
+.card:first-of-type{border-top:0}
+.card .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:4px;font-size:12px;background:var(--soft);color:var(--muted)}
+.chip .d{width:6px;height:6px;border-radius:50%}
+.res{font-weight:500;white-space:pre-wrap;overflow-wrap:anywhere}
+.ans{background:var(--soft);border-radius:6px;padding:10px 12px;font-size:14px;color:#55534e;white-space:pre-wrap;overflow-wrap:anywhere;max-height:14em;overflow:auto}
+.ans mark{background:#fbe4d0;color:inherit;border-radius:2px}
+.q{font-size:13.5px;color:var(--muted);display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.q .t{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.q label{margin:0;display:inline-flex;gap:5px;align-items:center;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.q.hidden .t{text-decoration:line-through;color:var(--faint)}
+.pick{display:flex;gap:6px}
+.pick button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 12px;font:inherit;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.pick button.on.yes{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+.pick button.on.no{background:var(--soft);border-color:var(--muted);color:var(--ink);font-weight:600}
+.doc p{margin:0 0 10px;font-size:14.5px}
+.doc span.l{border-radius:3px;padding:0 1px}
+.doc .exact,.doc .similar{background:#fbe4e3}.doc .edited{background:#e3edf6}.doc .viewed{background:#efe6f5}
+.doc .web{background:#fbecd9}.doc .noproc{background:#fbe4e3;text-decoration:underline dotted var(--warn)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5px}
+.bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.result{font-size:14.5px}
+.url{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.url code{background:var(--soft);border-radius:6px;padding:7px 10px;font-size:13px;overflow-wrap:anywhere;flex:1;min-width:0}
+@media (max-width:600px){h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Trace<small>· AI 활용 내역서 만들기</small></div>
+    <div class="who" id="who"></div>
+  </div>
+  <h1>내역서 만들기</h1>
+  <p class="lede">이 화면은 내 컴퓨터에서만 돌아갑니다. AI 질문·답 원문은 여기서 내가 "맞다"고 고른 것만 서버로 갑니다.</p>
+
+  <section id="s-login" hidden>
+    <h2><span class="no">로그인</span>Trace 계정</h2>
+    <label for="email">이메일</label><input id="email" type="email" autocomplete="username">
+    <label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password">
+    <div class="row"><button class="btn dark" id="b-login" type="button">로그인</button></div>
+    <div class="msg" id="m-login" role="status"></div>
+  </section>
+
+  <section id="s-work" hidden>
+    <h2><span class="no">1</span>과제 고르기</h2>
+    <select id="work" aria-label="과제"></select>
+    <div class="note" id="scope" hidden></div>
+    <div class="note warn" id="orphans" hidden></div>
+    <div class="msg" id="m-work" role="status"></div>
+  </section>
+
+  <section id="s-file" hidden>
+    <h2><span class="no">2</span>과제 파일 고르기 <small>Word(.docx) · 파일은 이 컴퓨터 밖으로 나가지 않습니다</small></h2>
+    <input id="file" type="file" accept=".docx">
+    <div class="row"><button class="btn dark" id="b-analyze" type="button" disabled>기록과 맞춰 보기</button></div>
+    <div class="msg" id="m-file" role="status"></div>
+  </section>
+
+  <section id="s-links" hidden>
+    <h2><span class="no">3</span>AI 답에서 온 문장 확인 <small id="links-sub"></small></h2>
+    <div class="counts" id="counts"></div>
+    <div class="row" style="margin-top:0"><button class="btn" id="b-all-yes" type="button">모두 맞다</button></div>
+    <div id="cards"></div>
+    <details><summary>과제 전체 보기 (색으로)</summary><div class="doc" id="doc"></div></details>
+  </section>
+
+  <section id="s-make" hidden>
+    <h2><span class="no">4</span>한 줄 설명 <small>선택 · 교수가 맨 위에서 읽습니다</small></h2>
+    <textarea id="sentence" placeholder="예: 광합성 개념 설명을 ChatGPT에 물어보고, 받은 설명을 제 문장으로 줄여 2·3문단에 썼습니다."></textarea>
+    <div class="bar">
+      <button class="btn dark" id="b-make" type="button" disabled>내역서 만들기</button>
+      <span class="msg" id="m-make" role="status" style="margin:0"></span>
+    </div>
+  </section>
+
+  <section id="s-done" hidden>
+    <h2><span class="no">5</span>교수에게 보낼 링크</h2>
+    <div class="result" id="result"></div>
+    <div class="row">
+      <label for="days" style="margin:0">링크 기간</label>
+      <select id="days" style="width:auto"><option value="7">7일</option><option value="14" selected>14일</option><option value="30">30일</option><option value="90">90일</option></select>
+      <button class="btn dark" id="b-share" type="button">링크 만들기</button>
+    </div>
+    <div class="url" id="url" hidden><code id="url-text"></code><button class="btn" id="b-copy" type="button">복사</button></div>
+    <div class="msg" id="m-share" role="status"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const LABEL = { exact: "일치", similar: "유사", edited: "붙여넣고 고침", viewed: "보고 씀",
+                  web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
+  const COLOR = { exact: "var(--ai)", similar: "var(--ai)", edited: "var(--blue)", viewed: "var(--view)",
+                  web: "var(--paste)", noproc: "var(--ai)", none: "var(--line)" };
+  let works = [], analysis = null, decisions = {}, hidden = new Set(), statementId = null;
+
+  async function call(method, path, body, isForm) {
+    const opt = { method, headers: { "X-Trace-Local": "1" } };
+    if (body && !isForm) { opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+    if (isForm) opt.body = body;
+    const r = await fetch(path, opt);
+    let d = {};
+    try { d = await r.json(); } catch (e) { d = { message: `응답을 읽지 못했습니다 (HTTP ${r.status})` }; }
+    if (!r.ok) throw Object.assign(new Error(d.message || d.error || `HTTP ${r.status}`), { code: r.status, data: d });
+    return d;
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function show(id, on = true) { $(id).hidden = !on; }
+  function msg(id, text, kind) { $(id).textContent = text || ""; $(id).className = "msg" + (kind ? " " + kind : ""); }
+  function when(iso) { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? `${m[2]}/${m[3]} ${m[4]}:${m[5]}` : ""; }
+  function chip(kind) { const c = el("span", "chip"); const d = el("span", "d"); d.style.background = COLOR[kind]; c.append(d, LABEL[kind]); return c; }
+
+  // ── 로그인 ──
+  async function boot() {
+    const s = await call("GET", "/local/state");
+    $("who").textContent = "";
+    if (!s.logged_in) { show("s-login"); ["s-work", "s-file", "s-links", "s-make", "s-done"].forEach(x => show(x, false)); return; }
+    show("s-login", false);
+    $("who").append(el("span", null, `${s.user.name} · ${s.server.replace(/^https?:\/\//, "").replace(/\/api$/, "")}`));
+    const out = el("button", "btn", "로그아웃"); out.type = "button";
+    out.onclick = async () => { await call("POST", "/local/logout", {}); location.reload(); };
+    $("who").append(out);
+    await loadWorks();
+  }
+  $("b-login").onclick = async () => {
+    msg("m-login", "서버에 묻는 중… (무료 서버는 처음 깨울 때 1분쯤 걸립니다)");
+    try { await call("POST", "/local/login", { email: $("email").value, password: $("pw").value }); msg("m-login", ""); boot(); }
+    catch (e) { msg("m-login", e.message, "err"); }
+  };
+  $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("b-login").click(); });
+
+  // ── 1 과제 ──
+  async function loadWorks() {
+    show("s-work");
+    msg("m-work", "과제 목록을 불러오는 중…");
+    try {
+      const d = await call("GET", "/local/works");
+      works = d.works;
+      const sel = $("work"); sel.textContent = "";
+      works.forEach(w => { const o = el("option", null, `${w.title}${w.pc_sessions ? ` · 이 PC 기록 ${w.pc_sessions}번` : " · 이 PC 기록 없음"}`); o.value = w.id; sel.append(o); });
+      msg("m-work", works.length ? "" : "내 과제가 없습니다.", works.length ? "" : "err");
+      if (d.orphans.length) {
+        $("orphans").textContent = `이 PC 에 로그인 없이 만든 기록이 있습니다 (${d.orphans.map(o => o.id).join(", ")}). ` +
+          "주인이 없는 과제라 내역서를 만들 수 없습니다 — 기록기에 로그인을 붙인 뒤 기록한 과제만 쓸 수 있습니다.";
+        show("orphans");
+      }
+      sel.onchange = pickWork; pickWork();
+    } catch (e) { msg("m-work", e.message, "err"); }
+  }
+  function pickWork() {
+    const w = works.find(x => x.id === $("work").value);
+    analysis = null; show("s-links", false); show("s-make", false); show("s-done", false);
+    if (!w) return;
+    $("scope").textContent = w.ai_scope ? `허용 범위 메모: ${w.ai_scope}` : "허용 범위 메모 없음";
+    show("scope"); show("s-file");
+    $("b-analyze").disabled = !$("file").files.length;
+  }
+  $("file").onchange = () => { $("b-analyze").disabled = !$("file").files.length; };
+
+  // ── 2 분석 ──
+  $("b-analyze").onclick = async () => {
+    const fd = new FormData();
+    fd.append("work_id", $("work").value); fd.append("file", $("file").files[0]);
+    msg("m-file", "이 PC 의 기록과 맞춰 보는 중…");
+    try {
+      analysis = await call("POST", "/local/analyze", fd, true);
+      decisions = {}; hidden = new Set(); statementId = null;
+      msg("m-file", `AI 질문·답 ${analysis.ai_messages}개 · 작업 기록 ${analysis.sessions}번과 맞춰 봤습니다.`, "ok");
+      renderLinks();
+    } catch (e) { msg("m-file", e.message, "err"); }
+  };
+
+  function renderLinks() {
+    const all = analysis.paragraphs.flat();
+    const items = all.filter(s => s.key);
+    const tally = {};
+    all.forEach(s => { const k = s.kind || s.label; tally[k] = (tally[k] || 0) + 1; });
+    $("links-sub").textContent = `제안 ${items.length}개 — 맞으면 "맞다", 아니면 "아니다"`;
+    $("counts").textContent = "";
+    ["exact", "similar", "edited", "viewed", "web", "noproc", "none"].forEach(k => {
+      if (!tally[k]) return;
+      const s = el("span", "lg"); const i = el("i"); i.style.background = COLOR[k];
+      s.append(i, `${LABEL[k]} `, el("b", null, `${tally[k]}`)); $("counts").append(s);
+    });
+
+    const box = $("cards"); box.textContent = "";
+    if (!items.length) box.append(el("p", "lede", "AI 답에서 온 것으로 보이는 문장이 없습니다. 그래도 아래에서 내역서를 만들 수는 없고, 연결이 하나 이상 있어야 합니다."));
+    items.forEach(s => {
+      const c = el("div", "card");
+      const head = el("div", "head");
+      head.append(chip(s.kind), el("span", null, `${s.key.split(".")[0] * 1 + 1}번째 문단`));
+      if (s.pasted) head.append(el("span", "chip", "복사·붙여넣기 기록 있음"));
+      c.append(head, el("div", "res", s.text));
+      const ans = el("div", "ans");
+      const at = s.answer.text, hit = s.ai_text ? at.indexOf(s.ai_text) : -1;
+      if (hit >= 0) { ans.append(at.slice(0, hit), el("mark", null, s.ai_text), at.slice(hit + s.ai_text.length)); }
+      else ans.textContent = at;
+      const meta = el("div", "head"); meta.append(el("span", null, `${s.answer.tool || "AI"} 답 · ${s.answer.history ? "이전 대화" : when(s.answer.ts)}`));
+      c.append(meta, ans);
+      if (s.question) {
+        const q = el("div", "q" + (hidden.has(s.question.id) ? " hidden" : ""));
+        const cb = el("input"); cb.type = "checkbox"; cb.checked = hidden.has(s.question.id);
+        const lb = el("label"); lb.append(cb, "질문 가리기");
+        cb.onchange = () => { cb.checked ? hidden.add(s.question.id) : hidden.delete(s.question.id); renderLinks(); };
+        q.append(el("span", null, "내 질문"), el("span", "t", s.question.text), lb);
+        c.append(q);
+      }
+      const pick = el("div", "pick");
+      [["confirmed", "맞다", "yes"], ["rejected", "아니다", "no"]].forEach(([v, t, cls]) => {
+        const b = el("button", cls + (decisions[s.key] === v ? " on" : ""), t); b.type = "button";
+        b.setAttribute("aria-pressed", decisions[s.key] === v);
+        b.onclick = () => { decisions[s.key] = v; renderLinks(); };
+        pick.append(b);
+      });
+      c.append(pick);
+      box.append(c);
+    });
+
+    const doc = $("doc"); doc.textContent = "";
+    analysis.paragraphs.forEach(p => {
+      const pe = el("p");
+      p.forEach(s => { const sp = el("span", "l " + (s.kind || s.label), s.text + " "); sp.title = LABEL[s.kind || s.label]; pe.append(sp); });
+      doc.append(pe);
+    });
+
+    show("s-links"); show("s-make");
+    const done = items.filter(s => decisions[s.key]).length;
+    $("b-make").disabled = !done;
+    msg("m-make", items.length ? `${done} / ${items.length} 골랐습니다${done < items.length ? " — 고르지 않은 제안은 보내지 않습니다" : ""}` : "");
+  }
+  $("b-all-yes").onclick = () => { analysis.paragraphs.flat().filter(s => s.key).forEach(s => { decisions[s.key] = "confirmed"; }); renderLinks(); };
+
+  // ── 4 만들기 ──
+  $("b-make").onclick = async () => {
+    $("b-make").disabled = true; msg("m-make", "서버에서 기록과 맞춰 보는 중…");
+    try {
+      const r = await call("POST", "/local/statement", { analysis_id: analysis.id, decisions, hide_questions: [...hidden], sentence: $("sentence").value });
+      statementId = r.id;
+      const res = $("result"); res.textContent = "";
+      if (r.verified) res.append(el("p", "msg ok", `내역서를 만들었습니다. 보낸 원문 ${r.counts.messages}개가 모두 기록 당시 그대로입니다.`));
+      else {
+        res.append(el("p", "msg err", `내역서를 만들었지만 확인되지 않은 항목이 ${r.problems.length}개 있습니다. 교수 화면에도 그대로 표시됩니다.`));
+        res.append(el("p", "lede", r.problems.map(p => p.why).join(" · ")));
+      }
+      res.append(el("p", "lede", `맞다 ${r.counts.links_confirmed} · 아니다 ${r.counts.links_rejected} · 가린 질문 ${r.counts.redactions}`));
+      show("s-done"); show("url", false); msg("m-share", "");
+      msg("m-make", "만들었습니다", "ok");
+      $("s-done").scrollIntoView({ behavior: "smooth" });
+    } catch (e) { msg("m-make", e.message, "err"); }
+    $("b-make").disabled = false;
+  };
+
+  // ── 5 링크 ──
+  $("b-share").onclick = async () => {
+    msg("m-share", "링크를 만드는 중…");
+    try {
+      const r = await call("POST", "/local/share", { statement_id: statementId, days: $("days").value });
+      $("url-text").textContent = r.url; show("url");
+      msg("m-share", `${r.expires_at.slice(0, 10)}까지 열립니다. 과제와 함께 이 주소를 교수에게 보내세요.`, "ok");
+    } catch (e) { msg("m-share", e.message, "err"); }
+  };
+  $("b-copy").onclick = () => {
+    const t = $("url-text").textContent;
+    navigator.clipboard.writeText(t).then(() => msg("m-share", "복사했습니다", "ok"),
+      () => { const r = document.createRange(); r.selectNodeContents($("url-text")); getSelection().removeAllRanges(); getSelection().addRange(r); msg("m-share", "선택해 두었습니다. Ctrl+C 로 복사하세요"); });
+  };
+
+  boot().catch(e => { document.querySelector(".lede").textContent = "화면을 시작하지 못했습니다: " + e.message; });
+})();
+</script>
+</body>
+</html>
