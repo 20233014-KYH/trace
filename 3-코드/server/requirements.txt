@@ -3,3 +3,4 @@ flask
 sqlalchemy
 psycopg[binary]   # Supabase (PostgreSQL)
 gunicorn          # 배포용 웹 서버 (python app.py 는 개발용)
+reportlab         # AI 활용 내역서 PDF (statement_pdf.py)

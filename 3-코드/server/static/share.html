@@ -153,7 +153,9 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     const mark = el("span", "mark"); add(mark, el("i"), el("i"), el("i"));
     add(brand, mark, document.createTextNode("Trace"), el("small", null, "· AI 활용 내역서"));
     const meta = el("div", "meta");
-    add(meta, el("div", null, `만든 시각 ${when(d.created_at)}`), el("div", null, `링크 만료 ${when(d.expires_at)}`));
+    const pdf = el("a", null, "PDF 받기"); pdf.href = `/api/share/${encodeURIComponent(token)}/pdf`; pdf.target = "_blank"; pdf.rel = "noopener noreferrer";
+    pdf.style.color = "var(--ink)";
+    add(meta, el("div", null, `만든 시각 ${when(d.created_at)}`), el("div", null, `링크 만료 ${when(d.expires_at)}`), add(el("div"), pdf));
     add(app, add(top, brand, meta));
 
     add(app, el("h1", null, (d.work && d.work.title) || "제목 없는 과제"));

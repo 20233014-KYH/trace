@@ -228,6 +228,16 @@ def main():
     except urllib.error.URLError as e:
         검사("32 교수 화면 HTML", False, str(e))
 
+    # ⑪ 내역서 1장 PDF — 링크와 같은 열쇠로 받는다
+    검사("33 링크 응답에 pdf_url", str(sh2.get("pdf_url", "")).endswith(f"/api/share/{sh2.get('token')}/pdf"), "")
+    with urllib.request.urlopen(BASE + f"/share/{sh2.get('token')}/pdf", timeout=60) as resp:
+        본문, 종류 = resp.read(), resp.headers.get("Content-Type", "")
+    검사("34 PDF 받기", 종류.startswith("application/pdf") and 본문[:5] == b"%PDF-" and len(본문) > 10000,
+         f"{종류} · {len(본문):,}바이트")
+    호출(f"/shares/{sh2['token']}", 토큰=갑, 방법="DELETE")
+    코드, _ = 호출(f"/share/{sh2['token']}/pdf")
+    검사("35 끊은 링크는 PDF 도 404", 코드 == 404, f"HTTP {코드}")
+
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")
     print()

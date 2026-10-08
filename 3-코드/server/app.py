@@ -683,6 +683,7 @@ def create_share(stid):
         d.commit()
         답 = {"token": sh.token, "path": f"/api/share/{sh.token}", "page": f"/s/{sh.token}",
               "url": request.host_url.rstrip("/") + f"/s/{sh.token}",      # 학생이 교수에게 보내는 주소
+              "pdf_url": request.host_url.rstrip("/") + f"/api/share/{sh.token}/pdf",   # 과제와 함께 내는 1장
               "expires_at": sh.expires_at}
     print(f"← 공유 링크 만듦  내역서 {stid[:8]}…  {일수}일")
     return jsonify(답), 201
@@ -702,20 +703,44 @@ def revoke_share(token):
     return jsonify(ok=True)
 
 
-@app.get("/api/share/<token>")
-def read_share(token):
-    """교수 확인용 — 로그인 없음 · 읽기 전용. 없는 링크·끊은 링크·지난 링크는 똑같이 404 (어느 쪽인지 알려 주지 않는다)."""
+def _공유_내용(token):
+    """교수용 내역서 데이터. 없는 링크·끊은 링크·지난 링크는 None (어느 쪽인지 알려 주지 않는다)."""
     with db.Session() as d:
         sh = d.get(db.Share, token)
         if (not sh or sh.revoked_at
                 or datetime.fromisoformat(sh.expires_at) < now()):
-            return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
+            return None
         st = d.get(db.Statement, sh.statement_id)
-        w = d.get(db.Work, st.work_id)
+        w, u = d.get(db.Work, st.work_id), d.get(db.User, st.user_id)
         답 = _내역서_내용(d, st, 학생용=False)
         답["work"] = {"title": w.title if w else None}
+        답["author"] = u.name if u else None            # 계정 이름 — Trace 가 신원을 확인하지는 않는다
         답["expires_at"] = sh.expires_at
+    return 답
+
+
+@app.get("/api/share/<token>")
+def read_share(token):
+    """교수 확인용 — 로그인 없음 · 읽기 전용. 없는 링크·끊은 링크·지난 링크는 똑같이 404 (어느 쪽인지 알려 주지 않는다)."""
+    답 = _공유_내용(token)
+    if 답 is None:
+        return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
     return jsonify(답)
+
+
+@app.get("/api/share/<token>/pdf")
+def share_pdf(token):
+    """AI 활용 내역서 1장 PDF (기획서 10절). 학생이 과제와 함께 낸다. 안에 교수 확인 링크·QR 이 들어간다.
+    링크를 아는 사람만 받는다 — 링크와 같은 열쇠. (server/statement_pdf.py)"""
+    답 = _공유_내용(token)
+    if 답 is None:
+        return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
+    from urllib.parse import quote
+    import statement_pdf                                   # reportlab · 글꼴은 PDF 를 처음 만들 때만 읽는다
+    pdf = statement_pdf.render(답, request.host_url.rstrip("/") + f"/s/{token}")
+    이름 = f"AI활용내역서_{(답['work']['title'] or '과제')[:40]}.pdf"
+    return app.response_class(pdf, mimetype="application/pdf", headers={
+        "Content-Disposition": f"inline; filename=\"statement.pdf\"; filename*=UTF-8''{quote(이름)}"})
 
 
 @app.get("/s/<token>")

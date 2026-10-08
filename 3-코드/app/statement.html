@@ -131,6 +131,10 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
       <button class="btn dark" id="b-share" type="button">링크 만들기</button>
     </div>
     <div class="url" id="url" hidden><code id="url-text"></code><button class="btn" id="b-copy" type="button">복사</button></div>
+    <div class="row" id="pdf-row" hidden>
+      <a class="btn dark" id="b-pdf" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none">내역서 PDF 받기</a>
+      <span class="lede" style="margin:0">과제와 함께 내는 1장 — 링크와 QR이 들어 있습니다</span>
+    </div>
     <div class="msg" id="m-share" role="status"></div>
   </section>
 </div>
@@ -293,7 +297,7 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
         res.append(el("p", "lede", r.problems.map(p => p.why).join(" · ")));
       }
       res.append(el("p", "lede", `맞다 ${r.counts.links_confirmed} · 아니다 ${r.counts.links_rejected} · 가린 질문 ${r.counts.redactions}`));
-      show("s-done"); show("url", false); msg("m-share", "");
+      show("s-done"); show("url", false); show("pdf-row", false); msg("m-share", "");
       msg("m-make", "만들었습니다", "ok");
       $("s-done").scrollIntoView({ behavior: "smooth" });
     } catch (e) { msg("m-make", e.message, "err"); }
@@ -306,6 +310,7 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
     try {
       const r = await call("POST", "/local/share", { statement_id: statementId, days: $("days").value });
       $("url-text").textContent = r.url; show("url");
+      $("b-pdf").href = r.pdf_url; show("pdf-row");
       msg("m-share", `${r.expires_at.slice(0, 10)}까지 열립니다. 과제와 함께 이 주소를 교수에게 보내세요.`, "ok");
     } catch (e) { msg("m-share", e.message, "err"); }
   };

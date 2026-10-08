@@ -383,9 +383,10 @@ POST /works/{id}/statements       ← 내역서 만들기. 원문은 여기서 �
   problems.why:  not_in_work · not_in_chain · hash_mismatch · answer_not_verified · question_not_verified
                  · result_hash_mismatch · redaction_not_in_chain · session_not_sealed · session_not_verified
 GET    /works/{id}/statements/latest          ← 학생용 (아니다·가림의 위치, 원문별 ok 까지 · 공유 링크 목록)
-POST   /statements/{id}/share    {expires_in_days? 1~90, 기본 14}  → 201 {token, path, page, url, expires_at}
+POST   /statements/{id}/share    {expires_in_days? 1~90, 기본 14}  → 201 {token, path, page, url, pdf_url, expires_at}
                                   ← url = 교수에게 보내는 화면 주소 https://…/s/{token} (서버가 HTML 을 내줌 · 10/8)
 DELETE /shares/{token}                        ← 학생이 끊기
+GET    /share/{token}/pdf         ← AI 활용 내역서 1장 PDF (링크·QR 포함 · 링크와 같은 열쇠 · 10/8)
 GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전용 · 없음·끊음·만료는 똑같이 404
   응답  {work:{title}, ai_scope, sentence, verified, problems:[{why}], summary,
          links:[{question, answer:{text, tool, ts, history, ok}, result:{text, location}, kind, origin}],

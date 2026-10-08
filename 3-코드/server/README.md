@@ -156,13 +156,14 @@ JWT 는 서버가 들고 있지 않아 **로그아웃·강제 만료를 못 합�
 | `POST /api/statements/<id>/share` | 학생 | 교수 확인 링크 (기본 14일 · 최대 90일) |
 | `DELETE /api/shares/<token>` | 학생 | 링크 끊기 |
 | `GET /api/share/<token>` | 교수 (로그인 없음) | 확인된 연결만 읽기 · 없음/끊음/만료는 똑같이 404 |
+| `GET /api/share/<token>/pdf` | 학생·교수 (링크와 같은 열쇠) | **AI 활용 내역서 1장 PDF** (`statement_pdf.py` · reportlab · 글꼴 `fonts/` Pretendard OFL). 안에 링크·QR. "PDF 와 링크가 다르면 링크가 원본" |
 | `GET /s/<token>` | 교수 | **교수가 여는 화면** (`server/static/share.html` 한 장이 위 API 를 읽어 그림 · 휴대폰 OK). 학생에게 주는 주소는 링크 만들기 응답의 `url` |
 
 **지키는 것:** "아니다"로 고른 연결의 결과물 원문은 받아도 버린다 · 가린 이벤트는 위치만 · 도구·역할·시각은 학생이 보낸 값이 아니라 체인의 값.
 
 ```bash
 TRACE_DB_URL=sqlite:///test.db TRACE_PORT=5050 python server/app.py   # ★ 시험은 따로 만든 SQLite 로 (Supabase 에 시험 기록이 쌓이지 않게)
-TRACE_PORT=5050 python server/test_statements.py                       # 검사 32개
+TRACE_PORT=5050 python server/test_statements.py                       # 검사 35개
 ```
 
 ## 아직 안 만든 것
