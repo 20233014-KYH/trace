@@ -360,21 +360,31 @@ link_decision  {answer_hash, result_hash, kind:"exact"|"edited", decision:"confi
 ```
 GET  /works/{id}/summary          ← 서버가 체인 이벤트로 센다 (규칙 기반 · PC 가 보낸 숫자를 믿지 않음)
                                      작업 시간 · 붙여넣기 · AI 질문 수(ai_msg) · 연결 수(link_decision) · 출처 기록 없음 구간
-POST /works/{id}/statements       ← 내역서 만들기. 원문은 여기서 처음 서버로 온다
-  요청  {ai_scope, sentence?,
-         messages:   [{event_id, session_id, tool, role, ts, text}],
-         links:      [{answer_event_id?, question_event_id?, answer_hash, result_hash, result_text?,
-                       location, kind, origin, decision, decision_event_id}],
-         redactions: [{event_id}]}
-  응답  {id, verified, problems:[{event_id, why:"hash_mismatch"|"not_in_chain"}]}
-  · messages 하나하나 sha256_text(text) 를 체인의 ai_msg.hash 와 비교. 다르면 저장은 하되 그 항목을 "조작됨" — 숨기지 않는다
-  · 한 요청 5MB
-GET    /works/{id}/statements/latest
-POST   /statements/{id}/share    {expires_in_days?}  → {token, url, expires_at}
-DELETE /shares/{token}
-GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전용
-  응답  {work:{title}, ai_scope, summary, sentence, links:[{question, answer, result, kind}],
-         redacted:n, chain:{verified}, generated_at}
+POST /works/{id}/statements       ← 내역서 만들기. 원문은 여기서 처음 서버로 온다   ✅ 10/8 구현 (server/app.py)
+  요청  {ai_scope?, sentence?,
+         messages:   [{session_id, event_id, text}],                       ← 이벤트 id 는 세션 안에서만 고유 → 둘 다
+         links:      [{answer_hash, question_hash?, result_hash, result_text?,
+                       location, kind, origin, decision:"confirmed"|"rejected", decision_event_id?}],
+         redactions: [{session_id, event_id}]}
+  응답 201  {id, verified, problems:[{…, why}], sessions:[{id, sealed, verified}],
+             counts:{messages, links_confirmed, links_rejected, redactions}}
+  · 로그인 필요 · 내 과제만 (주인 없는 과제도 404 — 과제 이름은 추측할 수 있어서)
+  · 원문마다 sha256_text(text) 를 체인 ai_msg.hash 와 비교. 다르면 저장은 하되 match=false — 숨기지 않는다
+  · tool·role·ts 는 보낸 값이 아니라 체인 이벤트의 값 (history = 이전 대화도 그대로 따라온다)
+  · 연결은 해시로 원문을 가리킨다: confirmed 면 answer_hash 가 위에서 확인된 답이어야 한다
+  · rejected 의 result_text 는 받아도 버린다 (원문 없이 해시·위치·결정만)
+  · 가린 이벤트의 원문을 같이 보내면 400 · 한 요청 5MB · 원문 하나 256KB
+  · verified = 문제 0개 (원문이 나온 세션이 전부 봉인·검증됐는가 포함)
+  problems.why:  not_in_work · not_in_chain · hash_mismatch · answer_not_verified · question_not_verified
+                 · result_hash_mismatch · redaction_not_in_chain · session_not_sealed · session_not_verified
+GET    /works/{id}/statements/latest          ← 학생용 (아니다·가림의 위치, 원문별 ok 까지 · 공유 링크 목록)
+POST   /statements/{id}/share    {expires_in_days? 1~90, 기본 14}  → 201 {token, path, expires_at}
+DELETE /shares/{token}                        ← 학생이 끊기
+GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전용 · 없음·끊음·만료는 똑같이 404
+  응답  {work:{title}, ai_scope, sentence, verified, problems,
+         links:[{question, answer:{text, tool, ts, history, ok}, result:{text, location}, kind, origin}],
+         rejected:n, redacted:n, created_at, expires_at}
+  ✳ 아직: GET /works/{id}/summary (체인 이벤트로 센 숫자) · link_decision 이벤트 확인 (기록기가 아직 안 냄)
 ```
 
 | 5절 (9/28) | 이 초안 |

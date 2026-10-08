@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(HERE))          # 3-코드/ 를 경로에 넣
 
 from core import chain as C          # noqa: E402  ★ 해시는 여기서만
 from core.derive import derive       # noqa: E402
+from core.texthash import sha256_text  # noqa: E402  ★ 원문 해시도 여기서만 (내역서 검증)
 import db                            # noqa: E402
 
 KST = timezone(timedelta(hours=9))
@@ -437,6 +438,250 @@ def get_context(sid):
                           .filter(db.Context.session_id == sid)
                           .order_by(db.Context.ts).all())]
     return jsonify(items=항목)
+
+
+# ─────────────────────────── 10 · AI 활용 내역서 ───────────────────────────
+#
+# ★ "원문은 늦게 와도, 기록 당시 그대로인지 확인된다" (docs/api.md 10-1) ★
+#   기록하는 동안 서버엔 해시만 왔다 (ai_msg.hash). 학생이 "내역서 만들기"를 누르면 고른 원문이 처음 온다.
+#   서버는 sha256_text(원문) 을 체인 이벤트의 hash 와 비교한다. 같으면 그때 그 글, 다르면 나중에 바꾼 글.
+#   다른 것도 버리지 않고 저장해 "조작됨"으로 보여 준다 — 숨기면 내역서를 믿을 이유가 없어진다.
+#
+#   도구·역할·시각은 학생이 보낸 값을 쓰지 않고 체인 이벤트의 값을 쓴다 (PC 가 보낸 숫자를 믿지 않음).
+
+내역서_최대 = 5 * 1024 * 1024       # 한 요청 5MB
+원문_최대 = 256 * 1024              # 원문 한 개 256KB (긴 AI 답)
+공유_기본일, 공유_최대일 = 14, 90
+
+
+def 내_과제(d, wid):
+    """로그인한 사람의 과제만. 주인이 없는 과제(기록기가 로그인 없이 만든 것)도 거절한다 —
+    과제 이름(W-1007 같은)은 추측할 수 있어서, 누구나 남의 기록으로 내역서를 만들 수 있게 되므로."""
+    w = d.get(db.Work, wid)
+    if not w or w.user_id != g.user_id:
+        return None
+    return w
+
+
+def _쌍(x, 이름):
+    """{session_id, event_id} 를 꺼낸다. 이벤트 id 는 세션 안에서만 고유하다 (events 기본키와 같은 이유)."""
+    if not isinstance(x, dict) or not x.get("session_id") or not x.get("event_id"):
+        raise ValueError(f"{이름} 마다 session_id 와 event_id 가 필요합니다")
+    return str(x["session_id"]), str(x["event_id"])
+
+
+@app.post("/api/works/<wid>/statements")
+@로그인_필요
+def create_statement(wid):
+    if (request.content_length or 0) > 내역서_최대:
+        return jsonify(error="too_large", message="한 요청은 5MB 까지입니다"), 413
+    b = request.get_json(force=True, silent=True)
+    if not isinstance(b, dict):
+        return jsonify(error="bad_request", message="JSON 이 필요합니다"), 400
+    메시지들, 연결들, 가림들 = b.get("messages") or [], b.get("links") or [], b.get("redactions") or []
+    if not all(isinstance(v, list) for v in (메시지들, 연결들, 가림들)):
+        return jsonify(error="bad_request", message="messages · links · redactions 는 목록이어야 합니다"), 400
+    for 이름 in ("ai_scope", "sentence"):
+        if b.get(이름) is not None and not isinstance(b[이름], str):
+            return jsonify(error="bad_request", message=f"{이름} 는 글자여야 합니다"), 400
+    try:
+        가림쌍 = {_쌍(r, "redactions") for r in 가림들}
+        for m in 메시지들:
+            _쌍(m, "messages")
+            if not isinstance(m.get("text"), str) or not m["text"]:
+                raise ValueError("messages 마다 text(원문)가 필요합니다")
+            if len(m["text"].encode("utf-8", "surrogatepass")) > 원문_최대:
+                return jsonify(error="too_large", message="원문 한 개는 256KB 까지입니다"), 413
+            if _쌍(m, "messages") in 가림쌍:
+                raise ValueError("가린 이벤트의 원문을 함께 보낼 수 없습니다")
+        for l in 연결들:
+            if not isinstance(l, dict) or l.get("decision") not in ("confirmed", "rejected"):
+                raise ValueError("links 마다 decision 이 confirmed 또는 rejected 여야 합니다")
+            if not l.get("answer_hash") or not l.get("result_hash"):
+                raise ValueError("links 마다 answer_hash 와 result_hash 가 필요합니다")
+    except ValueError as e:
+        return jsonify(error="bad_request", message=str(e)), 400
+
+    with db.Session() as d:
+        w = 내_과제(d, wid)
+        if not w:
+            return jsonify(error="not_found"), 404
+        세션들 = {s.id: s for s in d.query(db.Sess).filter(db.Sess.work_id == wid).all()}
+
+        def 이벤트(sid, eid):
+            return d.get(db.Event, (sid, eid)) if sid in 세션들 else None
+
+        문제들, 쓰인세션 = [], set()
+        st = db.Statement(id=str(uuid.uuid4()), work_id=wid, user_id=g.user_id,
+                          created_at=now().isoformat(timespec="microseconds"),   # 같은 초에 두 번 만들어도 순서가 갈리게
+                          ai_scope=b["ai_scope"] if "ai_scope" in b else w.ai_scope, sentence=b.get("sentence"))
+        d.add(st)
+        d.flush()
+
+        # ① 원문 — 하나씩 체인과 맞춰 본다
+        원문해시 = {}                                         # 서버가 계산한 해시 → role (연결 확인용, 맞은 것만)
+        for m in 메시지들:
+            sid, eid = _쌍(m, "messages")
+            해시 = sha256_text(m["text"])
+            e = 이벤트(sid, eid)
+            p = e.payload if e else {}
+            if sid not in 세션들:
+                왜 = "not_in_work"                           # 이 과제의 세션이 아니다
+            elif not e or e.type != "ai_msg":
+                왜 = "not_in_chain"                          # 체인에 그런 AI 질문·답 이벤트가 없다
+            elif p.get("hash") != 해시:
+                왜 = "hash_mismatch"                         # 기록 당시 글과 다르다
+            else:
+                왜 = None
+            if 왜:
+                문제들.append({"session_id": sid, "event_id": eid, "why": 왜})
+            else:
+                원문해시[해시] = p.get("role")
+                쓰인세션.add(sid)
+            d.add(db.Message(statement_id=st.id, session_id=sid, event_id=eid,
+                             tool=p.get("tool") if e else m.get("tool"), role=p.get("role") if e else m.get("role"),
+                             ts=e.ts if e else m.get("ts"), text=m["text"], hash=해시,
+                             history=bool(p.get("history")), match=왜 is None))
+
+        # ② 연결 — "맞다"는 위에서 확인된 답을 가리켜야 한다. "아니다"는 원문을 받지 않는다
+        for l in 연결들:
+            맞다 = l["decision"] == "confirmed"
+            결과 = l.get("result_text") if 맞다 and isinstance(l.get("result_text"), str) else None
+            if 맞다:
+                if 원문해시.get(l["answer_hash"]) != "answer":
+                    문제들.append({"answer_hash": l["answer_hash"], "why": "answer_not_verified"})
+                if l.get("question_hash") and 원문해시.get(l["question_hash"]) != "question":
+                    문제들.append({"question_hash": l["question_hash"], "why": "question_not_verified"})
+                if 결과 is not None and sha256_text(결과) != l["result_hash"]:
+                    문제들.append({"result_hash": l["result_hash"], "why": "result_hash_mismatch"})
+            d.add(db.Link(statement_id=st.id, answer_hash=l["answer_hash"],
+                          question_hash=l.get("question_hash") if 맞다 else None,
+                          result_hash=l["result_hash"], result_text=결과, location=l.get("location"),
+                          kind=l.get("kind"), origin=l.get("origin"), decision=l["decision"],
+                          decision_event_id=l.get("decision_event_id")))
+
+        # ③ 가림 — 어느 이벤트인지만. 이 과제의 체인에 있어야 한다
+        for sid, eid in sorted(가림쌍):
+            if not 이벤트(sid, eid):
+                문제들.append({"session_id": sid, "event_id": eid, "why": "redaction_not_in_chain"})
+            d.add(db.Redaction(statement_id=st.id, session_id=sid, event_id=eid))
+
+        # ④ 원문이 나온 세션은 봉인·검증돼 있어야 한다 (아직 기록 중이거나 체인이 어긋난 세션)
+        세션상태 = []
+        for sid in sorted(쓰인세션):
+            s = 세션들[sid]
+            봉인됨 = bool(s.sealed_at) and bool(s.verified) and bool(s.integrity_ok)
+            세션상태.append({"id": sid, "sealed": bool(s.sealed_at), "verified": 봉인됨})
+            if not 봉인됨:
+                문제들.append({"session_id": sid, "why": "session_not_sealed" if not s.sealed_at else "session_not_verified"})
+
+        st.problems, st.verified = 문제들, not 문제들
+        d.commit()
+        답 = {"id": st.id, "work_id": wid, "created_at": st.created_at, "verified": st.verified,
+              "problems": 문제들, "sessions": 세션상태,
+              "counts": {"messages": len(메시지들),
+                         "links_confirmed": sum(l["decision"] == "confirmed" for l in 연결들),
+                         "links_rejected": sum(l["decision"] == "rejected" for l in 연결들),
+                         "redactions": len(가림쌍)}}
+    print(f"← 내역서 {답['id'][:8]}…  work={wid}  원문 {len(메시지들)} · 연결 {len(연결들)} · 가림 {len(가림쌍)}  "
+          f"{'검증됨' if 답['verified'] else '문제 ' + str(len(문제들)) + '건 ⚠'}")
+    return jsonify(답), 201
+
+
+def _내역서_내용(d, st, 학생용):
+    """내역서 하나를 화면용으로. 학생용이면 '아니다'·가림의 위치까지, 교수용이면 확인된 연결만."""
+    메시지 = d.query(db.Message).filter(db.Message.statement_id == st.id).all()
+    해시로 = {}
+    for m in 메시지:
+        해시로.setdefault(m.hash, m)
+    연결 = d.query(db.Link).filter(db.Link.statement_id == st.id).order_by(db.Link.id).all()
+    가림 = d.query(db.Redaction).filter(db.Redaction.statement_id == st.id).all()
+
+    def 글(h):
+        m = 해시로.get(h) if h else None
+        # history = 이전 대화라 ts 는 '본 시각'이지 '받은 시각'이 아니다 → 화면이 그렇게 써야 한다
+        return {"text": m.text, "tool": m.tool, "ts": m.ts, "history": bool(m.history), "ok": bool(m.match)} if m else None
+
+    맞다 = [{"question": 글(l.question_hash), "answer": 글(l.answer_hash),
+             "result": {"text": l.result_text, "location": l.location},
+             "kind": l.kind, "origin": l.origin} for l in 연결 if l.decision == "confirmed"]
+    out = {"id": st.id, "created_at": st.created_at, "ai_scope": st.ai_scope, "sentence": st.sentence,
+           "verified": bool(st.verified), "problems": st.problems or [], "links": 맞다,
+           "rejected": sum(l.decision == "rejected" for l in 연결), "redacted": len(가림)}
+    if 학생용:
+        out["rejected_links"] = [{"answer_hash": l.answer_hash, "result_hash": l.result_hash, "location": l.location}
+                                 for l in 연결 if l.decision == "rejected"]
+        out["redactions"] = [{"session_id": r.session_id, "event_id": r.event_id} for r in 가림]
+        out["messages"] = [{"session_id": m.session_id, "event_id": m.event_id, "tool": m.tool, "role": m.role,
+                            "ts": m.ts, "ok": bool(m.match)} for m in 메시지]
+    return out
+
+
+@app.get("/api/works/<wid>/statements/latest")
+@로그인_필요
+def latest_statement(wid):
+    with db.Session() as d:
+        if not 내_과제(d, wid):
+            return jsonify(error="not_found"), 404
+        st = (d.query(db.Statement).filter(db.Statement.work_id == wid)
+              .order_by(db.Statement.created_at.desc(), db.Statement.id.desc()).first())
+        if not st:
+            return jsonify(error="not_found", message="아직 만든 내역서가 없습니다"), 404
+        답 = _내역서_내용(d, st, 학생용=True)
+        답["shares"] = [{"token": s.token, "expires_at": s.expires_at, "revoked_at": s.revoked_at}
+                        for s in d.query(db.Share).filter(db.Share.statement_id == st.id).all()]
+    return jsonify(답)
+
+
+@app.post("/api/statements/<stid>/share")
+@로그인_필요
+def create_share(stid):
+    b = request.get_json(force=True, silent=True) or {}
+    일수 = b.get("expires_in_days", 공유_기본일)
+    if not isinstance(일수, int) or isinstance(일수, bool) or not 1 <= 일수 <= 공유_최대일:
+        return jsonify(error="bad_request", message=f"expires_in_days 는 1~{공유_최대일} 사이 정수입니다"), 400
+    with db.Session() as d:
+        st = d.get(db.Statement, stid)
+        if not st or st.user_id != g.user_id:
+            return jsonify(error="not_found"), 404
+        지금 = now()
+        sh = db.Share(token=secrets.token_urlsafe(24), statement_id=stid, created_at=지금.isoformat(timespec="seconds"),
+                      expires_at=(지금 + timedelta(days=일수)).isoformat(timespec="seconds"))
+        d.add(sh)
+        d.commit()
+        답 = {"token": sh.token, "path": f"/api/share/{sh.token}", "expires_at": sh.expires_at}
+    print(f"← 공유 링크 만듦  내역서 {stid[:8]}…  {일수}일")
+    return jsonify(답), 201
+
+
+@app.delete("/api/shares/<token>")
+@로그인_필요
+def revoke_share(token):
+    with db.Session() as d:
+        sh = d.get(db.Share, token)
+        st = d.get(db.Statement, sh.statement_id) if sh else None
+        if not st or st.user_id != g.user_id:
+            return jsonify(error="not_found"), 404
+        if not sh.revoked_at:
+            sh.revoked_at = iso()
+            d.commit()
+    return jsonify(ok=True)
+
+
+@app.get("/api/share/<token>")
+def read_share(token):
+    """교수 확인용 — 로그인 없음 · 읽기 전용. 없는 링크·끊은 링크·지난 링크는 똑같이 404 (어느 쪽인지 알려 주지 않는다)."""
+    with db.Session() as d:
+        sh = d.get(db.Share, token)
+        if (not sh or sh.revoked_at
+                or datetime.fromisoformat(sh.expires_at) < now()):
+            return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
+        st = d.get(db.Statement, sh.statement_id)
+        w = d.get(db.Work, st.work_id)
+        답 = _내역서_내용(d, st, 학생용=False)
+        답["work"] = {"title": w.title if w else None}
+        답["expires_at"] = sh.expires_at
+    return jsonify(답)
 
 
 if __name__ == "__main__":
