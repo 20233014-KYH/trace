@@ -7,7 +7,7 @@ python app/statement.py                         # 맥: 3_내역서만들기.comm
 python app/statement.py --config 내설정.json     # 기록기 설정(server · data_dir)을 그대로 읽는다
 ```
 
-1. **로그인** — 토큰은 `data/auth.json` (data/ 는 .gitignore). 기록기가 토큰을 보내게 될 때 이 파일을 같이 쓰면 된다
+1. **로그인** — 토큰은 `data/auth.json` (data/ 는 .gitignore). **기록기도 켜질 때 이 파일을 읽어** 요청마다 토큰을 붙인다 (10/8) → 그 과제가 내 것이 되어 내역서를 만들 수 있다. 그래서 순서는: 이 화면에서 로그인 한 번 → 기록기 켜기
 2. **과제 고르기** — 내 과제 + 이 PC 의 그 과제 기록 수. 로그인 없이 만든 과제(주인 없음)는 따로 알려 줌
 3. **과제 파일(.docx)** — `core/match.py`(박상진) 로 이 PC 의 AI 답·붙여넣기 기록과 문장마다 연결 제안
 4. **맞다 / 아니다 · 질문 가리기 · 한 줄 설명** → 서버 `POST /works/<id>/statements`
