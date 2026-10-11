@@ -13,6 +13,9 @@ office.py — Word · PowerPoint 문서 변화 수집 (Office COM 자동화)
      doc_open      문서를 처음 볼 때 이미 있던 글 (≤20000자) — "쓴 과정 기록 없음" 재료 (10/7)
 
 텍스트(②)는 capture.office 가 켜져 있을 때 **PC 의 context 파일에만** — 서버엔 안 간다 (9/28 개정: 모드 없음).
+  ③ 파일 위치 (10/11 · PC 의 context 파일에만 · 체인·서버 아님)
+     doc_path      {app, file, path}   문서가 PC 어디에 있는지 — 출처 보기가 학생이 고르지 않아도 그 문서를 바로 연다.
+                   위치가 바뀔 때만 한 번 (다른 이름으로 저장 · 옮긴 파일을 다시 엶). 저장 전 문서·OneDrive 웹 주소는 안 남김
 안 하는 것: 화면 캡처. 삭제는 글자 수만.
 
 동작:
@@ -23,6 +26,7 @@ office.py — Word · PowerPoint 문서 변화 수집 (Office COM 자동화)
 
 config.json:  "office": {"enabled": true, "poll_sec": 5}   ·  텍스트는 "capture": {"office": true} 일 때 PC 의 context 파일에만 (9/28 개정: 모드 없음)
 """
+import os
 import threading
 import time
 import uuid
@@ -42,12 +46,15 @@ def _item(kind, text, meta):
 
 
 class OfficeWatcher(threading.Thread):
-    def __init__(self, emit_event, is_active, poll_sec=5.0, emit_context=None):
-        """emit_event(ev) : 숫자 이벤트(체인) · emit_context(items) : 텍스트 맥락(Learn 만, None 이면 안 냄) · is_active(exe) : 활성 창인가"""
+    def __init__(self, emit_event, is_active, poll_sec=5.0, emit_context=None, emit_path=None):
+        """emit_event(ev) : 숫자 이벤트(체인) · emit_context(items) : 텍스트 맥락(Learn 만, None 이면 안 냄) · is_active(exe) : 활성 창인가
+        emit_path(app, file, path) : 문서 위치 (PC 에만 · None 이면 안 냄)"""
         super().__init__(daemon=True, name="office")
         self.emit_event, self.emit_context, self.is_active, self.poll = emit_event, emit_context, is_active, float(poll_sec)
         self._stop = threading.Event()
         self._snap = {}          # key(app,file) -> {"units": {unit_id: text}, "saved": bool, "stats": {...}}
+        self.emit_path = emit_path
+        self._paths = {}         # (app, file) -> 마지막으로 낸 위치 — 바뀔 때만 다시 낸다
         self._paste_pending = None
         self._paste_app = ""
         self._wake = threading.Event()
@@ -93,6 +100,7 @@ class OfficeWatcher(threading.Thread):
         app = win32com.client.GetActiveObject("Word.Application")
         doc = app.ActiveDocument
         key = ("Word", doc.Name)
+        self._path(key, doc)
         units = {}
         for i, p in enumerate(doc.Paragraphs, 1):
             t = p.Range.Text.rstrip("\r\x07").replace("\x0b", "\n").strip()   # Shift+Enter 줄바꿈(\x0b) = 줄바꿈 (이슈 #26-2)
@@ -119,6 +127,7 @@ class OfficeWatcher(threading.Thread):
         app = win32com.client.GetActiveObject("PowerPoint.Application")
         pres = app.ActivePresentation
         key = ("PowerPoint", pres.Name)
+        self._path(key, pres)
         units = {}
         for s in pres.Slides:
             for sh in s.Shapes:
@@ -139,6 +148,19 @@ class OfficeWatcher(threading.Thread):
                 pass
             self._paste_pending = None
         self._compare(key, units, bool(pres.Saved), stats, where, unit_label="슬라이드")
+
+    def _path(self, key, doc):
+        """문서 위치(FullName). 저장 전("문서1")은 위치가 없고, OneDrive 는 https:// 주소라 PC 에서 못 여니 뺀다"""
+        if not self.emit_path:
+            return
+        try:
+            full = str(doc.FullName)
+        except Exception:
+            return
+        if not os.path.isabs(full) or self._paths.get(key) == full:
+            return
+        self._paths[key] = full
+        self.emit_path(key[0], key[1], full)
 
     # ── 스냅샷 비교 ──
     def _compare(self, key, units, saved, stats, where, unit_label):

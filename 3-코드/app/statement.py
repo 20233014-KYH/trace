@@ -254,6 +254,12 @@ def share():
     return jsonify(답), 코드
 
 
+# ─────────────── 출처 보기 (캔버스 4 · 박상진 · app/source.py) — 같은 기록 읽기를 쓴다 ───────────────
+import source as 출처                            # noqa: E402
+출처.init(_jsonl, _과제별_세션)
+app.register_blueprint(출처.bp)
+
+
 def main():
     global PORT
     ap = argparse.ArgumentParser(description="Trace — 내역서 만들기 (학생 PC)")
