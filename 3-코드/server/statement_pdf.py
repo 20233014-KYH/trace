@@ -4,7 +4,8 @@ statement_pdf.py — AI 활용 내역서 1장 PDF (기획서 10절 "요약 1장"
   render(내역서, 링크주소) → PDF bytes      ← app.py 의 GET /api/share/<token>/pdf 가 부른다
 
 ★ PDF 는 학생이 과제와 함께 내는 종이 한 장이다. 교수는 이걸 훑고, 근거가 궁금할 때만 링크(QR)를 연다.
-★ PDF 는 받은 사람이 고칠 수 있다 → 진짜는 링크 쪽이다. PDF 에 그렇게 적는다.
+★ v3 (10/10 박상진): 투명성 한 줄 · 글을 쓴 과정(키보드로 친 글자 · 붙여넣은 글자 AI/다른 곳 · 지운 글자 + 날짜별 막대)
+   · 학생 질문 두 개 · 교수 규칙은 학생이 넣었을 때만 · "말하는 것/않는 것" 대신 QR 옆 두 줄
 ★ 점수·퍼센트·등급을 쓰지 않는다 (원칙 1). 횟수·글자 수·분·시각·원문 발췌만.
 
 글꼴: Pretendard (server/fonts · SIL OFL 1.1 — 같이 둔 Pretendard-LICENSE.txt). Render(리눅스)엔 한글 글꼴이 없어서 넣어 둔다.
@@ -14,7 +15,7 @@ import os
 from xml.sax.saxutils import escape
 
 from reportlab.graphics.barcode.qr import QrCodeWidget
-from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.shapes import Drawing, Line, Rect, String
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -31,8 +32,9 @@ pdfmetrics.registerFont(TTFont("PRB", os.path.join(HERE, "fonts", "Pretendard-Se
 INK, MUTED, FAINT = colors.HexColor("#37352f"), colors.HexColor("#787774"), colors.HexColor("#a3a29e")
 LINE, SOFT = colors.HexColor("#e9e9e7"), colors.HexColor("#f7f7f5")
 OK, WARN, WARN_SOFT = colors.HexColor("#448361"), colors.HexColor("#d44c47"), colors.HexColor("#fbecea")
-KIND = {"exact": ("일치", "#d44c47"), "similar": ("유사", "#d44c47"), "edited": ("붙여넣고 고침", "#337ea9"),
-        "viewed": ("보고 씀", "#9065b0")}
+# 색 규칙 (10/10 박상진): 일치·유사 빨강 · 붙여넣고 고침 그대로 · 보고 씀 = 파랑 (화면에선 점선 밑줄)
+KIND = {"exact": ("일치", "#d44c47"), "similar": ("유사", "#d44c47"), "edited": ("붙여넣고 고침", "#cb7a1a"),
+        "viewed": ("보고 씀", "#337ea9")}
 TOOL = {"chatgpt": "ChatGPT", "claude": "Claude", "gemini": "Gemini", "perplexity": "Perplexity", "wrtn": "뤼튼"}
 
 W, H = A4
@@ -102,6 +104,45 @@ def _qr(url, size=64):
     return d
 
 
+def _도구(d):
+    """ChatGPT (gpt-5-6) · Claude — 내역서에 담긴 원문 기준. 모델은 PC 가 보낸 참고값"""
+    out = []
+    for t in d.get("tools") or []:
+        이름 = TOOL.get(str(t.get("tool", "")).lower(), t.get("tool") or "AI")
+        out.append(이름 + (f" ({', '.join(t['models'])})" if t.get("models") else ""))
+    return " · ".join(out) or "기록된 AI 없음"
+
+
+def _막대(days, width):
+    """날짜별 작업 막대 — 하루 한 줄, 공통 시각 축(가장 이른 시각~가장 늦은 시각). 멈춘 동안은 빈 틈."""
+    days = days[-7:]
+    def 분(iso):
+        return int(iso[11:13]) * 60 + int(iso[14:16])
+    lo = min(분(g["start"]) for x in days for g in x["segments"])
+    hi = max(분(g["end"]) for x in days for g in x["segments"])
+    lo, hi = (lo // 60) * 60, min(24 * 60, -(-hi // 60) * 60)
+    if hi <= lo:
+        hi = lo + 60
+    row, left, right = 13, 56, 58
+    bw = width - left - right
+    h = row * len(days) + 14
+    dr = Drawing(width, h)
+    for i, x in enumerate(days):
+        y = h - 14 - (i + 1) * row + 3
+        dr.add(String(0, y + 1, f"{x['date'][5:7]}/{x['date'][8:10]}", fontName="PR", fontSize=7.4, fillColor=MUTED))
+        dr.add(Rect(left, y, bw, 7, fillColor=SOFT, strokeColor=None))
+        for g in x["segments"]:
+            a = left + bw * (max(분(g["start"]), lo) - lo) / (hi - lo)
+            b = left + bw * (min(분(g["end"]), hi) - lo) / (hi - lo)
+            dr.add(Rect(a, y, max(b - a, 1.2), 7, fillColor=colors.HexColor("#448361"), strokeColor=None))
+        dr.add(String(width - right + 6, y + 1, _mins(x["minutes"]), fontName="PR", fontSize=7.4, fillColor=INK))
+    for k in range(lo, hi + 1, 60 if hi - lo <= 8 * 60 else 120):          # 시각 눈금
+        xk = left + bw * (k - lo) / (hi - lo)
+        dr.add(String(xk - 6, h - 9, f"{k // 60:02d}시", fontName="PR", fontSize=6.6, fillColor=FAINT))
+        dr.add(Line(xk, h - 12, xk, 2, strokeColor=LINE, strokeWidth=0.4))
+    return dr
+
+
 def render(d, url):
     """d = _내역서_내용(교수용) + work · author · expires_at. url = 교수 확인 링크."""
     buf = io.BytesIO()
@@ -123,45 +164,49 @@ def render(d, url):
         sub.append(f"작성자 {d['author']} (계정 이름 · Trace가 신원을 확인하지 않음)")
     if s.get("sessions"):
         sub.append(f"{_when(s.get('first_at'))} – {_when(s.get('last_at'))} · 작업 기록 {s['sessions']}번")
-    out += [Spacer(1, 3), P("  ·  ".join(sub), "sub"), Spacer(1, 9)]
+    out += [Spacer(1, 3), P("  ·  ".join(sub), "sub"), Spacer(1, 8)]
 
-    # ── 검증 한 줄 ──
+    # ── 투명성 한 줄: 서버 일치 · 도구(모델) · 멈춤 · 가림 · 지운 기록 ──
     probs = d.get("problems") or []
-    if probs:
-        txt = (f"<b>확인되지 않은 항목이 {len(probs)}개 있습니다.</b> 내용은 링크에서 그대로 볼 수 있습니다. "
-               "(기록 당시와 다른 원문 · 봉인 전 기록 등)")
-        bg, dot = WARN_SOFT, WARN
-    else:
-        txt = ("<b>학생이 공유한 AI 질문·답은 작업하는 동안 기록된 그대로입니다.</b> "
-               "기록할 때 남긴 해시와 받은 원문을 서버가 하나씩 다시 계산해 맞춰 봤습니다.")
-        bg, dot = SOFT, OK
-    v = Table([["●", Paragraph(txt, S["memo"])]], colWidths=[14, CW - 14])
-    v.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), bg), ("TEXTCOLOR", (0, 0), (0, 0), dot),
-                           ("FONTNAME", (0, 0), (0, 0), "PR"), ("FONTSIZE", (0, 0), (0, 0), 8),
-                           ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 7),
-                           ("BOTTOMPADDING", (0, 0), (-1, -1), 7), ("LEFTPADDING", (0, 0), (0, 0), 8)]))
-    out += [v, Spacer(1, 10)]
+    일치 = (f"<font color='#d44c47'>● 서버 기록과 다릅니다 ({len(probs)}개)</font>" if probs
+            else "<font color='#448361'>●</font> 서버 기록과 일치")
+    ai = s.get("ai") or {}
+    멈춤 = f"멈춤 {s.get('pauses', 0)}번 · {_mins(s.get('pause_minutes'))}" if s.get("pauses") else "멈춤 없음"
+    지운 = len(s.get("deleted_sessions") or [])
+    줄 = " &nbsp;·&nbsp; ".join([일치, escape(_도구(d)) + f" · 질문 {ai.get('questions', 0)}번", escape(멈춤),
+                                f"가림 {d.get('redacted', 0)}", f"지운 기록 {지운}"])
+    t = Table([[PM(줄, "memo")]], colWidths=[CW])
+    t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), WARN_SOFT if probs else SOFT),
+                           ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 9)]))
+    out += [t, Spacer(1, 8)]
+    if d.get("ai_scope"):                                 # 교수 AI 규칙 — 학생이 넣었을 때만 (10/10)
+        out += [PM(f"<font color='#787774'>교수 AI 규칙</font> &nbsp; {escape(d['ai_scope'])}", "memo"), Spacer(1, 6)]
+    out.append(HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=2, spaceAfter=8))
 
-    # ── 허용 범위 · 학생 설명 ──
-    memo = Table([[P("AI 허용 범위", "k"), P(d.get("ai_scope") or "적지 않음", "memo")],
-                  [P("학생 설명", "k"), P(d.get("sentence") or "적지 않음", "memo")]], colWidths=[70, CW - 70])
-    memo.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                              ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
-    out += [memo, HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=6, spaceAfter=8)]
-
-    # ── 센 숫자 ──
+    # ── 글을 쓴 과정 ──
     if s:
-        ai, p = s.get("ai") or {}, s.get("pastes") or {}
-        tools = " · ".join(f"{TOOL.get(str(t).lower(), t)} {c}" for t, c in (ai.get("tools") or {}).items())
-        cols = [("기록 시간", _mins(s.get("minutes")), f"자리 비움 {round(s.get('idle_minutes') or 0)}분 포함" if s.get("idle_minutes") else ""),
-                ("AI에 한 질문", f"{ai.get('questions', 0)}번", tools),
-                ("직접 입력", f"{s.get('typed', 0):,}자", f"지운 글자 {s.get('deleted', 0):,}자"),
-                ("붙여넣기", f"{p.get('count', 0)}번",
-                 f"{p.get('chars', 0):,}자 · AI 창 복사 {p.get('from_ai_count', 0)}번 · 출처 기록 없음 {p.get('unknown_count', 0)}번")]
-        nums = Table([[[P(k, "k"), P(v, "v"), P(sm, "vs")] for k, v, sm in cols]], colWidths=[CW / 4] * 4)
+        p = s.get("pastes") or {}
+        cols = [("키보드로 친 글자", f"{s.get('typed', 0):,}자", f"기록 {_mins(s.get('minutes'))}"),
+                ("붙여넣은 글자", f"{p.get('chars', 0):,}자",
+                 f"AI {p.get('from_ai_chars', 0):,} · 다른 곳 {p.get('from_other_chars', 0):,} · 출처 기록 없음 {p.get('unknown_chars', 0):,}"),
+                ("지운 글자", f"{s.get('deleted', 0):,}자", "")]
+        nums = Table([[[P(k, "k"), P(v, "v"), P(sm, "vs")] for k, v, sm in cols]], colWidths=[CW * 0.3, CW * 0.42, CW * 0.28])
         nums.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
-        out += [_h("작업 기록에서 센 숫자", "횟수·글자 수·시간만 — 점수나 비율은 내지 않습니다"),
-                Spacer(1, 5), nums, HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=8, spaceAfter=8)]
+        out += [_h("글을 쓴 과정", "횟수·글자 수·시간만 — 점수나 비율은 내지 않습니다"), Spacer(1, 5), nums]
+        if s.get("days"):
+            out += [Spacer(1, 6), _막대(s["days"], CW)]
+            if len(s["days"]) > 7:
+                out.append(P(f"최근 7일만 — 전체 {len(s['days'])}일은 링크에서", "small"))
+        out.append(HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=8, spaceAfter=8))
+
+    # ── 학생 질문 두 개 ──
+    qa = Table([[P("AI를 어디에 썼고, 무엇은 직접 했나요?", "k"), P(d.get("explain_use") or "학생이 쓰지 않음", "memo")],
+                [P("AI 답을 고르거나 고칠 때 어떻게 확인했나요?", "k"), P(d.get("explain_check") or "학생이 쓰지 않음", "memo")]],
+               colWidths=[150, CW - 150])
+    qa.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+    out += [_h("학생 설명"), Spacer(1, 4), qa, HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=4, spaceAfter=8)]
 
     # ── 연결 ──
     links = d.get("links") or []
@@ -178,9 +223,9 @@ def render(d, url):
             src = f"{TOOL.get(str(a.get('tool', '')).lower(), a.get('tool') or 'AI')} · {'이전 대화' if a.get('history') else _when(a.get('ts'))}"
             rows.append([P(str(i), "cellm"),
                          [P(_cut(r.get("text"), 110)), P(where, "cellm")],
-                         Paragraph(f"<font color='{color}'>●</font> {escape(kind)}", S["cell"]),
-                         Paragraph(flag + escape(src) + (f"<br/><font color='#787774'>질문: {escape(_cut(q.get('text'), 60))}</font>" if q.get("text") else ""),
-                                   S["cellm"])])
+                         PM(f"<font color='{color}'>●</font> {escape(kind)}", "cell"),
+                         PM(flag + escape(src) + (f"<br/><font color='#787774'>질문: {escape(_cut(q.get('text'), 60))}</font>" if q.get("text") else ""),
+                            "cellm")])
         t = Table(rows, colWidths=[16, CW * 0.5, 74, CW * 0.5 - 90], repeatRows=1)
         t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LINEBELOW", (0, 0), (-1, -1), 0.5, LINE),
                                ("LEFTPADDING", (0, 0), (-1, -1), 3), ("TOPPADDING", (0, 0), (-1, -1), 4),
@@ -190,34 +235,14 @@ def render(d, url):
             out += [Spacer(1, 3), P(f"외 {len(links) - MAX_ROWS}곳 — 전체는 링크에서 볼 수 있습니다.", "small")]
     else:
         out.append(P("학생이 확인한 연결이 없습니다.", "small"))
-    extra = []
-    if d.get("redacted"):
-        extra.append(f"학생이 가린 항목 {d['redacted']}개 (내용은 오지 않았고 기록에는 남아 있음)")
     if d.get("rejected"):
-        extra.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
-    if extra:
-        out += [Spacer(1, 4), P("  ·  ".join(extra), "small")]
+        out += [Spacer(1, 4), P(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개", "small")]
 
-    # ── 말하는 것 · 링크 ──
-    out.append(HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=10, spaceAfter=8))
-    says = Table([[
-        [P("이 내역서가 말하는 것", "h"), Spacer(1, 3),
-         P("✓ 위 AI 질문·답은 작업하는 동안 기록된 글과 같다" if not probs else "✓ ⚠ 표시가 없는 AI 질문·답은 기록된 글과 같다", "small"),
-         P("✓ 기록의 순서와 시각은 작업이 끝난 뒤 바뀌지 않았다", "small"),
-         P("✓ 어느 부분이 어느 AI 답에서 왔는지는 학생이 직접 확인했다", "small")],
-        [P("말하지 않는 것", "h"), Spacer(1, 3),
-         P("× AI를 썼는지 안 썼는지에 대한 판정 (점수 없음)", "small"),
-         P("× 휴대폰·다른 컴퓨터에서 쓴 AI (기록되지 않음)", "small"),
-         P("× \"출처 기록 없음\" = 직접 썼다는 뜻이 아님", "small")],
-    ]], colWidths=[CW / 2, CW / 2])
-    says.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0)]))
-    out.append(says)
-
-    link = Table([[_qr(url), [P("근거 보기 — 학생이 고른 AI 질문·답 원문과 과제 글을 나란히", "h"), Spacer(1, 2),
-                             Paragraph(f"<font color='#337ea9'>{escape(url)}</font>", S["cell"]),
-                             Spacer(1, 3),
-                             P(f"링크는 {_when(d.get('expires_at'))}까지 열립니다. 이 PDF는 받은 사람이 고칠 수 있으니, "
-                               "PDF와 링크의 내용이 다르면 링크가 원본입니다.", "small")]]],
+    # ── QR 옆 두 줄 (10/10 · "말하는 것/않는 것" 대신) ──
+    link = Table([[_qr(url), [PM(f"근거 보기 &nbsp;<font color='#337ea9'>{escape(url)}</font>", "cell"), Spacer(1, 3),
+                             P("작업 중 기록된 그대로이며 점수나 판정은 없습니다. 출처 기록 없음은 직접 썼다는 뜻이 아니고, "
+                               "다른 기기에서 쓴 AI 는 기록되지 않습니다.", "small"),
+                             P(f"링크는 {_when(d.get('expires_at'))}까지 열립니다.", "small")]]],
                  colWidths=[74, CW - 74])
     link.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("BACKGROUND", (0, 0), (-1, -1), SOFT),
                               ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),

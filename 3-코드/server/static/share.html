@@ -47,6 +47,14 @@ h2 small{font-weight:400;color:var(--muted);margin-left:8px;font-size:13px}
 .num .v{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.2;margin:2px 0;font-variant-numeric:tabular-nums}
 .num .v small{font-size:14px;font-weight:500;color:var(--muted);margin-left:2px;letter-spacing:0}
 .num .s{color:var(--faint);font-size:12.5px}
+.nums.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bars{margin-top:16px;display:grid;gap:6px;font-size:12px;color:var(--muted)}
+.bar{display:grid;grid-template-columns:44px minmax(0,1fr) 64px;gap:10px;align-items:center}
+.bar .track{position:relative;height:9px;background:var(--soft);border-radius:3px}
+.bar .track i{position:absolute;top:0;bottom:0;background:var(--typed);border-radius:2px;opacity:.85}
+.bar .mm{color:var(--ink);font-variant-numeric:tabular-nums}
+.axis{display:flex;justify-content:space-between;margin-left:54px;margin-right:74px;color:var(--faint);font-size:11px}
+.memo{grid-template-columns:minmax(0,240px) minmax(0,1fr)}
 .link{padding:18px 0;border-bottom:1px solid var(--line);display:grid;gap:10px}
 .link:first-of-type{padding-top:4px}
 .row{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px}
@@ -164,16 +172,19 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
         `${when(s.first_at)} – ${when(s.last_at)} 사이 작업 기록 ${s.sessions}번 · 학생이 직접 골라 공유한 내용입니다`));
     }
 
-    // ── 검증 한 줄 ──
+    // ── 투명성 한 줄 (v3 · 10/10): 서버 일치 · 도구(모델) · 멈춤 · 가림 · 지운 기록 ──
     const probs = d.problems || [];
+    const ai0 = (s && s.ai) || {};
+    const toolsTxt = (d.tools || []).map(t => tool(String(t.tool || "").toLowerCase()) + (t.models && t.models.length ? ` (${t.models.join(", ")})` : "")).join(" · ") || "기록된 AI 없음";
     const v = el("div", "verdict" + (probs.length ? " bad" : ""));
     v.appendChild(el("span", "d"));
     const vt = el("div");
-    if (!probs.length) {
-      vt.appendChild(el("b", null, "학생이 공유한 AI 질문·답은 작업하는 동안 기록된 그대로입니다."));
-      vt.appendChild(el("p", null, "기록할 때 남긴 해시(지문)와 지금 받은 원문을 서버가 하나씩 다시 계산해 맞춰 봤습니다."));
-    } else {
-      vt.appendChild(el("b", null, `확인되지 않은 항목이 ${probs.length}개 있습니다.`));
+    vt.appendChild(el("b", null, probs.length ? `서버 기록과 다릅니다 (${probs.length}개)` : "서버 기록과 일치"));
+    const parts = [`${toolsTxt} · 질문 ${n(ai0.questions)}번`,
+                   s && s.pauses ? `멈춤 ${s.pauses}번 · ${mins(s.pause_minutes).join("")}` : "멈춤 없음",
+                   `가림 ${d.redacted || 0}`, `지운 기록 ${((s && s.deleted_sessions) || []).length}`];
+    vt.appendChild(el("p", null, parts.join(" · ")));
+    if (probs.length) {
       const counts = {};
       probs.forEach(p => { counts[p.why] = (counts[p.why] || 0) + 1; });
       vt.appendChild(el("p", null, Object.entries(counts).map(([w, c]) => `${WHY[w] || w} ${c}개`).join(" · ")
@@ -181,28 +192,28 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     }
     add(app, add(v, vt));
 
-    // ── 허용 범위 · 학생 설명 ──
+    // ── 교수 AI 규칙 (학생이 넣었을 때만) · 학생 질문 두 개 ──
     add(app, el("hr"));
     const memo = el("dl", "memo");
-    add(memo, el("dt", null, "AI 허용 범위"),
-         d.ai_scope ? el("dd", null, d.ai_scope) : el("dd", "none", "적지 않음"),
-         el("dt", null, "학생 설명"),
-         d.sentence ? el("dd", null, d.sentence) : el("dd", "none", "적지 않음"));
+    if (d.ai_scope) add(memo, el("dt", null, "교수 AI 규칙"), el("dd", null, d.ai_scope));
+    add(memo, el("dt", null, "AI를 어디에 썼고, 무엇은 직접 했나요?"),
+         d.explain_use ? el("dd", null, d.explain_use) : el("dd", "none", d.sentence || "학생이 쓰지 않음"),
+         el("dt", null, "AI 답을 고르거나 고칠 때 어떻게 확인했나요?"),
+         d.explain_check ? el("dd", null, d.explain_check) : el("dd", "none", "학생이 쓰지 않음"));
     add(app, memo);
 
-    // ── 숫자 ──
+    // ── 글을 쓴 과정 (v3) ──
     if (s) {
       add(app, el("hr"));
-      add(app, add(el("h2"), document.createTextNode("작업 기록에서 센 숫자"),
+      add(app, add(el("h2"), document.createTextNode("글을 쓴 과정"),
                    el("small", null, "횟수·글자 수·시간만 — 점수나 비율은 내지 않습니다")));
-      const p = s.pastes || {}, ai = s.ai || {};
-      const tools = Object.entries(ai.tools || {}).map(([t, c]) => `${tool(t)} ${c}`).join(" · ");
-      add(app, add(el("div", "nums"),
-        num("기록 시간", null, mins(s.minutes), s.idle_minutes ? `자리 비움 ${Math.round(s.idle_minutes)}분 포함` : ""),
-        num("AI에 한 질문", "var(--ai)", [n(ai.questions), "번"], tools || (ai.history ? "" : "기록된 대화 없음")),
-        num("직접 입력", "var(--typed)", [n(s.typed), "자"], `지운 글자 ${n(s.deleted)}자`),
-        num("붙여넣기", "var(--paste)", [n(p.count), "번"],
-            `${n(p.chars)}자 · AI 창에서 복사 ${n(p.from_ai_count)}번 · 출처 기록 없음 ${n(p.unknown_count)}번`)));
+      const p = s.pastes || {};
+      add(app, add(el("div", "nums three"),
+        num("키보드로 친 글자", "var(--typed)", [n(s.typed), "자"], `기록 ${mins(s.minutes).join("")}`),
+        num("붙여넣은 글자", "var(--paste)", [n(p.chars), "자"],
+            `AI ${n(p.from_ai_chars)} · 다른 곳 ${n(p.from_other_chars)} · 출처 기록 없음 ${n(p.unknown_chars)}`),
+        num("지운 글자", null, [n(s.deleted), "자"], "")));
+      if (s.days && s.days.length) add(app, bars(s.days));
     }
 
     // ── 연결 ──
@@ -221,7 +232,7 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     });
     // kind 는 학생 화면(app/statement.py)이 core/match.py 의 제안을 옮긴 것 — 판정이 아니라 학생이 확인한 연결의 모양
     const KIND = { exact: ["일치", "var(--ai)"], similar: ["유사", "var(--ai)"], edited: ["붙여넣고 고침", "#337ea9"],
-                   viewed: ["AI 답을 보고 씀", "#9065b0"] };
+                   viewed: ["보고 씀", "#337ea9"] };   // 색 규칙 (10/10): 보고 씀 = 파랑 점선 밑줄
     groups.forEach(g => {
       const box = el("div", "link");
       // 일어난 순서대로: 물었다 → 답을 받았다 → 과제에 이렇게 썼다
@@ -237,7 +248,7 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
         const r = l.result || {};
         add(box, row("result", g.items.length > 1 ? `과제에 쓴 글 ${i + 1}` : "과제에 쓴 글", where(r.location), r.text || "(발췌 없음)"));
         const chips = el("div", "chips");
-        if (KIND[l.kind]) add(chips, chip(KIND[l.kind][0], KIND[l.kind][1]));
+        if (KIND[l.kind]) { const c = chip(KIND[l.kind][0], KIND[l.kind][1]); if (l.kind === "viewed") c.style.textDecoration = "underline dotted #337ea9"; add(chips, c); }
         if (l.origin === "auto") add(chips, chip("복사·붙여넣기 기록과 이어짐"));
         else if (l.origin === "suggested") add(chips, chip("글자가 비슷해 학생이 확인함"));
         add(box, chips);
@@ -255,42 +266,55 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
       add(app, add(el("h2"), document.createTextNode("작업 기록"), el("small", null, "기록기를 켜고 끈 한 번씩")));
       const t = el("table");
       const head = el("tr");
-      ["날짜", "시간", "기록", "AI 질문", "직접 입력", "붙여넣기", "기록 상태"].forEach(h => head.appendChild(el("th", null, h)));
+      ["날짜", "시간", "기록", "멈춤", "AI 질문", "키보드로 친 글자", "붙여넣기", "기록 상태"].forEach(h => head.appendChild(el("th", null, h)));
       add(t, add(el("thead"), head));
       const body = el("tbody");
       s.by_session.forEach(x => {
         const tr = el("tr");
         add(tr, el("td", null, when(x.start).slice(0, 10)), el("td", null, `${when(x.start, false)}–${when(x.end, false)}`),
-             el("td", "n", `${Math.round(x.minutes)}분`), el("td", "n", `${n(x.ai.questions)}번`),
+             el("td", "n", `${Math.round(x.minutes)}분`),
+             el("td", null, (x.pauses || []).map(g => `${when(g.start, false)}–${when(g.end, false)}`).join(", ") || "—"),
+             el("td", "n", `${n(x.ai.questions)}번`),
              el("td", "n", `${n(x.typed)}자`), el("td", "n", `${n(x.pastes.count)}번`),
              el("td", x.sealed && x.verified ? "ok" : "bad",
-                x.sealed && x.verified ? "봉인 · 검증됨" : (x.sealed ? "검증 안 됨" : "봉인 전")));
+                x.sealed && x.verified ? "서버 기록과 일치" : (x.sealed ? "서버 기록과 다릅니다" : "아직 끝나지 않은 기록")));
         body.appendChild(tr);
       });
       add(app, add(el("div", "tw"), add(t, body)));
     }
 
-    // ── 말하는 것 / 말하지 않는 것 ──
+    // ── 두 줄 (10/10 · "말하는 것/않는 것" 대신) ──
     add(app, el("hr"));
-    const says = el("div", "says");
-    const yes = el("div"), no = el("div");
-    add(yes, el("h2", null, "이 내역서가 말하는 것"), list("yes", probs.length ? [
-      "⚠ 표시가 없는 AI 질문·답은 학생 컴퓨터에서 작업하는 동안 기록된 글과 같다",
-      "⚠ 표시가 있는 항목과 봉인 전 기록은 확인되지 않았다 (맨 위 안내 참고)",
-      "어느 과제 부분이 어느 AI 답에서 왔는지는 학생이 직접 확인했다"] : [
-      "위 AI 질문·답은 학생 컴퓨터에서 작업하는 동안 기록된 글과 같다",
-      "기록된 순서와 시각은 작업이 끝난 뒤 바뀌지 않았다",
-      "어느 과제 부분이 어느 AI 답에서 왔는지는 학생이 직접 확인했다"]));
-    add(no, el("h2", null, "말하지 않는 것"), list("no", [
-      "AI를 썼는지 안 썼는지에 대한 판정 — Trace는 점수를 매기지 않습니다",
-      "휴대폰·다른 컴퓨터에서 쓴 AI (기록되지 않습니다)",
-      "\"출처 기록 없음\"은 직접 썼다는 뜻이 아닙니다 — 어디서 왔는지 기록이 없다는 뜻입니다"]));
-    add(app, add(says, yes, no));
+    add(app, el("p", "sub", "작업 중 기록된 그대로이며 점수나 판정은 없습니다. 출처 기록 없음은 직접 썼다는 뜻이 아니고, 다른 기기에서 쓴 AI 는 기록되지 않습니다."));
 
     const foot = el("div", "foot");
     add(foot, el("span", null, "Trace · 원문은 학생 PC에 있고, 학생이 고른 것만 이 링크로 공유됩니다"),
               el("span", null, `링크 만료 ${when(d.expires_at)}`));
     add(app, foot);
+  }
+
+  // 날짜별 작업 막대 — 하루 한 줄 · 공통 시각 축 · 멈춘 동안은 빈 틈
+  function bars(days) {
+    const m = iso => +iso.slice(11, 13) * 60 + +iso.slice(14, 16);
+    let lo = Math.min(...days.flatMap(x => x.segments.map(g => m(g.start))));
+    let hi = Math.max(...days.flatMap(x => x.segments.map(g => m(g.end))));
+    lo = Math.floor(lo / 60) * 60; hi = Math.min(1440, Math.ceil(hi / 60) * 60); if (hi <= lo) hi = lo + 60;
+    const box = el("div", "bars");
+    days.forEach(x => {
+      const r = el("div", "bar");
+      const track = el("div", "track");
+      x.segments.forEach(g => {
+        const seg = el("i");
+        seg.style.left = (100 * (m(g.start) - lo) / (hi - lo)) + "%";
+        seg.style.width = Math.max(0.6, 100 * (m(g.end) - m(g.start)) / (hi - lo)) + "%";
+        seg.title = `${when(g.start, false)}–${when(g.end, false)}`;
+        track.append(seg);
+      });
+      add(r, el("span", "dd", `${x.date.slice(5, 7)}/${x.date.slice(8, 10)}`), track, el("span", "mm", mins(x.minutes).join("")));
+      box.append(r);
+    });
+    add(box, add(el("div", "axis"), el("span", null, `${String(lo / 60).padStart(2, "0")}시`), el("span", null, `${String(hi / 60).padStart(2, "0")}시`)));
+    return box;
   }
 
   function row(cls, label, sub, text) {

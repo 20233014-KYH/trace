@@ -238,6 +238,17 @@ def main():
     코드, _ = 호출(f"/share/{sh2['token']}/pdf")
     검사("35 끊은 링크는 PDF 도 404", 코드 == 404, f"HTTP {코드}")
 
+    # ⑫ 내역서 v3 (10/10 박상진) — 질문 두 칸 · 교수 규칙은 넣었을 때만 · 모델 · 날짜별 구간
+    코드, _ = 호출(f"/works/{wid}/statements", {"messages": 원문, "explain_use": "가" * 151}, 토큰=갑)
+    검사("36 설명은 150자까지", 코드 == 400, f"HTTP {코드}")
+    코드, r = 호출(f"/works/{wid}/statements", {"messages": [원문[0], {**원문[1], "model": "gpt-5-6"}],
+                                               "explain_use": "개념 설명만", "explain_check": "교재와 비교"}, 토큰=갑)
+    _, sh3 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
+    _, r = 호출(f"/share/{sh3['token']}")
+    검사("37 교수 규칙은 학생이 넣었을 때만", r.get("ai_scope") is None and r.get("explain_check") == "교재와 비교", "과제 메모가 있어도 저절로 안 들어감")
+    검사("38 도구(모델) · 날짜별 구간", r.get("tools") == [{"tool": "chatgpt", "models": ["gpt-5-6"]}]
+         and (r.get("summary") or {}).get("days") and "from_other_chars" in r["summary"]["pastes"], f"{r.get('tools')}")
+
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")
     print()
