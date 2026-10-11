@@ -182,7 +182,9 @@ class Statement(Base):
     user_id = Column(String(64), ForeignKey("users.id"))
     created_at = Column(String(40))
     ai_scope = Column(Text)                # 만들 당시 허용 범위 메모의 사본 (나중에 과제 메모를 고쳐도 이건 그대로)
-    sentence = Column(Text)                # 요약 문장 (학생이 쓴 것 · 나중에 GPT 초안)
+    sentence = Column(Text)                # 요약 문장 (v2 · 지금은 아래 두 칸)
+    explain_use = Column(Text)             # v3 질문 ① "AI 를 어디에 썼고, 무엇은 직접 했나요?" (150자 · 비우면 "학생이 쓰지 않음")
+    explain_check = Column(Text)           # v3 질문 ② "AI 답을 고르거나 고칠 때 어떻게 확인했나요?" (150자)
     verified = Column(Boolean)             # 올라온 원문이 전부 체인과 맞고, 쓰인 세션이 전부 봉인·검증됐는가
     problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
     summary = Column(JSON)                 # 만들 당시의 요약 숫자 (core/summary.py) — 뒤에 세션이 늘어도 이 내역서의 숫자는 그대로
@@ -201,6 +203,7 @@ class Message(Base):
     text = Column(Text)
     hash = Column(String(80))              # 서버가 원문으로 다시 계산한 값
     history = Column(Boolean)              # 확장이 켜지기 전부터 있던 대화 — 받은 시각을 모른다 (체인 ai_msg.history)
+    model = Column(String(64))             # 모델 이름 (gpt-5-6 등) — PC 기록에서 학생 화면이 보낸 값. 체인엔 없어 확인되지 않은 참고값
     match = Column(Boolean)                # 그 값이 체인의 해시와 같은가 (다르면 화면에 "조작됨")
 
 
@@ -274,7 +277,10 @@ def _칸_추가():
     for 표, 칸, 형 in (("works", "ai_scope", "TEXT"),           # 9/30
                        ("statements", "summary", "JSON"),       # 10/8 — 내역서 표는 만든 날 바로 칸이 늘었다
                        ("works", "deleted_at", "VARCHAR(40)"),  # 10/10 지우기
-                       ("sessions", "deleted_at", "VARCHAR(40)")):
+                       ("sessions", "deleted_at", "VARCHAR(40)"),
+                       ("statements", "explain_use", "TEXT"),    # 10/11 내역서 v3
+                       ("statements", "explain_check", "TEXT"),
+                       ("messages", "model", "VARCHAR(64)")):
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:

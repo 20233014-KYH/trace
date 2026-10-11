@@ -69,6 +69,8 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
 .bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .result{font-size:14.5px}
 .url{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.cnt{color:var(--faint);font-size:12px;margin-left:6px}
+label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:13.5px;margin-top:12px}
 .url code{background:var(--soft);border-radius:6px;padding:7px 10px;font-size:13px;overflow-wrap:anywhere;flex:1;min-width:0}
 @media (max-width:600px){h1{font-size:22px}}
 </style>
@@ -114,8 +116,12 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
   </section>
 
   <section id="s-make" hidden>
-    <h2><span class="no">4</span>한 줄 설명 <small>선택 · 교수가 맨 위에서 읽습니다</small></h2>
-    <textarea id="sentence" placeholder="예: 광합성 개념 설명을 ChatGPT에 물어보고, 받은 설명을 제 문장으로 줄여 2·3문단에 썼습니다."></textarea>
+    <h2><span class="no">4</span>내 설명 <small>선택 · 각 150자 · 비우면 "학생이 쓰지 않음"으로 나갑니다</small></h2>
+    <label for="ex-use">AI를 어디에 썼고, 무엇은 직접 했나요? <span id="c-use" class="cnt"></span></label>
+    <textarea id="ex-use" maxlength="150" placeholder="예: 개념 설명을 ChatGPT에 물었고, 실험 설계와 결론 문단은 직접 썼습니다."></textarea>
+    <label for="ex-check">AI 답을 고르거나 고칠 때 어떻게 확인했나요? <span id="c-check" class="cnt"></span></label>
+    <textarea id="ex-check" maxlength="150" placeholder="예: 교과서 5장과 비교해 틀린 부분을 고쳤습니다."></textarea>
+    <label class="inline" id="scope-wrap" hidden><input type="checkbox" id="with-scope"> 교수 AI 규칙을 내역서에 넣기 — <span id="scope-text"></span></label>
     <div class="bar">
       <button class="btn dark" id="b-make" type="button" disabled>내역서 만들기</button>
       <span class="msg" id="m-make" role="status" style="margin:0"></span>
@@ -206,6 +212,7 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
     analysis = null; show("s-links", false); show("s-make", false); show("s-done", false);
     if (!w) return;
     $("scope").textContent = w.ai_scope ? `허용 범위 메모: ${w.ai_scope}` : "허용 범위 메모 없음";
+    $("scope-text").textContent = w.ai_scope || ""; $("scope-wrap").hidden = !w.ai_scope; $("with-scope").checked = false;
     show("scope"); show("s-file");
     $("b-analyze").disabled = !$("file").files.length;
   }
@@ -282,13 +289,20 @@ details{margin-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13.5p
     $("b-make").disabled = !done;
     msg("m-make", items.length ? `${done} / ${items.length} 골랐습니다${done < items.length ? " — 고르지 않은 제안은 보내지 않습니다" : ""}` : "");
   }
+  [["ex-use", "c-use"], ["ex-check", "c-check"]].forEach(([t, c]) => {
+    const upd = () => { $(c).textContent = `${$(t).value.length} / 150`; };
+    $(t).addEventListener("input", upd); upd();
+  });
   $("b-all-yes").onclick = () => { analysis.paragraphs.flat().filter(s => s.key).forEach(s => { decisions[s.key] = "confirmed"; }); renderLinks(); };
 
   // ── 4 만들기 ──
   $("b-make").onclick = async () => {
     $("b-make").disabled = true; msg("m-make", "서버에서 기록과 맞춰 보는 중…");
     try {
-      const r = await call("POST", "/local/statement", { analysis_id: analysis.id, decisions, hide_questions: [...hidden], sentence: $("sentence").value });
+      const w = works.find(x => x.id === $("work").value) || {};
+      const r = await call("POST", "/local/statement", { analysis_id: analysis.id, decisions, hide_questions: [...hidden],
+        explain_use: $("ex-use").value, explain_check: $("ex-check").value,
+        ai_scope: $("with-scope").checked ? (w.ai_scope || "") : "" });
       statementId = r.id;
       const res = $("result"); res.textContent = "";
       if (r.verified) res.append(el("p", "msg ok", `내역서를 만들었습니다. 보낸 원문 ${r.counts.messages}개가 모두 기록 당시 그대로입니다.`));

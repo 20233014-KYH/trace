@@ -118,7 +118,8 @@ def main():
     고름[아니다["key"]] = "rejected"
     가림 = 제안[3]["question"]["id"]
     r = c.post("/local/statement", json={"analysis_id": a["id"], "decisions": 고름, "hide_questions": [가림],
-                                         "sentence": "정의 문장은 거의 그대로, 나머지는 줄여 썼습니다."}, headers=H)
+                                         "explain_use": "정의 문장은 거의 그대로, 나머지는 줄여 썼습니다.",
+                                         "explain_check": "교재와 비교했습니다."}, headers=H)
     st = r.get_json()
     검사("8 내역서 만들기 = 검증됨", r.status_code == 201 and st.get("verified") is True, f"문제 {st.get('problems')}")
     검사("9 원문은 맞다인 답·안 가린 질문만", st.get("counts", {}).get("messages") == 3
@@ -134,6 +135,7 @@ def main():
     가린질문 = 제안[3]["question"]["text"]
     검사("12 교수 화면: 가린 질문 없음 ★", 가린질문 not in 글 and 교수.get("redacted") == 1, "")
     검사("13 교수 화면: 연결 5개", len(교수.get("links", [])) == 5, f"{len(교수.get('links', []))}개")
+    검사("14 질문 두 칸 · 규칙은 안 넣음", 교수.get("explain_check") == "교재와 비교했습니다." and 교수.get("ai_scope") is None, "")
 
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0

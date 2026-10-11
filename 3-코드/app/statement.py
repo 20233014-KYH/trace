@@ -235,9 +235,11 @@ def make_statement():
                           "kind": x["kind"], "origin": x["origin"], "decision": "rejected"})
     if not links:
         return jsonify(error="empty", message="맞다·아니다를 하나 이상 골라 주세요"), 400
-    body = {"sentence": (b.get("sentence") or "").strip() or None,
-            "messages": [{"session_id": s, "event_id": e, "text": m["text"]} for (s, e), m in messages.items()
-                         if (s, e) not in redactions],
+    body = {"explain_use": (b.get("explain_use") or "").strip()[:150] or None,      # v3 질문 두 칸 (10/10)
+            "explain_check": (b.get("explain_check") or "").strip()[:150] or None,
+            "ai_scope": (b.get("ai_scope") or "").strip() or None,                   # 학생이 넣었을 때만
+            "messages": [{"session_id": s, "event_id": e, "text": m["text"], "model": m.get("model") or None}
+                         for (s, e), m in messages.items() if (s, e) not in redactions],
             "links": links,
             "redactions": [{"session_id": s, "event_id": e} for (s, e) in redactions]}
     코드, 답 = _서버("POST", f"/works/{분석['work_id']}/statements", json=body)

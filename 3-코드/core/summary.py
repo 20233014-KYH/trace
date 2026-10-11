@@ -35,6 +35,17 @@ def _멈춤(evs):
     return out
 
 
+def _구간(처음, 끝, 멈춤):
+    out, 앞 = [], 처음
+    for a, b in 멈춤:
+        if a > 앞:
+            out.append({"start": 앞, "end": a})
+        앞 = b
+    if 끝 > 앞:
+        out.append({"start": 앞, "end": 끝})
+    return out
+
+
 def _초(a, b):
     return (datetime.fromisoformat(b) - datetime.fromisoformat(a)).total_seconds()
 
@@ -67,11 +78,16 @@ def session_summary(sid, evs):
         "id": sid, "start": evs[0]["ts"], "end": evs[-1]["ts"],
         "minutes": _분((t1 - t0).total_seconds() - 멈춘초),     # 기록 시간 = 처음~끝 − 멈춘 시간
         "pauses": [{"start": a, "end": b} for a, b in 멈춤],
+        # 작업 구간 = 처음~끝에서 멈춘 동안을 뺀 조각들 — 내역서의 날짜별 막대 (멈춤은 빈 틈)
+        "segments": _구간(evs[0]["ts"], evs[-1]["ts"], 멈춤),
         "pause_minutes": _분(멈춘초),
         "idle_minutes": _분(_자리비움_초(evs)),
         "typed": st["typed"], "deleted": st["deleted"], "undo": st["undo"],
         "pastes": {"count": st["paste_count"], "chars": st["pasted"],
                    "from_ai_count": st["paste_ai_count"], "from_ai_chars": st["pasted_ai"],
+                   # v3 (10/10): AI 아닌 곳에서 복사한 것 — 복사 기록은 있는데 AI 창이 아님 (위키·PDF·다른 문서 …)
+                   "from_other_count": sum(1 for p in d["pastes"] if p["matched"] and not p["ai"]),
+                   "from_other_chars": sum(p["len"] for p in d["pastes"] if p["matched"] and not p["ai"]),
                    # 같은 해시의 복사가 기록에 없음 = 어디서 왔는지 모름 (휴대폰·다른 PC·기록 전 복사)
                    "unknown_count": sum(1 for p in d["pastes"] if not p["matched"]),
                    "unknown_chars": sum(p["len"] for p in d["pastes"] if not p["matched"])},
@@ -125,10 +141,22 @@ def work_summary(sessions):
         "idle_minutes": round(합("idle_minutes"), 1),
         "typed": 합("typed"), "deleted": 합("deleted"), "undo": 합("undo"),
         "pastes": {k: 합("pastes", k) for k in ("count", "chars", "from_ai_count", "from_ai_chars",
-                                                 "unknown_count", "unknown_chars")},
+                                                 "from_other_count", "from_other_chars", "unknown_count", "unknown_chars")},
+        "days": _날짜별(각),
         "ai": {"questions": 합("ai", "questions"), "answers": 합("ai", "answers"),
                "history": 합("ai", "history"), "tools": dict(도구),
                "window_minutes": round(합("ai", "window_minutes"), 1), "window_visits": 합("ai", "window_visits")},
         "links": {"confirmed": 합("links", "confirmed"), "rejected": 합("links", "rejected")},
         "by_session": 각,
     }
+
+
+def _날짜별(각):
+    """날짜마다 작업 구간·분 — 내역서 v3 의 날짜별 작업 막대. 날짜는 구간이 시작한 날 (기록기 시각 = 한국 시각)."""
+    날 = {}
+    for s in 각:
+        for g in s.get("segments", []):
+            x = 날.setdefault(g["start"][:10], {"date": g["start"][:10], "minutes": 0.0, "segments": []})
+            x["segments"].append(g)
+            x["minutes"] = round(x["minutes"] + _초(g["start"], g["end"]) / 60, 1)
+    return [날[k] for k in sorted(날)]

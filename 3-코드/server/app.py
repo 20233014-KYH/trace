@@ -549,6 +549,7 @@ def get_context(sid):
 
 내역서_최대 = 5 * 1024 * 1024       # 한 요청 5MB
 원문_최대 = 256 * 1024              # 원문 한 개 256KB (긴 AI 답)
+설명_최대 = 150                     # 내역서 v3 질문 두 칸 (10/10 박상진)
 공유_기본일, 공유_최대일 = 14, 90
 
 
@@ -600,9 +601,12 @@ def create_statement(wid):
     메시지들, 연결들, 가림들 = b.get("messages") or [], b.get("links") or [], b.get("redactions") or []
     if not all(isinstance(v, list) for v in (메시지들, 연결들, 가림들)):
         return jsonify(error="bad_request", message="messages · links · redactions 는 목록이어야 합니다"), 400
-    for 이름 in ("ai_scope", "sentence"):
+    for 이름 in ("ai_scope", "sentence", "explain_use", "explain_check"):
         if b.get(이름) is not None and not isinstance(b[이름], str):
             return jsonify(error="bad_request", message=f"{이름} 는 글자여야 합니다"), 400
+    for 이름 in ("explain_use", "explain_check"):              # v3 질문 두 칸 — 각 150자
+        if len((b.get(이름) or "").strip()) > 설명_최대:
+            return jsonify(error="bad_request", message=f"{이름} 는 {설명_최대}자까지입니다"), 400
     try:
         가림쌍 = {_쌍(r, "redactions") for r in 가림들}
         for m in 메시지들:
@@ -633,7 +637,10 @@ def create_statement(wid):
         문제들, 쓰인세션 = [], set()
         st = db.Statement(id=str(uuid.uuid4()), work_id=wid, user_id=g.user_id,
                           created_at=now().isoformat(timespec="microseconds"),   # 같은 초에 두 번 만들어도 순서가 갈리게
-                          ai_scope=b["ai_scope"] if "ai_scope" in b else w.ai_scope, sentence=b.get("sentence"))
+                          # 교수 규칙은 학생이 넣었을 때만 (10/10 · 아직 규칙 정한 교수가 거의 없어서) — 과제 메모를 저절로 옮기지 않는다
+                          ai_scope=(b.get("ai_scope") or "").strip() or None, sentence=b.get("sentence"),
+                          explain_use=(b.get("explain_use") or "").strip() or None,
+                          explain_check=(b.get("explain_check") or "").strip() or None)
         d.add(st)
         d.flush()
 
@@ -660,7 +667,8 @@ def create_statement(wid):
             d.add(db.Message(statement_id=st.id, session_id=sid, event_id=eid,
                              tool=p.get("tool") if e else m.get("tool"), role=p.get("role") if e else m.get("role"),
                              ts=e.ts if e else m.get("ts"), text=m["text"], hash=해시,
-                             history=bool(p.get("history")), match=왜 is None))
+                             history=bool(p.get("history")), match=왜 is None,
+                             model=str(m.get("model") or "")[:64] or None))
 
         # ② 연결 — "맞다"는 위에서 확인된 답을 가리켜야 한다. "아니다"는 원문을 받지 않는다
         for l in 연결들:
@@ -720,12 +728,21 @@ def _내역서_내용(d, st, 학생용):
     def 글(h):
         m = 해시로.get(h) if h else None
         # history = 이전 대화라 ts 는 '본 시각'이지 '받은 시각'이 아니다 → 화면이 그렇게 써야 한다
-        return {"text": m.text, "tool": m.tool, "ts": m.ts, "history": bool(m.history), "ok": bool(m.match)} if m else None
+        return {"text": m.text, "tool": m.tool, "model": m.model, "ts": m.ts, "history": bool(m.history),
+                "ok": bool(m.match)} if m else None
 
     맞다 = [{"question": 글(l.question_hash), "answer": 글(l.answer_hash),
              "result": {"text": l.result_text, "location": l.location},
              "kind": l.kind, "origin": l.origin} for l in 연결 if l.decision == "confirmed"]
+    # 투명성 한 줄 (v3) — 쓴 도구(모델) : 내역서에 담긴 원문 기준. 모델은 PC 가 보낸 참고값
+    도구 = {}
+    for m in 메시지:
+        도구.setdefault(m.tool or "AI", set())
+        if m.model:
+            도구[m.tool or "AI"].add(m.model)
     out = {"id": st.id, "created_at": st.created_at, "ai_scope": st.ai_scope, "sentence": st.sentence,
+           "explain_use": st.explain_use, "explain_check": st.explain_check,
+           "tools": [{"tool": t, "models": sorted(ms)} for t, ms in 도구.items()],
            "verified": bool(st.verified), "problems": st.problems or [], "summary": st.summary, "links": 맞다,
            "rejected": sum(l.decision == "rejected" for l in 연결), "redacted": len(가림)}
     if not 학생용:
