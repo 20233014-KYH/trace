@@ -8,7 +8,12 @@ desktop_ai.py — 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱 …)의 질문·
     질문/답 = article 안의 화면낭독 제목: "입력 내용: …"(질문) · "Claude 응답: …"(답) · 영어 화면 "You said:" 등
     본문 = article 을 따라 내려가며 글자만 모은다. 빼는 것: 화면낭독 글(sr-only) · 버튼 · 도구 모음(복사 · 재시도) ·
            시각("6분 전" — 1분마다 바뀌어서 같은 답을 또 보내던 문제) · 진행 표시("…설명 중.") · 제안된 작업("Word 문서 만들기")
+    ChatGPT 앱 (10/9 실제 화면 · OpenAI.Codex 패키지의 ChatGPT.exe · 크로미움): article 이 없다 →
+      sr-only 제목 "내가 한 말:" · "ChatGPT 답변:" 바로 뒤 형제가 글 덩어리 (질문 bg-user-message · 답 _Renderer).
+      글자는 낱말마다 조각으로 오고 띄어쓰기도 따로 온다 · 제목·굵게·목록 그대로 읽힘. 모델 이름은 화면에 없어서 못 남김
+      (처음 읽을 땐 창 테두리만 보이고, 한두 번 더 물으면 크로미움이 웹 화면 구조를 연다)
     없으면 웹 Claude 와 같은 클래스로: 답 = standard-markdown · font-claude-response, 질문 = font-user-message
+· 앱에서 복사하면 수집기가 복사한 글을 '복사 발췌'로 PC 에 남긴다 (collector._desktop_excerpt) — 붙여넣은 글이 AI 답과 이어지게
 · 같은 메시지 글이 두 번 연속 같을 때(생성 끝) 보낸다 → collector._on_context (확장과 같은 길: 가림 → 해시 → PC 원문 + 체인 ai_msg)
 · 이전 대화(history) = 그 대화를 처음 읽을 때 이미 있던 메시지. 단 ① 바로 전(2분 안)에 새 채팅 화면(메시지 없음)을 봤거나
   ② 처음 읽은 뒤 마지막 답이 아직 바뀌고 있으면(생성 중) 새 대화로 본다 — 새 채팅은 질문을 보낸 뒤에야 대화가 생겨서 (10/7)
@@ -26,8 +31,8 @@ from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 APPS = {"claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱"}          # exe(소문자) → 체인에 남길 도구 이름
-Q_HEAD = re.compile(r"^(입력 내용|You said|나의 말)\s*:")                  # 질문 article 의 화면낭독 제목
-A_HEAD = re.compile(r"^(Claude 응답|Claude said|ChatGPT의 말|ChatGPT said)\s*:")
+Q_HEAD = re.compile(r"^(입력 내용|You said|나의 말|내가 한 말)\s*:")        # 질문의 화면낭독 제목
+A_HEAD = re.compile(r"^(Claude 응답|Claude said|ChatGPT의 말|ChatGPT said|ChatGPT 답변)\s*:")
 SKIP_ROLES = {"status", "toolbar", "button", "time", "img", "progressbar", "menu"}
 BLOCK_ROLES = {"group", "heading", "listitem", "list", "paragraph", "separator", "blockquote", "table", "row", "code", "figure", "region", "article"}
 SKIP_NAMES = {"제안된 작업", "Suggested actions"}
@@ -156,11 +161,15 @@ class DesktopAIWatcher(threading.Thread):
         return _get(web, "CurrentName") if web else ""
 
     def _messages(self, allel):
-        """메시지 [(el, role 힌트 | None)] — ① 대화 목록(feed) 안의 article ② 웹 Claude 클래스"""
+        """메시지 [(el, role 힌트 | None)] — ① 대화 목록(feed) 안의 article (Claude 앱)
+        ② 화면낭독 제목 바로 뒤의 글 덩어리 (ChatGPT 앱) ③ 웹 Claude 클래스"""
         arts = [(e, None) for e in allel
                 if _get(e, "CurrentAriaRole") == "article" and self._up(e, lambda p: _get(p, "CurrentAriaRole") == "feed")]
         if arts:
             return arts
+        heads = self._headed(allel)
+        if heads:
+            return heads
         out = []
         for e in allel:
             cls = _get(e, "CurrentClassName").split()
@@ -168,6 +177,27 @@ class DesktopAIWatcher(threading.Thread):
                 out.append((e, "answer"))
             elif any(c in QUESTION_CLS for c in cls):
                 out.append((e, "question"))
+        return out
+
+    def _headed(self, allel):
+        """ChatGPT 앱 (10/9 실제 화면): article 이 없고, 메시지마다 sr-only 제목("내가 한 말:" · "ChatGPT 답변:") 다음
+        형제가 글 덩어리다 (질문 = bg-user-message, 답 = _Renderer). 그 사이의 "contents" 묶음은 복사·공유 버튼이라 건너뛴다"""
+        out = []
+        for e in allel:
+            if _get(e, "CurrentAriaRole") != "heading" or "sr-only" not in _get(e, "CurrentClassName").split():
+                continue
+            name = _get(e, "CurrentName")
+            role = "question" if Q_HEAD.match(name) else "answer" if A_HEAD.match(name) else None
+            if not role:
+                continue
+            s = self.W.GetNextSiblingElement(e)
+            while s and (_get(s, "CurrentClassName").split()[:1] == ["contents"] or not self.W.GetFirstChildElement(s)):
+                if _get(s, "CurrentAriaRole") == "heading":
+                    s = None                    # 글 없이 다음 메시지 제목이 나옴
+                    break
+                s = self.W.GetNextSiblingElement(s)
+            if s:
+                out.append((s, role))
         return out
 
     def _read(self, el, hint):

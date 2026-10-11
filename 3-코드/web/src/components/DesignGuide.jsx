@@ -23,7 +23,7 @@ const PRESETS = {
   meokji: { name: '먹지', num: '②', desc: '기록·증명 느낌. 남색(Proof)·청록(Learn), 따뜻한 종이색 바탕, 제목은 세리프. 검증자·교수에게 보이는 증명서·검증 화면에 강함.',
     tokens: { primary: '#1e3a8a', proof: '#1e3a8a', learn: '#0f766e', bg: '#f4f2ec', surface: '#fffdf8', ink: '#1f2328', muted: '#6b6f76', line: '#e6e2d8', soft: '#faf8f2', typed: '#15803d', paste: '#d97706', ai: '#dc2626', resource: '#2563eb', work: '#15803d', other: '#c8c4b8', radius: 8, head: 'serif' } },
   heukyeon: { name: '흑연', num: '③', desc: '미니멀. 주색은 거의 검정, Proof는 흑연 회색, Learn만 파랑. 유채색은 사실 표기(초록·주황·빨강)에만 써서 데이터가 제일 먼저 보임.',
-    tokens: { primary: '#18181b', proof: '#52525b', learn: '#2563eb', bg: '#f5f5f5', surface: '#ffffff', ink: '#18181b', muted: '#71717a', line: '#e4e4e7', soft: '#fafafa', typed: '#16a34a', paste: '#f59e0b', ai: '#ef4444', resource: '#60a5fa', work: '#16a34a', other: '#d4d4d8', radius: 10, head: 'sans' } },
+    tokens: { primary: '#18181b', proof: '#52525b', learn: '#2563eb', bg: '#fafafa', surface: '#ffffff', ink: '#18181b', muted: '#71717a', line: '#e4e4e7', soft: '#fafafa', typed: '#16a34a', paste: '#f59e0b', ai: '#ef4444', resource: '#60a5fa', work: '#16a34a', other: '#d4d4d8', radius: 10, head: 'sans' } },
   notion: { name: '차분한 자국', num: '④', desc: '거의 무채색. 글자는 완전 검정이 아닌 #37352f, 선은 연하게, 둥글기 6px, 여백 넉넉히. 모드 색은 낮은 채도 보라·파랑, 사실 표기도 같은 톤으로. 색은 "가끔, 작게".',
     tokens: { primary: '#37352f', proof: '#9065b0', learn: '#337ea9', bg: '#ffffff', surface: '#ffffff', ink: '#37352f', muted: '#787774', line: '#e9e9e7', soft: '#f7f7f5', typed: '#448361', paste: '#d9730d', ai: '#d44c47', resource: '#7b9fd6', work: '#448361', other: '#d3d1cb', radius: 6, head: 'sans' } },
 };
@@ -84,7 +84,7 @@ export default function DesignGuide({ onClose }) {
         {/* 상단 줄 — 후보 전환 · 내보내기 · 화면으로 */}
         <div className="sticky top-0 z-10 border-b backdrop-blur-md" style={{ background: 'color-mix(in oklab, var(--bg) 82%, transparent)', borderColor: 'var(--line)' }}>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-6 py-2.5">
-            <span className="mr-2 flex items-center gap-2 text-[15px] font-bold tracking-tight"><span className="flex gap-0.5"><i className="size-1.5 rounded-full opacity-40" style={{ background: t.primary }} /><i className="size-1.5 rounded-full opacity-70" style={{ background: t.primary }} /><i className="size-1.5 rounded-full" style={{ background: t.primary }} /></span>Trace<span className="font-normal text-muted-foreground">디자인 기준</span></span>
+            <span className="mr-2 flex items-center gap-2 text-[15px] font-bold tracking-tight"><span aria-hidden="true" className="flex items-end gap-0.5"><i className="size-1 rounded-full opacity-30" style={{ background: t.primary }} /><i className="size-1.5 rounded-full opacity-55" style={{ background: t.primary }} /><i className="size-2 rounded-full" style={{ background: t.primary }} /></span>Trace<span className="font-normal text-muted-foreground">디자인 기준</span></span>
             <ToggleGroup type="single" value={cur} onValueChange={(v) => v && setCur(v)} variant="outline" size="sm" className="flex-wrap">
               {Object.entries(PRESETS).map(([k, p]) => (
                 <ToggleGroupItem key={k} value={k} className="gap-2 px-3 data-[state=on]:bg-(--surface) data-[state=on]:shadow-sm">
