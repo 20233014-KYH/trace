@@ -1,40 +1,57 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><title>Trace</title>
 <style>
-/* 목업 13 의 알약. 창은 투명(DWM) — 그림자는 회색 얼룩이 되므로 뺐다. 모션 없음 (9/22 결정)
-   9/28 개정: Learn 의 질문칸·채팅 패널은 삭제. 알약 하나만 */
-html,body{margin:0;background:transparent;font-family:"Segoe UI","Malgun Gothic",sans-serif;font-size:12px;color:#1c1f24;overflow:hidden;user-select:none}
+/* 알약 — 화면 뼈대 3 (10/8 파랑·시간만 · 10/10 잠깐 멈춤 1번안). 창은 투명(DWM) — 그림자는 회색 얼룩이 되므로 뺐다.
+   움직임은 멈췄을 때 점이 천천히 깜빡이는 것 하나뿐 (기록 중엔 깜빡이지 않음 — 감시받는 느낌 줄이기) */
+html,body{margin:0;background:transparent;font-family:"Segoe UI","Malgun Gothic",sans-serif;font-size:11px;color:#fff;overflow:hidden;user-select:none}
 #root{position:fixed;right:4px;bottom:4px;display:flex;flex-direction:column;align-items:flex-end}
-.pill{width:180px;box-sizing:border-box;display:flex;align-items:center;gap:7px;height:26px;padding:0 8px 0 9px;background:rgba(28,31,36,.92);color:#fff;border-radius:13px;font-size:11px;font-variant-numeric:tabular-nums;cursor:grab}
-.pill .dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex:none}
-.pill .t{font-weight:700}.pill .n{color:#bfc4cc;margin-left:auto}
-.pill .stop{width:14px;height:14px;border-radius:50%;border:1.5px solid #9ca3af;display:flex;align-items:center;justify-content:center;margin-left:2px;cursor:pointer;flex:none}
+.pill{box-sizing:border-box;display:flex;align-items:center;gap:6px;height:26px;padding:0 6px 0 10px;background:rgba(28,31,36,.92);border-radius:13px;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:grab}
+.pill .dot{width:7px;height:7px;border-radius:50%;flex:none;background:#4c8dff;box-shadow:0 0 0 2px rgba(76,141,255,.25)}
+.pill .t{font-weight:700}
+.pill .btns{display:flex;gap:3px;margin-left:2px}
+.pill .b{width:14px;height:14px;box-sizing:border-box;border-radius:50%;border:1.5px solid #9ca3af;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.pill .b:hover{border-color:#fff}
 .pill .stop i{width:6px;height:6px;background:#e5e7eb;border-radius:1px;display:block}
-.pill .stop:hover{border-color:#fff}
-.pill .pause{width:14px;height:14px;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer;flex:none}
-.pill .pause i{width:2.5px;height:8px;background:#e5e7eb;border-radius:1px;display:block}
-.pill .pause:hover i{background:#fff}
-.pill.paused .dot{background:#9ca3af}
-.pill.paused .pause{gap:0}.pill.paused .pause i{width:0;height:0;background:none;border-left:7px solid #e5e7eb;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;border-radius:0}
+.pill .pause{gap:2px}
+.pill .pause i{width:2px;height:6px;background:#e5e7eb;border-radius:1px;display:block}
+/* 잠깐 멈춤: 회색 점이 천천히 깜빡 · 시간은 그 자리에 멈춤(회색) · ⏸ → ▶ */
+.pill.paused .dot{background:#a1a1aa;box-shadow:none;animation:blink 1.6s ease-in-out infinite}
+.pill.paused .t{color:#a1a1aa}
+.pill.paused .pause i{width:0;height:0;background:none;border-radius:0;border-left:5px solid #e5e7eb;border-top:3.5px solid transparent;border-bottom:3.5px solid transparent;margin-left:1.5px}
 .pill.paused .pause i+i{display:none}
-.pill.mini{width:26px;padding:0;justify-content:center}.pill.mini .t,.pill.mini .n,.pill.mini .stop,.pill.mini .pause{display:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.pill.paused .dot{animation:none}}
+/* 끝내는 중: "저장 중…" 한 줄 · 버튼 숨김 */
+.pill.ending{padding:0 12px 0 10px}.pill.ending .btns{display:none}
+/* 작게: 점만 */
+.pill.mini{width:26px;padding:0;justify-content:center}.pill.mini .t,.pill.mini .btns{display:none}
 </style></head>
 <body>
 <div id="root">
-  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="n" id="n"></span><span class="pause" id="pause" title="잠깐 멈춤 — 멈춘 동안은 기록하지 않습니다"><i></i><i></i></span><span class="stop" id="stop" title="작업 마치기"><i></i></span></div>
+  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="btns"><span class="b pause" id="pause" title="잠깐 멈춤 — 멈춘 동안은 기록하지 않습니다"><i></i><i></i></span><span class="b stop" id="stop" title="작업 마치기"><i></i></span></span></div>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
-let mini = false, first = true;
+let mini = false, first = true, ending = false, frozen = null;
 
 async function tick() {
+  if (ending) return;
   try {
     const s = await pywebview.api.status();
-    $("t").textContent = !s.recording ? "기록 마무리 중…" : s.paused ? "멈춤" : s.elapsed;
+    if (!s.recording) { end(); return; }
+    // 멈추면 시간을 그 자리에 둔다 (글자 없이 · 폭 그대로)
+    if (s.paused) { if (frozen === null) frozen = $("t").textContent; $("t").textContent = frozen; }
+    else { frozen = null; $("t").textContent = s.elapsed; }
     $("pill").classList.toggle("paused", !!s.paused);
     $("pause").title = s.paused ? "다시 기록" : "잠깐 멈춤 — 멈춘 동안은 기록하지 않습니다";
-    $("n").textContent = s.ai_count ? `${s.events}건 · AI ${s.ai_count}` : `${s.events}건`;
+    $("pill").title = s.paused ? "Trace 잠깐 멈춤 — 아무것도 기록하지 않는 중" : "Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기";
   } catch (e) { /* api 준비 전 */ }
+}
+function end() {
+  ending = true;
+  $("pill").classList.remove("paused", "mini");
+  $("pill").classList.add("ending");
+  $("t").textContent = "저장 중…";
 }
 async function layout() {
   $("pill").classList.toggle("mini", mini);
@@ -46,11 +63,11 @@ window.addEventListener("pywebviewready", async () => { await tick(); await layo
 let downAt = null;
 $("pill").addEventListener("mousedown", (e) => { downAt = [e.screenX, e.screenY]; });
 $("pill").addEventListener("mouseup", (e) => {
-  if (e.target.closest("#stop") || e.target.closest("#pause")) return;
+  if (e.target.closest(".b") || ending) return;
   if (downAt && Math.hypot(e.screenX - downAt[0], e.screenY - downAt[1]) < 4) { mini = !mini; layout(); }
   downAt = null;
 });
 $("pause").addEventListener("click", async () => { await pywebview.api.pause(); tick(); });
-$("stop").addEventListener("click", async () => { $("t").textContent = "기록 마무리 중…"; await pywebview.api.stop(); });
+$("stop").addEventListener("click", async () => { end(); await pywebview.api.stop(); });
 </script>
 </body></html>

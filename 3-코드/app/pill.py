@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "collector"))
 from collector import Collector  # noqa: E402
 
 # 창 크기 — pill.html 의 레이아웃과 짝 (논리 px)
-SIZE = {"mini": (34, 34), "pill": (188, 34)}
+SIZE = {"mini": (34, 34), "pill": (120, 34)}   # 알약 112px(시간 + ⏸ ■) + 여백 — 화면 뼈대 3
 MARGIN = 12
 
 
@@ -38,10 +38,13 @@ class Api:
 
     def __init__(self, c: Collector):
         self._c, self._win = c, None
+        self._paused_total, self._pause_at = 0.0, None   # 알약 시간은 멈춘 시간을 뺀 "기록한 시간" (내역서 기록 시간과 같은 뜻)
 
     def status(self):
         s = self._c._status()
-        e = s["elapsed_sec"]
+        now = time.time()
+        held = self._paused_total + (now - self._pause_at if self._pause_at else 0)
+        e = max(0, int(s["elapsed_sec"] - held))
         s["elapsed"] = f"{e // 3600:02d}:{e % 3600 // 60:02d}:{e % 60:02d}"
         return s
 
@@ -57,7 +60,13 @@ class Api:
 
     def pause(self):
         """⏸ / ▶ — 잠깐 멈춤 · 다시 기록 (멈춘 동안은 아무것도 기록 안 함 · 체인엔 시작·끝 시각만)"""
-        return self._c.resume() if self._c.sink.paused else self._c.pause()
+        r = self._c.resume() if self._c.sink.paused else self._c.pause()
+        if self._c.sink.paused and self._pause_at is None:
+            self._pause_at = time.time()
+        elif not self._c.sink.paused and self._pause_at is not None:
+            self._paused_total += time.time() - self._pause_at
+            self._pause_at = None
+        return r
 
     def stop(self):
         """■ — 봉인하고 창을 닫는다"""
