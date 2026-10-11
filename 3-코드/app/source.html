@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>출처 보기 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 출처 보기 — 캔버스 "Trace 화면 뼈대" 4 · 4 AI 답 기준 · 4 메뉴 접음 (1차 확정 10/11)
+   흑연(zinc) · Pretendard · 색 결정 C: 가져온 그대로 = 빨강 바탕 · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색
+   ★ 점수·퍼센트 없음. 보기만 하는 화면 — 맞다/아니다는 다음 단계(연결 확인). */
+:root{
+  --ink:#18181b; --ink2:#3f3f46; --muted:#71717a; --faint:#a1a1aa; --line:#e4e4e7; --soft:#f4f4f5; --bg:#fafafa; --card:#fff;
+  --copy:#fdecec; --copy-d:#e5484d; --edit:#eaf0fd; --edit-d:#3e63dd; --none:rgba(24,24,27,.03);
+  --bar:44px;   /* 위 줄 높이 = 로고 줄 높이 → 로고와 위 줄 글자가 한 줄에 섬 */
+  --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,a:focus-visible,.s:focus-visible,.qrow:focus-visible{outline:2px solid var(--edit-d);outline-offset:2px;border-radius:6px}
+svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+[hidden]{display:none!important}
+.app{display:flex;height:100vh;min-width:1024px}
+
+/* 왼쪽 메뉴 · 접으면 56px 아이콘 줄 */
+.side{width:256px;flex:none;border-right:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;padding:0 8px 8px;gap:2px;overflow:hidden;
+  transition:width .24s cubic-bezier(.2,0,0,1)}
+.brand{position:relative;display:flex;align-items:center;gap:8px;height:var(--bar);margin-bottom:4px;padding:0 0 0 9px;flex:none}
+.brand .mark{transition:opacity .15s}
+/* 접기 버튼 = 로고 줄 오른쪽 끝. 접으면 56px 줄 가운데(로고 자리)에 겹치고, 마우스를 올릴 때만 보임 */
+.tg{position:absolute;right:6px;top:calc((var(--bar) - 28px) / 2);width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:opacity .15s,background .15s}
+.tg:hover{background:#ececee;color:var(--ink)}
+.brand b{font-size:15px;font-weight:700;letter-spacing:-.025em}
+.brand .mark{display:flex;align-items:flex-end;gap:2px}
+.brand .mark i{display:block;border-radius:50%;background:var(--ink)}
+.brand .mark i:nth-child(1){width:4px;height:4px;opacity:.3}.brand .mark i:nth-child(2){width:6px;height:6px;opacity:.55}.brand .mark i:nth-child(3){width:8px;height:8px}
+.nav{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px;white-space:nowrap;overflow:hidden;flex:none}
+.nav:hover{background:var(--soft)}.nav.on{background:#efeff1;font-weight:500}
+.nav.off{cursor:default}.nav.off:hover{background:none}.nav.add{color:var(--muted)}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:var(--edit-d);margin-left:auto;flex:none}
+.side h4{height:32px;display:flex;align-items:center;margin:8px 0 0;padding:0 12px;white-space:nowrap;font-size:12px;font-weight:500;color:var(--muted);flex:none}
+.works{flex:0 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav .t{overflow:hidden;text-overflow:ellipsis}
+.brand b,.nav .t,.nav .dot,.side h4,.me div{transition:opacity .16s}
+.me{display:flex;align-items:center;gap:10px;padding:8px 4px;margin-top:auto;white-space:nowrap;font-size:13px;line-height:1.3}
+.me .av{width:32px;height:32px;border-radius:50%;background:#e4e4e7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none}
+.me small{color:var(--muted);display:block}
+.rail .side{width:56px}
+/* 접힘: 글자는 자리를 그대로 두고 흐리게만 → 위아래로도 안 움직임 */
+.rail .brand b,.rail .nav .t,.rail .nav .dot,.rail .side h4,.rail .me div{opacity:0;pointer-events:none}
+.rail .tg{opacity:0}.rail .brand:hover .tg,.rail .tg:focus-visible{opacity:1}.rail .brand:hover .mark{opacity:0}
+@media (prefers-reduced-motion:reduce){.side,.side *{transition:none!important}}
+
+/* 위 줄 */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{height:var(--bar);box-sizing:content-box;flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:16px;padding:0 0 0 12px;border-bottom:1px solid var(--line)}
+.tl{display:flex;align-items:center;gap:2px;min-width:0}
+/* 창 버튼 — 윈도우 11 크기(46px)·모양. 닫기만 빨강. 브라우저에선 자리만, 앱(pywebview 프레임 없는 창)에서 동작 */
+.win{justify-self:end;display:flex;height:var(--bar)}
+.win button{width:46px;height:100%;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2)}
+.win button:hover{background:rgba(24,24,27,.06)}.win .x:hover{background:#c42b1c;color:#fff}
+.win svg{width:16px;height:16px;stroke-width:1.2}
+.ib{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2)}
+.ib:hover{background:var(--soft)}.ib:disabled{color:#c4c4c8;cursor:default}.ib:disabled:hover{background:none}
+.arw{width:30px;height:30px;color:var(--ink)}.arw svg{width:19px;height:19px;stroke-width:1.9}
+.crumb{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);min-width:0;margin-left:10px}
+.crumb a{color:var(--muted);text-decoration:underline;text-decoration-color:#d4d4d8;text-underline-offset:3px;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.crumb b{color:var(--ink);font-weight:500;white-space:nowrap}
+.steps{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--faint);white-space:nowrap}
+.steps i{width:7px;height:7px;border-radius:50%;background:#d4d4d8;display:inline-block;margin-right:5px}
+.steps .done{color:var(--ink2)}.steps .done i{background:var(--ink)}
+.steps .cur{color:var(--ink);font-weight:600}.steps .cur i{background:#fff;box-shadow:0 0 0 1.5px var(--ink)}
+.steps em{width:14px;height:1px;background:#d4d4d8}
+.next{height:40px;border-radius:10px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;white-space:nowrap;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.next:hover{background:#27272a}.next svg{width:16px;height:16px}
+
+/* 도구 줄 */
+.bar{display:flex;align-items:center;gap:14px;padding:16px 24px 12px;flex:none;min-width:0}
+.seg{display:inline-flex;background:#ececee;border-radius:10px;padding:3px;flex:none}
+.seg button{height:28px;padding:0 10px;border-radius:7px;font-size:13.5px;color:var(--muted);font-weight:500}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.lg{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink2);white-space:nowrap;min-width:0;overflow:hidden}
+.lg span{display:inline-flex;align-items:center;gap:6px}.lg b{color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.lg .sw{width:10px;height:10px;border-radius:3px}
+.lg .stat b{color:var(--ink);font-weight:700}
+.u{text-decoration:underline dashed var(--edit-d);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.pos{font-size:13px;color:var(--muted);min-width:46px;text-align:center;font-variant-numeric:tabular-nums}
+.btn{height:30px;padding:0 10px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:13px;font-weight:600}
+.btn:hover{background:var(--soft)}.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.filt{display:inline-flex;border:1px solid var(--line);border-radius:9px;background:#fff;padding:2px}
+.filt button{height:26px;padding:0 9px;border-radius:7px;font-size:13px;color:var(--muted)}
+.filt button.on{background:var(--soft);color:var(--ink);font-weight:600}
+
+/* 본문: 왼쪽 큰 칸 + 오른쪽 자세히 */
+.body{flex:1;min-height:0;display:flex;gap:16px;padding:0 24px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;border-bottom:0}
+.doc{flex:1;min-width:0;overflow:auto;scrollbar-gutter:stable}
+.doc-in{max-width:720px;margin:0 auto;padding:28px 36px 60px}
+.file{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin-bottom:18px}
+.file svg{width:14px;height:14px}
+.file{position:relative}
+/* 문서 바꾸기 → 파일 이름 밑에 이 과제에서 기록된 문서 목록 */
+.fbtn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;height:26px;padding:0 6px 0 8px;border-radius:7px;font-size:12.5px;color:var(--muted)}
+.fbtn:hover,.fbtn[aria-expanded=true]{background:var(--soft);color:var(--ink)}
+.fbtn svg{width:14px;height:14px;transition:transform .15s}.fbtn[aria-expanded=true] svg{transform:rotate(180deg)}
+.fmenu{position:absolute;left:-8px;top:calc(100% + 6px);z-index:5;width:min(380px,100%);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(24,24,27,.10);padding:6px}
+.fmenu h6{margin:6px 8px 4px;font-size:12px;font-weight:500;color:var(--muted)}
+.fmenu button{display:flex;width:100%;align-items:center;gap:8px;min-height:34px;padding:6px 8px;border-radius:8px;font-size:13.5px;color:var(--ink);text-align:left}
+.fmenu button:hover{background:var(--soft)}
+.fmenu button svg{width:15px;height:15px;color:var(--muted)}
+.fmenu .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmenu small{color:var(--faint);font-size:11.5px;white-space:nowrap}
+.fmenu .ck{color:var(--ink)}
+.fmenu .sep{height:1px;background:var(--soft);margin:4px 2px}
+.fmenu .other{color:var(--muted)}
+.fmenu .hint{margin:2px 8px 6px;color:var(--muted)}
+.pickhint{margin:-10px 0 16px;color:var(--ink2)}
+.fwarn{display:flex;gap:8px;align-items:flex-start;margin:-6px 0 18px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13px;color:var(--ink2);line-height:1.55}
+.fwarn b{font-weight:600;color:var(--ink)}
+.fwarn svg{width:16px;height:16px;margin-top:2px;color:var(--muted)}
+.doc h1{font-size:20px;font-weight:700;margin:0 0 16px;letter-spacing:-.01em}
+.para{margin:0 0 14px;font-size:15px;line-height:2;color:var(--ink)}
+.para.head{font-size:16px;font-weight:700;margin:22px 0 10px;line-height:1.6}
+.s{border-radius:3px;cursor:pointer;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:2px 0}
+.s.copy{background:var(--copy)}.s.edited{background:var(--edit)}
+.s.viewed{text-decoration:underline dashed var(--edit-d);text-decoration-thickness:1.5px;text-underline-offset:5px}
+.s.none{background:var(--none)}
+.s:hover{filter:brightness(.97)}
+/* 고른 문장 = 같은 색을 진하게 (테두리는 줄마다 끊겨 지저분함) */
+.s.copy.on{background:#f8cfd0}.s.edited.on{background:#cddbfa}
+.s.viewed.on{background:#eef3fe;text-decoration-thickness:2px}.s.none.on{background:#e9e9ec}
+.tag{font-size:10.5px;font-weight:600;padding:0 4px;margin:0 3px;border-radius:3px;vertical-align:2px;background:#fff;border:1px solid var(--line);color:var(--ink2);white-space:nowrap;line-height:1.5;display:none}
+.labels .tag{display:inline}
+
+.empty{max-width:440px;margin:90px auto;text-align:center;color:var(--muted);font-size:14px}
+.empty h2{color:var(--ink);font-size:17px;margin:0 0 6px}
+.drop{margin-top:18px;border:1.5px dashed #d4d4d8;border-radius:14px;padding:26px 18px;background:#fff}
+.drop.over{border-color:var(--ink);background:var(--soft)}
+.drop .btn{height:36px;padding:0 16px;margin-top:10px}
+.hint{font-size:12.5px;color:var(--faint);margin-top:10px}
+.err{color:var(--copy-d)}
+
+/* 오른쪽 칸 = 자세히(굴러감) + 맨 아래 다음 단계 버튼(고정) */
+.rp{width:340px;flex:none;display:flex;flex-direction:column;min-height:0}
+.rp-f{flex:none;padding:12px 20px 16px;border-top:1px solid var(--soft)}
+.det{flex:1;min-height:0;overflow:auto;padding:22px 20px 24px;display:flex;flex-direction:column;gap:6px;scrollbar-gutter:stable}
+.det>*{flex:none}
+.det .ttl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.det .ttl i{width:8px;height:8px;border-radius:50%;flex:none}
+.det .sub{font-size:13px;color:var(--muted);margin-top:-2px}
+.det h5{margin:14px 0 2px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.det .txt{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.det .box{background:var(--soft);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere}
+.det .ans{max-height:340px;overflow:auto;position:relative}
+.det .ans.focus .g-copy{background:#fef5f5}.det .ans.focus .g-edited{background:#f4f7fe}.det .ans.focus .g-viewed{text-decoration-color:#b9c9f4}
+.det .ans .f.g-copy{background:#f8cfd0}.det .ans .f.g-edited{background:#cddbfa}.det .ans .f.g-viewed{background:#eef3fe;text-decoration-color:var(--edit-d);text-decoration-thickness:2px}
+.det .ans .g-copy{background:var(--copy);border-radius:2px}.det .ans .g-edited{background:var(--edit);border-radius:2px}
+.det .ans .g-viewed{text-decoration:underline dashed var(--edit-d);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.det .src{font-size:13px;color:var(--ink2);margin-top:2px}.det .src b{font-weight:600;color:var(--ink)}
+.det .note{font-size:12.5px;color:var(--muted)}
+.det .placeholder{color:var(--faint);font-size:13.5px;margin:auto;text-align:center}
+.uses{display:flex;flex-direction:column}
+.uses button{display:grid;grid-template-columns:10px auto minmax(0,1fr);gap:8px;align-items:center;text-align:left;font-size:13px;padding:6px 0;border-top:1px solid var(--soft)}
+.uses button:hover .ut{text-decoration:underline}
+.uses .sq{width:9px;height:9px;border-radius:2px}
+.uses .ul{color:var(--muted);white-space:nowrap}
+.uses .ut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uses .more{display:block;border:0;font-size:12.5px;color:var(--muted);text-align:left;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.go{align-self:flex-start;margin-top:12px}
+
+/* AI 답 기준 */
+.ql{flex:1;min-width:0;display:flex;flex-direction:column}
+.ql-h{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--muted);padding:16px 24px 6px}
+.ql-h span{display:inline-flex;align-items:center;gap:6px}
+.ql-h i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ql-list{flex:1;min-height:0;overflow:auto;padding:4px 12px 8px;scrollbar-gutter:stable}
+.qrow{display:grid;grid-template-columns:44px 14px minmax(0,1fr) auto;column-gap:12px;align-items:center;padding:8px 12px;border-radius:10px;cursor:pointer;position:relative}
+.qrow:hover{background:#f7f7f8}.qrow.on{background:var(--soft)}
+.qrow .tm{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.qrow .pt{width:9px;height:9px;border-radius:50%;background:var(--ink);justify-self:center;position:relative;z-index:1}
+.qrow .pt.ref{background:#fff;box-shadow:inset 0 0 0 1.5px var(--faint)}
+.qrow:not(:last-child)::after{content:"";position:absolute;left:68px;top:50%;height:100%;width:1px;background:#e4e4e7}
+.qrow .qm small{display:block;font-size:11.5px;color:var(--faint);line-height:1.3}
+.qrow .qm div{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrow.on .qm div{font-weight:600}
+.qrow .qm div.none{color:var(--faint)}
+.chips{display:flex;gap:6px;align-items:center;white-space:nowrap}
+.chip{font-size:12px;font-weight:600;padding:1px 8px;border-radius:6px;line-height:1.7}
+.chip.copy{background:var(--copy);color:#c62a2f}.chip.edited{background:var(--edit);color:#2f4fb5}
+.chip.viewed{border:1px solid #c6d4f7;color:#2f4fb5}.chip.viewed span{text-decoration:underline dashed;text-underline-offset:3px}
+.chip.ref{border:1px solid var(--line);color:var(--ink2);font-weight:500}
+.chips .pp{font-size:12px;color:var(--muted)}
+.ql-f{font-size:12.5px;color:var(--muted);padding:10px 24px 14px;border-top:1px solid var(--soft)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+      <button class="ib arw" id="b-back" title="뒤로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+      <button class="ib arw" id="b-fwd" title="앞으로" aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+      <div class="crumb"><a>내 과제</a>/<a id="c-work">과제</a>/<b>출처 보기</b></div>
+      </div>
+      <div class="steps" aria-label="단계">
+        <span class="done"><i></i>기록</span><em></em><span class="cur"><i></i>출처 보기</span><em></em><span><i></i>연결 확인</span><em></em><span><i></i>내역서</span>
+      </div>
+      <div class="win">
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="bar">
+      <div class="seg" role="tablist">
+        <button role="tab" class="on" id="t-doc">문서 기준</button>
+        <button role="tab" id="t-ai">AI 답 기준</button>
+      </div>
+      <div class="lg" id="lg-doc"></div>
+      <div class="lg" id="lg-ai" hidden></div>
+      <div class="right" id="r-doc">
+        <button class="ib box" id="b-up" title="앞 출처 (↑)" aria-label="앞 출처"><svg viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
+        <button class="ib box" id="b-down" title="다음 출처 (↓)" aria-label="다음 출처"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <span class="pos" id="pos">–</span>
+        <button class="btn" id="b-labels" aria-pressed="false">글자로 표시</button>
+      </div>
+      <div class="right" id="r-ai" hidden>
+        <div class="filt" id="filt"><button class="on" data-f="all">전체</button><button data-f="used">글이 들어간 답</button><button data-f="ref">참고만</button></div>
+      </div>
+    </div>
+
+    <div class="body">
+      <section class="card doc" id="v-doc"><div class="doc-in" id="doc"></div></section>
+      <section class="card ql" id="v-ai" hidden>
+        <div class="ql-h"><span id="ql-meta"></span><span><i style="background:var(--ink)"></i>글이 들어감 <i style="background:#fff;box-shadow:inset 0 0 0 1.5px var(--faint);margin-left:8px"></i>참고만</span></div>
+        <div class="ql-list" id="qlist" role="listbox"></div>
+        <div class="ql-f">참고만 한 답도 기록에 남습니다 — 이해하고 확인하는 데 쓴 과정도 보여 줄 수 있어요.</div>
+      </section>
+      <aside class="card rp">
+        <div class="det" id="det"><div class="placeholder">왼쪽에서 색칠된 문장을 누르면<br>어디서 왔는지 여기 보입니다</div></div>
+        <div class="rp-f"><a class="next" id="b-next" href="/" title="연결 확인 화면은 아직 만드는 중 — 지금은 내역서 만들기 화면으로 갑니다">다음: 연결 확인</a></div>
+      </aside>
+    </div>
+  </main>
+</div>
+<input type="file" id="pick" accept=".docx" hidden>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const KIND = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
+                 web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
+  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "" };
+  const GROUP = { copy: "가져온 그대로", edited: "고침", viewed: "보고 씀", none: "출처 기록 없음" };
+  const DOT = { copy: "var(--copy-d)", edited: "var(--edit-d)", viewed: "var(--edit-d)", none: "#d4d4d8" };
+  const wid = new URLSearchParams(location.search).get("work") || "";
+  let D = null, cur = -1, tab = "doc", qcur = -1, filt = "all", works = [];
+
+  async function call(method, path, body) {
+    const opt = { method, headers: { "X-Trace-Local": "1" } };
+    if (body) opt.body = body;
+    const r = await fetch(path, opt);
+    let d = {};
+    try { d = await r.json(); } catch (e) { d = { message: `응답을 읽지 못했습니다 (HTTP ${r.status})` }; }
+    if (!r.ok) throw Object.assign(new Error(d.message || `HTTP ${r.status}`), { code: r.status, data: d });
+    return d;
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function hm(iso) { const m = String(iso || "").match(/T(\d{2}):(\d{2})/); return m ? `${m[1]}:${m[2]}` : ""; }
+  function md(iso) { const m = String(iso || "").match(/^\d{4}-(\d{2})-(\d{2})/); return m ? `${+m[1]}/${+m[2]}` : ""; }
+  function svgFile() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.innerHTML = '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>'; return s; }
+
+  // ── 왼쪽 메뉴 · 위 줄 ──
+  const RAIL = "trace.rail";
+  function railTitle(on) {
+    const t = on ? "메뉴 펴기" : "메뉴 접기";
+    $("b-rail").title = t; $("b-rail").setAttribute("aria-label", t); $("b-rail").setAttribute("aria-expanded", String(!on));
+  }
+  try {                                                   // 처음 그릴 때는 움직이지 않게 (기억해 둔 상태로 바로)
+    if (localStorage.getItem(RAIL) === "1") {
+      document.querySelector(".side").style.transition = "none";
+      $("app").classList.add("rail"); railTitle(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector(".side").style.transition = ""));
+    }
+  } catch (e) {}
+  $("b-rail").onclick = () => {
+    const on = $("app").classList.toggle("rail");
+    railTitle(on);
+    try { localStorage.setItem(RAIL, on ? "1" : "0"); } catch (e) {}
+  };
+  // 갈 곳이 없으면 회색 (WebView2 · 크롬은 navigation API 로 알 수 있음, 없으면 늘 누를 수 있게)
+  if (window.navigation && "canGoBack" in navigation) {
+    $("b-back").disabled = !navigation.canGoBack; $("b-fwd").disabled = !navigation.canGoForward;
+  }
+  // 창 버튼 — 앱(pywebview)에서 window_control 을 열어 주면 동작. 브라우저에선 아무것도 안 함
+  document.querySelectorAll(".win button").forEach(b => b.onclick = () => {
+    const api = window.pywebview && window.pywebview.api;
+    if (api && api.window_control) api.window_control(b.dataset.w);
+  });
+  $("b-back").onclick = () => history.back();
+  $("b-fwd").onclick = () => history.forward();
+
+  async function loadWorks() {
+    let pc = [];
+    try { pc = (await call("GET", "/local/source/works")).works; } catch (e) {}
+    let mine = null;
+    try {
+      const s = await call("GET", "/local/state");
+      if (s.logged_in) {
+        const d = await call("GET", "/local/works");
+        mine = d.works;
+        $("me").innerHTML = "";
+        const av = el("div", "av", (s.user.name || "?").slice(0, 1));
+        const t = el("div"); t.append(el("span", null, s.user.name || ""), el("small", null, s.user.email || ""));
+        $("me").append(av, t);
+      }
+    } catch (e) { mine = null; }
+    if (!mine) {
+      $("me").innerHTML = "";
+      const a = el("a", "nav", null); a.href = "/"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
+      $("me").append(a);
+    }
+    const title = {}; (mine || []).forEach(w => title[w.id] = w.title);
+    works = mine ? mine.filter(w => w.pc_sessions) : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions }));
+    const box = $("works"); box.textContent = "";
+    works.forEach(w => {
+      const a = el("a", "nav" + (w.id === wid ? " on" : ""));
+      a.href = "/source?work=" + encodeURIComponent(w.id);
+      a.title = w.title;
+      a.append(svgFile(), el("span", "t", w.title));
+      box.append(a);
+    });
+    if (!works.length) box.append(el("div", "hint", "이 PC 에 기록한 과제가 없습니다"));
+    const me = works.find(w => w.id === wid);
+    $("c-work").textContent = me ? me.title : (wid || "과제");
+    if (!wid && works.length) location.replace("/source?work=" + encodeURIComponent(works[0].id));
+  }
+
+  // ── 과제 파일 ──
+  function askFile(err, files) {
+    const box = $("doc"); box.textContent = "";
+    const e = el("div", "empty");
+    e.append(el("h2", null, "과제 파일을 골라 주세요"),
+             el("div", null, "Word(.docx) 파일 문장마다 어디서 왔는지 이 PC 기록과 이어서 보여 줍니다. 파일은 이 PC 밖으로 나가지 않습니다."));
+    const d = el("div", "drop");
+    d.append(el("div", null, "여기에 끌어다 놓거나"));
+    const b = el("button", "btn", "파일 고르기"); b.onclick = () => $("pick").click(); d.append(b);
+    if (files && files.length) d.append(el("div", "hint", "이 과제를 기록할 때 연 문서: " + files.join(" · ")));
+    e.append(d);
+    if (err) e.append(el("div", "hint err", err));
+    box.append(e);
+    d.ondragover = ev => { ev.preventDefault(); d.classList.add("over"); };
+    d.ondragleave = () => d.classList.remove("over");
+    d.ondrop = ev => { ev.preventDefault(); d.classList.remove("over"); if (ev.dataTransfer.files[0]) load(ev.dataTransfer.files[0]); };
+  }
+  $("pick").onchange = () => { if ($("pick").files[0]) load($("pick").files[0]); $("pick").value = ""; };
+
+  async function load(file) {
+    if (!wid) return;
+    const fd = new FormData(); fd.append("work_id", wid); if (file) fd.append("file", file);
+    if (file) { $("doc").innerHTML = ""; $("doc").append(el("div", "empty", "기록과 잇는 중…")); }
+    try { D = await call("POST", "/local/source", fd); }
+    catch (e) {
+      if (e.code === 400 && e.data && e.data.error === "no_file") return askFile("", e.data.files);
+      return askFile(e.message);
+    }
+    render();
+  }
+
+  // ── 문서 바꾸기: 이 과제에서 기록된 문서 목록 (기록엔 이름만 있어서, 누르면 그 파일을 고르는 창을 연다) ──
+  const stem = n => String(n || "").replace(/^.*[\/]/, "").replace(/\.[^.]+$/, "").trim().toLowerCase();
+  let closeMenu = () => {};
+  function askHint(row, text) {                            // 파일 고르는 창엔 글을 못 넣어서 화면에 띄워 둠 (다시 그리면 사라짐)
+    let h = row.nextElementSibling;
+    if (!h || !h.classList.contains("pickhint")) { h = el("div", "hint pickhint"); row.after(h); }
+    h.textContent = text;
+  }
+  document.addEventListener("click", () => closeMenu());
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });                                       // 목록에서 누른 이름 — 고른 파일과 다르면 알려 줌
+  function icon(d) { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.innerHTML = d; return s; }
+  function fileRow() {
+    const f = el("div", "file"); f.append(svgFile(), el("span", null, D.file));
+    const b = el("button", "fbtn"); b.type = "button"; b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-haspopup", "true");
+    b.append("문서 바꾸기", icon('<path d="m6 9 6 6 6-6"/>'));
+    const m = el("div", "fmenu"); m.hidden = true; m.setAttribute("role", "menu");
+    const close = () => { m.hidden = true; b.setAttribute("aria-expanded", "false"); };
+    b.onclick = e => { e.stopPropagation(); const open = m.hidden; m.hidden = !open; b.setAttribute("aria-expanded", String(open)); };
+    m.onclick = e => e.stopPropagation();
+    closeMenu = close;
+    // 기록기가 위치를 적어 둔 문서(10/11~)는 눌러서 바로 열고, 위치가 없거나 옮겨졌으면 고르는 창
+    const files = D.recorded_docs || (D.recorded_files || []).map(n => ({ name: n, known: false, exists: false }));
+    m.append(el("h6", null, files.length ? "이 과제에서 기록된 문서" : "이 과제 기록에 Word 문서가 없습니다"));
+    files.forEach(d => {
+      const n = d.name, it = el("button"); it.setAttribute("role", "menuitem");
+      const now = stem(n) === stem(D.file);
+      it.append(svgFile(), el("span", "nm", n));
+      if (!/\.[a-z]{3,4}$/i.test(n)) it.append(el("small", null, "저장 전 이름"));
+      else if (d.known && !d.exists) it.append(el("small", null, "옮겨졌거나 지워짐"));
+      if (now) { it.append(icon('<path d="M20 6 9 17l-5-5"/>')); it.lastChild.classList.add("ck"); }
+      it.title = d.exists ? (now ? "저장된 최신 내용으로 다시 열기" : "바로 열기") : `"${n}" 파일을 고르는 창을 엽니다`;
+      it.onclick = async () => {
+        close();
+        if (!d.exists) { askHint(f, d.known ? `"${n}" 이 기록된 자리에 없습니다. 옮긴 곳에서 골라 주세요` : `"${n}" 파일을 골라 주세요`); return $("pick").click(); }
+        const fd = new FormData(); fd.append("work_id", wid); fd.append("name", n);
+        try { D = await call("POST", "/local/source/open", fd); render(); }
+        catch (e) { askHint(f, e.message); $("pick").click(); }
+      };
+      m.append(it);
+    });
+    if (files.length) m.append(el("div", "sep"));
+    const o = el("button", "other"); o.setAttribute("role", "menuitem");
+    o.append(icon('<path d="M12 5v14M5 12h14"/>'), el("span", "nm", "다른 Word 파일 고르기…"));
+    o.onclick = () => { close(); $("pick").click(); };
+    if (files.some(d => !d.exists)) m.append(o, el("div", "hint", "위치가 기록되지 않았거나 옮긴 문서는 직접 골라 주세요."));
+    else m.append(o);
+    f.append(b, m);
+    return f;
+  }
+  function fileWarn() {
+    const w = el("div", "fwarn");
+    const t = el("div");
+    const b = el("b", null, "이 과제 기록에 없는 문서입니다. ");
+    t.append(b, "이 과제의 기록과 비교해서 대부분 '출처 기록 없음' 으로 나올 수 있어요.");
+    if ((D.recorded_files || []).length) t.append(" 이 과제에서 연 문서: " + D.recorded_files.join(" · "));
+    w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>'), t);
+    return w;
+  }
+
+  // ── 그리기 ──
+  function render() {
+    const c = D.counts;
+    $("lg-doc").innerHTML = "";
+    [["copy", "sw", "var(--copy-d)"], ["edited", "sw", "var(--edit-d)"], ["viewed"], ["none", "sw", "#e4e4e7"]].forEach(([g, cls, col]) => {
+      const sp = el("span");
+      if (cls) { const i = el("i", cls); i.style.background = col; sp.append(i, GROUP[g]); }
+      else sp.append(el("span", "u", GROUP[g]));
+      sp.append(el("b", null, String(c[g]))); $("lg-doc").append(sp);
+    });
+    $("lg-ai").innerHTML = "";
+    [[c.questions, "질문"], [c.used, "결과물에 글이 들어간 답"], [c.ref, "참고만 한 답"]].forEach(([n, t]) => {
+      const sp = el("span", "stat"); sp.append(el("b", null, String(n)), t); $("lg-ai").append(sp);
+    });
+    $("b-next").textContent = c.confirm ? `다음: 연결 확인 ${c.confirm}` : "다음: 연결 확인";
+
+    const box = $("doc"); box.textContent = "";
+    box.append(fileRow());
+    if (!D.in_records) box.append(fileWarn());
+    if (D.title) box.append(el("h1", null, D.title));
+    D.paragraphs.forEach(p => {
+      const para = el("p", "para" + (p.head ? " head" : ""));
+      p.sents.forEach((k, i) => {
+        const x = D.sentences[k];
+        const s = el("span", "s " + x.group, x.text);
+        s.dataset.k = k; s.tabIndex = -1;
+        s.onclick = () => pick(k, false);
+        para.append(s);
+        if (SHORT[x.kind]) para.append(el("span", "tag", SHORT[x.kind]));
+        if (i < p.sents.length - 1) para.append(" ");
+      });
+      box.append(para);
+    });
+    qlist();
+    nav = D.sentences.filter(x => x.group !== "none").map(x => x.k);
+    cur = -1; $("pos").textContent = nav.length ? `– / ${nav.length}` : "0";
+    if (nav.length) pick(nav[0], true); else detail(null);
+  }
+  let nav = [];
+
+  function pick(k, scroll) {
+    document.querySelectorAll(".s.on").forEach(e => e.classList.remove("on"));
+    const s = document.querySelector(`.s[data-k="${k}"]`);
+    if (s) { s.classList.add("on"); if (scroll) s.scrollIntoView({ block: "center", behavior: "smooth" }); }
+    cur = k;
+    const i = nav.indexOf(k);
+    $("pos").textContent = nav.length ? `${i < 0 ? "–" : i + 1} / ${nav.length}` : "0";
+    detail(D.sentences[k]);
+  }
+  function step(d) {
+    if (!nav.length) return;
+    let i = nav.indexOf(cur);
+    if (i < 0) { i = nav.findIndex(k => k > cur); if (d < 0) i = (i < 0 ? nav.length : i) - 1; else if (i < 0) i = 0; i = Math.max(0, i); }
+    else i = Math.min(nav.length - 1, Math.max(0, i + d));
+    pick(nav[i], true);
+  }
+  $("b-up").onclick = () => step(-1);
+  $("b-down").onclick = () => step(1);
+  document.addEventListener("keydown", e => {
+    if (!D || e.target.closest("input,textarea")) return;
+    if (tab === "doc" && (e.key === "ArrowDown" || e.key === "ArrowUp")) { e.preventDefault(); step(e.key === "ArrowDown" ? 1 : -1); }
+    if (tab === "ai" && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      const vis = shownQs(); let i = vis.indexOf(qcur) + (e.key === "ArrowDown" ? 1 : -1);
+      if (vis.length) qpick(vis[Math.min(vis.length - 1, Math.max(0, i))], true);
+    }
+  });
+  $("b-labels").onclick = () => {
+    const on = $("doc").classList.toggle("labels");
+    $("b-labels").classList.toggle("on", on); $("b-labels").setAttribute("aria-pressed", on);
+  };
+
+  function pieces(box, parts, focus) {
+    // focus = 지금 고른 결과물 문장에 이어진 답 문장 번호들 → 그 부분만 진하게, 나머지 쓰인 곳은 옅게
+    let first = null;
+    parts.forEach(p => {
+      if (!p.g) return box.append(p.t);
+      const on = focus && focus.includes(p.i);
+      const sp = el("span", "g-" + p.g + (on ? " f" : ""), p.t);
+      if (on && !first) first = sp;
+      box.append(sp);
+    });
+    if (focus) box.classList.add("focus");
+    return first;
+  }
+  function into(box, sp) {      // 원문 상자 안에서 그 부분이 가운데 오게 (상자가 그려진 뒤)
+    if (!sp) return;
+    requestAnimationFrame(() => { box.scrollTop = Math.max(0, sp.offsetTop - box.clientHeight / 2 + sp.offsetHeight / 2); });
+  }
+  function head(det, dot, title, sub) {
+    const t = el("div", "ttl"); const i = el("i"); i.style.background = dot; t.append(i, title); det.append(t);
+    if (sub) det.append(el("div", "sub", sub));
+  }
+  function toolLine(q) { return [q.tool, q.model].filter(Boolean).join(" · "); }
+
+  // 문서 기준 — 문장 하나 자세히
+  function detail(x) {
+    const det = $("det"); det.textContent = "";
+    if (!x) { det.append(el("div", "placeholder", "왼쪽에서 문장을 누르면 어디서 왔는지 여기 보입니다")); return; }
+    const q = x.q != null ? D.questions[x.q] : null;
+    head(det, DOT[x.group], KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
+    if (q) { det.append(el("h5", null, "질문")); det.append(el("div", "txt", q.question || "질문 기록 없음")); }
+    det.append(el("h5", null, "결과물")); det.append(el("div", "box", x.text));
+    if (q && q.answer) {
+      det.append(el("h5", null, "AI 답 원문 · 칠한 곳이 결과물로 감"));
+      const a = el("div", "box ans"); const f = pieces(a, q.answer, x.sents); det.append(a); into(a, f);
+    } else if (x.kind === "web" && x.ai_text) {
+      det.append(el("h5", null, "붙여넣은 글")); det.append(el("div", "box ans", x.ai_text));
+    }
+    det.append(el("h5", null, "출처"));
+    const src = el("div", "src"); det.append(src);
+    const p = x.paste;
+    if (p) {
+      const from = p.domain || p.source || (q ? q.tool : "");
+      const b = el("b", null, from || "붙여넣기");
+      src.append(b, ` · ${hm(p.copied_at)} 복사 → ${hm(p.pasted_at)} ${p.where || "붙여넣음"}`);
+      if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
+    } else if (x.kind === "viewed" || x.kind === "exact" || x.kind === "similar") {
+      src.append(el("b", null, "붙여넣기 기록 없음"), x.kind === "viewed" ? " · 글자가 비슷해서 이은 것" : " · 글자가 같음");
+      det.append(el("div", "note", "맞는지는 다음 단계(연결 확인)에서 고릅니다."));
+    } else if (x.kind === "edited") {
+      src.append(el("b", null, "붙여넣은 기록 있음"));
+    } else if (x.kind === "noproc") {
+      src.append(el("b", null, x.proc && x.proc.how === "open" ? "문서를 처음 열었을 때 이미 있던 글" : "키 입력 없이 한꺼번에 들어온 글"),
+                 x.proc && x.proc.ts ? ` · ${md(x.proc.ts)} ${hm(x.proc.ts)}` : "");
+      det.append(el("div", "note", "이 PC 에서 타이핑·붙여넣기 기록 없이 문서에 나타난 글입니다. AI 라고 단정하지 않습니다 — 내역서에서 설명할 수 있어요."));
+    } else {
+      src.append("이어지는 AI 답이나 붙여넣기 기록이 없습니다.");
+      det.append(el("div", "note", "직접 썼다는 뜻은 아닙니다. 휴대폰 등 다른 기기에서 본 AI 는 기록되지 않습니다."));
+    }
+  }
+
+  // AI 답 기준 — 질문 목록
+  function shownQs() {
+    return D.questions.map((q, i) => i).filter(i => filt === "all" || (filt === "used") === (D.questions[i].uses.length > 0));
+  }
+  function qlist() {
+    const tools = {}; D.questions.forEach(q => tools[q.tool] = (tools[q.tool] || 0) + 1);
+    const days = [...new Set(D.questions.map(q => md(q.ts)).filter(Boolean))];
+    $("ql-meta").textContent = ["시간 순", days.join(" · "), Object.entries(tools).map(([t, n]) => `${t} ${n}`).join(" · ")].filter(Boolean).join(" · ");
+    const box = $("qlist"); box.textContent = "";
+    shownQs().forEach(i => {
+      const q = D.questions[i];
+      const r = el("div", "qrow" + (i === qcur ? " on" : "")); r.dataset.i = i; r.tabIndex = 0; r.setAttribute("role", "option");
+      r.onclick = () => qpick(i, false);
+      const m = el("div", "qm"); m.append(el("small", null, `질문 ${q.n} · ${q.tool}`), el("div", q.question ? "" : "none", q.question || "질문 기록 없음"));
+      const ch = el("div", "chips");
+      if (q.uses.length) {
+        [["copy", "가져온 그대로"], ["edited", "고침"], ["viewed", "보고 씀"]].forEach(([g, t]) => {
+          if (!q.groups[g]) return;
+          const c = el("span", "chip " + g);
+          if (g === "viewed") c.append(el("span", null, t), ` ${q.groups[g]}`); else c.textContent = `${t} ${q.groups[g]}`;
+          ch.append(c);
+        });
+        ch.append(el("span", "pp", "문단 " + (q.paras.length > 4 ? q.paras.slice(0, 3).join(" · ") + ` 외 ${q.paras.length - 3}` : q.paras.join(" · "))));
+      } else ch.append(el("span", "chip ref", q.answer ? "참고만" : "답 기록 없음"));
+      r.append(el("span", "tm", hm(q.ts)), el("span", "pt" + (q.uses.length ? "" : " ref")), m, ch);
+      box.append(r);
+    });
+    if (!box.children.length) box.append(el("div", "empty", filt === "ref" ? "참고만 한 답이 없습니다" : "기록된 질문이 없습니다"));
+  }
+  function qpick(i, scroll) {
+    qcur = i;
+    document.querySelectorAll(".qrow").forEach(r => r.classList.toggle("on", +r.dataset.i === i));
+    const r = document.querySelector(`.qrow[data-i="${i}"]`);
+    if (r && scroll) r.scrollIntoView({ block: "nearest" });
+    const q = D.questions[i], det = $("det"); det.textContent = "";
+    const used = q.uses.length > 0;
+    head(det, used ? "var(--ink)" : "#d4d4d8", `질문 ${q.n} · ${used ? "결과물에 글이 들어감" : "참고만"}`, [toolLine(q), md(q.ts) + " " + hm(q.ts)].filter(Boolean).join(" · "));
+    det.append(el("h5", null, "질문")); det.append(el("div", "txt", q.question || "질문 기록 없음"));
+    det.append(el("h5", null, used ? "AI 답 원문 · 칠한 곳이 결과물로 감" : "AI 답 원문"));
+    const a = el("div", "box ans"); if (q.answer) pieces(a, q.answer); else a.append("답 기록 없음"); det.append(a);
+    if (used) {
+      det.append(el("h5", null, `결과물로 간 곳 · ${q.uses.length}문장`));
+      const u = el("div", "uses");
+      const FEW = 5;
+      q.uses.forEach((k, j) => {
+        const x = D.sentences[k];
+        const b = el("button"); const sq = el("i", "sq");
+        sq.style.background = x.group === "viewed" ? "#fff" : x.group === "copy" ? "var(--copy)" : "var(--edit)";
+        sq.style.boxShadow = "inset 0 0 0 1px " + (x.group === "copy" ? "#f3b4b6" : "#b9c9f4");
+        b.append(sq, el("span", "ul", `문단 ${x.p + 1} · ${SHORT[x.kind]}`), el("span", "ut", x.text));
+        b.onclick = () => { show("doc"); pick(k, true); };
+        if (j >= FEW) b.hidden = true;
+        u.append(b);
+      });
+      if (q.uses.length > FEW) {
+        const m = el("button", "more", `외 ${q.uses.length - FEW}문장 더 보기`);
+        m.onclick = () => { u.querySelectorAll("button[hidden]").forEach(b => b.hidden = false); m.remove(); };
+        u.append(m);
+      }
+      det.append(u);
+      const g = el("button", "btn go", "문서 기준에서 보기"); g.onclick = () => { show("doc"); pick(q.uses[0], true); };
+      det.append(g);
+    } else {
+      det.append(el("div", "note", "이 답의 글은 결과물에 들어가지 않았습니다. 이해하거나 확인하는 데 쓴 것도 기록으로 남습니다."));
+    }
+  }
+  $("filt").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    filt = b.dataset.f;
+    [...$("filt").children].forEach(x => x.classList.toggle("on", x === b));
+    qlist();
+    const vis = shownQs(); if (vis.length) qpick(vis.includes(qcur) ? qcur : vis[0], false); else $("det").textContent = "";
+  };
+
+  // ── 탭 ──
+  function show(t) {
+    tab = t;
+    $("t-doc").classList.toggle("on", t === "doc"); $("t-ai").classList.toggle("on", t === "ai");
+    $("t-doc").setAttribute("aria-selected", t === "doc"); $("t-ai").setAttribute("aria-selected", t === "ai");
+    ["v-doc", "lg-doc", "r-doc"].forEach(id => $(id).hidden = t !== "doc");
+    ["v-ai", "lg-ai", "r-ai"].forEach(id => $(id).hidden = t !== "ai");
+    if (!D) return;
+    if (t === "ai") { const vis = shownQs(); if (vis.length) qpick(vis.includes(qcur) ? qcur : vis[0], false); else $("det").textContent = ""; }
+    else if (cur >= 0) pick(cur, false); else detail(null);
+  }
+  $("t-doc").onclick = () => show("doc");
+  $("t-ai").onclick = () => { if (D) show("ai"); };
+
+  loadWorks().then(() => { if (wid) load(null); else askFile(""); });
+})();
+</script>
+</body>
+</html>

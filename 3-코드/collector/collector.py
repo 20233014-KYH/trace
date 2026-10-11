@@ -459,7 +459,8 @@ class Collector:
                 with_text = self.capture.get("office", True)          # 문서 텍스트 — 결과물–AI 답 비교 재료 (PC 에만)
                 self._office = OfficeWatcher(self.sink.emit, lambda exe: bool(self._cur) and self._cur[0].lower() == exe.lower(),
                                              poll_sec=cfg.get("office", {}).get("poll_sec", 5),
-                                             emit_context=self._on_context if with_text else None)
+                                             emit_context=self._on_context if with_text else None,
+                                             emit_path=self._on_doc_path)
                 self._office.start()
                 print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트(PC 에만)' if with_text else '만'})")
             except Exception as e:
@@ -630,6 +631,12 @@ class Collector:
         with self._ai_lock, open(os.path.join(self.sink.data_dir, f"context-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             for it in items:
                 f.write(json.dumps({"session_id": self.session_id, **it}, ensure_ascii=False) + "\n")
+
+    def _on_doc_path(self, app, file, path):
+        """문서 위치 → context 파일에만 (출처 보기가 문서를 바로 열려고). 글 내용이 아니라서 capture.office 와 상관없이 남긴다.
+        서버·체인엔 안 감 (경로엔 윈도우 사용자 이름이 들어 있음). 멈춘 동안엔 _on_context 가 막는다"""
+        self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "office", "kind": "doc_path", "text": "",
+                           "meta": {"app": app, "file": file, "path": path}}])
 
     def _on_ai_msg(self, it):
         """AI 질문·답 원문 하나. ① 가린다 ② 가린 글로 해시 ③ 원문은 PC 의 ai-messages-날짜.jsonl
