@@ -21,6 +21,24 @@ def _분(초):
     return round(초 / 60, 1)
 
 
+def _멈춤(evs):
+    """잠깐 멈춤(10/10) — pause_start → pause_end 사이. [(시작, 끝)]. 끝이 없으면 세션 끝까지."""
+    out, 시작 = [], None
+    for e in evs:
+        if e["type"] == "pause_start" and 시작 is None:
+            시작 = e["ts"]
+        elif e["type"] == "pause_end" and 시작 is not None:
+            out.append((시작, e["ts"]))
+            시작 = None
+    if 시작 is not None and evs:
+        out.append((시작, evs[-1]["ts"]))
+    return out
+
+
+def _초(a, b):
+    return (datetime.fromisoformat(b) - datetime.fromisoformat(a)).total_seconds()
+
+
 def _자리비움_초(evs):
     """idle_start → 다음 idle_end (없으면 세션 끝) 사이. 기록기는 5분 무입력이면 idle_start 를 낸다."""
     초, 시작 = 0.0, None
@@ -43,9 +61,13 @@ def session_summary(sid, evs):
     t0, t1 = datetime.fromisoformat(evs[0]["ts"]), datetime.fromisoformat(evs[-1]["ts"])
     ai = [e for e in evs if e["type"] == "ai_msg"]
     링크 = [e for e in evs if e["type"] == "link_decision"]
+    멈춤 = _멈춤(evs)
+    멈춘초 = sum(_초(a, b) for a, b in 멈춤)
     return {
         "id": sid, "start": evs[0]["ts"], "end": evs[-1]["ts"],
-        "minutes": _분((t1 - t0).total_seconds()),
+        "minutes": _분((t1 - t0).total_seconds() - 멈춘초),     # 기록 시간 = 처음~끝 − 멈춘 시간
+        "pauses": [{"start": a, "end": b} for a, b in 멈춤],
+        "pause_minutes": _분(멈춘초),
         "idle_minutes": _분(_자리비움_초(evs)),
         "typed": st["typed"], "deleted": st["deleted"], "undo": st["undo"],
         "pastes": {"count": st["paste_count"], "chars": st["pasted"],
@@ -68,8 +90,12 @@ def session_summary(sid, evs):
 
 def work_summary(sessions):
     """sessions = [({"id", "sealed", "verified"}, 이벤트들), ...] → 과제 요약. 이벤트가 없는 세션은 건너뛴다."""
-    각 = []
+    각, 지운것 = [], []
     for 정보, evs in sessions:
+        if 정보.get("deleted_at"):                  # 학생이 지운 기록 — 숫자엔 안 넣고 "지운 기록 n개"로만 (10/10)
+            지운것.append({"started_at": 정보.get("started_at"), "ended_at": 정보.get("ended_at"),
+                          "deleted_at": 정보["deleted_at"]})
+            continue
         if not evs:
             continue
         s = session_summary(정보["id"], evs)
@@ -93,6 +119,9 @@ def work_summary(sessions):
         "first_at": 각[0]["start"] if 각 else None,
         "last_at": 각[-1]["end"] if 각 else None,
         "minutes": round(합("minutes"), 1),
+        "pause_minutes": round(합("pause_minutes"), 1),
+        "pauses": sum(len(s["pauses"]) for s in 각),
+        "deleted_sessions": 지운것,
         "idle_minutes": round(합("idle_minutes"), 1),
         "typed": 합("typed"), "deleted": 합("deleted"), "undo": 합("undo"),
         "pastes": {k: 합("pastes", k) for k in ("count", "chars", "from_ai_count", "from_ai_chars",

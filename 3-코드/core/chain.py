@@ -47,7 +47,7 @@ def summary(e: dict) -> str:
         return "세션 시작" + (f" · {e['mode']}" if e.get("mode") else "")
     if t == "session_end":
         return "세션 종료"
-    if t in ("idle_start", "idle_end"):
+    if t in ("idle_start", "idle_end", "pause_start", "pause_end"):   # 잠깐 멈춤(10/10)도 시각만 — 기존 종류의 요약은 그대로
         return t
     if t == "ai_msg":   # AI 질문·답 — 원문은 PC 에만, 체인엔 해시 전체 (제출 때 원문과 맞춰 봄 · docs/api.md 10-3)
         # history(이전 대화 · 받은 시각 모름)는 해석을 바꾸는 값이라 요약에 넣어 체인으로 보호한다 (PR #20 검토 ②)

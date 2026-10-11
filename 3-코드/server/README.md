@@ -166,6 +166,12 @@ TRACE_DB_URL=sqlite:///test.db TRACE_PORT=5050 python server/app.py   # ★ 시�
 TRACE_PORT=5050 python server/test_statements.py                       # 검사 35개
 ```
 
+## 지우기 · 옮기기 · 멈춤 (10/11)
+
+`DELETE /api/works/<id>` 과제 지우기 · `DELETE /api/sessions/<id>` 기록 지우기 · `PATCH /api/sessions/<id> {work_id}` 기록 옮기기.
+지우면 내용은 없애고 **지운 사실과 시각만** 남긴다 — 이미 낸 링크는 "학생이 10/12 에 지운 기록입니다", 기록기가 더 보내면 410.
+잠깐 멈춤은 체인 `pause_start`·`pause_end` (알약 ⏸) — 요약의 기록 시간에서 빠진다. 검사: `server/test_delete_move.py` (19개)
+
 ## 아직 안 만든 것
 
 | 계약 | 언제 |

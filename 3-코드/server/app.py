@@ -177,7 +177,7 @@ def me():
     if not g.user_id:
         return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
     with db.Session() as d:
-        works = d.query(db.Work).filter(db.Work.user_id == g.user_id).all()
+        works = d.query(db.Work).filter(db.Work.user_id == g.user_id, db.Work.deleted_at.is_(None)).all()
         답 = {"id": g.user_id, "name": g.user_name,
               "works": [{"id": w.id, "title": w.title, "ai_scope": w.ai_scope} for w in works]}
     return jsonify(답)
@@ -207,12 +207,10 @@ def create_work():
 @로그인_필요
 def list_works():
     with db.Session() as d:
-        q = d.query(db.Work)
-        if g.user_id:
-            q = q.filter(db.Work.user_id == g.user_id)
+        q = d.query(db.Work).filter(db.Work.user_id == g.user_id, db.Work.deleted_at.is_(None))
         목록 = []
         for w in q.all():
-            세션들 = d.query(db.Sess).filter(db.Sess.work_id == w.id).all()
+            세션들 = d.query(db.Sess).filter(db.Sess.work_id == w.id, db.Sess.deleted_at.is_(None)).all()
             마지막 = max((s.started_at for s in 세션들 if s.started_at), default=None)
             목록.append({"id": w.id, "title": w.title, "ai_scope": w.ai_scope,
                          "sessions": len(세션들), "last_at": 마지막})
@@ -224,10 +222,10 @@ def list_works():
 def get_work(wid):
     with db.Session() as d:
         w = d.get(db.Work, wid)
-        if not w or w.user_id != g.user_id:        # 주인 없는 과제(기록기가 로그인 없이 만든 것)도 남은 못 본다 (10/8)
+        if not w or w.user_id != g.user_id or w.deleted_at:   # 주인 없는 과제·지운 과제도 404 (10/8 · 10/10)
             return jsonify(error="not_found"), 404
         세션들 = []
-        for s in d.query(db.Sess).filter(db.Sess.work_id == wid).all():
+        for s in d.query(db.Sess).filter(db.Sess.work_id == wid, db.Sess.deleted_at.is_(None)).all():
             n = d.query(db.Event).filter(db.Event.session_id == s.id).count()
             세션들.append({"id": s.id, "start": s.started_at, "end": s.ended_at,
                            "dur": None, "events": n, "sealed": bool(s.sealed_at)})
@@ -244,7 +242,7 @@ def update_work(wid):
         return jsonify(error="bad_request", message="ai_scope 는 글자(메모)여야 합니다"), 400
     with db.Session() as d:
         w = d.get(db.Work, wid)
-        if not w or w.user_id != g.user_id:        # 주인 없는 과제(기록기가 로그인 없이 만든 것)도 남은 못 본다 (10/8)
+        if not w or w.user_id != g.user_id or w.deleted_at:
             return jsonify(error="not_found"), 404
         if "title" in b:
             w.title = b["title"] or "제목 없음"
@@ -252,6 +250,89 @@ def update_work(wid):
             w.ai_scope = b["ai_scope"]
         d.commit()
         답 = {"id": w.id, "title": w.title, "ai_scope": w.ai_scope}
+    return jsonify(답)
+
+
+# ─────────────────────────── 지우기 · 옮기기 (10/10 박상진 요청) ───────────────────────────
+#
+# ★ "확인값은 지우고, 지운 사실과 시각만 남긴다" ★
+#   이벤트(해시·창 이름)·원문·연결은 지운다. 과제·기록의 줄은 남겨 deleted_at 을 찍는다 — 그래야
+#   ① 이미 낸 PDF 의 QR 을 열면 404 대신 "학생이 10/12 에 지운 기록입니다" 를 보여 줄 수 있고
+#   ② 기록기가 지운 기록에 계속 보내도 되살아나지 않는다 (410).
+
+def _기록_비우기(d, sid):
+    """기록 하나의 내용(이벤트·배치·맥락·그 기록에서 온 내역서 원문)을 지운다. 줄은 남긴다."""
+    for 표 in (db.Event, db.Batch, db.Context):
+        d.query(표).filter(표.session_id == sid).delete(synchronize_session=False)
+    d.query(db.Message).filter(db.Message.session_id == sid).delete(synchronize_session=False)
+    d.query(db.Redaction).filter(db.Redaction.session_id == sid).delete(synchronize_session=False)
+    s = d.get(db.Sess, sid)
+    s.deleted_at = s.deleted_at or iso()
+    s.root = s.head = s.device_id = None
+
+
+def _내_기록(d, sid):
+    """로그인한 사람의 과제에 든 기록만 (지운 과제·지운 기록 제외)."""
+    s = d.get(db.Sess, sid)
+    if not s or s.deleted_at:
+        return None
+    return s if 내_과제(d, s.work_id) else None
+
+
+@app.delete("/api/works/<wid>")
+@로그인_필요
+def delete_work(wid):
+    """과제 지우기 — 기록·내역서 내용을 지우고, 과제 줄엔 지운 시각만. 공유 링크는 "지운 기록입니다" 로 바뀐다."""
+    with db.Session() as d:
+        w = 내_과제(d, wid)
+        if not w:
+            return jsonify(error="not_found"), 404
+        세션 = d.query(db.Sess).filter(db.Sess.work_id == wid).all()
+        for s in 세션:
+            _기록_비우기(d, s.id)
+        for st in d.query(db.Statement).filter(db.Statement.work_id == wid).all():
+            for 표 in (db.Message, db.Link, db.Redaction):
+                d.query(표).filter(표.statement_id == st.id).delete(synchronize_session=False)
+            st.sentence = st.ai_scope = None
+            st.problems, st.summary = None, None
+        w.title, w.ai_scope, w.deleted_at = None, None, iso()
+        d.commit()
+        답 = {"id": wid, "deleted_at": w.deleted_at, "sessions": len(세션)}
+    print(f"← 과제 지움 {wid}  기록 {답['sessions']}개")
+    return jsonify(답)
+
+
+@app.delete("/api/sessions/<sid>")
+@로그인_필요
+def delete_session(sid):
+    """기록 하나 지우기 — 내역서의 투명성 줄에 "지운 기록 n개" 로 남는다 (언제 기록이었는지 시각은 남음)."""
+    with db.Session() as d:
+        s = _내_기록(d, sid)
+        if not s:
+            return jsonify(error="not_found"), 404
+        _기록_비우기(d, sid)
+        d.commit()
+        답 = {"id": sid, "deleted_at": s.deleted_at}
+    print(f"← 기록 지움 {sid[:8]}…")
+    return jsonify(답)
+
+
+@app.patch("/api/sessions/<sid>")
+@로그인_필요
+def move_session(sid):
+    """기록 옮기기 — 다른 과제를 고른 채 켰을 때. 체인·확인값은 그대로 따라간다
+    (과제 id 는 체인 요약에 들어가지 않아서 "서버 기록과 일치" 가 유지된다 · core/chain.py)."""
+    b = request.get_json(force=True, silent=True) or {}
+    with db.Session() as d:
+        s = _내_기록(d, sid)
+        if not s:
+            return jsonify(error="not_found"), 404
+        if not isinstance(b.get("work_id"), str) or not 내_과제(d, b["work_id"]):
+            return jsonify(error="bad_request", message="옮길 곳은 내 과제여야 합니다"), 400
+        전, s.work_id = s.work_id, b["work_id"]
+        d.commit()
+        답 = {"id": sid, "work_id": s.work_id, "from": 전}
+    print(f"← 기록 옮김 {sid[:8]}…  {전} → {답['work_id']}")
     return jsonify(답)
 
 
@@ -268,7 +349,13 @@ def health():
 def create_session(work):
     b = request.get_json(force=True)
     with db.Session() as d:
-        if d.get(db.Work, work) is None:
+        w0 = d.get(db.Work, work)
+        if w0 is not None and w0.deleted_at:
+            return jsonify(error="gone", message="학생이 지운 과제입니다"), 410
+        s0 = d.get(db.Sess, b.get("id"))
+        if s0 is not None and s0.deleted_at:
+            return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
+        if w0 is None:
             # ★ 기록기는 과제를 따로 만들지 않고 config 의 work_id 로 바로 세션을 보낸다.
             #   SQLite 는 없는 과제를 가리키는 세션도 받아 주지만, PostgreSQL(Supabase) 은 외래키로 거절한다 (500).
             #   → 없으면 여기서 만들어 둔다. 토큰이 왔으면 그 사람 과제로. (10/4 Supabase 로 옮기다 발견)
@@ -294,6 +381,8 @@ def events(sid):
     받은시각 = now()
     with db.Session() as d:
         s = 세션_가져오기(d, sid, create=True)
+        if s.deleted_at:                      # 지운 기록에 기록기가 계속 보내면 받지 않는다 (지운 걸 되살리지 않게)
+            return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
         기존 = {r.id for r in d.query(db.Event.id).filter(db.Event.session_id == sid).all()}
         seq = s.chain_len or 0
         저장, 중복, 지연 = 0, 0, 0
@@ -351,6 +440,8 @@ def end(sid):
         s = 세션_가져오기(d, sid)
         if not s:
             return jsonify(error="not_found"), 404
+        if s.deleted_at:
+            return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
 
         rows, root = C.build(이벤트들(d, sid))       # ★ 전체를 처음부터 다시 계산
         verified = (root == b.get("root")) and bool(s.integrity_ok)
@@ -420,8 +511,11 @@ def context(sid):
         if len((it.get("text") or "").encode("utf-8")) > 항목_최대:
             return jsonify(error="too_large", message=f"한 항목은 64KB 까지입니다 ({it.get('kind')})"), 413
     with db.Session() as d:
-        if not 세션_가져오기(d, sid):
+        s = 세션_가져오기(d, sid)
+        if not s:
             return jsonify(error="not_found"), 404
+        if s.deleted_at:
+            return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
         for it in 항목들:
             d.add(db.Context(id=it.get("id") or str(uuid.uuid4()), session_id=sid,
                              ts=it.get("ts"), source=it.get("source"), kind=it.get("kind"),
@@ -462,7 +556,7 @@ def 내_과제(d, wid):
     """로그인한 사람의 과제만. 주인이 없는 과제(기록기가 로그인 없이 만든 것)도 거절한다 —
     과제 이름(W-1007 같은)은 추측할 수 있어서, 누구나 남의 기록으로 내역서를 만들 수 있게 되므로."""
     w = d.get(db.Work, wid)
-    if not w or w.user_id != g.user_id:
+    if not w or w.user_id != g.user_id or w.deleted_at:
         return None
     return w
 
@@ -477,8 +571,10 @@ def _쌍(x, 이름):
 def _과제_요약(d, wid):
     """과제의 세션 전부를 체인 이벤트로 센다 (core/summary.py). PC 가 보낸 숫자는 쓰지 않는다."""
     세션들 = d.query(db.Sess).filter(db.Sess.work_id == wid).all()
-    return work_summary([({"id": s.id, "sealed": bool(s.sealed_at),
-                           "verified": bool(s.verified) and bool(s.integrity_ok)}, 이벤트들(d, s.id))
+    return work_summary([({"id": s.id, "sealed": bool(s.sealed_at), "deleted_at": s.deleted_at,
+                           "started_at": s.started_at, "ended_at": s.ended_at,
+                           "verified": bool(s.verified) and bool(s.integrity_ok)},
+                          [] if s.deleted_at else 이벤트들(d, s.id))
                          for s in 세션들])
 
 
@@ -712,6 +808,8 @@ def _공유_내용(token):
             return None
         st = d.get(db.Statement, sh.statement_id)
         w, u = d.get(db.Work, st.work_id), d.get(db.User, st.user_id)
+        if w and w.deleted_at:
+            return {"deleted_at": w.deleted_at}             # 지운 과제 — 내용 없이 지운 시각만
         답 = _내역서_내용(d, st, 학생용=False)
         답["work"] = {"title": w.title if w else None}
         답["author"] = u.name if u else None            # 계정 이름 — Trace 가 신원을 확인하지는 않는다
@@ -725,6 +823,9 @@ def read_share(token):
     답 = _공유_내용(token)
     if 답 is None:
         return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
+    if "deleted_at" in 답 and len(답) == 1:
+        return jsonify(error="deleted", deleted_at=답["deleted_at"],
+                       message=f"학생이 {답['deleted_at'][5:10].replace('-', '/')} 에 지운 기록입니다"), 410
     return jsonify(답)
 
 
@@ -733,7 +834,7 @@ def share_pdf(token):
     """AI 활용 내역서 1장 PDF (기획서 10절). 학생이 과제와 함께 낸다. 안에 교수 확인 링크·QR 이 들어간다.
     링크를 아는 사람만 받는다 — 링크와 같은 열쇠. (server/statement_pdf.py)"""
     답 = _공유_내용(token)
-    if 답 is None:
+    if 답 is None or ("deleted_at" in 답 and len(답) == 1):
         return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
     from urllib.parse import quote
     import statement_pdf                                   # reportlab · 글꼴은 PDF 를 처음 만들 때만 읽는다
