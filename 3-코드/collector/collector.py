@@ -378,6 +378,7 @@ class Collector:
         self._last_hb = 0.0
         self._clip_hash = None
         self._clip_len = 0
+        self._clip_text = ""
         self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
         self._last_paste = None     # (time, len) 마지막 Ctrl+V — 저장 파일 diff 가 붙여넣은 자리 판정에 씀
         self._fdiff = None
@@ -534,6 +535,7 @@ class Collector:
                 self._copies[h] = src
                 self.sink.emit({"type": "copy", "len": self._clip_len, "hash": h,
                                 "app": src[0], "category": src[1]})
+                self._desktop_excerpt(src[0])
 
         if self._keys and now - self._last_keys_flush >= float(self.cfg["keys"].get("flush_sec", 10)):
             self._flush_keys()
@@ -542,6 +544,17 @@ class Collector:
             self._last_hb = now
             self.sink.emit({"type": "heartbeat"})
 
+    def _desktop_excerpt(self, app):
+        """데스크톱 AI 앱(ChatGPT 앱 · Claude 앱)에서 복사하면, 복사한 글을 '복사 발췌'로 PC 에 남긴다 (10/9).
+        웹 AI 는 확장이 같은 일을 한다 — 발췌 해시 = copy 해시 = paste 해시 고리로 붙여넣은 글이 AI 답과 이어진다.
+        이게 없으면 앱에서 복사한 글이 '다른 곳에서 붙여넣음'으로 잘못 갔다. 원문은 context 파일(PC)에만 · capture.ai_answer_excerpt 로 끔"""
+        from desktop_ai import APPS
+        exe = (app or "").lower()
+        if exe not in APPS or not self._clip_text or self.capture.get("ai_answer_excerpt", True) is False:
+            return
+        self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "desktop", "kind": "ai_answer_excerpt",
+                           "text": self._clip_text, "meta": {"tool": APPS[exe], "domain": exe}}])
+
     def _read_clip_hash(self):
         try:
             text = pyperclip.paste()
@@ -549,7 +562,7 @@ class Collector:
             return None
         if not text:
             return None
-        self._clip_len = len(text)
+        self._clip_len, self._clip_text = len(text), text
         return sha256_text(text)
 
     def _on_copy_key(self):

@@ -115,8 +115,8 @@ TEMPLATE = r"""<!doctype html>
 :root{--ink:#18191b;--sub:#5f6368;--faint:#9aa0a6;--line:#ececee;--bg:#f6f6f7;--paper:#fff;--well:#f6f6f7;
   --exact:#e5484d;--exact-t:#fdecec;--exact-s:#f9d3d4;--web:#e5484d;--web-s:#f9d3d4;
   --edited:#3e63dd;--edited-t:#eaf0fd;--edited-s:#d3defa;
-  --viewed:#8e4ec6;--viewed-t:#f4ecfb;--viewed-s:#e6d4f8;
-  --none:#5c9a1b;--none-t:#eff7e3;--none-s:#dcedc4}
+  --viewed:#3e63dd;--viewed-t:transparent;--viewed-s:#eaf0fd;
+  --none:#a1a1aa;--none-t:rgba(24,24,27,.03);--none-s:rgba(24,24,27,.07)}   /* 10/8 결정 C: 보라·연두 → 파랑 점선 밑줄 · 거의 안 보이는 회색 */
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.6 "Pretendard Variable","Pretendard","Malgun Gothic",system-ui,sans-serif;
   -webkit-font-smoothing:antialiased;letter-spacing:-.01em}
@@ -138,7 +138,7 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
 .s{border-radius:3px;padding:2px 1px;cursor:pointer;transition:background .12s;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .s.exact,.s.web,.s.noproc{background:var(--exact-t)}.s.exact:hover,.s.exact.sel,.s.web:hover,.s.web.sel,.s.noproc:hover,.s.noproc.sel{background:var(--exact-s)}
 .s.edited{background:var(--edited-t)}.s.edited:hover,.s.edited.sel{background:var(--edited-s)}
-.s.viewed{background:var(--viewed-t)}.s.viewed:hover,.s.viewed.sel{background:var(--viewed-s)}
+.s.viewed{background:var(--viewed-t);text-decoration:underline dashed var(--viewed);text-decoration-thickness:1.5px;text-underline-offset:5px}.s.viewed:hover,.s.viewed.sel{background:var(--viewed-s)}
 .s.none{background:var(--none-t)}.s.none:hover,.s.none.sel{background:var(--none-s)}
 .s:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 .tags .s::after{content:attr(data-l);font-size:10.5px;font-weight:600;margin-left:4px;vertical-align:1px}
@@ -167,8 +167,8 @@ main{max-width:1120px;margin:0 auto;padding:24px 16px 48px;display:grid;grid-tem
   <div class="legend">
     <span><i style="background:var(--exact)"></i>AI 답과 일치·유사 · 다른 곳에서 붙여넣음 · 쓴 과정 기록 없음 <em>__N_EXACT__</em></span>
     <span><i style="background:var(--edited)"></i>붙여넣고 고침 <em>__N_EDITED__</em></span>
-    <span><i style="background:var(--viewed)"></i>AI 답 보고 씀 <em>__N_VIEWED__</em></span>
-    <span><i style="background:var(--none)"></i>출처 기록 없음 <em>__N_NONE__</em></span>
+    <span><b style="font-weight:400;text-decoration:underline dashed var(--viewed);text-underline-offset:4px">밑줄</b>AI 답 보고 씀 <em>__N_VIEWED__</em></span>
+    <span><i style="background:rgba(24,24,27,.06);box-shadow:inset 0 0 0 1px #e4e4e7"></i>출처 기록 없음 <em>__N_NONE__</em></span>
   </div>
   <button class="toggle" id="tg" aria-pressed="false">글자로 표시</button>
 </div></header>
