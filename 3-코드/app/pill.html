@@ -5,17 +5,23 @@
    9/28 개정: Learn 의 질문칸·채팅 패널은 삭제. 알약 하나만 */
 html,body{margin:0;background:transparent;font-family:"Segoe UI","Malgun Gothic",sans-serif;font-size:12px;color:#1c1f24;overflow:hidden;user-select:none}
 #root{position:fixed;right:4px;bottom:4px;display:flex;flex-direction:column;align-items:flex-end}
-.pill{width:160px;box-sizing:border-box;display:flex;align-items:center;gap:7px;height:26px;padding:0 8px 0 9px;background:rgba(28,31,36,.92);color:#fff;border-radius:13px;font-size:11px;font-variant-numeric:tabular-nums;cursor:grab}
+.pill{width:180px;box-sizing:border-box;display:flex;align-items:center;gap:7px;height:26px;padding:0 8px 0 9px;background:rgba(28,31,36,.92);color:#fff;border-radius:13px;font-size:11px;font-variant-numeric:tabular-nums;cursor:grab}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex:none}
 .pill .t{font-weight:700}.pill .n{color:#bfc4cc;margin-left:auto}
 .pill .stop{width:14px;height:14px;border-radius:50%;border:1.5px solid #9ca3af;display:flex;align-items:center;justify-content:center;margin-left:2px;cursor:pointer;flex:none}
 .pill .stop i{width:6px;height:6px;background:#e5e7eb;border-radius:1px;display:block}
 .pill .stop:hover{border-color:#fff}
-.pill.mini{width:26px;padding:0;justify-content:center}.pill.mini .t,.pill.mini .n,.pill.mini .stop{display:none}
+.pill .pause{width:14px;height:14px;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer;flex:none}
+.pill .pause i{width:2.5px;height:8px;background:#e5e7eb;border-radius:1px;display:block}
+.pill .pause:hover i{background:#fff}
+.pill.paused .dot{background:#9ca3af}
+.pill.paused .pause{gap:0}.pill.paused .pause i{width:0;height:0;background:none;border-left:7px solid #e5e7eb;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;border-radius:0}
+.pill.paused .pause i+i{display:none}
+.pill.mini{width:26px;padding:0;justify-content:center}.pill.mini .t,.pill.mini .n,.pill.mini .stop,.pill.mini .pause{display:none}
 </style></head>
 <body>
 <div id="root">
-  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="n" id="n"></span><span class="stop" id="stop" title="작업 마치기"><i></i></span></div>
+  <div id="pill" class="pill pywebview-drag-region" title="Trace 기록 중 — 클릭: 작게 · 끌기: 옮기기"><span class="dot"></span><span class="t" id="t">00:00:00</span><span class="n" id="n"></span><span class="pause" id="pause" title="잠깐 멈춤 — 멈춘 동안은 기록하지 않습니다"><i></i><i></i></span><span class="stop" id="stop" title="작업 마치기"><i></i></span></div>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -24,7 +30,9 @@ let mini = false, first = true;
 async function tick() {
   try {
     const s = await pywebview.api.status();
-    $("t").textContent = s.recording ? s.elapsed : "기록 마무리 중…";
+    $("t").textContent = !s.recording ? "기록 마무리 중…" : s.paused ? "멈춤" : s.elapsed;
+    $("pill").classList.toggle("paused", !!s.paused);
+    $("pause").title = s.paused ? "다시 기록" : "잠깐 멈춤 — 멈춘 동안은 기록하지 않습니다";
     $("n").textContent = s.ai_count ? `${s.events}건 · AI ${s.ai_count}` : `${s.events}건`;
   } catch (e) { /* api 준비 전 */ }
 }
@@ -38,10 +46,11 @@ window.addEventListener("pywebviewready", async () => { await tick(); await layo
 let downAt = null;
 $("pill").addEventListener("mousedown", (e) => { downAt = [e.screenX, e.screenY]; });
 $("pill").addEventListener("mouseup", (e) => {
-  if (e.target.closest("#stop")) return;
+  if (e.target.closest("#stop") || e.target.closest("#pause")) return;
   if (downAt && Math.hypot(e.screenX - downAt[0], e.screenY - downAt[1]) < 4) { mini = !mini; layout(); }
   downAt = null;
 });
+$("pause").addEventListener("click", async () => { await pywebview.api.pause(); tick(); });
 $("stop").addEventListener("click", async () => { $("t").textContent = "기록 마무리 중…"; await pywebview.api.stop(); });
 </script>
 </body></html>

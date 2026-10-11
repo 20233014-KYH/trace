@@ -95,6 +95,7 @@ class Work(Base):
     title = Column(String(255))
     ai_scope = Column(Text)
     created_at = Column(DateTime)
+    deleted_at = Column(String(40))        # 학생이 지운 과제 — 지운 사실과 시각만 남는다 (10/10)
     sessions = relationship("Sess", back_populates="work")
 
 
@@ -125,6 +126,7 @@ class Sess(Base):
     last_heartbeat_at = Column(String(40))
     anchor_status = Column(String(16), default="none")
     anchor_submitted_at = Column(String(40))
+    deleted_at = Column(String(40))        # 학생이 지운 기록 — 이벤트는 지우고 시각만 남긴다. 기록기가 더 보내면 410
     work = relationship("Work", back_populates="sessions")
 
 
@@ -270,7 +272,9 @@ def _칸_추가():
     """
     from sqlalchemy import inspect, text
     for 표, 칸, 형 in (("works", "ai_scope", "TEXT"),           # 9/30
-                       ("statements", "summary", "JSON")):      # 10/8 — 내역서 표는 만든 날 바로 칸이 늘었다
+                       ("statements", "summary", "JSON"),       # 10/8 — 내역서 표는 만든 날 바로 칸이 늘었다
+                       ("works", "deleted_at", "VARCHAR(40)"),  # 10/10 지우기
+                       ("sessions", "deleted_at", "VARCHAR(40)")):
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:

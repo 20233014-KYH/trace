@@ -404,6 +404,20 @@ GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전�
 | `GET /share/{token}` | 그대로 |
 | `POST /works/{id}/import` (추가 과제 D) | **PC 에서 읽는다.** 대화 내보내기 파일은 원문 덩어리라 서버로 보내지 않는다 |
 
+### 10-5-1. 지우기 · 옮기기 · 잠깐 멈춤 (10/10 박상진 요청 · ✅ 10/11 구현)
+
+```
+DELETE /works/{id}        ← 과제 지우기 (로그인 · 내 과제). 이벤트·원문·연결·제목을 지우고 deleted_at 만 남긴다
+                             → 이미 낸 링크: GET /share/{token} = 410 {error:"deleted", deleted_at, message:"학생이 10/12 에 지운 기록입니다"}
+                             → 지운 과제로 기록기가 보내면 410
+DELETE /sessions/{id}     ← 기록 하나 지우기. 요약·내역서에 "지운 기록 n개"(시각만)로 남는다. 더 보내면 410
+PATCH  /sessions/{id}     ← 기록 옮기기 {work_id} — 내 과제끼리만. 과제 id 는 체인 요약에 없어서 "서버 기록과 일치" 그대로
+```
+
+**잠깐 멈춤** — 새 체인 이벤트 `pause_start` · `pause_end` (필드 없음 · `chain.summary` 는 idle 처럼 종류 이름만 — 기존 해시 그대로).
+기록기는 멈춘 동안 아무것도 남기지 않는다 (창·키·복사·AI 질문·답·문서 변화 · PC 파일에도). 알약 ⏸.
+요약: `minutes` = 처음~끝 − 멈춘 시간 · `pause_minutes` · `pauses`(횟수) · 세션별 `pauses:[{start,end}]` · `deleted_sessions:[{started_at, ended_at, deleted_at}]`
+
 ### 10-6. GPT 맥락 요약은 여기서 생긴다
 
 "과제의 이 부분을 만들 때 어느 AI 에 어떻게 묻고 어떤 답을 받아 이렇게 썼는가" — 이 요약은 **내역서 만들기로 확인된 질문·답·결과가 서버에 생긴 뒤에만** 만들 수 있다.

@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "collector"))
 from collector import Collector  # noqa: E402
 
 # 창 크기 — pill.html 의 레이아웃과 짝 (논리 px)
-SIZE = {"mini": (34, 34), "pill": (168, 34)}
+SIZE = {"mini": (34, 34), "pill": (188, 34)}
 MARGIN = 12
 
 
@@ -54,6 +54,10 @@ class Api:
             ww, wh = _work_area()
             self._win.move(ww - w - MARGIN, wh - h - MARGIN)
         return name
+
+    def pause(self):
+        """⏸ / ▶ — 잠깐 멈춤 · 다시 기록 (멈춘 동안은 아무것도 기록 안 함 · 체인엔 시작·끝 시각만)"""
+        return self._c.resume() if self._c.sink.paused else self._c.pause()
 
     def stop(self):
         """■ — 봉인하고 창을 닫는다"""

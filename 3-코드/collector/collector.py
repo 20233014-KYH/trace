@@ -286,6 +286,7 @@ class Sink:
         self._log_path = self._log_f = None
         self.head = C.GENESIS
         self.chain_len = 0
+        self.paused = False          # 잠깐 멈춤 — 켜져 있으면 pause_end · session_end 말고는 아무것도 남기지 않는다
 
     def _local_file(self):
         p = os.path.join(self.data_dir, f"events-{datetime.now(KST):%Y-%m-%d}.jsonl")
@@ -296,6 +297,8 @@ class Sink:
         return self._log_f
 
     def emit(self, ev: dict):
+        if self.paused and ev.get("type") not in ("pause_end", "session_end"):
+            return None
         with self._lock:
             self._seq += 1
             ev = {"id": f"evt_{self._seq:06d}", "session_id": self.session_id,
@@ -583,6 +586,7 @@ class Collector:
     def _status(self):
         return {"session_id": self.session_id, "work_id": self.work_id, "recording": not self._stop.is_set(),
                 "capture": self.capture, "learn_context": self.capture,   # learn_context = 옛 이름 (확장 0.3.0 이 읽음)
+                "paused": self.sink.paused,
                 "elapsed_sec": int(time.time() - self.started_at), "events": self.sink._seq, "ctx_count": self.ctx_count, "ai_count": self.ai_count}
 
     def _on_tab(self, body):
@@ -599,6 +603,8 @@ class Collector:
         · AI 질문·답 → _on_ai_msg (가림 → 해시 → ai-messages 파일 + 체인 ai_msg)
         · 그 밖(선택 텍스트·복사 발췌·문서 텍스트·바뀐 줄·커밋 메시지) → context-날짜.jsonl 에만.
           서버 /context 로는 보내지 않는다 (예전 Learn 은 보냈음). 제출 때 학생이 고른 것만 나간다"""
+        if self.sink.paused:
+            return
         ai = [it for it in items if it.get("kind") in self.AI_KINDS]
         for it in ai:
             self._on_ai_msg(it)
@@ -620,7 +626,7 @@ class Collector:
 
     def _on_ai_msg_locked(self, it):
         text = (it.get("text") or "").strip()
-        if not text:
+        if not text or self.sink.paused:     # 멈춘 동안의 AI 질문·답은 PC 파일에도 남기지 않는다
             return
         role = self.AI_KINDS[it["kind"]]
         text, n_masked = mask(text)
@@ -654,7 +660,34 @@ class Collector:
     def stop(self):
         self._stop.set()
 
+    # ── 잠깐 멈춤 (10/10 박상진 요청 · 알약 ⏸) ──
+    # 멈춘 동안은 아무것도 기록하지 않는다 — 창·키·복사·AI 질문·답·문서 변화 전부. 체인엔 멈춘 시작·끝 시각만 남긴다
+    # (pause_start · pause_end). 내역서·기록 목록에 "멈춤 21:10 – 21:24" 로 보인다.
+    def pause(self):
+        if self.sink.paused:
+            return False
+        self._flush_keys()
+        self.sink.emit({"type": "pause_start"})
+        self.sink.paused = True
+        print("        ⏸ 잠깐 멈춤 — 다시 누를 때까지 아무것도 기록하지 않습니다")
+        return True
+
+    def resume(self):
+        if not self.sink.paused:
+            return False
+        self.sink.paused = False
+        if self._keys:
+            self._keys.pop_counts()          # 멈춘 동안 센 키 횟수는 버린다
+        self._idle = False
+        self.sink.emit({"type": "pause_end"})
+        self._cur = None                     # 다음 틱에 지금 창을 다시 남긴다 (멈춘 동안 바뀌었을 수 있다)
+        print("        ▶ 다시 기록")
+        return True
+
     def _shutdown(self):
+        if self.sink.paused:                 # 멈춘 채로 끝내면 멈춤 끝을 먼저 남긴다
+            self.sink.paused = False
+            self.sink.emit({"type": "pause_end"})
         self._flush_keys()
         if self._keys:
             self._keys.stop()

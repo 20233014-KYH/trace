@@ -134,6 +134,8 @@ def derive(evs):
             if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": "doc", "text": "저장 · " + " · ".join(f"{k} {e[k]}" for k in ("chars", "words", "slides") if k in e)})
         elif t in ("idle_start", "idle_end"):
             if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": t, "text": "자리 비움 (5분 무입력)" if t == "idle_start" else "복귀"})
+        elif t in ("pause_start", "pause_end"):   # 잠깐 멈춤 (10/10) — 멈춘 동안은 기록이 없다
+            if fw: fw["items"].append({"ts": e["ts"][11:19], "kind": t, "text": "잠깐 멈춤" if t == "pause_start" else "다시 기록"})
     if cur:
         segments.append({"s": cur[2], "e": round((t1 - t0).total_seconds() / 60, 2), "cat": cur[0], "title": cur[1]})
     # 같은 분류가 연속이면 합치기 (제목이 달라도 같은 앱 안 이동은 한 구간). 3초 미만 스침은 앞 구간에 흡수

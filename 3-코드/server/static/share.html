@@ -320,9 +320,11 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
 
   if (!token) { fail("링크가 올바르지 않습니다", "받은 링크 전체를 다시 확인해 주세요."); return; }
   fetch(`/api/share/${encodeURIComponent(token)}`, { headers: { Accept: "application/json" } })
-    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(r => r.status === 410 ? r.json().then(d => Promise.reject({ deleted: d })) : r.ok ? r.json() : Promise.reject(r.status))
     .then(render)
-    .catch(code => code === 404
+    .catch(code => code && code.deleted     // 학생이 과제를 지웠다 — 내용은 없고 지운 사실과 시각만 (10/10)
+      ? fail(code.deleted.message || "학생이 지운 기록입니다", "학생이 이 과제의 기록을 지웠습니다. 내용은 남아 있지 않습니다.")
+      : code === 404
       ? fail("볼 수 없는 링크입니다", "링크가 끝났거나 학생이 공유를 멈췄습니다. 학생에게 새 링크를 요청해 주세요.")
       : fail("불러오지 못했습니다", "잠시 뒤 다시 열어 주세요. (서버가 잠들어 있으면 처음 열 때 1분쯤 걸립니다)"));
 })();
