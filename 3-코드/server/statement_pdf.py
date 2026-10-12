@@ -97,6 +97,18 @@ def _when(iso, date=True):
     return f"{iso[:10]} {iso[11:16]}" if date else iso[11:16]
 
 
+_요일 = "월화수목금토일"
+
+
+def _md(iso, 요일=False):
+    """2026-10-06T… → 10/6 (화) — 캔버스 날짜 꼴 (앞 0 없음)"""
+    if not iso or len(iso) < 10:
+        return ""
+    from datetime import date
+    y, m, dd = int(iso[:4]), int(iso[5:7]), int(iso[8:10])
+    return f"{m}/{dd}" + (f" ({_요일[date(y, m, dd).weekday()]})" if 요일 else "")
+
+
 def _mins(v):
     v = round(v or 0)
     return f"{v // 60}시간 {v % 60}분" if v >= 60 else f"{v}분"
@@ -139,13 +151,13 @@ def _막대(days, width):
     lo, hi = (lo // 60) * 60, min(24 * 60, -(-hi // 60) * 60)
     if hi <= lo:
         hi = lo + 60
-    row, left, right = 13, 56, 58
+    row, left, right = 13, 60, 58
     bw = width - left - right
     h = row * len(days) + 14
     dr = Drawing(width, h)
     for i, x in enumerate(days):
         y = h - 14 - (i + 1) * row + 3
-        dr.add(String(0, y + 1, f"{x['date'][5:7]}/{x['date'][8:10]}", fontName="PR", fontSize=7.4, fillColor=MUTED))
+        dr.add(String(0, y + 1, _md(x["date"], 요일=True), fontName="PR", fontSize=7.4, fillColor=MUTED))
         dr.add(Rect(left, y, bw, 7, fillColor=SOFT, strokeColor=None))
         for g in x["segments"]:
             a = left + bw * (max(분(g["start"]), lo) - lo) / (hi - lo)
@@ -207,7 +219,7 @@ def _칩(items):
     t = Table([cells[:-1]], colWidths=widths[:-1], hAlign="LEFT")
     t.setStyle(TableStyle(style))
     return t
-MAX_EX = 2            # 결과물에 들어간 것 — 보여 주는 문장 예
+MAX_EX = 3            # 결과물에 들어간 것 — 보여 주는 문장 예 (캔버스 ReportB3 는 셋)
 
 
 def render(d, url):
@@ -223,16 +235,20 @@ def render(d, url):
     out = []
 
     # ── 머리 ──
-    out.append(P("AI 활용 내역서 · Trace", "brand"))
-    out.append(P((d.get("work") or {}).get("title") or "제목 없는 과제", "title"))
-    sub = []
-    if d.get("author"):
-        sub.append(f"{d['author']} (계정 이름 · Trace가 신원을 확인하지 않음)")
+    sub = [d["author"]] if d.get("author") else []          # 계정 이름 — 신원 확인 안 함은 바닥 줄에
     if s.get("sessions"):
-        sub.append(f"{_when(s.get('first_at'))[5:10].replace('-', '/')} – {_when(s.get('last_at'))[5:10].replace('-', '/')}"
-                   f" · 기록 {s['sessions']}번 · {_mins(s.get('minutes'))}")
-    sub.append(f"만든 시각 {_when(d.get('created_at'))} · 내역서 번호 {str(d.get('id', ''))[:8]}")
-    out += [Spacer(1, 2), P("  ·  ".join(sub), "sub"), Spacer(1, 6)]
+        a, b = _md(s.get("first_at")), _md(s.get("last_at"))
+        sub.append(f"{a if a == b else f'{a} – {b}'} · 기록 {s['sessions']}번 · {_mins(s.get('minutes'))}")
+    # 한 표로 묶어 아래 칸들(같은 CW 표)과 왼쪽 끝을 맞춘다
+    머리 = Table([[P("AI 활용 내역서 · Trace", "brand"),
+                   P(f"만든 시각 {_when(d.get('created_at'))} · 내역서 번호 {str(d.get('id', ''))[:8]}", "meta")],
+                  [P((d.get("work") or {}).get("title") or "제목 없는 과제", "title"), ""],
+                  [P(" · ".join(sub), "sub"), ""]],
+                 colWidths=[CW * 0.5, CW * 0.5])
+    머리.setStyle(TableStyle([("VALIGN", (0, 0), (-1, 0), "BOTTOM"), ("SPAN", (0, 1), (1, 1)), ("SPAN", (0, 2), (1, 2)),
+                              ("TOPPADDING", (0, 2), (-1, 2), 2)] + [(k, (0, 0), (-1, -1), 0) for k in
+                              ("LEFTPADDING", "RIGHTPADDING", "BOTTOMPADDING")] + [("TOPPADDING", (0, 0), (-1, 1), 0)]))
+    out += [머리, Spacer(1, 6)]
 
     # ── 투명성 한 줄: 서버 일치 · 도구(모델) · 멈춤 · 가림 · 지운 기록 ──
     probs = d.get("problems") or []
@@ -243,9 +259,9 @@ def render(d, url):
     줄 = " &nbsp;·&nbsp; ".join([일치, escape(_도구(d)), escape(멈춤),
                                 f"가림 {d['redacted']}곳" if d.get("redacted") else "가림 없음",
                                 f"지운 기록 {지운}개" if 지운 else "지운 기록 없음"])
-    out += [PM(줄, "small"), HRFlowable(width="100%", thickness=1.2, color=INK, spaceBefore=6, spaceAfter=8)]
-    if d.get("ai_scope"):                                 # 교수 AI 규칙 — 학생이 넣었을 때만 (10/10)
-        out += [PM(f"<font color='#787774'>교수 AI 규칙</font> &nbsp; {escape(d['ai_scope'])}", "memo"), Spacer(1, 6)]
+    줄표 = Table([[PM(줄, "small")]], colWidths=[CW])       # 표로 감싸 머리와 왼쪽 끝을 맞춤
+    줄표.setStyle(TableStyle([(k, (0, 0), (-1, -1), 0) for k in ("LEFTPADDING", "RIGHTPADDING", "TOPPADDING", "BOTTOMPADDING")]))
+    out += [줄표, HRFlowable(width="100%", thickness=1.2, color=INK, spaceBefore=6, spaceAfter=8)]
 
     # ── 글을 쓴 과정 | 언제 작업했나 ──
     if s:
@@ -268,7 +284,8 @@ def render(d, url):
         out += [top, HRFlowable(width="100%", thickness=0.6, color=LINE, spaceBefore=6, spaceAfter=8)]
 
     # ── ① 어떻게 썼나 — 질문 쓰임새 칩 (PC 가 질문 글을 규칙으로 나눈 수) ──
-    답들 = {(l.get("answer") or {}).get("text") for l in links if l.get("answer")}
+    # 글이 들어간 답 = 일치·유사·붙여넣고 고침. "보고 씀"은 글이 들어간 게 아니라 보고 다시 쓴 것 (캔버스 ReportA3: 들어간 답 0 · 보고 씀 1)
+    답들 = {(l.get("answer") or {}).get("text") for l in links if l.get("answer") and l.get("kind") != "viewed"}
     쓰임 = len(답들)
     질문수, 답수 = ai.get("questions", 0), ai.get("answers", 0)
     도구별 = " · ".join(f"{TOOL.get(str(t).lower(), t)} {n}" for t, n in (ai.get("tools") or {}).items())
@@ -281,6 +298,9 @@ def render(d, url):
         body = [P(f"질문은 {질문수}번 했고, 그중 답 {쓰임}개의 글이 결과물에 들어갔습니다.", "memo")]
         if 도구별:
             body.append(P(f"도구별 질문 · {도구별}", "small"))
+    if d.get("ai_scope"):                                 # 교수 안내 — 학생이 넣었을 때만 (10/10 · 캔버스 ReportB3)
+        body = [PM(f"<font color='#787774'>교수 안내</font> &nbsp; {escape(d['ai_scope'])} &nbsp; "
+                   "<font color='#a3a29e' size='7'>학생이 넣었을 때만</font>", "small"), Spacer(1, 4)] + body
     out += _sec(1, "어떻게 썼나", f"AI 에 한 질문 {질문수} · 결과물에 글이 들어간 답 {쓰임} · 참고만 {max(답수 - 쓰임, 0)}", body)
 
     # ── ② 질문 흐름 — 학생이 고른 대표 질문 (시간 순 · 최대 3) ──
@@ -308,8 +328,10 @@ def render(d, url):
     else:
         n = sum(1 for f in flow[:MAX_Q] if f.get("used"))
         k = len(flow[:MAX_Q])
-        body.append(P(("세 질문" if k == 3 else f"질문 {k}개") + " 모두 답의 글이 결과물에 들어가지 않음" if n == 0
-                      else f"{k}개 중 {n}개는 답의 글이 결과물에 들어감", "small"))
+        몇 = "세" if k == 3 else ("두" if k == 2 else "")
+        body.append(P((f"{몇} 질문 모두" if 몇 else "이 질문은") + " 답의 글이 결과물에 들어가지 않음" if n == 0
+                      else (f"{몇} 답 모두" if 몇 else "이 답은") + " 결과물에 글이 들어감 — 아래 3" if n == k
+                      else f"{k}개 중 {n}개는 답의 글이 결과물에 들어감 — 아래 3", "small"))
     out += _sec(2, "질문 흐름", note, body)
 
     # ── ③ 결과물에 들어간 것 — 문장 수 (PC 출처 보기와 같은 묶음) ──
@@ -328,13 +350,19 @@ def render(d, url):
     # 예시 = 학생이 확인한 연결 중 긴 문장 (제목 같은 짧은 줄 · 개인 정보가 든 문장은 뺌) — 보고서 순서대로
     후보 = [l for l in links if len((l.get("result") or {}).get("text") or "") >= 20 and not _사적.search(l["result"]["text"])]
     고른 = sorted(sorted(후보, key=lambda l: -len(l["result"]["text"]))[:MAX_EX], key=후보.index)
-    예 = 고른
-    for l in 예:
-        kind, color = KIND.get(l.get("kind"), ("", "#787774"))
+    if len(고른) == 1:                                     # 한 문장 — 어느 질문의 답을 어떻게 (캔버스 ReportA3)
+        l = 고른[0]
+        q = (l.get("question") or {}).get("text")
+        번호 = next((i + 1 for i, f in enumerate(flow[:MAX_Q]) if q and f.get("text") == q), None)
         a = l.get("answer") or {}
-        도구 = TOOL.get(str(a.get("tool", "")).lower(), a.get("tool") or "AI")
-        body.append(PM(f"<font color='{color}'>●</font>&nbsp; {escape(_cut(l['result']['text'], 80))} "
-                       f"<font color='#787774'>— {escape(도구)} 답 · {escape(kind)} (학생 확인)</font>", "small"))
+        출처 = f"질문 {번호} 의 답" if 번호 else f"{TOOL.get(str(a.get('tool', '')).lower(), a.get('tool') or 'AI')} 답"
+        how = {"viewed": "을 보고 씀", "edited": "을 붙여넣고 고침"}.get(l.get("kind"), "과 같음")
+        body.append(PM(f"{escape(_cut(l['result']['text'], 90))} <font color='#787774'>— {escape(출처)}{how} (학생 확인)</font>", "small"))
+    elif 고른:                                            # 여러 문장 — 이어 쓰고 문단 범위 (캔버스 ReportB3)
+        문단 = sorted({(l["result"].get("location") or {}).get("paragraph") for l in 고른} - {None})
+        범위 = (f"문단 {문단[0]}" if len(문단) == 1 else f"문단 {문단[0]}~{문단[-1]}") + " · " if 문단 else ""
+        body.append(PM(escape("   ".join(_cut(l["result"]["text"], 70) for l in 고른))
+                       + f" <font color='#787774'>— {범위}나머지는 링크에서</font>", "small"))
     남은 = []
     if d.get("rejected"):
         남은.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
@@ -355,7 +383,8 @@ def render(d, url):
     out += _sec(4, "학생 설명", "", [qa])[:1]
 
     # ── QR 옆 두 줄 ──
-    link = Table([[_qr(url), [PM(f"<font name='PRB'>근거 보기</font> — 문장마다 출처 · 질문 전체 &nbsp;<font color='#337ea9'>{escape(url)}</font>", "cell"),
+    근거 = ("출처 보기와 " if d.get("source") else "") + f"질문 {ai.get('questions', 0)}개 전체"   # 캔버스: "출처 보기와 질문 18개 전체"
+    link = Table([[_qr(url), [PM(f"<font name='PRB'>근거 보기</font> — {escape(근거)} &nbsp;<font color='#337ea9'>{escape(url)}</font>", "cell"),
                              Spacer(1, 3),
                              P("작업 중 기록된 그대로이며 점수나 판정은 없습니다. 출처 기록 없음은 직접 썼다는 뜻이 아니고, "
                                "다른 기기에서 쓴 AI 는 기록되지 않습니다.", "small"),
@@ -370,7 +399,7 @@ def render(d, url):
         canvas.saveState()
         canvas.setFont("PR", 7)
         canvas.setFillColor(FAINT)
-        canvas.drawString(M, 22, "Trace · 원문은 학생 PC에 있고, 학생이 고른 것만 링크로 공유됩니다")
+        canvas.drawString(M, 22, "Trace · 원문은 학생 PC에 있고, 학생이 고른 것만 링크로 공유됩니다 · 작성자는 계정 이름 (Trace가 신원을 확인하지 않음)")
         canvas.drawRightString(W - M, 22, f"{_doc.page}쪽")
         canvas.restoreState()
 
