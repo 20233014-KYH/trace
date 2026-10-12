@@ -194,6 +194,22 @@ def main():
                           headers={"Authorization": "Bearer " + json.load(open(os.path.join(data, "auth.json")))["token"]}, timeout=30).json()
     검사("27 링크를 끊으면 보고서 전문을 지움 ★", latest.get("id") == st3["id"] and "source" not in latest, "살아 있는 링크가 없으면 서버에 안 둠")
 
+    # ⑰ 설정 파일 하나로 (10/13) — 로그인 화면에서 서버를 바꾸면 내 설정(~/trace-config.json)에 적힌다
+    from core import settings as SET
+    내설정 = os.path.join(data, "trace-config.json")                # 시험에선 진짜 홈 대신 임시 폴더
+    SET.USER = 내설정
+    검사("28 내 설정이 있으면 그걸 먼저", SET.config_path() == SET.REPO and (open(내설정, "w").write("{}") or True)
+         and SET.config_path() == 내설정, "")
+    os.remove(내설정)
+    r = c.post("/local/server", json={"to": "internet"}, headers=H).get_json()
+    저장 = json.load(open(내설정, encoding="utf-8"))
+    검사("29 인터넷 서버로 바꾸기 → 내 설정에 저장", r.get("server") == SET.INTERNET and 저장["server"] == SET.INTERNET
+         and 저장.get("capture") is not None, "저장소 기본 설정을 복사해서 server 만 바꿈")
+    s2 = c.get("/local/state", headers=H).get_json()
+    검사("30 서버를 바꾸면 로그인은 새로", s2.get("server_local") is False and s2.get("logged_in") is False,
+         "토큰은 서버마다 따로 (auth.json 의 server)")
+    ST.설정["server"] = BASE                                         # 뒤 검사를 위해 되돌림
+
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 

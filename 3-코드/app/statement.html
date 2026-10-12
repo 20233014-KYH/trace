@@ -27,6 +27,7 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:26px 0 4px}
 .lede{color:var(--muted);margin:0 0 8px;font-size:14px}
 section{padding:22px 0;border-bottom:1px solid var(--line)}
 section[hidden]{display:none!important}
+[hidden]{display:none!important}
 h2{font-size:16px;font-weight:600;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
 h2 .no{font-size:12px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
 h2 small{font-weight:400;color:var(--muted);font-size:13px}
@@ -87,6 +88,10 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
   <section id="s-login" hidden>
     <h2><span class="no">로그인</span>Trace 계정</h2>
     <div class="note" id="srv-note"></div>
+    <div class="note warn" id="srv-warn" hidden>지금은 <b>이 PC 의 시험 서버</b>에 로그인합니다. 인터넷 서버에서 만든 계정은 여기 없어서
+      "비밀번호가 맞지 않습니다"로 나옵니다. 계정과 기록은 서버마다 따로 저장돼요.
+      <div class="row" style="margin-top:8px"><button class="btn dark" id="b-internet" type="button">인터넷 서버로 바꾸기</button></div></div>
+    <div class="row" id="srv-local-row" hidden style="margin-top:6px"><button class="btn" id="b-local" type="button" style="font-size:12.5px">개발용: 이 PC 의 시험 서버로</button></div>
     <label for="email">이메일</label><input id="email" type="email" autocomplete="username">
     <label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password">
     <div id="signup-extra" hidden><label for="nm">이름 (내역서 작성자에 나옴)</label><input id="nm" type="text" autocomplete="name" style="max-width:420px;width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px"></div>
@@ -182,6 +187,8 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     const s = await call("GET", "/local/state");
     $("who").textContent = "";
     $("srv-note").textContent = `로그인할 서버: ${s.server_name} · 설정 파일 ${s.config || ""}`;
+    $("srv-warn").hidden = !s.server_local;
+    $("srv-local-row").hidden = !!s.server_local;
     if (!s.logged_in) { show("s-login"); ["s-work", "s-file", "s-links", "s-make", "s-done"].forEach(x => show(x, false)); return; }
     show("s-login", false);
     $("who").append(el("span", null, `${s.user.name} · ${s.server.replace(/^https?:\/\//, "").replace(/\/api$/, "")}`));
@@ -190,6 +197,15 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     $("who").append(out);
     await loadWorks();
   }
+  async function switchServer(to) {
+    try {
+      const r = await call("POST", "/local/server", { to });
+      msg("m-login", `${r.server_name} 로 바꿨습니다 · ${r.config} 에 저장 — 기록기도 다음에 켤 때 이 서버를 씁니다 (켜져 있으면 다시 켜 주세요)`, "ok");
+      boot();
+    } catch (e) { msg("m-login", e.message, "err"); }
+  }
+  $("b-internet").onclick = () => switchServer("internet");
+  $("b-local").onclick = () => switchServer("local");
   let signupMode = false;
   $("b-mode").onclick = () => {
     signupMode = !signupMode;
