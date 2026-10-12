@@ -217,7 +217,8 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
     const s = d.summary || {}, ai = s.ai || {}, links = d.links || [], src = d.source || null;
     document.title = `${d.work && d.work.title ? d.work.title + " · " : ""}AI 활용 내역서 · Trace`;
     app.textContent = "";
-    document.getElementById("ro").textContent = d.expires_at ? `읽기 전용 · ${md(d.expires_at, true)} 까지 열림` : "읽기 전용";
+    document.getElementById("ro").textContent = token === "demo" ? "견본 화면 · 지어낸 기록입니다"   // /demo — 화면 확인 · 인터뷰용
+      : d.expires_at ? `읽기 전용 · ${md(d.expires_at, true)} 까지 열림` : "읽기 전용";
     document.getElementById("foot").hidden = false;
     const wrap = el("div", "wrap");
 

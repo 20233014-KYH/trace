@@ -1,0 +1,583 @@
+{
+ "id": "demo",
+ "created_at": "2026-10-12T17:52:25.169335+09:00",
+ "ai_scope": null,
+ "sentence": null,
+ "explain_use": "정규화와 인덱스 개념을 ChatGPT 에 물었고, 우리 동아리 DB 에 적용한 문단은 직접 썼습니다.",
+ "explain_check": "교재 4장 정의와 비교했고, 인덱스 단점은 실습으로 확인했습니다.",
+ "tools": [
+  {
+   "tool": "ChatGPT",
+   "models": []
+  }
+ ],
+ "verified": true,
+ "problems": [],
+ "summary": {
+  "sessions": 1,
+  "sealed_verified": 1,
+  "first_at": "2026-10-05T15:10:00+09:00",
+  "last_at": "2026-10-05T15:40:00+09:00",
+  "minutes": 30.0,
+  "pause_minutes": 0.0,
+  "pause_seconds": 0,
+  "pauses": 0,
+  "deleted_sessions": [],
+  "idle_minutes": 0.0,
+  "typed": 1842,
+  "deleted": 316,
+  "undo": 9,
+  "pastes": {
+   "count": 4,
+   "chars": 284,
+   "from_ai_count": 0,
+   "from_ai_chars": 0,
+   "from_other_count": 3,
+   "from_other_chars": 213,
+   "unknown_count": 1,
+   "unknown_chars": 71
+  },
+  "days": [
+   {
+    "date": "2026-10-05",
+    "minutes": 30.0,
+    "segments": [
+     {
+      "start": "2026-10-05T15:10:00+09:00",
+      "end": "2026-10-05T15:40:00+09:00"
+     }
+    ]
+   }
+  ],
+  "ai": {
+   "questions": 2,
+   "answers": 2,
+   "history": 0,
+   "tools": {
+    "ChatGPT": 2
+   },
+   "window_minutes": 0,
+   "window_visits": 0
+  },
+  "links": {
+   "confirmed": 0,
+   "rejected": 0
+  },
+  "by_session": [
+   {
+    "start": "2026-10-05T15:10:00+09:00",
+    "end": "2026-10-05T15:40:00+09:00",
+    "minutes": 30.0,
+    "pauses": [],
+    "segments": [
+     {
+      "start": "2026-10-05T15:10:00+09:00",
+      "end": "2026-10-05T15:40:00+09:00"
+     }
+    ],
+    "pause_minutes": 0.0,
+    "pause_seconds": 0,
+    "idle_minutes": 0.0,
+    "typed": 1842,
+    "deleted": 316,
+    "undo": 9,
+    "pastes": {
+     "count": 4,
+     "chars": 284,
+     "from_ai_count": 0,
+     "from_ai_chars": 0,
+     "from_other_count": 3,
+     "from_other_chars": 213,
+     "unknown_count": 1,
+     "unknown_chars": 71
+    },
+    "ai": {
+     "questions": 2,
+     "answers": 2,
+     "history": 0,
+     "tools": {
+      "ChatGPT": 2
+     },
+     "window_minutes": 0,
+     "window_visits": 0
+    },
+    "links": {
+     "confirmed": 0,
+     "rejected": 0
+    },
+    "events": 17,
+    "sealed": true,
+    "verified": true,
+    "process": {
+     "ai": [
+      "2026-10-05T15:11:00+09:00",
+      "2026-10-05T15:11:20+09:00",
+      "2026-10-05T15:13:00+09:00",
+      "2026-10-05T15:13:20+09:00"
+     ],
+     "paste": [
+      "2026-10-05T15:21:26+09:00",
+      "2026-10-05T15:23:26+09:00",
+      "2026-10-05T15:23:53+09:00",
+      "2026-10-05T15:24:46+09:00"
+     ],
+     "typing": [],
+     "windows": []
+    }
+   }
+  ]
+ },
+ "links": [
+  {
+   "question": {
+    "text": "정규화가 뭔지, 1NF·2NF·3NF 가 각각 뭘 뜻하는지 한 문단으로 설명해 줘",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:00+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "answer": {
+    "text": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다. 1NF(제1정규형)는 각 속성에 하나의 값만 저장하여 모든 값이 원자값을 갖도록 하는 것이다. 2NF(제2정규형)는 1NF를 만족하면서 기본키의 일부에만 종속되는 부분 함수적 종속을 제거하는 것이다. 3NF(제3정규형)는 2NF를 만족하면서 기본키가 아닌 속성 간의 종속인 이행적 함수 종속을 제거하는 것이다.",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:20+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "result": {
+    "text": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다.",
+    "location": {
+     "file": "정규화_보고서.docx",
+     "paragraph": 2
+    }
+   },
+   "kind": "exact",
+   "origin": "auto"
+  },
+  {
+   "question": {
+    "text": "정규화가 뭔지, 1NF·2NF·3NF 가 각각 뭘 뜻하는지 한 문단으로 설명해 줘",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:00+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "answer": {
+    "text": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다. 1NF(제1정규형)는 각 속성에 하나의 값만 저장하여 모든 값이 원자값을 갖도록 하는 것이다. 2NF(제2정규형)는 1NF를 만족하면서 기본키의 일부에만 종속되는 부분 함수적 종속을 제거하는 것이다. 3NF(제3정규형)는 2NF를 만족하면서 기본키가 아닌 속성 간의 종속인 이행적 함수 종속을 제거하는 것이다.",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:20+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "result": {
+    "text": "1NF는 한 칸에 값을 하나만 넣어서 모든 값이 원자값을 갖게 만드는 첫 단계이다.",
+    "location": {
+     "file": "정규화_보고서.docx",
+     "paragraph": 2
+    }
+   },
+   "kind": "edited",
+   "origin": "auto"
+  },
+  {
+   "question": {
+    "text": "정규화가 뭔지, 1NF·2NF·3NF 가 각각 뭘 뜻하는지 한 문단으로 설명해 줘",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:00+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "answer": {
+    "text": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다. 1NF(제1정규형)는 각 속성에 하나의 값만 저장하여 모든 값이 원자값을 갖도록 하는 것이다. 2NF(제2정규형)는 1NF를 만족하면서 기본키의 일부에만 종속되는 부분 함수적 종속을 제거하는 것이다. 3NF(제3정규형)는 2NF를 만족하면서 기본키가 아닌 속성 간의 종속인 이행적 함수 종속을 제거하는 것이다.",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:11:20+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "result": {
+    "text": "2NF는 기본키의 일부분에만 의존하는 컬럼을 다른 테이블로 떼어 내는 것이고, 3NF는 키가 아닌 컬럼끼리 서로 기대는 이행 종속까지 없애는 것이다.",
+    "location": {
+     "file": "정규화_보고서.docx",
+     "paragraph": 3
+    }
+   },
+   "kind": "viewed",
+   "origin": "suggested"
+  },
+  {
+   "question": {
+    "text": "인덱스가 뭐고 장단점이 뭐야? 동아리 회원 DB 에 걸면 뭐가 좋아져?",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:13:00+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "answer": {
+    "text": "데이터베이스 인덱스는 테이블의 데이터를 빠르게 검색할 수 있도록 특정 컬럼의 값을 별도로 정리해 저장하는 자료구조이다. 인덱스를 사용하면 전체 테이블을 순차적으로 검색하지 않고 필요한 데이터를 빠르게 찾을 수 있어 조회 성능이 향상된다. 특히 데이터가 많은 테이블에서 WHERE, JOIN, ORDER BY 등에 사용되는 컬럼에 인덱스를 설정하면 효과적이다. 하지만 인덱스를 추가하면 별도의 저장 공간이 필요하고, INSERT, UPDATE, DELETE가 발생할 때 인덱스도 함께 수정해야 하므로 쓰기 성능이 저하될 수 있다. 따라서 자주 조회되는 컬럼을 중심으로 적절하게 인덱스를 생성하는 것이 중요하다.",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:13:20+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "result": {
+    "text": "인덱스를 사용하면 전체 테이블을 순차적으로 검색하지 않고 필요한 데이터를 빠르게 찾을 수 있어 조회 성능이 향상된다.",
+    "location": {
+     "file": "정규화_보고서.docx",
+     "paragraph": 4
+    }
+   },
+   "kind": "exact",
+   "origin": "suggested"
+  },
+  {
+   "question": {
+    "text": "인덱스가 뭐고 장단점이 뭐야? 동아리 회원 DB 에 걸면 뭐가 좋아져?",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:13:00+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "answer": {
+    "text": "데이터베이스 인덱스는 테이블의 데이터를 빠르게 검색할 수 있도록 특정 컬럼의 값을 별도로 정리해 저장하는 자료구조이다. 인덱스를 사용하면 전체 테이블을 순차적으로 검색하지 않고 필요한 데이터를 빠르게 찾을 수 있어 조회 성능이 향상된다. 특히 데이터가 많은 테이블에서 WHERE, JOIN, ORDER BY 등에 사용되는 컬럼에 인덱스를 설정하면 효과적이다. 하지만 인덱스를 추가하면 별도의 저장 공간이 필요하고, INSERT, UPDATE, DELETE가 발생할 때 인덱스도 함께 수정해야 하므로 쓰기 성능이 저하될 수 있다. 따라서 자주 조회되는 컬럼을 중심으로 적절하게 인덱스를 생성하는 것이 중요하다.",
+    "tool": "ChatGPT",
+    "model": null,
+    "ts": "2026-10-05T15:13:20+09:00",
+    "history": false,
+    "ok": true,
+    "masked": []
+   },
+   "result": {
+    "text": "다만 인덱스를 만들면 저장 공간이 더 들고, INSERT, UPDATE, DELETE 때마다 인덱스도 같이 고쳐야 해서 쓰기가 느려진다.",
+    "location": {
+     "file": "정규화_보고서.docx",
+     "paragraph": 4
+    }
+   },
+   "kind": "edited",
+   "origin": "auto"
+  }
+ ],
+ "result_counts": {
+  "total": 8,
+  "ai": 2,
+  "other": 0,
+  "edited": 1,
+  "viewed": 2,
+  "none": 3
+ },
+ "usage_counts": {
+  "learn": 2,
+  "fix": 0,
+  "write": 0
+ },
+ "flow": [
+  {
+   "text": "정규화가 뭔지, 1NF·2NF·3NF 가 각각 뭘 뜻하는지 한 문단으로 설명해 줘",
+   "tool": "ChatGPT",
+   "usage": "learn",
+   "used": true,
+   "ok": true,
+   "masked": []
+  },
+  {
+   "text": "인덱스가 뭐고 장단점이 뭐야? 동아리 회원 DB 에 걸면 뭐가 좋아져?",
+   "tool": "ChatGPT",
+   "usage": "learn",
+   "used": true,
+   "ok": true,
+   "masked": []
+  }
+ ],
+ "rejected": 0,
+ "unsure": 1,
+ "redacted": 0,
+ "show_process": true,
+ "source": {
+  "file": "정규화_보고서.docx",
+  "title": "데이터베이스 과제 2 — 정규화와 인덱스",
+  "paragraphs": [
+   {
+    "head": false,
+    "sents": [
+     0
+    ]
+   },
+   {
+    "head": false,
+    "sents": [
+     1,
+     2
+    ]
+   },
+   {
+    "head": false,
+    "sents": [
+     3
+    ]
+   },
+   {
+    "head": false,
+    "sents": [
+     4,
+     5,
+     6
+    ]
+   },
+   {
+    "head": false,
+    "sents": [
+     7
+    ]
+   }
+  ],
+  "sentences": [
+   {
+    "k": 0,
+    "p": 0,
+    "text": "이번 과제에서는 데이터베이스 설계 시간에 배운 정규화와 인덱스를 정리하고, 우리 동아리 회원 관리 DB에 직접 적용해 보았다.",
+    "kind": "none",
+    "group": "none"
+   },
+   {
+    "k": 1,
+    "p": 1,
+    "text": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다.",
+    "kind": "exact",
+    "group": "copy",
+    "q": 0,
+    "sents": [
+     0
+    ],
+    "paste": {
+     "copied_at": "2026-10-05T15:22:13+09:00",
+     "pasted_at": "2026-10-05T15:23:26+09:00",
+     "where": "문단 3",
+     "domain": "chatgpt.com",
+     "source": "",
+     "category": ""
+    }
+   },
+   {
+    "k": 2,
+    "p": 1,
+    "text": "1NF는 한 칸에 값을 하나만 넣어서 모든 값이 원자값을 갖게 만드는 첫 단계이다.",
+    "kind": "edited",
+    "group": "edited",
+    "q": 0,
+    "sents": [
+     1
+    ],
+    "paste": {
+     "copied_at": "2026-10-05T15:23:48+09:00",
+     "pasted_at": "2026-10-05T15:23:53+09:00",
+     "where": "문단 3",
+     "domain": "chatgpt.com",
+     "source": "",
+     "category": ""
+    }
+   },
+   {
+    "k": 3,
+    "p": 2,
+    "text": "2NF는 기본키의 일부분에만 의존하는 컬럼을 다른 테이블로 떼어 내는 것이고, 3NF는 키가 아닌 컬럼끼리 서로 기대는 이행 종속까지 없애는 것이다.",
+    "kind": "viewed",
+    "group": "viewed",
+    "q": 0,
+    "sents": [
+     2,
+     3
+    ]
+   },
+   {
+    "k": 4,
+    "p": 3,
+    "text": "인덱스를 사용하면 전체 테이블을 순차적으로 검색하지 않고 필요한 데이터를 빠르게 찾을 수 있어 조회 성능이 향상된다.",
+    "kind": "exact",
+    "group": "copy",
+    "q": 1,
+    "sents": [
+     1
+    ]
+   },
+   {
+    "k": 5,
+    "p": 3,
+    "text": "그래서 데이터가 많은 테이블에서 WHERE나 JOIN 조건에 자주 쓰이는 컬럼에 인덱스를 두면 효과가 크다.",
+    "kind": "viewed",
+    "group": "viewed",
+    "q": 1,
+    "sents": [
+     2
+    ],
+    "unsure": true
+   },
+   {
+    "k": 6,
+    "p": 3,
+    "text": "다만 인덱스를 만들면 저장 공간이 더 들고, INSERT, UPDATE, DELETE 때마다 인덱스도 같이 고쳐야 해서 쓰기가 느려진다.",
+    "kind": "edited",
+    "group": "edited",
+    "q": 1,
+    "sents": [
+     3
+    ],
+    "paste": {
+     "copied_at": "2026-10-05T15:24:40+09:00",
+     "pasted_at": "2026-10-05T15:24:46+09:00",
+     "where": "문단 5",
+     "domain": "chatgpt.com",
+     "source": "",
+     "category": ""
+    }
+   },
+   {
+    "k": 7,
+    "p": 4,
+    "text": "우리 동아리 DB에서는 회원을 이름으로 찾는 일이 가장 많아서, 이름 컬럼에만 인덱스를 걸고 나머지는 그대로 두었다.",
+    "kind": "none",
+    "group": "none"
+   }
+  ],
+  "questions": [
+   {
+    "n": 1,
+    "tool": "ChatGPT",
+    "model": "",
+    "ts": "2026-10-05T15:11:00+09:00",
+    "question": "정규화가 뭔지, 1NF·2NF·3NF 가 각각 뭘 뜻하는지 한 문단으로 설명해 줘",
+    "hidden": false,
+    "question_hash": "sha256:b02f182a524433552234125f83d48677f78b96018d5b19cbbcec2a0994d67b7f",
+    "answer": [
+     {
+      "t": "데이터베이스 정규화는 데이터의 중복을 줄이고 데이터의 일관성과 무결성을 높이기 위해 테이블을 구조적으로 나누는 과정이다.",
+      "g": "copy",
+      "i": 0
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "1NF(제1정규형)는 각 속성에 하나의 값만 저장하여 모든 값이 원자값을 갖도록 하는 것이다.",
+      "g": "edited",
+      "i": 1
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "2NF(제2정규형)는 1NF를 만족하면서 기본키의 일부에만 종속되는 부분 함수적 종속을 제거하는 것이다.",
+      "g": "viewed",
+      "i": 2
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "3NF(제3정규형)는 2NF를 만족하면서 기본키가 아닌 속성 간의 종속인 이행적 함수 종속을 제거하는 것이다.",
+      "g": "viewed",
+      "i": 3
+     }
+    ],
+    "answer_hash": "sha256:95cde2214605d54eb0de884a0f3333f288bd234dd2575de246aa6973ced3ec79",
+    "uses": [
+     1,
+     2,
+     3
+    ],
+    "paras": [
+     2,
+     3
+    ],
+    "question_ok": true,
+    "answer_ok": true
+   },
+   {
+    "n": 2,
+    "tool": "ChatGPT",
+    "model": "",
+    "ts": "2026-10-05T15:13:00+09:00",
+    "question": "인덱스가 뭐고 장단점이 뭐야? 동아리 회원 DB 에 걸면 뭐가 좋아져?",
+    "hidden": false,
+    "question_hash": "sha256:806685a4e6106d86c7fdcbbaa1a21b795ad9fefb16b855a1fe369d4899a5c7c3",
+    "answer": [
+     {
+      "t": "데이터베이스 인덱스는 테이블의 데이터를 빠르게 검색할 수 있도록 특정 컬럼의 값을 별도로 정리해 저장하는 자료구조이다.",
+      "g": null,
+      "i": 0
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "인덱스를 사용하면 전체 테이블을 순차적으로 검색하지 않고 필요한 데이터를 빠르게 찾을 수 있어 조회 성능이 향상된다.",
+      "g": "copy",
+      "i": 1
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "특히 데이터가 많은 테이블에서 WHERE, JOIN, ORDER BY 등에 사용되는 컬럼에 인덱스를 설정하면 효과적이다.",
+      "g": "viewed",
+      "i": 2
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "하지만 인덱스를 추가하면 별도의 저장 공간이 필요하고, INSERT, UPDATE, DELETE가 발생할 때 인덱스도 함께 수정해야 하므로 쓰기 성능이 저하될 수 있다.",
+      "g": "edited",
+      "i": 3
+     },
+     {
+      "t": " ",
+      "g": null
+     },
+     {
+      "t": "따라서 자주 조회되는 컬럼을 중심으로 적절하게 인덱스를 생성하는 것이 중요하다.",
+      "g": null,
+      "i": 4
+     }
+    ],
+    "answer_hash": "sha256:4e2b2d397c485d29a87197f8f66d31b48b7860e9a75d360869d20b6c218b334e",
+    "uses": [
+     4,
+     5,
+     6
+    ],
+    "paras": [
+     4
+    ],
+    "question_ok": true,
+    "answer_ok": true
+   }
+  ]
+ },
+ "work": {
+  "title": "데이터베이스 정규화 보고서"
+ },
+ "author": "김학생"
+}
