@@ -17,6 +17,7 @@ import functools
 import os
 import secrets
 import sys
+import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -113,6 +114,13 @@ def 로그인_필요(f):
     return 감싼것
 
 
+def _비번_맞음(해시, 비번):
+    """한글 비밀번호는 맥·윈도우·브라우저에 따라 자모가 갈라져(NFD) 올 수 있다 → 그대로 · 붙인 꼴(NFC) · 가른 꼴(NFD) 다 본다.
+    (10/12 이전 가입은 받은 그대로 저장됐으므로 그대로도 본다)"""
+    return any(check_password_hash(해시, p) for p in
+               dict.fromkeys((비번, unicodedata.normalize("NFC", 비번), unicodedata.normalize("NFD", 비번))))
+
+
 @app.post("/api/auth/signup")
 def signup():
     """★ 계약에 없던 것을 더했다 (9/21, A).
@@ -127,7 +135,7 @@ def signup():
         if d.query(db.User).filter(db.User.email == 이메일).first():
             return jsonify(error="conflict", message="이미 있는 이메일입니다"), 409
         u = db.User(id=str(uuid.uuid4()), email=이메일,
-                    password_hash=generate_password_hash(비번),   # ★ 원문은 저장하지 않는다
+                    password_hash=generate_password_hash(unicodedata.normalize("NFC", 비번)),   # ★ 원문은 저장하지 않는다
                     name=b.get("name") or 이메일.split("@")[0],
                     created_at=now().replace(tzinfo=None))
         d.add(u)
@@ -145,7 +153,9 @@ def login():
         u = d.query(db.User).filter(db.User.email == 이메일).first()
         # ★ "이메일이 없다" 와 "비번이 틀렸다" 를 구분해서 알려주지 않는다.
         #   구분해 주면 어떤 이메일이 가입되어 있는지 알아낼 수 있다.
-        if not u or not check_password_hash(u.password_hash, b.get("password") or ""):
+        #   대신 서버 기록(Render Logs)에만 남긴다 — 다른 서버에 로그인한 것인지 찾으려고 (10/12)
+        if not u or not _비번_맞음(u.password_hash, b.get("password") or ""):
+            print(f"← login 실패 {이메일} ({'이 서버에 없는 계정' if not u else '비밀번호 다름'})")
             return jsonify(error="unauthorized", message="이메일 또는 비밀번호가 맞지 않습니다"), 401
         t = db.Token(token=secrets.token_urlsafe(32), user_id=u.id,
                      device=(b.get("device") or "")[:100],

@@ -90,7 +90,12 @@ def main():
     H = {"Host": f"127.0.0.1:{ST.PORT}", "X-Trace-Local": "1"}
 
     r = c.post("/local/login", json={"email": email, "password": "틀린비번00000"}, headers=H)
-    검사("1 틀린 비번은 거절", r.status_code == 401, f"HTTP {r.status_code}")
+    검사("1 틀린 비번은 거절 · 어느 서버인지 알려 줌", r.status_code == 401 and "로그인할 서버" in r.get_json().get("message", ""),
+         r.get_json().get("message", "")[:60])
+    새 = f"new{uuid.uuid4().hex[:8]}@test.kr"
+    r = c.post("/local/signup", json={"email": 새, "password": "가입비번12345", "name": "새학생"}, headers=H)
+    검사("1b 화면에서 가입 → 바로 로그인", r.status_code == 200 and r.get_json().get("user", {}).get("name") == "새학생", f"HTTP {r.status_code}")
+    c.post("/local/logout", headers=H)
     r = c.post("/local/login", json={"email": email, "password": pw}, headers=H)
     검사("2 로그인 → 토큰은 data/auth.json", r.status_code == 200 and os.path.exists(os.path.join(data, "auth.json")), "")
     r = c.post("/local/logout", headers={"Host": H["Host"]})

@@ -86,9 +86,12 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
 
   <section id="s-login" hidden>
     <h2><span class="no">로그인</span>Trace 계정</h2>
+    <div class="note" id="srv-note"></div>
     <label for="email">이메일</label><input id="email" type="email" autocomplete="username">
     <label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password">
-    <div class="row"><button class="btn dark" id="b-login" type="button">로그인</button></div>
+    <div id="signup-extra" hidden><label for="nm">이름 (내역서 작성자에 나옴)</label><input id="nm" type="text" autocomplete="name" style="max-width:420px;width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px"></div>
+    <div class="row"><button class="btn dark" id="b-login" type="button">로그인</button>
+      <button class="btn" id="b-mode" type="button">처음이면 가입하기</button></div>
     <div class="msg" id="m-login" role="status"></div>
   </section>
 
@@ -178,6 +181,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
   async function boot() {
     const s = await call("GET", "/local/state");
     $("who").textContent = "";
+    $("srv-note").textContent = `로그인할 서버: ${s.server_name} · 설정 파일 ${s.config || ""}`;
     if (!s.logged_in) { show("s-login"); ["s-work", "s-file", "s-links", "s-make", "s-done"].forEach(x => show(x, false)); return; }
     show("s-login", false);
     $("who").append(el("span", null, `${s.user.name} · ${s.server.replace(/^https?:\/\//, "").replace(/\/api$/, "")}`));
@@ -186,10 +190,22 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     $("who").append(out);
     await loadWorks();
   }
+  let signupMode = false;
+  $("b-mode").onclick = () => {
+    signupMode = !signupMode;
+    $("signup-extra").hidden = !signupMode;
+    $("b-login").textContent = signupMode ? "가입하고 로그인" : "로그인";
+    $("b-mode").textContent = signupMode ? "이미 계정이 있어요" : "처음이면 가입하기";
+    $("pw").autocomplete = signupMode ? "new-password" : "current-password";
+    msg("m-login", signupMode ? "비밀번호는 8자 이상" : "");
+  };
   $("b-login").onclick = async () => {
     msg("m-login", "서버에 묻는 중… (무료 서버는 처음 깨울 때 1분쯤 걸립니다)");
-    try { await call("POST", "/local/login", { email: $("email").value, password: $("pw").value }); msg("m-login", ""); boot(); }
-    catch (e) { msg("m-login", e.message, "err"); }
+    try {
+      await call("POST", signupMode ? "/local/signup" : "/local/login",
+                 { email: $("email").value.trim(), password: $("pw").value, name: $("nm").value });
+      msg("m-login", ""); boot();
+    } catch (e) { msg("m-login", e.message, "err"); }
   };
   $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("b-login").click(); });
 
