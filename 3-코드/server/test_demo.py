@@ -36,6 +36,12 @@ def main():
         import reportlab  # noqa: F401
         r = c.get("/api/share/demo/pdf")
         검사("6 견본 PDF", r.status_code == 200 and r.data[:4] == b"%PDF", r.status_code)
+        import statement_pdf
+        본래, 받은 = statement_pdf.render, []
+        statement_pdf.render = lambda d, url: 받은.append(url) or 본래(d, url)
+        c.get("/api/share/demo/pdf", base_url="http://127.0.0.1:5000")
+        statement_pdf.render = 본래
+        검사("6-1 로컬 서버 견본도 QR 은 인터넷 서버", 받은 == ["https://trace-server-8aa0.onrender.com/s/demo"], 받은)
     except ImportError:
         print("  - 6 reportlab 없음 — PDF 는 건너뜀")
     검사("7 다른 토큰은 여전히 404", c.get("/api/share/demo2").status_code == 404, "")

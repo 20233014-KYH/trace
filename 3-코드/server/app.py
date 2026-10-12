@@ -33,6 +33,7 @@ from core import chain as C          # noqa: E402  ★ 해시는 여기서만
 from core.derive import derive       # noqa: E402
 from core.texthash import sha256_text  # noqa: E402  ★ 원문 해시도 여기서만 (내역서 검증)
 from core.summary import work_summary  # noqa: E402  요약 숫자 — 체인 이벤트로 센다
+from core.settings import INTERNET     # noqa: E402  견본 QR 이 가리키는 곳
 import db                            # noqa: E402
 
 KST = timezone(timedelta(hours=9))
@@ -968,6 +969,7 @@ def revoke_share(token):
 
 
 견본_토큰 = "demo"     # 실제 토큰은 32자 무작위라 겹치지 않는다
+인터넷_주소 = INTERNET.removesuffix("/api")
 
 
 def _견본_내용():
@@ -1025,7 +1027,9 @@ def share_pdf(token):
         return jsonify(error="not_found", message="없거나 끝난 링크입니다"), 404
     from urllib.parse import quote
     import statement_pdf                                   # reportlab · 글꼴은 PDF 를 처음 만들 때만 읽는다
-    pdf = statement_pdf.render(답, request.host_url.rstrip("/") + f"/s/{token}")
+    # 견본 PDF 의 QR 은 늘 인터넷 서버로 — 로컬 서버(127.0.0.1)에서 만든 견본도 휴대폰으로 찍으면 열린다
+    주소 = 인터넷_주소 if token == 견본_토큰 else request.host_url.rstrip("/")
+    pdf = statement_pdf.render(답, 주소 + f"/s/{token}")
     이름 = f"AI활용내역서_{(답['work']['title'] or '과제')[:40]}.pdf"
     return app.response_class(pdf, mimetype="application/pdf", headers={
         "Content-Disposition": f"inline; filename=\"statement.pdf\"; filename*=UTF-8''{quote(이름)}"})
