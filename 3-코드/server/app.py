@@ -569,6 +569,32 @@ def _쌍(x, 이름):
     return str(x["session_id"]), str(x["event_id"])
 
 
+가림_종류 = {"API키", "비밀키", "주민번호", "카드번호", "이메일", "전화번호", "직접"}
+
+
+def _가릴자리(m):
+    """학생이 원문 일부만 가린 메시지 — mask: [[시작, 끝, 종류], …] (collector/mask.py 와 같은 종류).
+    서버는 원문 전체로 체인 해시를 맞춰 본 뒤, 가린 글(⟦가림:종류⟧)만 저장한다. 원문은 남기지 않는다 (10/12)"""
+    칸 = m.get("mask")
+    if 칸 is None:
+        return []
+    n = len(m.get("text") or "")
+    if not (isinstance(칸, list) and len(칸) <= 50 and all(
+            isinstance(x, list) and len(x) == 3 and all(isinstance(v, int) and not isinstance(v, bool) for v in x[:2])
+            and 0 <= x[0] < x[1] <= n and x[2] in 가림_종류 for x in 칸)):
+        raise ValueError("mask 는 [[시작, 끝, 종류], …] 여야 합니다 (종류: " + " · ".join(sorted(가림_종류)) + ")")
+    칸 = sorted(칸)
+    if any(a[1] > b[0] for a, b in zip(칸, 칸[1:])):
+        raise ValueError("mask 의 자리가 겹칩니다")
+    return 칸
+
+
+def _가린글(text, 칸):
+    for s, e, 종류 in sorted(칸, reverse=True):
+        text = text[:s] + f"⟦가림:{종류}⟧" + text[e:]
+    return text
+
+
 def _과제_요약(d, wid):
     """과제의 세션 전부를 체인 이벤트로 센다 (core/summary.py). PC 가 보낸 숫자는 쓰지 않는다."""
     세션들 = d.query(db.Sess).filter(db.Sess.work_id == wid).all()
@@ -614,6 +640,26 @@ def create_statement(wid):
     for 이름 in ("explain_use", "explain_check"):              # v3 질문 두 칸 — 각 150자
         if len((b.get(이름) or "").strip()) > 설명_최대:
             return jsonify(error="bad_request", message=f"{이름} 는 {설명_최대}자까지입니다"), 400
+    # v3 ③ 결과물에 들어간 것 — 보고서 문장 수 묶음 (PC 가 셈 · 선택 · 10/12). 숫자만 받는다 (문장 원문은 안 받음)
+    결과수 = b.get("result_counts")
+    if 결과수 is not None and not (isinstance(결과수, dict) and set(결과수) <= {"total", "ai", "other", "edited", "viewed", "none"}
+                                and all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100000 for v in 결과수.values())):
+        return jsonify(error="bad_request", message="result_counts 는 {total · ai · other · edited · viewed · none: 0 이상 정수} 여야 합니다"), 400
+    # v3 ① 질문 쓰임새 수 (숫자만) · ② 학생이 고른 대표 질문 (최대 3 · 원문은 messages 에 같이 와야 함)
+    쓰임키 = {"understand", "find", "review", "write", "polish"}
+    쓰임수 = b.get("usage_counts")
+    if 쓰임수 is not None and not (isinstance(쓰임수, dict) and set(쓰임수) <= 쓰임키
+                                and all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100000 for v in 쓰임수.values())):
+        return jsonify(error="bad_request", message="usage_counts 는 {understand · find · review · write · polish: 0 이상 정수} 여야 합니다"), 400
+    흐름 = b.get("flow")
+    if 흐름 is not None:
+        원문쌍 = {(m.get("session_id"), m.get("event_id")) for m in 메시지들 if isinstance(m, dict)}
+        if not (isinstance(흐름, list) and len(흐름) <= 3 and all(
+                isinstance(f, dict) and (f.get("session_id"), f.get("event_id")) in 원문쌍
+                and f.get("usage") in 쓰임키 | {None} and isinstance(f.get("used", False), bool) for f in 흐름)):
+            return jsonify(error="bad_request", message="flow 는 최대 3개 · 질문 원문을 messages 에 같이 보내야 합니다"), 400
+        흐름 = [{"session_id": f["session_id"], "event_id": f["event_id"], "usage": f.get("usage"), "used": bool(f.get("used"))}
+               for f in 흐름]
     try:
         가림쌍 = {_쌍(r, "redactions") for r in 가림들}
         for m in 메시지들:
@@ -624,6 +670,7 @@ def create_statement(wid):
                 return jsonify(error="too_large", message="원문 한 개는 256KB 까지입니다"), 413
             if _쌍(m, "messages") in 가림쌍:
                 raise ValueError("가린 이벤트의 원문을 함께 보낼 수 없습니다")
+            _가릴자리(m)                                          # 일부 가림 모양 확인 (틀리면 ValueError)
         for l in 연결들:
             if not isinstance(l, dict) or l.get("decision") not in ("confirmed", "rejected"):
                 raise ValueError("links 마다 decision 이 confirmed 또는 rejected 여야 합니다")
@@ -648,7 +695,8 @@ def create_statement(wid):
                           ai_scope=(b.get("ai_scope") or "").strip() or None, sentence=b.get("sentence"),
                           explain_use=(b.get("explain_use") or "").strip() or None,
                           explain_check=(b.get("explain_check") or "").strip() or None, unsure=보류 or None,
-                          source=출처, show_process=bool(b.get("show_process")))
+                          source=출처, show_process=bool(b.get("show_process")),
+                          result_counts=결과수, usage_counts=쓰임수, flow=흐름)
         d.add(st)
         d.flush()
 
@@ -672,11 +720,13 @@ def create_statement(wid):
             else:
                 원문해시[해시] = p.get("role")
                 쓰인세션.add(sid)
+            칸 = _가릴자리(m)                                      # 일부 가림 — 원문으로 확인했으니 가린 글만 남긴다
             d.add(db.Message(statement_id=st.id, session_id=sid, event_id=eid,
                              tool=p.get("tool") if e else m.get("tool"), role=p.get("role") if e else m.get("role"),
-                             ts=e.ts if e else m.get("ts"), text=m["text"], hash=해시,
+                             ts=e.ts if e else m.get("ts"), text=_가린글(m["text"], 칸), hash=해시,
                              history=bool(p.get("history")), match=왜 is None,
-                             model=str(m.get("model") or "")[:64] or None))
+                             model=str(m.get("model") or "")[:64] or None,
+                             masked=sorted({x[2] for x in 칸}) or None))
 
         # ② 연결 — "맞다"는 위에서 확인된 답을 가리켜야 한다. "아니다"는 원문을 받지 않는다
         for l in 연결들:
@@ -758,7 +808,7 @@ def _내역서_내용(d, st, 학생용):
         m = 해시로.get(h) if h else None
         # history = 이전 대화라 ts 는 '본 시각'이지 '받은 시각'이 아니다 → 화면이 그렇게 써야 한다
         return {"text": m.text, "tool": m.tool, "model": m.model, "ts": m.ts, "history": bool(m.history),
-                "ok": bool(m.match)} if m else None
+                "ok": bool(m.match), "masked": m.masked or []} if m else None
 
     맞다 = [{"question": 글(l.question_hash), "answer": 글(l.answer_hash),
              "result": {"text": l.result_text, "location": l.location},
@@ -775,6 +825,11 @@ def _내역서_내용(d, st, 학생용):
            "explain_use": st.explain_use, "explain_check": st.explain_check,
            "tools": [{"tool": t, "models": sorted(ms)} for t, ms in 도구.items()],
            "verified": bool(st.verified), "problems": st.problems or [], "summary": st.summary, "links": 맞다,
+           "result_counts": st.result_counts, "usage_counts": st.usage_counts,
+           # v3 ② 학생이 고른 대표 질문 — 원문 · 도구는 체인과 맞춰 본 메시지에서 (ok = 기록 당시 글과 같음)
+           "flow": None if st.flow is None else [
+               {"text": m.text, "tool": m.tool, "usage": f.get("usage"), "used": bool(f.get("used")), "ok": bool(m.match), "masked": m.masked or []}
+               for f in st.flow for m in 메시지 if (m.session_id, m.event_id) == (f["session_id"], f["event_id"])],
            "rejected": sum(l.decision == "rejected" for l in 연결), "unsure": st.unsure or 0, "redacted": len(가림),
            "show_process": bool(st.show_process)}
     if st.source:

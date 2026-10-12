@@ -110,18 +110,27 @@ def link_sentence(sentence: str, cands):
 def latest_messages(records):
     """ai-messages 기록 → 생성 도중 잘린 답을 뺀 것 (이슈 #26-4).
     · 기록기가 "replaces"(이 글이 대체한 앞 글의 해시)를 남겼으면 그 앞 글을 뺀다
-    · 예전 기록(replaces 없음)도: 같은 도구·턴·역할에서 뒤 글이 앞 글을 그대로 품고 더 길면 앞 글을 뺀다"""
+    · 예전 기록(replaces 없음)도: 같은 도구·턴·역할에서 뒤 글이 앞 글을 그대로 품으면 앞 글을 뺀다
+      — 눈에 안 보이는 글자(\\u200b 등)·띄어쓰기·빈 줄 차이는 무시한다. ChatGPT 앱은 답을 다 쓴 뒤
+        문단 끝에 \\u200b 와 빈 줄만 더 넣어서, 같은 답이 두 번 남아 문장이 앞 답에 붙는 일이 있었다 (10/12 실제 시험)"""
     gone = {r["replaces"] for r in records if r.get("replaces")}
+    키 = lambda r: (r.get("session_id"), r.get("tool"), r.get("turn"), r.get("role"))     # 같은 기록 안에서만
     out = []
     for i, r in enumerate(records):
         if r.get("hash") in gone:
             continue
-        t = r.get("text", "")
-        if any(o is not r and (o.get("tool"), o.get("turn"), o.get("role")) == (r.get("tool"), r.get("turn"), r.get("role"))
-               and len(o.get("text", "")) > len(t) and o.get("text", "").startswith(t) for o in records[i + 1:]):
+        t = _보이는_글(r.get("text", ""))
+        if any(키(o) == 키(r) and _보이는_글(o.get("text", "")).startswith(t) for o in records[i + 1:]):
             continue
         out.append(r)
     return out
+
+
+_안보임 = re.compile(r"[​-‏⁠﻿]")
+
+
+def _보이는_글(s):
+    return " ".join(_안보임.sub("", s).split())
 
 
 def _sha256(s: str) -> str:

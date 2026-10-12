@@ -102,6 +102,11 @@ def test_partial_answer():
     check("④ 연결·내역서: 잘린 답은 빼고 완성본·다시 생성한 답만", kept == [full, "다시 생성한 전혀 다른 답입니다."], str([k[:10] for k in kept]))
     old = [{k: v for k, v in r.items() if k != "replaces"} for r in recs]          # replaces 가 없는 예전 기록
     check("④ 예전 기록(replaces 없음)도 앞 글을 품은 더 긴 답이 있으면 잘린 답을 뺌", [r["text"] for r in M.latest_messages(old)] == kept)
+    # 10/12 실제 시험: ChatGPT 앱이 다 쓴 뒤 문단 끝에 ​ 와 빈 줄만 더 넣음 → 같은 답이 둘로 남아 문장이 앞 답에 붙음
+    앞 = {"session_id": "S1", "tool": "ChatGPT 앱", "turn": 2, "role": "answer", "text": "첫 문단입니다.\n둘째 문단입니다."}
+    뒤 = {**앞, "text": "첫 문단입니다.​\n\n둘째 문단입니다.​"}
+    남 = {**앞, "session_id": "S2"}                                              # 다른 기록의 같은 턴 번호는 따로
+    check("④ 눈에 안 보이는 글자 · 빈 줄만 다른 답은 하나로 (뒤 글을 남김)", M.latest_messages([앞, 뒤, 남]) == [뒤, 남])
 
 
 if __name__ == "__main__":

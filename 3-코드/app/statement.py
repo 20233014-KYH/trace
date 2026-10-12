@@ -302,7 +302,7 @@ def share():
     return jsonify(답), 코드
 
 
-# ─────────────── 출처 보기 · 연결 확인 (캔버스 4 · 5-1 · 박상진 · app/source.py · app/confirm.py) — 같은 기록 읽기를 쓴다 ───────────────
+# ─────────────── 출처 보기 · 연결 확인 · 내보내기 (캔버스 4 · 5-1 · 7 · 박상진 · app/source.py · confirm.py · export.py) — 같은 기록 읽기를 쓴다 ───────────────
 import source as 출처                            # noqa: E402
 import confirm as 연결확인                        # noqa: E402
 from urllib.parse import quote                  # noqa: E402
@@ -328,9 +328,13 @@ def _내역서_있나(wid):
     return False if r.status_code == 404 else None
 
 
-출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나)
+import export as 내보내기                         # noqa: E402  캔버스 7 · app/export.py
+출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나,
+          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=_내역서_있음.add,
+          source_data=lambda *a: _출처_보기(*a))      # 교수 링크 출처 보기 자료 (김용현 #44) — 내보내기도 같은 것을 씀
 app.register_blueprint(출처.bp)
 app.register_blueprint(연결확인.bp)
+app.register_blueprint(내보내기.bp)
 
 
 def main():

@@ -427,6 +427,20 @@ unsure?        연결 확인에서 "잘 모르겠음"·안 고른 제안 수 (�
 ```
 교수 화면 탭: **요약** · **출처 보기**(source 있을 때) · **질문 기준**(source 있으면 참고만 한 질문까지, 없으면 확인된 연결 묶음) · **작업 과정**(show_process)
 
+### 10-5-3. 내역서 PDF v3 배치 · 일부 가림 (10/12 박상진 · ✅)
+
+내역서 만들기 요청에 더 (모두 선택 · 없으면 예전처럼):
+```
+result_counts? { total, ai, other, edited, viewed, none }        ← v3 ③ 결과물에 들어간 것 — 보고서 문장 수 (PC 출처 보기가 셈 · 숫자만)
+usage_counts?  { understand, find, review, write, polish }       ← v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 낱말 규칙으로 나눔 · 숫자만)
+flow?          [{ session_id, event_id, usage, used }] (최대 3)  ← v3 ② 학생이 고른 대표 질문 · 그 질문 원문이 messages 에 같이 와야 함 (없으면 400)
+messages[].mask?  [[시작, 끝, 종류], …]                          ← 일부 가림: 서버는 원문 전체로 체인 해시를 맞춰 본 뒤 ⟦가림:종류⟧ 로 바꾼 글만 저장
+                                                                     종류 = API키 · 비밀키 · 주민번호 · 카드번호 · 이메일 · 전화번호 · 직접 (collector/mask.py 와 같음)
+```
+응답 (학생용 · 교수용)에 `result_counts` · `usage_counts` · `flow:[{text, tool, usage, used, ok, masked}]` · 링크 질문·답의 `masked:[종류]`.
+PDF (`server/statement_pdf.py`) = 머리 · 투명성 한 줄 → 글을 쓴 과정 | 언제 작업했나 → ① 쓰임새 칩 → ② 질문 흐름 → ③ 문장 수 + 예시 2개 → ④ 학생 설명 → QR.
+연결 하나하나의 표는 PDF 에서 빼고 링크로 — **늘 한 장**.
+
 ### 10-5-1. 지우기 · 옮기기 · 잠깐 멈춤 (10/10 박상진 요청 · ✅ 10/11 구현)
 
 ```
