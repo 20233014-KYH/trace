@@ -15,6 +15,7 @@ app.py — Trace Backend (A)
 """
 import functools
 import os
+import re
 import secrets
 import sys
 import unicodedata
@@ -805,6 +806,46 @@ def _출처_정리(d, st):
     return True
 
 
+_앱이름 = {"winword.exe": "Word", "microsoft word": "Word", "powerpnt.exe": "PowerPoint", "microsoft powerpoint": "PowerPoint",
+          "excel.exe": "Excel", "microsoft excel": "Excel", "chrome.exe": "Chrome", "google chrome": "Chrome",
+          "msedge.exe": "Edge", "microsoft edge": "Edge", "firefox.exe": "Firefox", "firefox": "Firefox", "safari": "Safari",
+          "code.exe": "VS Code", "code": "VS Code", "claude.exe": "Claude 앱", "claude": "Claude 앱",
+          "chatgpt.exe": "ChatGPT 앱", "chatgpt": "ChatGPT 앱", "hwp.exe": "한글", "notepad.exe": "메모장"}
+_문서창 = re.compile(r"^(.+?\.(?:docx?|pptx?|xlsx?|hwpx?|txt|md|py|java|c|cpp|js))\b", re.I)
+
+
+def _작업_과정(d, sid):
+    """교수 링크 '작업 과정' 탭 (학생이 켰을 때만 · 캔버스 8 PublicLog): 세 줄 + 창 이름.
+    AI 질문·답 = ai_msg 시각 · 붙여넣기 = paste 시각 · 글 = 키 입력이 이어진 구간(3분 넘게 끊기면 새 구간) ·
+    창 = 앱 이름 + 문서 이름(창 제목의 파일 이름) + 탭 도메인. 글 원문은 없다."""
+    evs = 이벤트들(d, sid)
+    ai = [e["ts"] for e in evs if e.get("type") == "ai_msg" and not e.get("history")]
+    붙임 = [e["ts"] for e in evs if e.get("type") == "paste"]
+    글, 시작, 끝 = [], None, None
+    for e in evs:
+        if e.get("type") != "keys" or not e.get("count"):
+            continue
+        t = datetime.fromisoformat(e["ts"])
+        if 끝 and (t - 끝).total_seconds() > 180:
+            글.append({"start": 시작.isoformat(), "end": 끝.isoformat()})
+            시작 = None
+        시작 = 시작 or t - timedelta(seconds=10)
+        끝 = t
+    if 시작:
+        글.append({"start": 시작.isoformat(), "end": 끝.isoformat()})
+    창 = []
+    for e in evs:
+        if e.get("type") == "window":
+            이름 = _앱이름.get((e.get("app") or "").lower())
+            m = _문서창.match(e.get("title") or "")
+            for x in (이름, m.group(1) if m and 이름 in ("Word", "PowerPoint", "Excel", "VS Code", "한글") else None):
+                if x and x not in 창:
+                    창.append(x)
+        elif e.get("type") == "tab" and e.get("domain") and e["domain"] not in 창:
+            창.append(e["domain"])
+    return {"ai": ai, "paste": 붙임, "typing": 글, "windows": 창[:12]}
+
+
 def _내역서_내용(d, st, 학생용):
     """내역서 하나를 화면용으로. 학생용이면 '아니다'·가림의 위치까지, 교수용이면 확인된 연결만."""
     메시지 = d.query(db.Message).filter(db.Message.statement_id == st.id).all()
@@ -855,6 +896,9 @@ def _내역서_내용(d, st, 학생용):
         out["problems"] = [{"why": p.get("why")} for p in out["problems"]]
         if not st.show_process and out["summary"]:          # 작업 과정(기록 목록)은 학생이 켰을 때만
             out["summary"] = {**out["summary"], "by_session": []}
+        elif out["summary"]:                                 # 켰으면 세 줄 + 창 이름 (지운 기록은 이벤트가 없어 빈 줄)
+            out["summary"] = {**out["summary"], "by_session": [{**x, "process": _작업_과정(d, x["id"])} if x.get("id") else x
+                                                               for x in out["summary"].get("by_session", [])]}
         if out["summary"]:
             out["summary"] = {**out["summary"],
                               "by_session": [{k: v for k, v in s.items() if k != "id"}

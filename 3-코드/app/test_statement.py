@@ -187,7 +187,10 @@ def main():
     검사("24 질문 기준: 가린 질문은 원문 없이", any(q.get("hidden") and q.get("question") is None for q in Q)
          and 가린질문 not in json.dumps(교수3, ensure_ascii=False), f"질문 {len(Q)}개")
     검사("25 질문·답 원문을 서버가 맞춰 봄", all(q.get("answer_ok") is True for q in Q if q.get("answer")), "")
-    검사("26 작업 과정 켬 → 기록 목록", len((교수3.get("summary") or {}).get("by_session", [])) == 1, "")
+    세션3 = (교수3.get("summary") or {}).get("by_session", [])
+    과정 = (세션3[0] if 세션3 else {}).get("process") or {}
+    검사("26 작업 과정 켬 → 기록 목록 + 세 줄", len(세션3) == 1 and len(과정.get("ai", [])) == 4 and len(과정.get("paste", [])) == 4
+         and "id" not in 세션3[0], f"AI {len(과정.get('ai', []))} · 붙여넣기 {len(과정.get('paste', []))} · 창 {과정.get('windows')}")
     requests.delete(BASE + f"/shares/{t3}", headers={"Authorization": "Bearer " + json.load(open(os.path.join(data, "auth.json")))["token"]}, timeout=30)
     r = c.get(f"/local/works", headers=H)                                     # 끊은 뒤 학생 쪽에서 다시 보기
     latest = requests.get(BASE + f"/works/{wid}/statements/latest",

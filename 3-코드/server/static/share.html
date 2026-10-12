@@ -6,443 +6,611 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>AI 활용 내역서 · Trace</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
-/* 교수 확인 화면 — 2-디자인/디자인 기준 v2 를 따른다
-   테두리 대신 여백·머리선 · 색은 의미 있을 때만 작게 · 큰 숫자는 검정 · 둥글기 6px · 그림자 없음
-   ★ 퍼센트·점수·등급을 그리지 않는다 (기획 원칙 1). 횟수·글자 수·분·시각·원문만. */
-:root{
-  --ink:#37352f; --muted:#787774; --faint:#a3a29e; --line:#e9e9e7; --soft:#f7f7f5; --bg:#fff;
-  --typed:#448361; --paste:#cb7a1a; --ai:#d44c47; --warn:#d44c47; --warn-soft:#fbecea; --ok:#448361;
-  --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif;
-  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
-}
+/* 교수 확인 링크 — 캔버스 "Trace 화면 뼈대" 8 (PublicSum · Public · PublicQ · PublicLog) 그대로 (10/13 김용현)
+   보드의 클래스·크기·색을 옮겼다. 보드는 1280×800 고정 화면이라, 웹에서는 1040px 가운데 + 좁으면 한 줄로 쌓는다.
+   ★ 점수·퍼센트·등급을 그리지 않는다. 학생·AI 글은 전부 textContent 로 (HTML 로 해석하지 않음) */
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-.page{max-width:820px;margin:0 auto;padding:40px 20px 80px}
-.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
-.brand .mark{display:flex;align-items:flex-end;gap:2px}
-.brand .mark i{display:block;border-radius:50%;background:var(--ink)}
-.brand .mark i:nth-child(1){width:4px;height:4px;opacity:.3}.brand .mark i:nth-child(2){width:6px;height:6px;opacity:.55}.brand .mark i:nth-child(3){width:8px;height:8px}
-.brand small{font-weight:400;color:var(--muted);font-size:13px}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding-bottom:18px;border-bottom:2px solid var(--ink)}
-.top .meta{color:var(--muted);font-size:12.5px;text-align:right;line-height:1.5}
-h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:26px 0 6px;text-wrap:balance}
-.sub{color:var(--muted);font-size:14px;margin:0}
-.verdict{display:flex;gap:10px;align-items:flex-start;margin:22px 0 0;padding:12px 14px;border-radius:6px;background:var(--soft);font-size:14.5px}
-.verdict .d{flex:none;width:9px;height:9px;border-radius:50%;margin-top:7px;background:var(--ok)}
-.verdict.bad{background:var(--warn-soft)}.verdict.bad .d{background:var(--warn)}
-.verdict b{font-weight:600}
-.verdict p{margin:2px 0 0;color:var(--muted);font-size:13px}
-hr{border:0;border-top:1px solid var(--line);margin:30px 0}
-h2{font-size:16px;font-weight:600;margin:0 0 14px}
-h2 small{font-weight:400;color:var(--muted);margin-left:8px;font-size:13px}
-.memo{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 16px;font-size:14.5px}
-.memo dt{color:var(--muted);font-size:13.5px;padding-top:1px}
-.memo dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
-.memo .none{color:var(--faint)}
-.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
-.num .k{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
-.num .k .d{width:7px;height:7px;border-radius:2px;flex:none}
-.num .v{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.2;margin:2px 0;font-variant-numeric:tabular-nums}
-.num .v small{font-size:14px;font-weight:500;color:var(--muted);margin-left:2px;letter-spacing:0}
-.num .s{color:var(--faint);font-size:12.5px}
-nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:24px 0 18px;flex-wrap:wrap}
-nav.tabs button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;padding:8px 10px;cursor:pointer}
-nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-.pane[hidden]{display:none}
-.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;margin:-4px 0 14px}
-.srcdoc p,.srcdoc h3{margin:0 0 12px;font-size:15px;line-height:1.85}
-.srcdoc h3{font-weight:700}
-.s.g-copy,.lg.g-copy{background:#fbe4e3}.s.g-edited,.lg.g-edited{background:#e3edf6}
-.s.g-viewed,.lg.g-viewed{text-decoration:underline dotted #337ea9;text-decoration-thickness:2px;text-underline-offset:3px}
-.lg{padding:0 6px;border-radius:3px;color:var(--ink)}.lg.g-none{color:var(--muted)}
-.s.unsure{outline:1px dashed var(--faint);outline-offset:1px}
-.s[role=button]{cursor:pointer}.s[role=button]:hover{filter:brightness(.96)}
-.srcdetail{border-left:3px solid var(--line);padding:4px 0 8px 14px;margin:-4px 0 14px;display:grid;gap:8px}
-.nums.three{grid-template-columns:repeat(3,minmax(0,1fr))}
-.bars{margin-top:16px;display:grid;gap:6px;font-size:12px;color:var(--muted)}
-.bar{display:grid;grid-template-columns:44px minmax(0,1fr) 64px;gap:10px;align-items:center}
-.bar .track{position:relative;height:9px;background:var(--soft);border-radius:3px}
-.bar .track i{position:absolute;top:0;bottom:0;background:var(--typed);border-radius:2px;opacity:.85}
-.bar .mm{color:var(--ink);font-variant-numeric:tabular-nums}
-.axis{display:flex;justify-content:space-between;margin-left:54px;margin-right:74px;color:var(--faint);font-size:11px}
-.memo{grid-template-columns:minmax(0,240px) minmax(0,1fr)}
-.link{padding:18px 0;border-bottom:1px solid var(--line);display:grid;gap:10px}
-.link:first-of-type{padding-top:4px}
-.row{display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px}
-.row .k{color:var(--muted);font-size:12.5px;padding-top:3px;line-height:1.4}
-.row .k b{display:block;color:var(--ink);font-weight:600;font-size:13px}
-.row .t{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
-.row.result .t{font-weight:500}
-.row.ans .t{color:#55534e;background:var(--soft);border-radius:6px;padding:10px 12px;font-size:14px;max-height:18em;overflow:auto}
-.row.q .t{color:var(--muted)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:134px}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:4px;font-size:12px;background:var(--soft);color:var(--muted)}
-.chip .d{width:6px;height:6px;border-radius:50%}
-.chip.bad{background:var(--warn-soft);color:var(--warn);font-weight:600}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-.tw{overflow-x:auto}
-th{text-align:left;font-weight:500;color:var(--muted);font-size:12.5px;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;font-variant-numeric:tabular-nums}
-td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600}
-.ok{color:var(--ok)}.bad{color:var(--warn)}
-.says{display:grid;grid-template-columns:1fr 1fr;gap:28px;font-size:13.5px}
-.says ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.says li{padding-left:18px;position:relative}
-.says .yes li::before{content:"✓";position:absolute;left:0;color:var(--ok)}
-.says .no li::before{content:"✕";position:absolute;left:0;color:var(--faint)}
-.foot{margin-top:36px;color:var(--faint);font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.empty{color:var(--faint);font-size:14px;padding:6px 0}
-.state{padding:80px 0;text-align:center;color:var(--muted)}
-.state h1{margin-top:0}
-@media (max-width:640px){
-  .nums{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .row{grid-template-columns:1fr;gap:4px}.chips{margin-left:0}
-  .memo{grid-template-columns:1fr;gap:2px 0}.memo dd{margin-bottom:10px}
-  .says{grid-template-columns:1fr}
-  .top .meta{text-align:left}
+html,body{margin:0;background:#fafafa;color:#18181b;font-family:"Pretendard Variable","Pretendard",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+.muted{color:#71717a}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 10px;border-radius:10px;border:1px solid transparent;font:inherit;font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn-outline{background:#fff;border-color:#e4e4e7;color:#18181b}.btn-outline:hover{background:#f4f4f5}
+.btn-outline.on{background:#f4f4f5;border-color:#d4d4d8}
+.btn-sm{height:28px;padding:0 8px;font-size:13px;border-radius:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent}
+.card{background:#fff;border-radius:14px;box-shadow:0 0 0 1px rgba(24,24,27,.1)}
+.desc{font-size:13px;color:#71717a;line-height:1.5}
+.facts{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:#52525b}
+.facts b{color:#18181b;font-variant-numeric:tabular-nums;margin-right:3px}
+.iconbtn{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#71717a;flex:none;border:1px solid #e4e4e7;background:#fff;cursor:pointer}
+.iconbtn:hover{background:#f4f4f5}
+button:focus-visible,a:focus-visible,.s:focus-visible{outline:2px solid #3e63dd;outline-offset:2px}
+
+/* 머리 */
+.top{height:52px;display:flex;align-items:center;gap:8px;padding:0 32px;background:#fff;border-bottom:1px solid #e4e4e7;font-size:14px}
+.logo{display:flex;align-items:flex-end;gap:2px}.logo i{display:block;border-radius:50%;background:#18181b}
+.logo i:nth-child(1){width:4px;height:4px;opacity:.3}.logo i:nth-child(2){width:6px;height:6px;opacity:.55}.logo i:nth-child(3){width:8px;height:8px}
+.wrap{width:min(1040px,calc(100% - 32px));margin:0 auto;display:flex;flex-direction:column;gap:14px;padding:22px 0 0}
+.head{display:flex;align-items:flex-end;gap:16px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.3;text-wrap:balance}
+.trans{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:12.5px;color:#52525b}
+.trans .ok{display:inline-flex;align-items:center;gap:5px;color:#15803d;font-weight:500}
+.trans .ok i{width:7px;height:7px;border-radius:50%;background:#16a34a}
+.trans .bad{display:inline-flex;align-items:center;gap:5px;color:#c62f34;font-weight:500}
+.trans .bad i{width:7px;height:7px;border-radius:50%;background:#e5484d}
+.trans .sep{color:#d4d4d8}
+
+/* 탭 (보드 segmented) */
+.tabs{display:inline-flex;height:34px;padding:3px;border-radius:10px;background:#f4f4f5;font-size:13.5px;font-weight:500;max-width:100%;overflow-x:auto}
+.tabs button{padding:0 12px;display:flex;align-items:center;gap:5px;border-radius:8px;color:#71717a;background:none;border:0;font:inherit;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);color:#18181b}
+.tabs button:disabled{color:#a1a1aa;cursor:default}
+.tabs em{font-style:normal;color:#a1a1aa;font-size:12px}
+.pane[hidden]{display:none!important}
+
+/* 요약 */
+.sum{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card.box{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.ch{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.ch b{font-size:14px;font-weight:650}.ch span{font-size:12px;color:#71717a}
+.qa{display:flex;flex-direction:column;gap:3px}.qa b{font-size:12px;font-weight:600;color:#71717a}.qa span{font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.qa .none{color:#a1a1aa}
+.step{display:grid;grid-template-columns:18px minmax(0,1fr);column-gap:8px;font-size:12px;line-height:1.5}
+.step i{width:7px;height:7px;border-radius:50%;background:#18181b;margin:5px 0 0 5px}
+.step .ln{width:1px;background:#d4d4d8;margin-left:8px;height:9px}
+.step span{overflow-wrap:anywhere}
+.uc{display:grid;grid-template-columns:repeat(3,minmax(0,150px));gap:6px}
+.chip{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;background:#f4f4f5;font-size:12px;color:#52525b;white-space:nowrap}
+.chip b{min-width:16px;font-size:15px;font-weight:700;color:#18181b;font-variant-numeric:tabular-nums}
+.chip.zero{background:#fff;box-shadow:inset 0 0 0 1px #e4e4e7;color:#a1a1aa}.chip.zero b{color:#a1a1aa}
+.guide{display:flex;gap:8px;align-items:baseline;font-size:12px;padding:7px 10px;border-radius:8px;background:#fafafa;box-shadow:inset 0 0 0 1px #e4e4e7}
+.guide b{font-weight:600;flex:none}.guide span{color:#3f3f46}.guide em{font-style:normal;margin-left:auto;font-size:10.5px;color:#71717a;flex:none}
+.pn3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pn b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+.pn span{font-size:11px;color:#71717a}
+.tl{display:grid;grid-template-columns:62px minmax(0,1fr) 52px;align-items:center;gap:8px;font-size:11px;color:#71717a;font-variant-numeric:tabular-nums}
+.tl .bar{position:relative;height:8px;border-radius:4px;background:#f4f4f5}
+.tl .bar i{position:absolute;top:0;bottom:0;border-radius:4px;background:#18181b}
+.tl .ax{position:relative;height:12px;font-size:10px;color:#a1a1aa}.tl .ax span{position:absolute;transform:translateX(-50%)}
+.rrow{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid #f4f4f5}
+.rrow i{width:11px;height:11px;border-radius:3px;flex:none}.rrow .dl{width:11px;border-top:1.5px dashed #3e63dd;flex:none}
+.rrow span{flex:1}.rrow b{font-variant-numeric:tabular-nums}
+
+/* 출처 보기 · 질문 기준 공통 */
+.bar2{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#52525b}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:10px;height:10px;border-radius:3px}
+.legend em{font-style:normal;color:#a1a1aa;font-variant-numeric:tabular-nums}
+.split{display:flex;gap:16px;align-items:flex-start}
+article.doc{flex:1;min-width:0;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px #e4e4e7;padding:28px 36px;font-size:15px;line-height:1.95}
+article.doc .file{display:flex;align-items:center;gap:6px;font-size:12px;color:#a1a1aa;margin:-8px 0 14px}
+article.doc p{margin:0 0 14px}
+article.doc p.h{font-size:17px;font-weight:650;letter-spacing:-.02em;margin:22px 0 16px}article.doc p.h:first-of-type{margin-top:0}
+.s{border-radius:3px;padding:2px 1px;cursor:pointer;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.ex{background:#fdecec}.ex.sel{background:#f9d3d4}
+.ed{background:#eaf0fd}.ed.sel{background:#d3defa}
+.vw{text-decoration:underline dashed #3e63dd;text-decoration-thickness:1.5px;text-underline-offset:5px}.vw.sel{background:rgba(62,99,221,.08)}
+.no{background:rgba(24,24,27,.03)}.no.sel{background:rgba(24,24,27,.07)}
+.s.unsure{outline:1px dashed #a1a1aa;outline-offset:1px}
+.tags .s::after{content:attr(data-l);font-size:10.5px;font-weight:600;margin-left:4px;vertical-align:1px}
+.tags .ex::after{color:#e5484d}.tags .ed::after{color:#3e63dd}.tags .vw::after{color:#3e63dd}.tags .no::after{color:#a1a1aa}
+aside.side{width:340px;flex:none;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px #e4e4e7;padding:20px;display:flex;flex-direction:column;gap:14px;position:sticky;top:16px}
+aside.side.q{width:380px;box-shadow:0 0 0 1px rgba(24,24,27,.1);padding:18px 20px;gap:12px}
+.kind{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600}.kind i{width:8px;height:8px;border-radius:50%}
+.meta{font-size:13px;color:#a1a1aa;margin-top:6px}
+.lab{font-size:12px;font-weight:600;color:#a1a1aa;margin:0 0 6px}.lab span{font-weight:400}
+.well{background:#f4f4f5;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.8;color:#3f3f46;white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto}
+.well .hl{border-radius:3px;padding:1px 0}
+.qt{margin:0;font-size:14px;color:#3f3f46;overflow-wrap:anywhere}
+.ev{margin:0;font-size:13px;color:#52525b;line-height:1.6}.ev b{color:#18181b;font-weight:600}
+.warnline{font-size:12.5px;color:#c62f34;font-weight:500}
+
+/* 질문 기준 */
+.seg{display:inline-flex;height:28px;padding:2px;border-radius:9px;background:#f4f4f5;font-size:12.5px;font-weight:500}
+.seg button{padding:0 9px;display:flex;align-items:center;border-radius:7px;color:#71717a;background:none;border:0;font:inherit;cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);color:#18181b}
+section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.qrow{position:relative;display:grid;grid-template-columns:40px 12px minmax(0,1fr) auto;align-items:center;column-gap:12px;padding:9px 12px;border-radius:10px;cursor:pointer;border:0;background:none;font:inherit;color:inherit;text-align:left;width:100%}
+.qrow:hover{background:#fafafa}.qrow.on{background:#f4f4f5}
+.qrow .vl{position:absolute;left:62px;top:24px;bottom:-14px;width:1px;background:#e4e4e7}
+.qrow:last-child .vl{display:none}
+.qrow .t{font-size:12.5px;color:#71717a;font-variant-numeric:tabular-nums}
+.qrow .d{width:9px;height:9px;border-radius:50%;background:#18181b;position:relative;z-index:1;margin-left:1px}
+.qrow .d.ref{background:#fff;box-shadow:inset 0 0 0 1.5px #a1a1aa}
+.qrow .n{font-size:11.5px;color:#a1a1aa}
+.qrow .q{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .bd{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.b-red{background:#fdecec;color:#c62f34}.b-blue{background:#eaf0fd;color:#2f50c4}
+.b-view{background:#fff;border-color:#e4e4e7;color:#2f50c4}.b-view span{text-decoration:underline dashed #3e63dd;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.b-ref{background:transparent;border-color:#e4e4e7;color:#71717a}
+.b-hide{background:#18181b;color:#fff;height:18px;font-size:11px;margin-left:6px;vertical-align:1px}
+.went{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-top:1px solid #f4f4f5;min-width:0}
+.went i{width:8px;height:8px;border-radius:2px;flex:none}
+.went .w1{color:#71717a;flex:none}.went .w2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3f3f46}
+
+/* 작업 과정 */
+.banner{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px #e4e4e7;font-size:12.5px;color:#52525b}
+.card.ses{padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.sh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.sh b{font-size:14px;font-weight:650}
+.sh .st{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#15803d}.sh .st i{width:6px;height:6px;border-radius:50%;background:#16a34a}
+.sh .st.bad{color:#c62f34}.sh .st.bad i{background:#e5484d}
+.lane{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:10px}.lane>span{font-size:11.5px;color:#71717a}
+.lane .lt{position:relative;height:13px}
+.lane .dot{position:absolute;top:3px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#18181b}
+.lane .tick{position:absolute;top:0;width:3px;height:13px;margin-left:-1.5px;border-radius:2px;background:#e5484d}
+.lane .seg2{position:absolute;top:2px;height:9px;border-radius:3px;background:#d4d4d8}
+
+.foot{width:min(1040px,calc(100% - 32px));margin:14px auto 0;padding:10px 0 16px;font-size:12px;color:#71717a;border-top:1px solid #e4e4e7}
+.state{padding:100px 16px;text-align:center;color:#71717a}.state h1{font-size:22px;color:#18181b;margin:0 0 8px}
+.empty{font-size:13px;color:#a1a1aa;padding:6px 0}
+
+@media (max-width:900px){
+  .sum{grid-template-columns:1fr}
+  .split{flex-direction:column}
+  aside.side,aside.side.q{width:100%;position:static}
+  article.doc{padding:20px}
+  .top{padding:0 16px}.top .ro{display:none}
+  .head{flex-direction:column;align-items:flex-start}
 }
+@media (max-width:520px){.chip{padding:0 8px;gap:5px}.title{font-size:22px}}
 </style>
 </head>
 <body>
-<div class="page" id="app"><div class="state">불러오는 중…</div></div>
+<div class="top"><span class="logo" aria-hidden="true"><i></i><i></i><i></i></span><b style="font-size:15px;letter-spacing:-.025em">Trace</b><span class="muted">· 학생이 공유한 AI 활용 기록</span>
+  <span class="muted ro" id="ro" style="margin-left:auto;font-size:13px"></span></div>
+<main id="app"><div class="state">불러오는 중…</div></main>
+<div class="foot" id="foot" hidden>작업 중 기록된 그대로이며 점수나 판정은 없습니다. 출처 기록 없음은 직접 썼다는 뜻이 아니고, 다른 기기에서 쓴 AI 는 기록되지 않습니다. · 학생이 켠 것만 보입니다.</div>
 
 <script>
 (function () {
   const app = document.getElementById("app");
   const token = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
-
-  // ── 작은 도구: 글은 전부 textContent 로 넣는다 (학생·AI 원문을 HTML 로 해석하지 않게) ──
-  function el(tag, cls, text) {
-    const e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text != null) e.textContent = text;
-    return e;
-  }
-  function add(parent, ...kids) { kids.forEach(k => k && parent.appendChild(k)); return parent; }
-  const n = v => (v || 0).toLocaleString("ko-KR");
-  function when(iso, withDate = true) {
-    if (!iso) return "";
-    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (!m) return iso;
-    return withDate ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}` : `${m[4]}:${m[5]}`;
-  }
-  function mins(v) {
-    v = Math.round(v || 0);
-    return v >= 60 ? [Math.floor(v / 60), "시간 ", v % 60, "분"] : [v, "분"];
-  }
-  function where(loc) {
-    if (!loc) return "";
-    const parts = [];
-    if (loc.file) parts.push(loc.file);
-    if (loc.paragraph != null) parts.push(`${loc.paragraph}번째 문단`);
-    if (Array.isArray(loc.lines)) parts.push(`${loc.lines[0]}–${loc.lines[1]}줄`);
-    return parts.join(" · ");
-  }
+  const SVG = {
+    pdf: '<svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+    lock: '<svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    file: '<svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',
+    prev: '<svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+    next: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>',
+    info: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>'
+  };
   const TOOL = { chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini", perplexity: "Perplexity", wrtn: "뤼튼",
                  "chatgpt.com": "ChatGPT", "claude.ai": "Claude", "gemini.google.com": "Gemini" };
-  const tool = t => TOOL[t] || t || "AI";
-  const WHY = {
-    hash_mismatch: "기록 당시와 다른 원문", not_in_chain: "기록에 없는 원문", not_in_work: "이 과제 기록이 아닌 원문",
-    answer_not_verified: "확인되지 않은 답을 가리킨 연결", question_not_verified: "확인되지 않은 질문을 가리킨 연결",
-    result_hash_mismatch: "과제 발췌가 학생이 고른 것과 다름", redaction_not_in_chain: "기록에 없는 가림",
-    session_not_sealed: "끝내지 않은(봉인 전) 작업 기록", session_not_verified: "검증되지 않은 작업 기록"
-  };
+  const tool = t => TOOL[String(t || "").toLowerCase()] || t || "AI";
+  // 문장 묶음 (출처 보기 결정 C · 1차 확정 10/12 이름)
+  const CLS = { copy: "ex", edited: "ed", viewed: "vw", none: "no" };
+  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "기록 없음" };
+  const LONG = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
+                 web: "다른 곳에서 옴", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
+  const DOT = { copy: "#e5484d", edited: "#3e63dd", viewed: "#3e63dd", none: "#a1a1aa" };
+  const USAGE = [["learn", "이해·자료 찾기"], ["fix", "고치기·검토"], ["write", "작성"]];
+  const OLD = { understand: "learn", find: "learn", review: "fix", polish: "fix" };
 
-  function num(label, color, valueParts, sub) {
-    const box = el("div", "num");
-    const k = el("div", "k");
-    if (color) { const d = el("span", "d"); d.style.background = color; k.appendChild(d); }
-    k.appendChild(document.createTextNode(label));
-    const v = el("div", "v");
-    for (let i = 0; i < valueParts.length; i++) {
-      if (i % 2 === 0) v.appendChild(document.createTextNode(valueParts[i]));
-      else v.appendChild(el("small", null, valueParts[i]));
-    }
-    return add(box, k, v, sub ? el("div", "s", sub) : null);
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function add(p, ...k) { k.forEach(x => x && p.appendChild(x)); return p; }
+  function icon(name) { const s = el("span"); s.innerHTML = SVG[name]; return s.firstChild; }   // 고정 아이콘만 (사용자 글 아님)
+  const n = v => (v || 0).toLocaleString("ko-KR");
+  const WD = "일월화수목금토";
+  function md(iso, wd) {
+    const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return "";
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return `${+m[2]}/${+m[3]}` + (wd ? ` (${WD[d.getDay()]})` : "");
+  }
+  const hm = iso => (String(iso || "").match(/T(\d{2}:\d{2})/) || [])[1] || "";
+  function mins(v) { v = Math.round(v || 0); return v >= 60 ? `${Math.floor(v / 60)}시간${v % 60 ? ` ${v % 60}분` : ""}` : `${v}분`; }
+  const hmm = v => { v = Math.round(v || 0); return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`; };
+  function pauseLen(s) {
+    const t = s.pause_seconds;
+    if (t == null) return mins(s.pause_minutes);
+    if (t < 600) return t >= 60 ? `${Math.floor(t / 60)}분 ${t % 60}초` : `${t}초`;
+    return mins(t / 60);
+  }
+  function card(title, note) {
+    const c = el("div", "card box"), h = el("div", "ch");
+    add(h, el("b", null, title), note ? el("span", null, note) : null);
+    return add(c, h);
   }
 
   function render(d) {
+    const s = d.summary || {}, ai = s.ai || {}, links = d.links || [], src = d.source || null;
     document.title = `${d.work && d.work.title ? d.work.title + " · " : ""}AI 활용 내역서 · Trace`;
     app.textContent = "";
-    const s = d.summary || null;
+    document.getElementById("ro").textContent = d.expires_at ? `읽기 전용 · ${md(d.expires_at, true)} 까지 열림` : "읽기 전용";
+    document.getElementById("foot").hidden = false;
+    const wrap = el("div", "wrap");
 
-    // ── 머리 ──
-    const top = el("div", "top");
-    const brand = el("div", "brand");
-    const mark = el("span", "mark"); add(mark, el("i"), el("i"), el("i"));
-    add(brand, mark, document.createTextNode("Trace"), el("small", null, "· AI 활용 내역서"));
-    const meta = el("div", "meta");
-    const pdf = el("a", null, "PDF 받기"); pdf.href = `/api/share/${encodeURIComponent(token)}/pdf`; pdf.target = "_blank"; pdf.rel = "noopener noreferrer";
-    pdf.style.color = "var(--ink)";
-    add(meta, el("div", null, `만든 시각 ${when(d.created_at)}`), el("div", null, `링크 만료 ${when(d.expires_at)}`), add(el("div"), pdf));
-    add(app, add(top, brand, meta));
-
-    add(app, el("h1", null, (d.work && d.work.title) || "제목 없는 과제"));
-    if (s && s.sessions) {
-      add(app, el("p", "sub",
-        `${when(s.first_at)} – ${when(s.last_at)} 사이 작업 기록 ${s.sessions}번 · 학생이 직접 골라 공유한 내용입니다`));
-    }
-
-    // ── 투명성 한 줄 (v3 · 10/10): 서버 일치 · 도구(모델) · 멈춤 · 가림 · 지운 기록 ──
+    // ── 머리: 제목 · 학생 줄 · 투명성 줄 · PDF ──
+    const head = el("div", "head"), hl = el("div"); hl.style.cssText = "flex:1;min-width:0";
+    add(hl, el("div", "title", (d.work && d.work.title) || "제목 없는 과제"));
+    const sub = [d.author];
+    if (s.sessions) { const a = md(s.first_at), b = md(s.last_at); sub.push(`${a === b ? a : `${a} – ${b}`} · 기록 ${s.sessions}번 · ${mins(s.minutes)}`); }
+    const subEl = el("div", "muted", sub.filter(Boolean).join(" · ")); subEl.style.cssText = "font-size:13.5px;margin-top:3px";
+    add(hl, subEl);
     const probs = d.problems || [];
-    const ai0 = (s && s.ai) || {};
-    const toolsTxt = (d.tools || []).map(t => tool(String(t.tool || "").toLowerCase()) + (t.models && t.models.length ? ` (${t.models.join(", ")})` : "")).join(" · ") || "기록된 AI 없음";
-    const v = el("div", "verdict" + (probs.length ? " bad" : ""));
-    v.appendChild(el("span", "d"));
-    const vt = el("div");
-    vt.appendChild(el("b", null, probs.length ? `서버 기록과 다릅니다 (${probs.length}개)` : "서버 기록과 일치"));
-    const parts = [`${toolsTxt} · 질문 ${n(ai0.questions)}번`,
-                   s && s.pauses ? `멈춤 ${s.pauses}번 · ${pauseLen(s)}` : "멈춤 없음",
-                   `가림 ${d.redacted || 0}`, `지운 기록 ${((s && s.deleted_sessions) || []).length}`];
-    vt.appendChild(el("p", null, parts.join(" · ")));
-    if (probs.length) {
-      const counts = {};
-      probs.forEach(p => { counts[p.why] = (counts[p.why] || 0) + 1; });
-      vt.appendChild(el("p", null, Object.entries(counts).map(([w, c]) => `${WHY[w] || w} ${c}개`).join(" · ")
-        + " — 숨기지 않고 아래에 그대로 표시합니다."));
-    }
-    add(app, add(v, vt));
+    const tr = el("div", "trans");
+    const okEl = el("span", probs.length ? "bad" : "ok"); add(okEl, el("i"), document.createTextNode(probs.length ? `서버 기록과 다릅니다 (${probs.length}개)` : "서버 기록과 일치"));
+    const tools = (d.tools || []).map(t => tool(t.tool) + (t.models && t.models.length ? ` (${t.models.join(", ")})` : "")).join(" · ") || "기록된 AI 없음";
+    const 지운 = (s.deleted_sessions || []).length;
+    const items = [okEl, el("span", null, tools), el("span", null, s.pauses ? `잠깐 멈춤 ${s.pauses}번 · ${pauseLen(s)}` : "멈춤 없음"),
+                   el("span", null, d.redacted ? `가림 ${d.redacted}곳` : "가림 없음"), el("span", null, 지운 ? `지운 기록 ${지운}개` : "지운 기록 없음")];
+    items.forEach((x, i) => { if (i) tr.append(el("span", "sep", "·")); tr.append(x); });
+    add(hl, tr);
+    const pdf = el("a", "btn btn-outline"); pdf.href = `/api/share/${encodeURIComponent(token)}/pdf`; pdf.target = "_blank"; pdf.rel = "noopener noreferrer";
+    add(pdf, icon("pdf"), document.createTextNode("내역서 PDF"));
+    add(head, hl, pdf); add(wrap, head);
 
-    // ── 탭 (10/10 · 10/11 박상진): 요약 · 출처 보기(학생이 켰을 때만) · 질문 기준 · 작업 과정(켰을 때만) ──
-    const P = { sum: el("div", "pane"), src: el("div", "pane"), q: el("div", "pane"), proc: el("div", "pane") };
-    const TABS = [["sum", "요약"], ...(d.source ? [["src", "출처 보기"]] : []), ["q", "질문 기준"],
-                  ...(d.show_process && s && s.by_session && s.by_session.length ? [["proc", "작업 과정"]] : [])];
-    const nav = el("nav", "tabs");
-    TABS.forEach(([k, t]) => {
-      const b = el("button", null, t); b.type = "button"; b.dataset.k = k;
-      b.onclick = () => { nav.querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", x === b));
-                          Object.entries(P).forEach(([kk, el_]) => el_.hidden = kk !== k);
-                          try { history.replaceState(null, "", "#" + k); } catch (e) {} };
-      nav.append(b);
+    // ── 질문 목록 (질문 기준 · 요약 숫자 공통) ──
+    const Q = questions(d, src);
+
+    // ── 탭 ──
+    const procOn = d.show_process && (s.by_session || []).length;
+    const TABS = [["sum", "요약", "", true], ["src", "출처 보기", "", !!src], ["q", "질문 기준", String(ai.questions || Q.length || ""), true],
+                  ["log", "작업 과정", "", !!procOn]];
+    const tabs = el("div", "tabs"); tabs.setAttribute("role", "tablist");
+    const panes = {};
+    TABS.forEach(([k, label, cnt, on]) => {
+      const b = el("button"); b.type = "button"; b.setAttribute("role", "tab"); b.dataset.k = k;
+      if (!on) { b.disabled = true; add(b, icon("lock"), document.createTextNode(label), el("em", null, "학생이 꺼 둠")); }
+      else add(b, document.createTextNode(label), el("em", null, cnt));
+      b.onclick = () => show(k);
+      tabs.append(b);
+      panes[k] = el("div", "pane"); panes[k].hidden = true;
     });
-    add(app, nav); Object.values(P).forEach(x => { x.hidden = true; add(app, x); });
+    const tabRow = el("div"); tabRow.style.cssText = "display:flex;align-items:center;gap:12px;padding-top:4px"; add(tabRow, tabs);
+    add(wrap, tabRow);
+    Object.values(panes).forEach(p => wrap.append(p));
+    app.append(wrap);
 
-    // ── 교수 AI 규칙 (학생이 넣었을 때만) · 학생 질문 두 개 ──
-    add(P.sum, el("hr"));
-    const memo = el("dl", "memo");
-    if (d.ai_scope) add(memo, el("dt", null, "교수 AI 규칙"), el("dd", null, d.ai_scope));
-    add(memo, el("dt", null, "AI를 어디에 썼고, 무엇은 직접 했나요?"),
-         d.explain_use ? el("dd", null, d.explain_use) : el("dd", "none", d.sentence || "학생이 쓰지 않음"),
-         el("dt", null, "AI 답을 고르거나 고칠 때 어떻게 확인했나요?"),
-         d.explain_check ? el("dd", null, d.explain_check) : el("dd", "none", "학생이 쓰지 않음"));
-    add(P.sum, memo);
+    summaryPane(panes.sum, d, s, ai, links, Q);
+    if (src) sourcePane(panes.src, src);
+    questionPane(panes.q, d, Q, ai, src);
+    if (procOn) logPane(panes.log, s.by_session);
 
-    // ── 글을 쓴 과정 (v3) ──
-    if (s) {
-      add(P.sum, el("hr"));
-      add(P.sum, add(el("h2"), document.createTextNode("글을 쓴 과정"),
-                   el("small", null, "횟수·글자 수·시간만 — 점수나 비율은 내지 않습니다")));
-      const p = s.pastes || {};
-      add(P.sum, add(el("div", "nums three"),
-        num("키보드로 친 글자", "var(--typed)", [n(s.typed), "자"], `기록 ${mins(s.minutes).join("")}`),
-        num("붙여넣은 글자", "var(--paste)", [n(p.chars), "자"],
-            `AI ${n(p.from_ai_chars)} · 다른 곳 ${n(p.from_other_chars)} · 출처 기록 없음 ${n(p.unknown_chars)}`),
-        num("지운 글자", null, [n(s.deleted), "자"], "")));
-      if (s.days && s.days.length) add(P.sum, bars(s.days));
+    function show(k) {
+      tabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.k === k)));
+      Object.entries(panes).forEach(([kk, p]) => p.hidden = kk !== k);
+      try { history.replaceState(null, "", "#" + k); } catch (e) {}
     }
-
-    // ── 출처 보기 — 보고서 전문에 색 (PC 출처 보기와 같은 결정 C) ──
-    if (d.source) sourceView(P.src, d.source);
-
-    // ── 연결 ──
-    const links = d.links || [];
-    if (d.source) { questionView(P.q, d.source); }
-    if (!d.source) {
-    add(P.q, add(el("h2"), document.createTextNode("과제 속 AI 답"),
-                 el("small", null, `학생이 "AI 답에서 왔다"고 확인한 부분 ${links.length}곳`)));
-    if (!links.length) add(P.q, el("div", "empty", "학생이 확인한 연결이 없습니다."));
-    // 같은 질문·답에서 온 과제 문장은 한 묶음으로 (답 원문을 연결마다 되풀이하지 않게)
-    const groups = [];
-    links.forEach(l => {
-      const key = JSON.stringify([l.question && l.question.text, l.answer && l.answer.text]);
-      let g = groups.find(x => x.key === key);
-      if (!g) { g = { key, question: l.question, answer: l.answer, items: [] }; groups.push(g); }
-      g.items.push(l);
-    });
-    // kind 는 학생 화면(app/statement.py)이 core/match.py 의 제안을 옮긴 것 — 판정이 아니라 학생이 확인한 연결의 모양
-    const KIND = { exact: ["일치", "var(--ai)"], similar: ["유사", "var(--ai)"], edited: ["붙여넣고 고침", "#337ea9"],
-                   viewed: ["보고 씀", "#337ea9"] };   // 색 규칙 (10/10): 보고 씀 = 파랑 점선 밑줄
-    groups.forEach(g => {
-      const box = el("div", "link");
-      // 일어난 순서대로: 물었다 → 답을 받았다 → 과제에 이렇게 썼다
-      if (g.question) add(box, row("q", "학생 질문", stamp(g.question), g.question.text));
-      if (g.answer) add(box, row("ans", `${tool(g.answer.tool)} 답`, stamp(g.answer), g.answer.text));
-      const top = el("div", "chips");
-      [g.answer, g.question].forEach(m => {
-        if (m && !m.ok) add(top, el("span", "chip bad", "⚠ 기록 당시와 다름"));
-        if (m && m.history) add(top, chip("이전 대화 · 받은 시각 모름"));
-      });
-      if (top.childNodes.length) add(box, top);
-      g.items.forEach((l, i) => {
-        const r = l.result || {};
-        add(box, row("result", g.items.length > 1 ? `과제에 쓴 글 ${i + 1}` : "과제에 쓴 글", where(r.location), r.text || "(발췌 없음)"));
-        const chips = el("div", "chips");
-        if (KIND[l.kind]) { const c = chip(KIND[l.kind][0], KIND[l.kind][1]); if (l.kind === "viewed") c.style.textDecoration = "underline dotted #337ea9"; add(chips, c); }
-        if (l.origin === "auto") add(chips, chip("복사·붙여넣기 기록과 이어짐"));
-        else if (l.origin === "suggested") add(chips, chip("글자가 비슷해 학생이 확인함"));
-        add(box, chips);
-      });
-      add(P.q, box);
-    });
-    }
-    const hidden = [];
-    if (d.redacted) hidden.push(`학생이 가린 항목 ${d.redacted}개 (내용은 오지 않았고, 기록에는 남아 있습니다)`);
-    if (d.rejected) hidden.push(`Trace가 제안했지만 학생이 "아니다"라고 고른 연결 ${d.rejected}개 (원문은 보내지 않음)`);
-    if (d.unsure) hidden.push(`학생이 판단을 보류한 제안 ${d.unsure}개 (원문은 보내지 않음)`);
-    hidden.forEach(t => add(P.q, el("p", "sub", t)));
-
-    // ── 세션 ──
-    if (s && s.by_session && s.by_session.length) {
-      add(P.proc, add(el("h2"), document.createTextNode("작업 기록"), el("small", null, "기록기를 켜고 끈 한 번씩")));
-      const t = el("table");
-      const head = el("tr");
-      ["날짜", "시간", "기록", "멈춤", "AI 질문", "키보드로 친 글자", "붙여넣기", "기록 상태"].forEach(h => head.appendChild(el("th", null, h)));
-      add(t, add(el("thead"), head));
-      const body = el("tbody");
-      s.by_session.forEach(x => {
-        const tr = el("tr");
-        add(tr, el("td", null, when(x.start).slice(0, 10)), el("td", null, `${when(x.start, false)}–${when(x.end, false)}`),
-             el("td", "n", `${Math.round(x.minutes)}분`),
-             el("td", null, (x.pauses || []).map(g => `${when(g.start, false)}–${when(g.end, false)}`).join(", ") || "—"),
-             el("td", "n", `${n(x.ai.questions)}번`),
-             el("td", "n", `${n(x.typed)}자`), el("td", "n", `${n(x.pastes.count)}번`),
-             el("td", x.sealed && x.verified ? "ok" : "bad",
-                x.sealed && x.verified ? "서버 기록과 일치" : (x.sealed ? "서버 기록과 다릅니다" : "아직 끝나지 않은 기록")));
-        body.appendChild(tr);
-      });
-      add(P.proc, add(el("div", "tw"), add(t, body)));
-    }
-
-    // 첫 탭 (주소 #src · #q · #proc 로 바로 열 수 있게)
     const want = (location.hash || "").slice(1);
-    (nav.querySelector(`button[data-k="${want}"]`) || nav.querySelector("button")).click();
-    if (TABS.length === 1) nav.hidden = true;
-
-    // ── 두 줄 (10/10 · "말하는 것/않는 것" 대신) ──
-    add(app, el("hr"));
-    add(app, el("p", "sub", "작업 중 기록된 그대로이며 점수나 판정은 없습니다. 출처 기록 없음은 직접 썼다는 뜻이 아니고, 다른 기기에서 쓴 AI 는 기록되지 않습니다."));
-
-    const foot = el("div", "foot");
-    add(foot, el("span", null, "Trace · 원문은 학생 PC에 있고, 학생이 고른 것만 이 링크로 공유됩니다"),
-              el("span", null, `링크 만료 ${when(d.expires_at)}`));
-    add(app, foot);
+    const ok = TABS.find(t => t[0] === want && t[3]);
+    show(ok ? want : "sum");
   }
 
-  // 날짜별 작업 막대 — 하루 한 줄 · 공통 시각 축 · 멈춘 동안은 빈 틈
-  function bars(days) {
-    const m = iso => +iso.slice(11, 13) * 60 + +iso.slice(14, 16);
-    let lo = Math.min(...days.flatMap(x => x.segments.map(g => m(g.start))));
-    let hi = Math.max(...days.flatMap(x => x.segments.map(g => m(g.end))));
-    lo = Math.floor(lo / 60) * 60; hi = Math.min(1440, Math.ceil(hi / 60) * 60); if (hi <= lo) hi = lo + 60;
-    const box = el("div", "bars");
-    days.forEach(x => {
-      const r = el("div", "bar");
-      const track = el("div", "track");
-      x.segments.forEach(g => {
-        const seg = el("i");
-        seg.style.left = (100 * (m(g.start) - lo) / (hi - lo)) + "%";
-        seg.style.width = Math.max(0.6, 100 * (m(g.end) - m(g.start)) / (hi - lo)) + "%";
-        seg.title = `${when(g.start, false)}–${when(g.end, false)}`;
-        track.append(seg);
+  // 질문 목록 — 출처 보기를 켰으면 source.questions (참고만 한 것까지), 아니면 확인된 연결 + 대표 질문
+  function questions(d, src) {
+    if (src) {
+      const S = src.sentences || [];
+      return (src.questions || []).map(q => {
+        const uses = (q.uses || []).map(k => S[k]).filter(Boolean);
+        const c = { copy: 0, edited: 0, viewed: 0 };
+        uses.forEach(x => { if (c[x.group] != null) c[x.group]++; });
+        return { n: q.n, tool: q.tool, model: q.model, ts: q.ts, text: q.question, hidden: q.hidden, ok: q.question_ok !== false && q.answer_ok !== false,
+                 answer: q.answer || null, uses, counts: c, paras: q.paras || [], used: uses.length > 0 };
       });
-      add(r, el("span", "dd", `${x.date.slice(5, 7)}/${x.date.slice(8, 10)}`), track, el("span", "mm", mins(x.minutes).join("")));
-      box.append(r);
+    }
+    const by = new Map();
+    (d.links || []).forEach(l => {
+      const key = (l.question && l.question.text) || "답:" + ((l.answer && l.answer.text) || "");
+      if (!by.has(key)) by.set(key, { tool: (l.answer || {}).tool, model: (l.answer || {}).model, ts: (l.question || l.answer || {}).ts,
+                                      text: l.question ? l.question.text : null, hidden: !l.question, ok: true,
+                                      answerText: (l.answer || {}).text, uses: [], counts: { copy: 0, edited: 0, viewed: 0 }, paras: new Set(), used: true });
+      const g = by.get(key);
+      const grp = l.kind === "edited" ? "edited" : l.kind === "viewed" ? "viewed" : "copy";
+      g.counts[grp]++; g.uses.push({ text: (l.result || {}).text, kind: l.kind, group: grp, p: ((l.result || {}).location || {}).paragraph - 1 });
+      if (((l.result || {}).location || {}).paragraph) g.paras.add(l.result.location.paragraph);
+      if ((l.answer && !l.answer.ok) || (l.question && !l.question.ok)) g.ok = false;
     });
-    add(box, add(el("div", "axis"), el("span", null, `${String(lo / 60).padStart(2, "0")}시`), el("span", null, `${String(hi / 60).padStart(2, "0")}시`)));
+    (d.flow || []).forEach(f => { if (!f.used && ![...by.values()].some(g => g.text === f.text)) by.set(f.text, { tool: f.tool, text: f.text, ok: f.ok !== false, uses: [], counts: { copy: 0, edited: 0, viewed: 0 }, paras: new Set(), used: false }); });
+    return [...by.values()].sort((a, b) => String(a.ts || "~").localeCompare(String(b.ts || "~")))
+      .map((g, i) => ({ ...g, n: i + 1, paras: [...g.paras].sort((a, b) => a - b) }));
+  }
+
+  // ── 요약 (보드 PublicSum: 왼쪽 학생 설명 · 질문 흐름 · 어떻게 썼나 | 오른쪽 400px 글을 쓴 과정 · 결과물) ──
+  function summaryPane(box, d, s, ai, links, Q) {
+    const grid = el("div", "sum"), L = el("div", "col"), R = el("div", "col");
+    const c1 = card("학생 설명");
+    if (d.ai_scope) { const g = el("div", "guide"); add(g, el("b", null, "교수 안내"), el("span", null, d.ai_scope), el("em", null, "학생이 넣었을 때만")); c1.append(g); }
+    [["AI 를 어디에 썼고, 무엇은 직접 했나요?", d.explain_use], ["AI 답을 고르거나 고칠 때 어떻게 확인했나요?", d.explain_check]].forEach(([q, a]) => {
+      const x = el("div", "qa"); add(x, el("b", null, q), el("span", a ? null : "none", a || "학생이 쓰지 않음")); c1.append(x);
+    });
+    L.append(c1);
+
+    const flow = (d.flow || links.filter(l => l.question).map(l => ({ text: l.question.text, tool: (l.answer || {}).tool, used: true }))
+      .filter((f, i, a) => a.findIndex(x => x.text === f.text) === i)).slice(0, 3);
+    const c2 = card("질문 흐름", d.flow ? "학생이 고른 대표 흐름 · 전체는 \"질문 기준\" 탭" : "결과물에 글이 들어간 질문 · 전체는 \"질문 기준\" 탭");
+    if (!flow.length) c2.append(el("div", "empty", "학생이 고른 질문이 없습니다."));
+    const st = el("div"); st.style.cssText = "display:flex;flex-direction:column";
+    const name = Object.fromEntries(USAGE);
+    flow.forEach((f, i) => {
+      if (i) { const ln = el("div", "step"); add(ln, el("span", "ln"), el("span")); st.append(ln); }
+      const r = el("div", "step"), t = el("span", null, `"${f.text}" `);
+      const tail = [name[OLD[f.usage] || f.usage], f.tool && !/^chatgpt$/i.test(f.tool) ? tool(f.tool) : null, f.ok === false ? "⚠ 기록 당시와 다름" : null].filter(Boolean).join(" · ");
+      if (tail) t.append(el("span", "muted", "· " + tail));
+      add(r, el("i"), t); st.append(r);
+    });
+    c2.append(st);
+    if (flow.length) {
+      const used = flow.filter(f => f.used).length, k = flow.length, few = { 3: "세", 2: "두" }[k] || "";
+      const t = used === 0 ? `${few ? few + " 질문 모두" : "이 질문은"} 답의 글이 결과물에 들어가지 않음`
+              : used === k ? `${few ? few + " 답 모두" : "이 답은"} 결과물에 글이 들어감 — 아래 3` : `${k}개 중 ${used}개는 답의 글이 결과물에 들어감`;
+      const e = el("div", "muted", t); e.style.cssText = "font-size:11.5px;margin-top:-3px"; c2.append(e);
+    }
+    L.append(c2);
+
+    const usedN = Q.filter(q => q.used).length, qN = ai.questions || Q.length;
+    const c3 = card("어떻게 썼나", `AI 에 한 질문 ${qN} · 결과물에 글이 들어간 답 ${usedN} · 참고만 ${Math.max(qN - usedN, 0)}`);
+    if (d.usage_counts) {
+      const uc = {}; Object.entries(d.usage_counts).forEach(([k, v]) => { const kk = OLD[k] || k; uc[kk] = (uc[kk] || 0) + v; });
+      const row = el("div", "uc");
+      USAGE.forEach(([k, label]) => { const c = el("span", "chip" + (uc[k] ? "" : " zero")); add(c, el("b", null, String(uc[k] || 0)), document.createTextNode(label)); row.append(c); });
+      c3.append(row);
+    }
+    const byTool = Object.entries(ai.tools || {}).map(([t, c]) => `${tool(t)} ${c}`).join(" · ");
+    if (byTool) { const e = el("div", "muted", "쓰임새는 규칙으로 나누고 학생이 확인 · " + byTool); e.style.fontSize = "11.5px"; c3.append(e); }
+    L.append(c3);
+
+    if (s && s.sessions != null) {
+      const p = s.pastes || {};
+      const c4 = card("글을 쓴 과정"), g = el("div", "pn3");
+      [[`${n(s.typed)}자`, "키보드로 친 글자"], [`${n(p.chars)}자`, "붙여넣은 글자"], [`${n(s.deleted)}자`, "지운 글자"]].forEach(([v, k]) => {
+        const x = el("div", "pn"); add(x, el("b", null, v), el("span", null, k)); g.append(x);
+      });
+      c4.append(g);
+      const e = el("div", "desc", `붙여넣은 글자 · AI ${n(p.from_ai_chars)} · 다른 곳 ${n(p.from_other_chars)}` + (p.unknown_chars ? ` · 출처 기록 없음 ${n(p.unknown_chars)}` : ""));
+      e.style.cssText = "font-size:11.5px;margin-top:-4px"; c4.append(e);
+      if ((s.days || []).length) c4.append(bars(s.days));
+      R.append(c4);
+    }
+
+    const rc = d.result_counts || (() => { const k = links.map(l => l.kind); return { ai: k.filter(x => x === "exact" || x === "similar").length, edited: k.filter(x => x === "edited").length, viewed: k.filter(x => x === "viewed").length }; })();
+    const c5 = card("결과물에 들어간 것", rc.total ? `보고서 ${rc.total}문장 · 문장마다는 "출처 보기" 탭` : `학생이 확인한 연결 ${links.length}곳`);
+    const rows = el("div");
+    [["ai", "AI 답과 같음", "#fdecec"], ["other", "다른 곳에서 옴", "#fdecec"], ["edited", "붙여넣고 고침", "#eaf0fd"], ["viewed", "AI 답 보고 씀", null], ["none", "출처 기록 없음", "none"]].forEach(([k, label, bg]) => {
+      if (rc[k] == null || (k === "other" && !rc[k])) return;
+      const r = el("div", "rrow");
+      if (bg === null) r.append(el("span", "dl"));
+      else { const i = el("i"); if (bg === "none") { i.style.background = "rgba(24,24,27,.06)"; i.style.boxShadow = "inset 0 0 0 1px #e4e4e7"; } else i.style.background = bg; r.append(i); }
+      add(r, el("span", null, label), el("b", null, n(rc[k]))); rows.append(r);
+    });
+    c5.append(rows);
+    const more = [];
+    if (d.rejected) more.push(`Trace가 제안했지만 학생이 "아니다"라고 고른 연결 ${d.rejected}개`);
+    if (d.unsure) more.push(`학생이 판단을 보류한 제안 ${d.unsure}개 (원문은 보내지 않음)`);
+    if (d.redacted) more.push(`학생이 가린 항목 ${d.redacted}개 (내용은 오지 않았고 기록에는 남아 있음)`);
+    if (more.length) { const e = el("div", "desc", more.join(" · ")); e.style.fontSize = "11.5px"; c5.append(e); }
+    R.append(c5);
+
+    add(grid, L, R); box.append(grid);
+  }
+
+  // 언제 작업했나 — 보드 .tl (날짜 62px | 막대 | 52px h:mm) · 축 9~24시 (12·15·18·21시)
+  function bars(days) {
+    days = days.slice(-7);
+    const m = iso => +iso.slice(11, 13) * 60 + +iso.slice(14, 16);
+    let lo = Math.min(540, ...days.flatMap(x => x.segments.map(g => m(g.start))));
+    let hi = Math.max(1440, ...days.flatMap(x => x.segments.map(g => m(g.end))));
+    lo = Math.floor(lo / 180) * 180; hi = Math.min(1440, Math.ceil(hi / 180) * 180);
+    const box = el("div"); box.style.cssText = "display:flex;flex-direction:column;gap:5px";
+    days.forEach(x => {
+      const r = el("div", "tl"), b = el("span", "bar");
+      x.segments.forEach(g => { const i = el("i"); i.style.left = (100 * (m(g.start) - lo) / (hi - lo)) + "%"; i.style.width = Math.max(0.8, 100 * (m(g.end) - m(g.start)) / (hi - lo)) + "%"; i.title = `${hm(g.start)}–${hm(g.end)}`; b.append(i); });
+      const t = el("span", null, hmm(x.minutes)); t.style.textAlign = "right";
+      add(r, el("span", null, md(x.date, true)), b, t); box.append(r);
+    });
+    const ax = el("div", "tl"), axis = el("span", "ax");
+    for (let h = lo + 180; h < hi; h += 180) { const a = el("span", null, `${h / 60}시`); a.style.left = (100 * (h - lo) / (hi - lo)) + "%"; axis.append(a); }
+    ax.style.marginTop = "-2px"; add(ax, el("span"), axis, el("span")); box.append(ax);
     return box;
   }
 
-  // 10분 안쪽이면 초까지 (1분 27초) — 옛 요약엔 pause_seconds 가 없어 분으로
-  function pauseLen(s) {
-    const t = s.pause_seconds;
-    if (t == null) return mins(s.pause_minutes).join("");
-    if (t < 600) return t >= 60 ? `${Math.floor(t / 60)}분 ${t % 60}초` : `${t}초`;
-    return mins(t / 60).join("");
-  }
-
-  // 출처 보기 — 보고서 전문 (결정 C: 가져온 그대로 = 빨강 바탕 · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 그대로)
-  function sourceView(box, src) {
+  // ── 출처 보기 (보드 Public: 범례 · 1/N · 글자로 표시 | 문서 + 오른쪽 340px 근거) ──
+  function sourcePane(box, src) {
     const S = src.sentences || [], Q = src.questions || [];
-    const legend = el("div", "legend");
-    [["copy", "가져온 그대로"], ["edited", "붙여넣고 고침"], ["viewed", "보고 씀"], ["none", "출처 기록 없음"]].forEach(([g, t]) => {
-      const sp = el("span", "lg g-" + g, t); legend.append(sp);
+    const cnt = { copy: 0, edited: 0, viewed: 0, none: 0 };
+    S.forEach(x => { if (cnt[x.group] != null) cnt[x.group]++; });
+    const bar = el("div", "bar2"), lg = el("div", "legend");
+    [["copy", "AI 답과 같음", "#e5484d"], ["edited", "고침", "#3e63dd"], ["viewed", "보고 씀", null], ["none", "출처 기록 없음", "none"]].forEach(([g, label, c]) => {
+      const sp = el("span");
+      if (c === null) { const u = el("span", null, label); u.style.cssText = "text-decoration:underline dashed #3e63dd;text-decoration-thickness:1.5px;text-underline-offset:5px"; add(sp, u, el("em", null, String(cnt[g]))); }
+      else { const i = el("i"); if (c === "none") { i.style.background = "rgba(24,24,27,.06)"; i.style.boxShadow = "inset 0 0 0 1px #e4e4e7"; } else i.style.background = c; add(sp, i, document.createTextNode(label + " "), el("em", null, String(cnt[g]))); }
+      lg.append(sp);
     });
-    add(box, add(el("h2"), document.createTextNode(src.title || src.file || "과제"),
-                 el("small", null, `${src.file || ""} · 문장을 누르면 이어진 질문·답`)), legend);
-    const doc = el("div", "srcdoc"), detail = el("div", "srcdetail");
-    detail.hidden = true;
+    const nav = el("div"); nav.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:4px;flex:none";
+    const pv = el("button", "iconbtn"), nx = el("button", "iconbtn"); pv.type = nx.type = "button"; pv.title = "앞 문장"; nx.title = "다음 문장";
+    pv.append(icon("prev")); nx.append(icon("next"));
+    const pos = el("span", null, ""); pos.style.cssText = "font-size:12.5px;color:#71717a;font-variant-numeric:tabular-nums;margin:0 4px";
+    add(nav, pv, pos, nx);
+    const tg = el("button", "btn btn-outline btn-sm", "글자로 표시"); tg.type = "button"; tg.setAttribute("aria-pressed", "false");
+    add(bar, lg, nav, tg); box.append(bar);
+
+    const split = el("div", "split"); split.style.marginTop = "14px";
+    const doc = el("article", "doc"), side = el("aside", "side");
+    if (src.file) { const f = el("div", "file"); add(f, icon("file"), document.createTextNode(src.file)); doc.append(f); }
+    const spans = [];
     (src.paragraphs || []).forEach(p => {
-      const para = el(p.head ? "h3" : "p");
-      p.sents.forEach(k => {
+      const para = el("p", p.head ? "h" : null);
+      p.sents.forEach((k, j) => {
         const x = S[k]; if (!x) return;
-        const sp = el("span", "s g-" + (x.group || "none") + (x.unsure ? " unsure" : ""), x.text + " ");
-        if (x.q != null && Q[x.q]) {
-          sp.tabIndex = 0; sp.setAttribute("role", "button");
-          const open = () => { showQ(detail, Q[x.q], x); para.after(detail); };
-          sp.onclick = open; sp.onkeydown = e => { if (e.key === "Enter") open(); };
-        }
-        para.append(sp);
+        if (j) para.append(document.createTextNode(" "));
+        const sp = el("span", `s ${CLS[x.group] || "no"}${x.unsure ? " unsure" : ""}`, x.text);
+        sp.dataset.l = SHORT[x.kind] || "기록 없음"; sp.tabIndex = 0; sp.setAttribute("role", "button");
+        sp.onclick = () => pick(k); sp.onkeydown = e => { if (e.key === "Enter") pick(k); };
+        spans[k] = sp; para.append(sp);
       });
       doc.append(para);
     });
-    add(box, doc);
-    add(box, el("p", "sub", "학생이 \"아니다\"라고 고른 제안은 출처 없음으로, 판단을 보류한 문장은 점선 테두리로 보입니다. 보고서 전문은 링크가 끝나면 서버에서 지워집니다."));
-  }
-  function showQ(box, q, x) {
-    box.textContent = ""; box.hidden = false;
-    if (q.hidden) add(box, row("q", "학생 질문", "", "(학생이 가린 질문)"));
-    else if (q.question) add(box, row("q", "학생 질문", when(q.ts), q.question));
-    if (q.answer) add(box, row("ans", `${tool(String(q.tool || "").toLowerCase())} 답`, q.model || "", q.answer.map(t => t.t).join("")));
-    const chips = el("div", "chips");
-    if (q.question_ok === false || q.answer_ok === false) add(chips, el("span", "chip bad", "⚠ 기록 당시와 다름"));
-    if (x && x.unsure) add(chips, chip("학생이 판단을 보류함"));
-    if (x && x.paste && x.paste.pasted_at) add(chips, chip(`복사 ${when(x.paste.copied_at, false)} → 붙여넣기 ${when(x.paste.pasted_at, false)}`));
-    if (chips.childNodes.length) add(box, chips);
-  }
-  // 질문 기준 (출처 보기를 켰을 때) — 시간 순 · 글이 들어간 답과 참고만 한 답을 같이
-  function questionView(box, src) {
-    const Q = src.questions || [];
-    const used = Q.filter(q => q.uses && q.uses.length).length;
-    add(box, add(el("h2"), document.createTextNode("질문 기준"),
-                 el("small", null, `질문 ${Q.length}개 · 과제에 글이 들어간 답 ${used} · 참고만 한 답 ${Q.length - used}`)));
-    if (!Q.length) add(box, el("div", "empty", "기록된 질문이 없습니다."));
-    Q.forEach(q => {
-      const c = el("div", "link");
-      showQ(c, q, null); c.hidden = false;
-      const chips = el("div", "chips");
-      add(chips, chip(q.uses && q.uses.length ? `과제 ${q.paras.join("·")}번째 문단에 들어감` : "참고만", q.uses && q.uses.length ? "var(--ink)" : "var(--line)"));
-      add(c, chips);
-      add(box, c);
-    });
+    add(split, doc, side); box.append(split);
+    const order = S.filter(x => x.group !== "none").map(x => x.k);
+    let cur = null;
+    function pick(k) {
+      if (cur != null && spans[cur]) spans[cur].classList.remove("sel");
+      cur = k; if (spans[k]) spans[k].classList.add("sel");
+      const i = order.indexOf(k); pos.textContent = order.length ? `${i >= 0 ? i + 1 : "–"} / ${order.length}` : "0 / 0";
+      detail(S[k]);
+    }
+    function step(dir) {
+      if (!order.length) return;
+      const i = order.indexOf(cur), j = i < 0 ? 0 : (i + dir + order.length) % order.length;
+      pick(order[j]); spans[order[j]].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    pv.onclick = () => step(-1); nx.onclick = () => step(1);
+    tg.onclick = () => { const on = doc.classList.toggle("tags"); tg.classList.toggle("on", on); tg.setAttribute("aria-pressed", String(on)); };
+
+    function detail(x) {
+      side.textContent = "";
+      const q = x.q != null ? Q[x.q] : null;
+      const top = el("div"), kd = el("div", "kind"), dot = el("i"); dot.style.background = DOT[x.group] || "#a1a1aa";
+      add(kd, dot, document.createTextNode(x.rejected ? "출처 없음 (학생이 아니라고 함)" : LONG[x.kind] || "출처 기록 없음")); top.append(kd);
+      if (q) top.append(el("div", "meta", [tool(q.tool), q.model].filter(Boolean).join(" · ")));
+      side.append(top);
+      if (q) { const w = el("div"); add(w, el("p", "lab", "질문"), el("p", "qt", q.hidden ? "(학생이 가린 질문)" : q.question || "(질문 기록 없음)")); side.append(w); }
+      const r = el("div"), rw = el("div", "well", x.text); rw.style.color = "#18181b"; add(r, el("p", "lab", "결과물"), rw); side.append(r);
+      if (q && q.answer) {
+        const a = el("div"), w = el("div", "well");
+        q.answer.forEach(t => {
+          if (!t.g) { w.append(document.createTextNode(t.t)); return; }
+          const sp = el("span", "hl", t.t);
+          const mine = (x.sents || []).includes(t.i);
+          sp.style.background = { copy: mine ? "#f9d3d4" : "#fdecec", edited: mine ? "#d3defa" : "#eaf0fd", viewed: mine ? "rgba(62,99,221,.12)" : "transparent", none: "transparent" }[t.g] || "transparent";
+          if (t.g === "viewed") { sp.style.textDecoration = "underline dashed #3e63dd"; sp.style.textUnderlineOffset = "4px"; }
+          w.append(sp);
+        });
+        add(a, el("p", "lab", "AI 답 원문"), w); side.append(a);
+        if (q.question_ok === false || q.answer_ok === false) side.append(el("div", "warnline", "⚠ 기록 당시 글과 다릅니다"));
+      }
+      const ev = el("div"), t = el("p", "ev");
+      if (x.paste && x.paste.pasted_at) {
+        t.append(document.createTextNode("복사·붙여넣기 기록과 이어짐")); t.append(el("br"));
+        if (x.paste.domain || x.paste.source) t.append(el("b", null, x.paste.domain || x.paste.source));
+        t.append(document.createTextNode(`${x.paste.domain || x.paste.source ? " · " : ""}${hm(x.paste.copied_at)} 복사 → ${hm(x.paste.pasted_at)} 문단 ${x.p + 1}`));
+      } else if (x.rejected) t.textContent = "Trace 가 제안했지만 학생이 아니라고 골랐습니다";
+      else if (x.unsure) t.textContent = "글자가 비슷하지만 학생이 판단을 보류했습니다";
+      else if (q) t.textContent = "글자가 비슷해 학생이 확인함";
+      else if (x.kind === "noproc") t.textContent = "이 PC 에서 키 입력·붙여넣기 없이 나타난 글 — 어디서 왔는지는 기록에 없습니다";
+      else t.textContent = "이어지는 AI 답·붙여넣기 기록이 없습니다 — 직접 썼다는 뜻은 아닙니다";
+      add(ev, el("p", "lab", "근거"), t); side.append(ev);
+    }
+    if (order.length) pick(order[0]); else if (S.length) pick(S[0].k);
   }
 
-  function row(cls, label, sub, text) {
-    const r = el("div", "row " + cls);
-    const k = el("div", "k");
-    add(k, el("b", null, label), sub ? el("span", null, sub) : null);
-    return add(r, k, el("div", "t", text));
+  // ── 질문 기준 (보드 PublicQ: 숫자 · 거르기 | 시간 순 목록 + 오른쪽 380px) ──
+  function questionPane(box, d, Q, ai, src) {
+    const usedN = Q.filter(q => q.used).length, qN = ai.questions || Q.length;
+    const row = el("div"); row.style.cssText = "display:flex;align-items:center;gap:12px;flex-wrap:wrap";
+    const f = el("div", "facts");
+    [[qN, "질문"], [usedN, "결과물에 글이 들어간 답"], [Math.max(qN - usedN, 0), "참고만 한 답"], [d.redacted || 0, "가림"]].forEach(([v, t]) => { const sp = el("span"); add(sp, el("b", null, String(v)), document.createTextNode(t)); f.append(sp); });
+    const seg = el("div", "seg"); let filt = "all";
+    [["all", "전체"], ["used", "글이 들어간 답"], ["ref", "참고만"]].forEach(([k, t]) => {
+      const b = el("button", null, t); b.type = "button"; b.setAttribute("aria-pressed", String(k === filt));
+      b.onclick = () => { filt = k; seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); list(); };
+      seg.append(b);
+    });
+    const segW = el("span"); segW.style.marginLeft = "auto"; segW.append(seg);
+    add(row, f, segW); box.append(row);
+    if (!src && qN > Q.length) {
+      const e = el("div", "desc", `학생이 출처 보기를 꺼 두어, 결과물과 이어진 질문과 학생이 고른 대표 질문만 보입니다 (전체 ${qN}개 중 ${Q.length}개).`);
+      e.style.cssText = "font-size:12.5px;margin-top:8px"; box.append(e);
+    }
+    const split = el("div", "split"); split.style.marginTop = "14px";
+    const sec = el("section", "card qlist"), side = el("aside", "side q");
+    add(split, sec, side); box.append(split);
+    const byTool = {}; Q.forEach(q => { const t = tool(q.tool); byTool[t] = (byTool[t] || 0) + 1; });
+    let cur = null;
+    function list() {
+      sec.textContent = "";
+      const hd = el("div", null, `시간 순 · ${Object.entries(byTool).map(([t, c]) => `${t} ${c}`).join(" · ")} · 까만 점 = 글이 들어감 · 빈 점 = 참고만`);
+      hd.style.cssText = "padding:0 12px 6px;font-size:12px;color:#a1a1aa"; sec.append(hd);
+      const shown = Q.filter(q => filt === "all" || (filt === "used") === q.used);
+      if (!shown.length) sec.append(el("div", "empty", filt === "ref" ? "참고만 한 질문이 없습니다" : "질문이 없습니다"));
+      shown.forEach(q => {
+        const r = el("button", "qrow" + (q === cur ? " on" : "")); r.type = "button";
+        const mid = el("div"); mid.style.minWidth = "0";
+        add(mid, el("div", "n", `질문 ${q.n} · ${tool(q.tool)}`));
+        const qt = el("div", "q", q.hidden ? "(학생이 가린 질문)" : q.text || "(질문 기록 없음)");
+        if (q.used) qt.style.fontWeight = "500";
+        if (q.hidden) qt.append(el("span", "badge b-hide", "가림"));
+        mid.append(qt);
+        const bd = el("div", "bd");
+        if (q.counts.copy) bd.append(el("span", "badge b-red", `AI 답과 같음 ${q.counts.copy}`));
+        if (q.counts.edited) bd.append(el("span", "badge b-blue", `고침 ${q.counts.edited}`));
+        if (q.counts.viewed) { const b = el("span", "badge b-view"); b.append(el("span", null, `보고 씀 ${q.counts.viewed}`)); bd.append(b); }
+        if (!q.used) bd.append(el("span", "badge b-ref", "참고만"));
+        if (q.paras.length) { const p = el("span", null, `문단 ${q.paras.join(" · ")}`); p.style.cssText = "font-size:12px;color:#71717a;margin-left:2px"; bd.append(p); }
+        add(r, el("span", "vl"), el("span", "t", hm(q.ts)), el("span", "d" + (q.used ? "" : " ref")), mid, bd);
+        r.onclick = () => { cur = q; list(); detail(q); };
+        sec.append(r);
+      });
+    }
+    function detail(q) {
+      side.textContent = "";
+      const top = el("div"), kd = el("div", "kind"), dot = el("i"); dot.style.background = q.used ? "#18181b" : "#a1a1aa";
+      add(kd, dot, document.createTextNode(`질문 ${q.n} · ${q.used ? "결과물에 글이 들어감" : "참고만"}`)); top.append(kd);
+      top.append(el("div", "meta", [tool(q.tool), q.model, q.ts ? `${md(q.ts)} ${hm(q.ts)}` : ""].filter(Boolean).join(" · ")));
+      side.append(top);
+      const w1 = el("div"); add(w1, el("p", "lab", "질문"), el("p", "qt", q.hidden ? "(학생이 가린 질문)" : q.text || "(질문 기록 없음)")); side.append(w1);
+      if (q.answer || q.answerText) {
+        const lab = el("p", "lab", "AI 답 원문 "); if (q.answer) lab.append(el("span", null, "· 칠한 곳이 결과물로 감"));
+        const w = el("div", "well");
+        if (q.answer) q.answer.forEach(t => {
+          if (!t.g || t.g === "none") { w.append(document.createTextNode(t.t)); return; }
+          const sp = el("span", "hl", t.t);
+          if (t.g === "viewed") { sp.style.textDecoration = "underline dashed #3e63dd"; sp.style.textUnderlineOffset = "4px"; }
+          else sp.style.background = t.g === "edited" ? "#eaf0fd" : "#fdecec";
+          w.append(sp);
+        });
+        else w.textContent = q.answerText;
+        const a = el("div"); add(a, lab, w); side.append(a);
+      }
+      if (!q.ok) side.append(el("div", "warnline", "⚠ 기록 당시 글과 다릅니다"));
+      if (q.uses.length) {
+        const g = el("div"); g.append(el("p", "lab", `결과물로 간 곳 · ${q.uses.length}문장`));
+        q.uses.forEach(x => {
+          const r = el("div", "went"), i = el("i");
+          i.style.background = x.group === "edited" ? "#eaf0fd" : x.group === "viewed" ? "#fff" : "#fdecec";
+          i.style.boxShadow = `inset 0 0 0 1px ${x.group === "edited" ? "#b9c9f5" : x.group === "viewed" ? "#3e63dd" : "#f3b5b7"}`;
+          add(r, i, el("span", "w1", `${x.p != null && x.p >= 0 ? `문단 ${x.p + 1} · ` : ""}${SHORT[x.kind] || "연결"}`), el("span", "w2", x.text || ""));
+          g.append(r);
+        });
+        side.append(g);
+      }
+    }
+    list();
+    const first = Q.find(q => q.used) || Q[0];
+    if (first) { cur = first; list(); detail(first); } else side.append(el("div", "empty", "질문을 고르면 여기 보입니다"));
   }
-  function stamp(m) { return m.history ? "이전 대화" : when(m.ts); }
-  function chip(text, color) {
-    const c = el("span", "chip");
-    if (color) { const d = el("span", "d"); d.style.background = color; c.appendChild(d); }
-    c.appendChild(document.createTextNode(text));
-    return c;
+
+  // ── 작업 과정 (보드 PublicLog — 학생이 켰을 때만: 기록마다 세 줄 + 창 이름) ──
+  function logPane(box, sessions) {
+    const bn = el("div", "banner"); add(bn, icon("info"), document.createTextNode("학생이 작업 과정을 켜 두었을 때만 보이는 탭입니다 · 창 이름까지 보입니다 · 글 원문은 보이지 않습니다"));
+    box.append(bn);
+    const col = el("div"); col.style.cssText = "display:flex;flex-direction:column;gap:12px;margin-top:12px";
+    sessions.forEach(x => {
+      const c = el("div", "card ses"), h = el("div", "sh");
+      const pr = x.process || {}, a = Date.parse(x.start), b = Date.parse(x.end), span = Math.max(b - a, 1);
+      const pos = iso => Math.min(100, Math.max(0, 100 * (Date.parse(iso) - a) / span));
+      const facts = [mins(x.minutes), `질문 ${(x.ai || {}).questions || 0}`, `붙여넣기 ${(x.pastes || {}).count || 0}`, `키보드로 +${n(x.typed)}자`];
+      if ((x.pauses || []).length) facts.push(`멈춤 ${x.pauses.map(g => `${hm(g.start)}–${hm(g.end)}`).join(", ")}`);
+      const ok = x.sealed && x.verified, stE = el("span", "st" + (ok ? "" : " bad")); add(stE, el("i"), document.createTextNode(ok ? "서버 기록과 일치" : x.sealed ? "서버 기록과 다릅니다" : "아직 끝나지 않은 기록"));
+      add(h, el("b", null, `${md(x.start, true)} ${hm(x.start)} – ${hm(x.end)}`), el("span", "desc", facts.join(" · ")), stE);
+      c.append(h);
+      [["AI 질문·답", (pr.ai || []).map(t => ["dot", pos(t)])], ["붙여넣기", (pr.paste || []).map(t => ["tick", pos(t)])],
+       ["글 입력", (pr.typing || []).map(g => ["seg2", pos(g.start), Math.max(0.6, pos(g.end) - pos(g.start))])]].forEach(([label, marks]) => {
+        const ln = el("div", "lane"), lt = el("div", "lt");
+        marks.forEach(([cls, l, w]) => { const i = el("i", cls); i.style.left = l + "%"; if (w != null) i.style.width = w + "%"; lt.append(i); });
+        add(ln, el("span", null, label), lt); c.append(ln);
+      });
+      if ((pr.windows || []).length) { const e = el("div", "desc", "창 · " + pr.windows.join(" · ")); e.style.fontSize = "12px"; c.append(e); }
+      col.append(c);
+    });
+    box.append(col);
   }
-  function list(cls, items) {
-    const u = el("ul", cls);
-    items.forEach(t => u.appendChild(el("li", null, t)));
-    return u;
-  }
+
   function fail(title, body) {
     app.textContent = "";
-    const box = el("div", "state");
-    add(box, el("h1", null, title), el("p", null, body));
-    app.appendChild(box);
+    const b = el("div", "state"); add(b, el("h1", null, title), el("p", null, body)); app.append(b);
   }
-
   if (!token) { fail("링크가 올바르지 않습니다", "받은 링크 전체를 다시 확인해 주세요."); return; }
   fetch(`/api/share/${encodeURIComponent(token)}`, { headers: { Accept: "application/json" } })
     .then(r => r.status === 410 ? r.json().then(d => Promise.reject({ deleted: d })) : r.ok ? r.json() : Promise.reject(r.status))
