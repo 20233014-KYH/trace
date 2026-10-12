@@ -294,7 +294,7 @@ def delete_work(wid):
             for 표 in (db.Message, db.Link, db.Redaction):
                 d.query(표).filter(표.statement_id == st.id).delete(synchronize_session=False)
             st.sentence = st.ai_scope = None
-            st.problems, st.summary = None, None
+            st.problems, st.summary, st.source = None, None, None
         w.title, w.ai_scope, w.deleted_at = None, None, iso()
         d.commit()
         답 = {"id": wid, "deleted_at": w.deleted_at, "sessions": len(세션)}
@@ -604,6 +604,10 @@ def create_statement(wid):
     for 이름 in ("ai_scope", "sentence", "explain_use", "explain_check"):
         if b.get(이름) is not None and not isinstance(b[이름], str):
             return jsonify(error="bad_request", message=f"{이름} 는 글자여야 합니다"), 400
+    출처 = b.get("source")                                     # 교수 링크 출처 보기 (학생이 켰을 때만 · 10/12)
+    if 출처 is not None and not (isinstance(출처, dict) and all(isinstance(출처.get(k), list)
+                                                           for k in ("paragraphs", "sentences", "questions"))):
+        return jsonify(error="bad_request", message="source 는 paragraphs · sentences · questions 가 든 것이어야 합니다"), 400
     보류 = b.get("unsure", 0)                                  # "잘 모르겠음" 개수 (10/12) — 원문은 받지 않는다
     if not isinstance(보류, int) or isinstance(보류, bool) or not 0 <= 보류 <= 100000:
         return jsonify(error="bad_request", message="unsure 는 0 이상의 정수입니다"), 400
@@ -643,7 +647,8 @@ def create_statement(wid):
                           # 교수 규칙은 학생이 넣었을 때만 (10/10 · 아직 규칙 정한 교수가 거의 없어서) — 과제 메모를 저절로 옮기지 않는다
                           ai_scope=(b.get("ai_scope") or "").strip() or None, sentence=b.get("sentence"),
                           explain_use=(b.get("explain_use") or "").strip() or None,
-                          explain_check=(b.get("explain_check") or "").strip() or None, unsure=보류 or None)
+                          explain_check=(b.get("explain_check") or "").strip() or None, unsure=보류 or None,
+                          source=출처, show_process=bool(b.get("show_process")))
         d.add(st)
         d.flush()
 
@@ -705,6 +710,11 @@ def create_statement(wid):
             if not 봉인됨:
                 문제들.append({"session_id": sid, "why": "session_not_sealed" if not s.sealed_at else "session_not_verified"})
 
+        # 같은 과제의 예전 내역서 중 살아 있는 링크가 없는 것은 보고서 전문을 지운다 (새 내역서가 대신함)
+        for 옛 in d.query(db.Statement).filter(db.Statement.work_id == wid, db.Statement.id != st.id,
+                                                db.Statement.source.isnot(None)).all():
+            if not _출처_정리(d, 옛) and not d.query(db.Share).filter(db.Share.statement_id == 옛.id).count():
+                옛.source = None                       # 링크도 안 만든 예전 내역서 — 새 내역서가 대신하므로
         st.problems, st.verified = 문제들, not 문제들
         st.summary = _과제_요약(d, wid)                   # 만들 당시 숫자를 함께 남긴다
         d.commit()
@@ -717,6 +727,22 @@ def create_statement(wid):
     print(f"← 내역서 {답['id'][:8]}…  work={wid}  원문 {len(메시지들)} · 연결 {len(연결들)} · 가림 {len(가림쌍)}  "
           f"{'검증됨' if 답['verified'] else '문제 ' + str(len(문제들)) + '건 ⚠'}")
     return jsonify(답), 201
+
+
+def _출처_정리(d, st):
+    """보고서 전문(출처 보기)은 살아 있는 링크가 있을 때만 서버에 둔다 (10/12 · 학생이 켰을 때만 오는 것).
+    살아 있는 링크 = 안 끊었고 기간이 안 끝남. 하나도 없으면 지운다. 지웠으면 True."""
+    if not st.source:
+        return False
+    지금 = now()
+    for sh in d.query(db.Share).filter(db.Share.statement_id == st.id, db.Share.revoked_at.is_(None)).all():
+        if datetime.fromisoformat(sh.expires_at) >= 지금:
+            return False
+    if d.query(db.Share).filter(db.Share.statement_id == st.id).count() == 0:
+        return False                                   # 아직 링크를 안 만들었음 — 지금 만드는 중일 수 있다
+    st.source = None
+    print(f"  · 내역서 {st.id[:8]}… 보고서 전문 지움 (살아 있는 링크 없음)")
+    return True
 
 
 def _내역서_내용(d, st, 학생용):
@@ -749,11 +775,21 @@ def _내역서_내용(d, st, 학생용):
            "explain_use": st.explain_use, "explain_check": st.explain_check,
            "tools": [{"tool": t, "models": sorted(ms)} for t, ms in 도구.items()],
            "verified": bool(st.verified), "problems": st.problems or [], "summary": st.summary, "links": 맞다,
-           "rejected": sum(l.decision == "rejected" for l in 연결), "unsure": st.unsure or 0, "redacted": len(가림)}
+           "rejected": sum(l.decision == "rejected" for l in 연결), "unsure": st.unsure or 0, "redacted": len(가림),
+           "show_process": bool(st.show_process)}
+    if st.source:
+        # 출처 보기의 질문·답마다 서버가 맞춰 본 결과 (messages 의 해시) — 가린 질문은 원문 없이
+        def 맞음(h):
+            m = 해시로.get(h) if h else None
+            return None if m is None else bool(m.match)
+        out["source"] = {**st.source, "questions": [{**q, "question_ok": 맞음(q.get("question_hash")), "answer_ok": 맞음(q.get("answer_hash"))}
+                                                     for q in st.source.get("questions", [])]}
     if not 학생용:
         # ★ 교수 화면엔 세션·이벤트 id 를 내보내지 않는다. 세션 id 를 알면 /sessions/<id>/events 로
         #   작업 기록 전체(창 이름 포함)를 읽을 수 있다 — 학생이 공유한 건 내역서뿐이다.
         out["problems"] = [{"why": p.get("why")} for p in out["problems"]]
+        if not st.show_process and out["summary"]:          # 작업 과정(기록 목록)은 학생이 켰을 때만
+            out["summary"] = {**out["summary"], "by_session": []}
         if out["summary"]:
             out["summary"] = {**out["summary"],
                               "by_session": [{k: v for k, v in s.items() if k != "id"}
@@ -817,6 +853,7 @@ def revoke_share(token):
             return jsonify(error="not_found"), 404
         if not sh.revoked_at:
             sh.revoked_at = iso()
+            _출처_정리(d, st)
             d.commit()
     return jsonify(ok=True)
 
@@ -825,8 +862,12 @@ def _공유_내용(token):
     """교수용 내역서 데이터. 없는 링크·끊은 링크·지난 링크는 None (어느 쪽인지 알려 주지 않는다)."""
     with db.Session() as d:
         sh = d.get(db.Share, token)
-        if (not sh or sh.revoked_at
-                or datetime.fromisoformat(sh.expires_at) < now()):
+        if not sh or sh.revoked_at:
+            return None
+        if datetime.fromisoformat(sh.expires_at) < now():
+            st = d.get(db.Statement, sh.statement_id)
+            if st and st.source and _출처_정리(d, st):         # 기간이 끝난 링크 — 보고서 전문을 지금 지운다
+                d.commit()
             return None
         st = d.get(db.Statement, sh.statement_id)
         w, u = d.get(db.Work, st.work_id), d.get(db.User, st.user_id)

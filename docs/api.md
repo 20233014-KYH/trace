@@ -412,6 +412,21 @@ GET    /share/{token}             ← 교수용 · 인증 없음 · 읽기 전�
 - 요약에 `pastes.from_other_count/chars` (AI 아닌 곳에서 복사) · `days:[{date, minutes, segments:[{start,end}]}]` (날짜별 작업 막대 · 멈춤은 빈 틈)
 - PDF·교수 화면: 투명성 한 줄(서버 일치 · 도구(모델) · 멈춤 · 가림 · 지운 기록) · 글을 쓴 과정(키보드로 친 글자 · 붙여넣은 글자 AI/다른 곳/출처 기록 없음 · 지운 글자 + 막대) · 질문 두 개 · QR 옆 두 줄
 
+### 10-5-2. 교수 링크 출처 보기 · 작업 과정 · 잘 모르겠음 (10/12 · ✅)
+
+내역서 만들기 요청에 더:
+```
+source?        { file, title, paragraphs:[{head, sents:[k]}], sentences:[{k, p, text, kind, group, q?, unsure?, rejected?, paste?, proc?}],
+                 questions:[{n, tool, model, ts, question|null, hidden, question_hash, answer:[{t,g,i}], answer_hash, uses:[k], paras}] }
+                 ← 학생이 "출처 보기"를 켰을 때만 (기본 끔 · 10/11 설문 34명 중 문장 출처까지 괜찮다 5명).
+                   PC 출처 보기(app/source.build)와 같은 자료 + 학생의 고름 (아니다 → 출처 없음 · 보류 → unsure · 가린 질문 → 원문 없이 hidden)
+                   질문·답 원문(참고만 한 것 포함)은 messages 로도 와서 서버가 체인 해시로 맞춰 본다 → 교수 화면 question_ok · answer_ok
+                 ★ 보고서 전문은 맞춰 볼 해시가 없다 · 살아 있는 링크가 없어지면(끊기 · 기간 끝 · 과제 지우기 · 새 내역서) 서버에서 지운다
+show_process?  true 면 교수 링크에 작업 과정(기록 목록 by_session) — 기본 끔
+unsure?        연결 확인에서 "잘 모르겠음"·안 고른 제안 수 (정수) — 원문 없이 개수만 → "판단을 보류한 제안 n개"
+```
+교수 화면 탭: **요약** · **출처 보기**(source 있을 때) · **질문 기준**(source 있으면 참고만 한 질문까지, 없으면 확인된 연결 묶음) · **작업 과정**(show_process)
+
 ### 10-5-1. 지우기 · 옮기기 · 잠깐 멈춤 (10/10 박상진 요청 · ✅ 10/11 구현)
 
 ```
