@@ -254,10 +254,35 @@ def share():
     return jsonify(답), 코드
 
 
-# ─────────────── 출처 보기 (캔버스 4 · 박상진 · app/source.py) — 같은 기록 읽기를 쓴다 ───────────────
+# ─────────────── 출처 보기 · 연결 확인 (캔버스 4 · 5-1 · 박상진 · app/source.py · app/confirm.py) — 같은 기록 읽기를 쓴다 ───────────────
 import source as 출처                            # noqa: E402
-출처.init(_jsonl, _과제별_세션)
+import confirm as 연결확인                        # noqa: E402
+from urllib.parse import quote                  # noqa: E402
+_내역서_있음 = set()                              # 한 번 확인되면 다시 묻지 않음
+
+
+def _내역서_있나(wid):
+    """왼쪽 과제를 누르면 그 과제가 어디까지 왔는지 보고 그 단계로 보낸다 — 그중 "내역서를 만들었나".
+    로그인 안 했거나 서버가 늦으면 None (모름 → PC 기록만으로 판단). 화면 넘김이 늦지 않게 4초만 기다린다"""
+    if wid in _내역서_있음:
+        return True
+    t = _auth().get("token")
+    if not t:
+        return None
+    try:
+        r = requests.get(설정["server"].rstrip("/") + f"/works/{quote(wid, safe='')}/statements/latest",
+                         headers={"Authorization": f"Bearer {t}"}, timeout=4)
+    except requests.RequestException:
+        return None
+    if r.status_code == 200:
+        _내역서_있음.add(wid)
+        return True
+    return False if r.status_code == 404 else None
+
+
+출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나)
 app.register_blueprint(출처.bp)
+app.register_blueprint(연결확인.bp)
 
 
 def main():

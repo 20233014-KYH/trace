@@ -17,14 +17,14 @@ import io
 import os
 import re
 
-from flask import Blueprint, jsonify, request, send_from_directory
+from flask import Blueprint, abort, jsonify, request, send_from_directory
 
 from core import match as M
 from core.docx import read_docx
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("source", __name__)
-_기록 = {}          # statement.py 가 init() 으로 넘겨줌: jsonl(pattern) · sessions() → {work_id: {세션 id}}
+_기록 = {}          # statement.py 가 init() 으로 넘겨줌: jsonl(pattern) · sessions() → {work_id: {세션 id}} · data_dir() · statement_exists(wid)
 _파일 = {}          # work_id → (파일 이름, 바이트) — 학생이 직접 고른 파일. 새로 고쳐도 다시 고르지 않게 (이 PC 메모리에만)
 _연_이름 = {}        # work_id → 기록된 자리에서 연 문서 이름 — 열 때마다 그 자리에서 다시 읽는다 (Word 에서 저장한 최신 내용)
 
@@ -32,13 +32,21 @@ _연_이름 = {}        # work_id → 기록된 자리에서 연 문서 이름 �
 GROUP = {"exact": "copy", "similar": "copy", "web": "copy", "noproc": "copy", "edited": "edited", "viewed": "viewed", "none": "none"}
 
 
-def init(jsonl, sessions):
-    _기록.update(jsonl=jsonl, sessions=sessions)
+def init(jsonl, sessions, data_dir=None, statement_exists=None):
+    _기록.update(jsonl=jsonl, sessions=sessions, data_dir=data_dir, statement_exists=statement_exists)
 
 
 @bp.get("/source")
 def page():
     return send_from_directory(HERE, "source.html")
+
+
+@bp.get("/ui/<name>")
+def ui(name):
+    """PC 앱 화면들이 같이 쓰는 화면 틀 (왼쪽 메뉴 · 위 줄)"""
+    if name not in ("shell.css", "shell.js"):
+        abort(404)
+    return send_from_directory(HERE, name, max_age=0)    # 늘 새로 확인 — 고친 뒤에도 예전 틀이 남아 보이지 않게
 
 
 @bp.post("/local/source")
@@ -50,15 +58,21 @@ def source():
     if f:
         _파일[wid] = (f.filename, f.read())
         _연_이름.pop(wid, None)
-    elif wid in _연_이름 and not _열기(wid, _연_이름[wid]):  # 전에 자리에서 연 문서 → 최신 저장본으로 다시 (옮겼으면 아래로)
+    if not (f and wid) and not 문서_준비(wid):
+        return jsonify(error="no_file", message="과제 파일(.docx)을 골라 주세요", files=_기록된_문서(wid)), 400
+    return _분석(wid)
+
+
+def 문서_준비(wid):
+    """파일을 새로 고르지 않았을 때 (연결 확인 화면도 씀): 전에 자리에서 연 문서는 최신 저장본으로 다시 읽고,
+    없으면 기록기가 적어 둔 위치의 가장 최근 문서. 열 문서가 있으면 True"""
+    if wid in _연_이름 and not _열기(wid, _연_이름[wid]):   # 옮겼으면 예전 내용 대신 아래로
         _파일.pop(wid, None)
     if wid and wid not in _파일:
         for d in _문서_목록(wid):                       # 가장 최근에 본 문서부터
             if d["exists"] and _열기(wid, d["name"]):
                 break
-    if not wid or wid not in _파일:
-        return jsonify(error="no_file", message="과제 파일(.docx)을 골라 주세요", files=_기록된_문서(wid)), 400
-    return _분석(wid)
+    return bool(wid) and wid in _파일
 
 
 @bp.post("/local/source/open")
@@ -91,17 +105,29 @@ def _분석(wid):
     except Exception:
         _파일.pop(wid, None)
         return jsonify(error="bad_file", message="Word(.docx) 파일을 읽지 못했습니다"), 400
-    세션 = _기록["sessions"]().get(wid, set())
-    if not 세션:
-        return jsonify(error="no_records", message="이 PC 에 이 과제의 기록이 없습니다 (기록기를 켠 PC 에서 열어 주세요)"), 404
-    events = sorted((e for e in _기록["jsonl"]("events-*.jsonl") if e.get("session_id") in 세션), key=lambda e: e.get("ts", ""))
-    context = [c for c in _기록["jsonl"]("context-*.jsonl") if c.get("session_id") in 세션]
-    msgs = [r for r in _기록["jsonl"]("ai-messages-*.jsonl") if r.get("session_id") in 세션]
+    rec = 과제_기록(wid)
+    if not rec:
+        return NO_RECORDS
+    msgs, events, context, 세션 = rec
     기록된 = _기록된_문서(wid)
     # 화면엔 경로를 안 보낸다 (이름 · 그 자리에 있는지만) — 여는 건 이 PC 서버가 한다
     docs = [{"name": d["name"], "known": d["path"] is not None, "exists": d["exists"]} for d in _문서_목록(wid)]
     return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=_같은_문서(name, 기록된),
                    sessions=len(세션), **build(paras, msgs, events, context))
+
+
+NO_RECORDS = ({"error": "no_records", "message": "이 PC 에 이 과제의 기록이 없습니다 (기록기를 켠 PC 에서 열어 주세요)"}, 404)
+
+
+def 과제_기록(wid):
+    """이 PC 에서 이 과제를 기록한 세션들의 (AI 질문·답, 이벤트(시각 순), context, 세션 id) — 없으면 None"""
+    세션 = _기록["sessions"]().get(wid, set())
+    if not 세션:
+        return None
+    events = sorted((e for e in _기록["jsonl"]("events-*.jsonl") if e.get("session_id") in 세션), key=lambda e: e.get("ts", ""))
+    context = [c for c in _기록["jsonl"]("context-*.jsonl") if c.get("session_id") in 세션]
+    msgs = [r for r in _기록["jsonl"]("ai-messages-*.jsonl") if r.get("session_id") in 세션]
+    return msgs, events, context, 세션
 
 
 def _같은_문서(name, 기록된):

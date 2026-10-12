@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>연결 확인 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/shell.css">
+<style>
+/* 연결 확인 — 캔버스 "Trace 화면 뼈대" 5-1 (10/12 확정)
+   묻는 단위 = AI 답 하나 · "출처로 연결할까요?" · 겹친 낱말 · 시간 순서 · 잘 모르겠음 · 남은 것 모두 연결
+   ★ 점수·퍼센트 없음. 고른 것은 이 PC 에만 (서버로 안 감). */
+.body{flex:1;min-height:0;display:flex;gap:16px;padding:20px 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.hint{font-size:12.5px;color:var(--faint);margin-top:10px}
+.desc{color:var(--muted)}
+
+/* 왼쪽: 확인할 것 (AI 답마다) */
+.lst{width:270px;flex:none;padding:14px 10px;display:flex;flex-direction:column;gap:2px;min-height:0}
+.lst-h{padding:0 10px 8px}.lst-h b{font-size:15px;font-weight:650}.lst-h div{font-size:12px;margin-top:2px;line-height:1.5}
+.rows{flex:1 1 auto;min-height:52px;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;text-align:left;width:100%}
+.row:hover{background:#f7f7f8}.row.on{background:var(--soft)}
+.mk{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;background:#fff;box-shadow:inset 0 0 0 1px #d4d4d8;color:var(--faint)}
+.mk svg{width:13px;height:13px;stroke-width:2.4}
+.row.done .mk{background:var(--ink);color:#fff;box-shadow:none}
+.row.on .mk{box-shadow:inset 0 0 0 2px var(--ink);color:var(--ink);font-weight:700}
+.row.on.done .mk{box-shadow:none}
+.rt{flex:1;min-width:0}
+.rt div{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.on .rt div{font-weight:600}.row:not(.done):not(.on) .rt div{color:var(--faint)}
+.rt small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.res{font-size:12px;font-weight:500;color:var(--muted);flex:none;white-space:nowrap}.res.link{color:var(--ink)}
+.lg{margin-top:auto;padding:12px 10px 2px;font-size:12px;line-height:1.65;border-top:1px solid var(--soft);color:var(--muted)}
+.lg h6{margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink)}.lg b{color:var(--ink);font-weight:500}
+.lg .auto{margin-top:6px}
+.nx{padding:10px 4px 0}
+.next.out{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}.next.out:hover{background:var(--soft)}
+.nx .desc{font-size:11.5px;text-align:center;margin-top:6px}
+
+/* 오른쪽: 답 하나 */
+.mc{flex:1;min-width:0;position:relative;padding:22px 30px 20px;display:flex;flex-direction:column;gap:16px;min-height:0}
+.prog{display:flex;align-items:center;gap:12px}
+.prog .pos{white-space:nowrap;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.segs{display:flex;gap:4px;flex:0 1 360px;min-width:0}
+.segs i{display:block;flex:1;max-width:36px;height:5px;border-radius:3px;background:#e4e4e7}
+.segs i.d{background:var(--ink)}.segs i.c{background:var(--muted)}
+.all{margin-left:auto;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px var(--ink);background:#fff;white-space:nowrap}
+.all:hover{background:var(--soft)}.all svg{width:14px;height:14px;stroke-width:2.2}
+.pop{position:absolute;top:62px;right:30px;width:320px;z-index:5;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 0 0 1px var(--line),0 12px 32px rgba(24,24,27,.14);display:flex;flex-direction:column;gap:10px}
+.pop h3{margin:0;font-size:15px;font-weight:650}
+.pop p{margin:0;font-size:13px;color:#52525b;line-height:1.6;word-break:keep-all}
+.pop .ls{display:flex;flex-direction:column;gap:6px;font-size:12.5px;padding:10px 12px;border-radius:10px;background:var(--soft);max-height:180px;overflow:auto}
+.pop .ls div{display:flex;justify-content:space-between;gap:10px}.pop .ls span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop .ls b{font-weight:600;flex:none}
+.pop .bt{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
+
+.qc{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:6px 12px 6px 8px;border-radius:999px;background:var(--soft);font-size:13px;color:var(--ink2)}
+.qc em{font-style:normal;padding:1px 8px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font-size:12px;font-weight:600;color:var(--ink);flex:none}
+.qc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qc small{color:var(--faint);font-size:13px;white-space:nowrap;flex:none}
+.qc.none span{color:var(--faint)}
+h2{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.4;margin:12px 0 0}
+.sub{font-size:13.5px;margin-top:4px}
+.m{background:rgba(62,99,221,.13);border-radius:3px;padding:1px 0;color:var(--ink);-webkit-box-decoration-break:clone;box-decoration-break:clone}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;gap:8px;min-height:0}
+.cap{font-size:12px;font-weight:500;color:var(--muted)}
+.sents{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;padding:1px}
+.sent{display:flex;gap:10px;padding:12px 14px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--line);text-align:left;width:100%;flex:none}
+.sent:hover{box-shadow:inset 0 0 0 1px #d4d4d8}
+.sent.off .tx{color:var(--faint)}.sent.off .m{background:none;color:var(--faint)}
+.cb{width:18px;height:18px;border-radius:5px;flex:none;margin-top:3px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:#fff}
+.cb svg{width:12px;height:12px;stroke-width:2.6}
+.sent.off .cb{background:#fff;box-shadow:inset 0 0 0 1.5px #d4d4d8}.sent.off .cb svg{display:none}
+.tx{font-size:15px;line-height:1.75;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.ans{position:relative;flex:1;min-height:0;overflow:auto;border-radius:12px;padding:14px 18px;font-size:14.5px;line-height:1.85;background:var(--soft);color:#52525b;white-space:pre-wrap;overflow-wrap:anywhere}
+
+.tline{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);padding:10px 14px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--soft);min-width:0;overflow:hidden}
+.tline>b{font-weight:600;color:var(--ink);margin-right:4px;white-space:nowrap}
+.tline span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tline span i{width:7px;height:7px;border-radius:50%;background:var(--ink)}.tline span.q i{background:var(--faint)}
+.tline span b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.tline em{flex:1;min-width:14px;height:1px;background:var(--line)}
+
+.acts{display:flex;align-items:center;gap:8px}
+.b{height:40px;padding:0 16px;border-radius:10px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.b svg{width:16px;height:16px;stroke-width:2.2}
+.b.pri{background:var(--ink);color:#fff}.b.pri:hover{background:#27272a}.b.pri:disabled{background:#d4d4d8;cursor:default}
+.b.out{background:#fff;box-shadow:inset 0 0 0 1px var(--line)}.b.out:hover{background:var(--soft)}
+.b.gh{font-weight:500}.b.gh:hover{background:var(--soft)}
+.b.sm{height:34px;padding:0 14px;font-size:13.5px}
+.b.chosen{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--edit-d)}
+.state{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.state b{color:var(--ink);font-weight:600}
+
+.empty{max-width:440px;margin:auto;text-align:center;color:var(--muted);font-size:14px}
+.empty h3{color:var(--ink);font-size:17px;margin:0 0 6px}
+.empty .next{display:inline-flex;padding:0 18px;margin-top:16px}
+.err{color:var(--copy-d)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+        <button class="ib arw" id="b-back" title="뒤로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <button class="ib arw" id="b-fwd" title="앞으로" aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+        <div class="crumb"><a>내 과제</a>/<a id="c-work">과제</a>/<b>연결 확인</b></div>
+      </div>
+      <div class="steps" aria-label="단계">
+        <span class="done"><i></i>기록</span><em></em><span class="done" data-s="source"><i></i>출처 보기</span><em></em><span class="cur" data-s="confirm"><i></i>연결 확인</span><em></em><span data-s="report"><i></i>내역서</span>
+      </div>
+      <div class="win">
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body">
+      <section class="card lst" aria-label="확인할 것">
+        <div class="lst-h"><b id="l-title">출처 정리</b><div class="desc">비슷한 AI 답은 있는데 붙여넣기 기록은 없는 문장 · 답 하나씩 묶었어요</div></div>
+        <div class="rows" id="rows" role="listbox"></div>
+        <div class="lg">
+          <h6>고른 것은 내역서에 이렇게 나와요</h6>
+          <b>연결함</b> → AI 답을 읽고 내 말로 다시 씀<br>
+          <b>연결 안 함</b> → 출처 기록 없음<br>
+          <b>잘 모르겠음</b> → 비슷한 답 있음 (학생 확인 안 함)
+          <div class="auto" id="l-auto" hidden></div>
+        </div>
+        <div class="nx"><a class="next out" id="b-next" href="/">다음: 내역서</a><div class="desc" id="l-left" hidden></div></div>
+      </section>
+      <section class="card mc" id="mc"><div class="empty">불러오는 중…</div></section>
+    </div>
+  </main>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const { call, el, hm, md, icon } = TraceShell;
+  const wid = new URLSearchParams(location.search).get("work") || "";
+  const NAME = { link: "연결함", no: "연결 안 함", unsure: "잘 모르겠음" };
+  const CHECK = '<path d="M20 6 9 17l-5-5"/>';
+  let D = null, cur = 0, checks = {}, popOpen = false;
+
+  TraceShell.init({ wid, step: "confirm" });
+
+  // ── 고른 것 ──
+  const dec = it => D.decisions[it.key];
+  const done = g => g.items.every(it => dec(it));
+  const left = () => D.groups.filter(g => !done(g));
+  function summary(g) {                                     // 왼쪽 줄 끝에 보일 말
+    const ds = g.items.map(dec);
+    if (ds.some(d => !d)) return ds.some(Boolean) ? { t: "일부만 고름", c: "" } : null;
+    if (ds.every(d => d === ds[0])) return { t: NAME[ds[0]], c: ds[0] };
+    const n = ds.filter(d => d === "link").length;
+    return n ? { t: `${n}문장 연결`, c: "link" } : { t: "일부만 고름", c: "" };
+  }
+  function initChecks(g) {                                  // 체크 = 연결하기를 누르면 연결될 문장. 전에 뺀 문장만 꺼 둠
+    const allNo = g.items.every(it => dec(it) === "no");
+    g.items.forEach(it => { if (!(it.key in checks)) checks[it.key] = allNo || dec(it) !== "no"; });
+  }
+
+  async function save(set) {
+    try {
+      const r = await call("POST", "/local/confirm/decide", null, { work_id: wid, set });
+      D.decisions = r.decisions;
+    } catch (e) { alert("저장하지 못했습니다: " + e.message); return false; }
+    return true;
+  }
+  async function choose(kind) {
+    const g = D.groups[cur]; if (!g) return;
+    const set = {};
+    g.items.forEach(it => set[it.key] = kind === "link" ? (checks[it.key] ? "link" : "no") : kind);
+    if (kind === "link" && !g.items.some(it => checks[it.key])) return;
+    if (!await save(set)) return;
+    const i = D.groups.findIndex((x, j) => j > cur && !done(x));
+    const k = i >= 0 ? i : D.groups.findIndex(x => !done(x));
+    go(k >= 0 ? k : cur);
+  }
+  async function linkAll() {
+    const set = {};
+    left().forEach(g => g.items.forEach(it => { if (!dec(it)) set[it.key] = (checks[it.key] !== false) ? "link" : "no"; }));
+    popOpen = false;
+    if (Object.keys(set).length && !await save(set)) return;
+    render();
+  }
+
+  // ── 그리기 ──
+  function render() {
+    renderList();
+    const mc = $("mc"); mc.textContent = "";
+    if (!D.groups.length) {
+      const e = el("div", "empty");
+      e.append(el("h3", null, "확인할 것이 없어요"),
+               el("div", null, "붙여넣기 기록 없이 글자만 비슷한 문장이 없습니다. 붙여넣기 기록으로 확실한 연결은 저절로 들어가요."));
+      const a = el("a", "next", "다음: 내역서"); a.href = "/"; e.append(a);
+      mc.append(e); return;
+    }
+    const g = D.groups[cur]; initChecks(g);
+
+    // 진행 · 남은 것 모두 연결
+    const pr = el("div", "prog");
+    pr.append(el("span", "pos", `${cur + 1} / ${D.groups.length}`));
+    const sg = el("div", "segs");
+    D.groups.forEach((x, i) => sg.append(el("i", done(x) ? "d" : i === cur ? "c" : "")));
+    pr.append(sg);
+    const L = left();
+    if (L.length > 1 || (L.length === 1 && L[0] !== g)) {   // 남은 게 지금 보는 답 하나뿐이면 '연결하기' 와 같아서 안 보임
+      const b = el("button", "all"); b.append(icon(CHECK), `남은 ${L.length}개 모두 연결`);
+      b.setAttribute("aria-expanded", String(popOpen));
+      b.onclick = e => { e.stopPropagation(); popOpen = !popOpen; render(); };
+      pr.append(b);
+    }
+    mc.append(pr);
+    if (popOpen && L.length) mc.append(pop(L));
+
+    // 내 질문 · 묻는 말
+    const top = el("div");
+    const qc = el("div", "qc" + (g.question ? "" : " none"));
+    qc.append(el("em", null, "내 질문"), el("span", null, g.question || "질문 기록 없음"),
+              el("small", null, "· " + [g.tool, g.q_ts || g.a_ts ? `${md(g.q_ts || g.a_ts)} ${hm(g.q_ts || g.a_ts)}` : ""].filter(Boolean).join(" · ")));
+    if (g.question) qc.title = g.question;
+    top.append(qc);
+    const n = g.items.length;
+    top.append(el("h2", null, n > 1 ? `이 답과 비슷한 문장이 ${n}개 있어요. 출처로 연결할까요?` : "이 답과 비슷한 문장이 있어요. 출처로 연결할까요?"));
+    top.append(el("div", "sub desc", "Trace 는 붙여넣기만 확실히 알아요 · 보고 다시 쓴 글은 내가 정해요 · 같은 색 = 두 글에 함께 있는 낱말"));
+    mc.append(top);
+
+    // 내 결과물 · AI 답
+    const grid = el("div", "grid");
+    const c1 = el("div", "col"); c1.append(el("span", "cap", n > 1 ? "내 결과물 · 뺄 문장은 체크를 끄세요" : "내 결과물"));
+    const ss = el("div", "sents");
+    g.items.forEach(it => {
+      const s = el("button", "sent" + (checks[it.key] ? "" : " off")); s.type = "button";
+      s.setAttribute("aria-pressed", String(!!checks[it.key]));
+      const cb = el("span", "cb"); cb.append(icon(CHECK));
+      const t = el("div"); t.style.cssText = "flex:1;min-width:0";
+      const tx = el("div", "tx"); segs(tx, it.segs);
+      const meta = [`문단 ${it.p}`, it.typed ? `${hm(it.typed[0])} 입력` : "", "붙여넣기 기록 없음"].filter(Boolean).join(" · ");
+      t.append(tx, el("div", "meta", meta + (dec(it) ? ` · 지금: ${NAME[dec(it)]}` : "")));
+      s.append(cb, t);
+      s.onclick = () => { checks[it.key] = !checks[it.key]; render(); };
+      ss.append(s);
+    });
+    c1.append(ss);
+    const c2 = el("div", "col"); c2.append(el("span", "cap", `${g.tool}${g.model ? " · " + g.model : ""} · 질문 ${g.n} 의 답`));
+    const ans = el("div", "ans"); let first = null;
+    g.answer.forEach(p => {
+      if (!p.on) return ans.append(p.t);
+      const sp = el("span"); segs(sp, p.segs); ans.append(sp);
+      if (!first) first = sp;
+    });
+    c2.append(ans);
+    grid.append(c1, c2); mc.append(grid);
+    if (first) requestAnimationFrame(() => { ans.scrollTop = Math.max(0, first.offsetTop - 16); });
+
+    // 시간 순서
+    const tl = timeline(g); if (tl) mc.append(tl);
+
+    // 고르기
+    const acts = el("div", "acts");
+    const nOn = g.items.filter(it => checks[it.key]).length;
+    const s = summary(g);
+    const all1 = k => s && done(g) && g.items.every(it => dec(it) === k);
+    const bl = el("button", "b pri" + (s && done(g) && g.items.some(it => dec(it) === "link") ? " chosen" : ""));
+    bl.append(icon(CHECK), n > 1 ? `연결하기 · ${nOn}문장` : "연결하기"); bl.disabled = !nOn; bl.onclick = () => choose("link");
+    const bn = el("button", "b out" + (all1("no") ? " chosen" : ""), "연결 안 함"); bn.onclick = () => choose("no");
+    const bu = el("button", "b gh" + (all1("unsure") ? " chosen" : ""), "잘 모르겠음"); bu.onclick = () => choose("unsure");
+    const st = el("div", "state");
+    if (s) { st.append("지금: ", el("b", null, s.t), " · 바꿀 수 있어요"); }
+    else st.append("나중에 바꿀 수 있어요");
+    acts.append(bl, bn, bu, st);
+    mc.append(acts);
+  }
+
+  function segs(box, ss) {
+    (ss || []).forEach(s => s.m ? box.append(el("span", "m", s.t)) : box.append(s.t));
+  }
+
+  function timeline(g) {
+    const pts = [];
+    if (g.q_ts) pts.push({ ts: g.q_ts, t: "질문", q: true });
+    if (g.a_ts) pts.push({ ts: g.a_ts, t: `${g.tool} 답 받음` });
+    const byP = {};
+    g.items.forEach(it => { if (it.typed && (!byP[it.p] || it.typed[0] < byP[it.p])) byP[it.p] = it.typed[0]; });
+    const ps = Object.entries(byP).sort((a, b) => a[1] < b[1] ? -1 : 1);
+    if (!ps.length) return null;                            // 입력 시각을 못 찾으면 순서를 보여 주지 않는다 (추측하지 않음)
+    const show = ps.length > 2 ? 1 : ps.length;             // 문단이 많으면 첫 문단만 + "외 N문단" (한 줄에 들어가게)
+    ps.slice(0, show).forEach(([p, ts]) => pts.push({ ts, t: `문단 ${p} 입력` }));
+    const days = new Set(pts.map(x => md(x.ts)));
+    const box = el("div", "tline"); box.append(el("b", null, "시간 순서"));
+    pts.forEach((x, i) => {
+      if (i) box.append(el("em"));
+      const sp = el("span", x.q ? "q" : ""); sp.append(el("i"), el("b", null, (days.size > 1 ? md(x.ts) + " " : "") + hm(x.ts)), x.t);
+      box.append(sp);
+    });
+    if (ps.length > show) box.append(el("em"), el("span", null, `외 ${ps.length - show}문단 입력`));
+    return box;
+  }
+
+  function pop(L) {
+    const p = el("div", "pop"); p.setAttribute("role", "dialog"); p.onclick = e => e.stopPropagation();
+    const nS = L.reduce((a, g) => a + g.items.filter(it => !dec(it)).length, 0);
+    p.append(el("h3", null, `남은 ${L.length}개 모두 연결할까요?`),
+             el("p", null, `AI 답 ${L.length}개 · 문장 ${nS}개를 출처로 연결해요. 체크를 끈 문장은 빠져요.`));
+    const ls = el("div", "ls");
+    L.forEach(g => {
+      const r = el("div"); r.append(el("span", null, `${g.tool} · 질문 ${g.n} · ${g.question || "질문 기록 없음"}`),
+                                     el("b", null, `문장 ${g.items.filter(it => !dec(it)).length}`));
+      ls.append(r);
+    });
+    p.append(ls, el("div", "desc", "내역서 만들기 전까지 하나씩 바꿀 수 있어요."));
+    p.lastChild.style.fontSize = "12px";
+    const bt = el("div", "bt");
+    const c = el("button", "b gh sm", "취소"); c.onclick = () => { popOpen = false; render(); };
+    const ok = el("button", "b pri sm", "모두 연결"); ok.onclick = linkAll;
+    bt.append(c, ok); p.append(bt);
+    requestAnimationFrame(() => ok.focus());
+    return p;
+  }
+
+  function renderList() {
+    const box = $("rows"); box.textContent = "";
+    $("l-title").textContent = `출처 정리 ${D.groups.length}`;
+    D.groups.forEach((g, i) => {
+      const r = el("button", "row" + (done(g) ? " done" : "") + (i === cur ? " on" : "")); r.type = "button";
+      r.setAttribute("role", "option"); r.setAttribute("aria-selected", String(i === cur));
+      const mk = el("span", "mk"); if (done(g)) mk.append(icon(CHECK)); else mk.textContent = i + 1;
+      const t = el("div", "rt"); t.append(el("div", null, g.question || "질문 기록 없음"), el("small", null, `${g.tool} · 질문 ${g.n} · 문장 ${g.items.length}`));
+      r.title = g.question || "";
+      r.append(mk, t);
+      const s = summary(g); if (s) r.append(el("span", "res " + s.c, s.t));
+      r.onclick = () => go(i);
+      box.append(r);
+    });
+    const L = left();
+    $("b-next").className = "next" + (L.length ? " out" : "");
+    $("l-left").hidden = !L.length;
+    $("l-left").textContent = `남은 ${L.length}개는 '잘 모르겠음' 으로 넘어가요`;
+    $("l-auto").hidden = !D.auto;
+    $("l-auto").textContent = `붙여넣기 기록으로 확실한 연결 ${D.auto}문장은 묻지 않고 저절로 들어가요.`;
+  }
+
+  function go(i) { cur = Math.max(0, Math.min(D.groups.length - 1, i)); popOpen = false; render(); }
+
+  document.addEventListener("click", () => { if (popOpen) { popOpen = false; render(); } });
+  document.addEventListener("keydown", e => {
+    if (!D || !D.groups.length || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "Escape" && popOpen) { popOpen = false; return render(); }
+    if (popOpen) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); go(cur - 1); }
+    else if (e.code === "KeyY") choose("link");            // 한글 입력 상태에서도 되게 key 대신 code
+    else if (e.code === "KeyN") choose("no");
+    else if (e.code === "KeyU") choose("unsure");
+  });
+
+  async function load() {
+    const fd = new FormData(); fd.append("work_id", wid);
+    try { D = await call("POST", "/local/confirm", fd); }
+    catch (e) {
+      const mc = $("mc"); mc.textContent = "";
+      const x = el("div", "empty");
+      if (e.data && e.data.error === "no_file") {
+        x.append(el("h3", null, "과제 파일을 먼저 열어 주세요"), el("div", null, "출처 보기에서 Word(.docx) 파일을 열면 여기서 이어서 확인할 수 있어요."));
+        const a = el("a", "next", "출처 보기로"); a.href = "/source?work=" + encodeURIComponent(wid); x.append(a);
+      } else x.append(el("h3", null, "불러오지 못했습니다"), el("div", "err", e.message));
+      mc.append(x); return;
+    }
+    const k = D.groups.findIndex(g => !done(g));
+    cur = k >= 0 ? k : 0;
+    render();
+  }
+
+  TraceShell.loadWorks(wid).then(() => { if (wid) load(); });
+})();
+</script>
+</body>
+</html>
