@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>내역서 내보내기 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/shell.css">
+<style>
+/* 내역서 내보내기 — 캔버스 "Trace 화면 뼈대" 7 (①학생 설명 · ②QR 링크에 넣을 것 · ③가리기 · ④링크 기간)
+   왼쪽 = 교수에게 보이는 PDF 1장 (서버와 같은 코드로 이 PC 에서 그림) · 오른쪽 = 하나 펴면 나머지 접힘
+   ★ 점수·퍼센트 없음. 가리기는 규칙으로 찾기만 하고 정하는 건 학생. */
+.body{flex:1;min-height:0;display:flex;gap:20px;padding:20px 24px}
+.pv{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.pv h1{margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.pv .sub{font-size:13px;color:var(--muted);margin-top:-8px}
+.paper{flex:1;min-height:0;border-radius:16px;background:#e9e9ec;padding:14px;display:flex;position:relative}
+/* 새 PDF 는 뒤에서 다 그린 다음 앞으로 — 고칠 때 빈 화면이 깜빡이지 않게 (10/12) */
+.paper iframe{position:absolute;inset:14px;width:calc(100% - 28px);height:calc(100% - 28px);border:0;border-radius:6px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* 새 PDF 는 투명하게 겹쳐 두고(숨기면 뷰어가 안 그림) 종이가 그려질 때까지 기다렸다가 나타남 — PDF 뷰어의 까만 바탕이 안 보이게 */
+.paper iframe{transition:opacity .12s}
+.paper iframe.next{opacity:0;pointer-events:none}
+.paper .msg{margin:auto;color:var(--muted);text-align:center;font-size:14px}
+
+.rc{width:480px;flex:none;background:#fff;border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:0}
+.secs{flex:1;min-height:0;overflow:auto;padding:8px 22px}
+.sec{border-bottom:1px solid var(--soft)}
+.sh{display:flex;align-items:center;gap:12px;width:100%;padding:16px 0;text-align:left}
+.sh .no{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;box-shadow:inset 0 0 0 1px #d4d4d8;color:var(--ink2)}
+.sec.open .sh .no{background:var(--ink);color:#fff;box-shadow:none}
+.sh .tt{flex:1;min-width:0}.sh b{display:block;font-size:15px;font-weight:600}
+.sh small{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sh svg{width:18px;height:18px;color:var(--muted);transition:transform .15s}.sec.open .sh svg{transform:rotate(180deg)}
+.sb{display:none;flex-direction:column;gap:10px;padding:0 0 18px}.sec.open .sb{display:flex}
+.sb label{font-size:14px;font-weight:600}
+textarea{font:inherit;font-size:14px;line-height:1.6;resize:none;border:1px solid var(--line);border-radius:10px;padding:10px 12px;height:76px;color:var(--ink)}
+textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba(62,99,221,.12)}
+.cnt{font-size:12px;color:var(--faint);text-align:right;margin-top:-6px}.cnt.over{color:var(--copy-d)}
+.ref{font-size:12.5px;color:var(--muted);background:var(--soft);border-radius:10px;padding:9px 12px}
+.desc{font-size:12px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--soft)}
+.row:first-of-type{border-top:0}
+.row .rt{flex:1;min-width:0}.row .rt b{display:block;font-size:14px;font-weight:600}
+.row .rt small{display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw{width:36px;height:20px;border-radius:999px;background:#d4d4d8;position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.sw[aria-checked=true]{background:var(--ink)}.sw[aria-checked=true]::after{left:18px}
+.sw:disabled{opacity:.45;cursor:default}
+.btn{height:32px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px var(--line);background:#fff;align-self:flex-start}
+.btn:hover{background:var(--soft)}
+.seg{display:inline-flex;background:#ececee;border-radius:10px;padding:3px;align-self:flex-start}
+.seg button{height:30px;padding:0 14px;border-radius:7px;font-size:14px;color:var(--muted);font-weight:500}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+.ft{flex:none;border-top:1px solid var(--line);padding:16px 22px 18px;display:flex;flex-direction:column;gap:10px}
+.dl{height:46px;border-radius:12px;background:var(--ink);color:#fff;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.dl:hover{background:#27272a}.dl:disabled{background:#d4d4d8;cursor:default}
+.dl svg{width:18px;height:18px;stroke-width:2}
+.lk{display:flex;gap:8px}
+.lk input{flex:1;min-width:0;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13.5px;color:var(--ink2);background:var(--bg)}
+.lk button{height:38px;padding:0 12px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--line);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.lk button:disabled{color:var(--faint);cursor:default}
+.lk svg{width:15px;height:15px}
+.note{font-size:12.5px;color:var(--muted);text-align:center}.note a{color:var(--ink);font-weight:600}
+.note.err{color:var(--copy-d)}.note.ok{color:#2b7a4b}
+.empty{max-width:440px;margin:auto;text-align:center;color:var(--muted);font-size:14px}
+.empty h3{color:var(--ink);font-size:17px;margin:0 0 6px}
+.empty .next{display:inline-flex;padding:0 18px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+        <button class="ib arw" id="b-back" title="뒤로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <button class="ib arw" id="b-fwd" title="앞으로" aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+        <div class="crumb"><a>내 과제</a>/<a id="c-work">과제</a>/<b>내역서 내보내기</b></div>
+      </div>
+      <div class="steps" aria-label="단계">
+        <span class="done"><i></i>기록</span><em></em><span class="done" data-s="source"><i></i>출처 보기</span><em></em><span class="done" data-s="confirm"><i></i>연결 확인</span><em></em><span class="cur" data-s="report"><i></i>내역서</span>
+      </div>
+      <div class="win">
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body" id="body">
+      <section class="pv">
+        <h1>교수에게 보이는 것</h1>
+        <div class="sub">PDF 1장 · 오른쪽에서 고치면 바로 다시 그려요</div>
+        <div class="paper" id="paper"><div class="msg">불러오는 중…</div></div>
+      </section>
+      <section class="rc">
+        <div class="secs" id="secs"></div>
+        <div class="ft">
+          <button class="dl" id="b-dl"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>PDF 내려받기</button>
+          <div class="lk"><input id="i-link" readonly placeholder="PDF 를 내려받으면 교수 확인 링크가 만들어져요" aria-label="교수 확인 링크">
+            <button id="b-copy" disabled><svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>링크 복사</button></div>
+          <div class="note" id="note" hidden></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const { call, el, icon } = TraceShell;
+  const wid = new URLSearchParams(location.search).get("work") || "";
+  const MAX = 150;
+  let D = null, open = 1, showAllQ = false, drawT = null, saveT = null;
+
+  TraceShell.init({ wid, step: "report" });
+
+  // ── 미리 보기 (서버와 같은 PDF · 고칠 때마다 다시) ──
+  let drawN = 0;
+  function draw(now) {
+    clearTimeout(drawT);
+    drawT = setTimeout(() => {
+      // 지금 보이는 PDF 는 그대로 두고, 새 PDF 를 뒤에서 그린 다음 바꿔 끼운다 (깜빡임 없음). 늦게 온 옛 PDF 는 버림
+      const p = $("paper"), n = ++drawN;
+      p.querySelectorAll(".msg, iframe.next").forEach(x => x.remove());
+      const f = el("iframe", "next"); f.title = "교수에게 보이는 PDF 미리 보기"; f.tabIndex = -1;
+      f.onload = () => setTimeout(() => {               // load = 뷰어가 열린 것 · 종이는 조금 뒤에 그려짐 → 그때 나타냄
+        if (n !== drawN) return f.remove();
+        f.classList.remove("next"); f.tabIndex = 0;
+        setTimeout(() => { if (n === drawN) p.querySelectorAll("iframe").forEach(x => x !== f && x.remove()); }, 150);
+      }, 450);
+      f.src = `/local/export/preview?work_id=${encodeURIComponent(wid)}&t=${Date.now()}#toolbar=0&navpanes=0&view=FitH`;
+      p.append(f);
+    }, now ? 0 : 150);
+  }
+  async function save(part, redraw = true) {
+    try { await call("POST", "/local/export/draft", null, { work_id: wid, ...part }); }
+    catch (e) { return say(e.message, "err"); }
+    if (redraw) draw();
+  }
+  function say(t, cls) { const n = $("note"); n.hidden = !t; n.className = "note" + (cls ? " " + cls : ""); n.textContent = t || ""; }
+
+  // ── 오른쪽 넷 ──
+  const CHEV = '<path d="m6 9 6 6 6-6"/>';
+  function sec(n, title, summary, body) {
+    const s = el("div", "sec" + (open === n ? " open" : ""));
+    const h = el("button", "sh"); h.type = "button"; h.setAttribute("aria-expanded", String(open === n));
+    const no = el("span", "no", String(n)); const t = el("span", "tt"); t.append(el("b", null, title), el("small", null, summary));
+    h.append(no, t, icon(CHEV));
+    h.onclick = () => { open = open === n ? 0 : n; render(); };
+    const b = el("div", "sb"); if (open === n) body(b);
+    s.append(h, b); return s;
+  }
+  function sw(on, dis, onchange) {
+    const b = el("button", "sw"); b.type = "button"; b.setAttribute("role", "switch"); b.setAttribute("aria-checked", String(!!on)); b.disabled = !!dis;
+    if (onchange) b.onclick = () => onchange(!on);
+    return b;
+  }
+  function row(title, sub, sw_) { const r = el("div", "row"); const t = el("div", "rt"); t.append(el("b", null, title), el("small", null, sub)); r.append(t, sw_); return r; }
+  const until = days => { const d = new Date(Date.now() + days * 864e5); return `${d.getMonth() + 1}/${d.getDate()} 까지`; };
+
+  function render() {
+    const c = D.counts, dr = D.draft;
+    const box = $("secs"); box.textContent = "";
+    const len = s => (s || "").trim().length;
+    const s1 = [len(dr.explain_use) ? `1번 ${len(dr.explain_use)}자` : "1번 비어 있음", len(dr.explain_check) ? `2번 ${len(dr.explain_check)}자` : "2번 비어 있음"];
+    box.append(sec(1, "학생 설명 · 질문 흐름", s1.join(" · ") + ` · 대표 질문 ${D.flow.filter(q => q.picked).length}개`, b => {
+      [["explain_use", "AI 를 어디에 썼고, 무엇은 직접 했나요?", "예) 서론과 장단점 표 초안은 ChatGPT 답을 가져왔고, 제 의견 문단은 직접 썼어요"],
+       ["explain_check", "AI 답을 고르거나 고칠 때 어떻게 확인했나요?", "예) 사례 숫자는 기사로 다시 확인했어요"]].forEach(([k, q, ph]) => {
+        const id = "t-" + k; const lb = el("label", null, q); lb.htmlFor = id;
+        const ta = el("textarea"); ta.id = id; ta.placeholder = ph; ta.value = dr[k] || ""; ta.maxLength = MAX + 20;
+        const cnt = el("div", "cnt", `${len(ta.value)} / ${MAX}`);
+        ta.oninput = () => {
+          dr[k] = ta.value; cnt.textContent = `${len(ta.value)} / ${MAX}`; cnt.classList.toggle("over", len(ta.value) > MAX);
+          if (len(ta.value) > MAX) return;
+          clearTimeout(saveT); saveT = setTimeout(() => save({ [k]: ta.value }), 250);   // 잠깐 멈추면 저장 → PDF 다시 (깜빡임 없이 바꿔 끼움)
+        };
+        ta.onblur = () => { const sm = box.querySelector(".sec.open .sh small"); if (sm) sm.textContent = summary1(); };
+        b.append(lb, ta, cnt);
+      });
+      b.append(el("div", "ref", `참고 · 연결함 ${c.confirmed}곳 (붙여넣기 기록으로 확실한 것 ${c.auto}) · 연결 안 함 ${c.rejected} · 잘 모르겠음 ${c.unsure}`));
+
+      // v3 ② 질문 흐름 — 교수에게 보여 줄 대표 질문 (최대 3 · 시간 순). 고른 질문은 원문이 링크로 감
+      const picked = D.flow.filter(q => q.picked).length;
+      const lb = el("label", null, "질문 흐름 · 교수에게 보여 줄 대표 질문"); lb.style.marginTop = "6px";
+      b.append(lb, el("div", "desc", `최대 3개 · 지금 ${picked}개 · 고른 질문은 원문이 링크로 가요 · 쓰임새는 질문 글의 낱말로 나눴어요`));
+      if (!D.flow.length) b.append(el("div", "ref", "이 과제에 기록된 질문이 없어요."));
+      D.flow.forEach(q => {
+        const r = row(q.text, `${q.tool} 질문 ${q.n} · ${q.usage} · ${q.used ? "답의 글이 결과물에 들어감" : "참고만"}${q.hidden ? " · 가림" : ""}`,
+                      sw(q.picked, q.hidden || (!q.picked && picked >= 3), v => pickFlow(q.id, v)));
+        r.querySelector(".rt b").style.fontWeight = "500";
+        b.append(r);
+      });
+    }));
+    function summary1() { return [len(dr.explain_use) ? `1번 ${len(dr.explain_use)}자` : "1번 비어 있음", len(dr.explain_check) ? `2번 ${len(dr.explain_check)}자` : "2번 비어 있음"].join(" · "); }
+
+    box.append(sec(2, "QR 링크에 넣을 것", `내역서 · 연결한 질문과 답 ${c.questions ? c.questions + "개 질문" : ""} · 출처 보기 · 작업 과정은 곧`, b => {
+      b.append(row("내역서 1장", "항상 들어가요", sw(true, true)),
+               row("연결한 질문 · AI 답", `연결함 ${c.confirmed - c.dropped}곳의 원문 · 가린 것은 "가림" 으로만`, sw(true, true)),
+               row("출처 보기", "보고서 전문 + 연결된 AI 답 · 곧 켤 수 있어요 (켜면 보고서 전문이 서버로 감)", sw(false, true)),
+               row("작업 과정", "시간 순 기록 · 창 이름 포함 · 곧 켤 수 있어요", sw(false, true)),
+               el("div", "desc", "QR 을 찍은 교수에게는 켠 것만 보입니다."));
+    }));
+
+    // ③ 가리기 — 찾은 개인 정보는 기본으로 "그 부분만" 가린다 (질문은 그대로 보여 줄 수 있게 · 10/12). 통째로 가리기는 직접 고를 때만
+    const 가린것 = D.found.filter(f => f.masked || f.hidden);
+    const kinds = [...new Set(가린것.map(f => f.what.replace(/\s\d+개/g, "")).join(" · ").split(" · ").filter(Boolean))];
+    const 가린수 = c.masked + c.hidden;
+    box.append(sec(3, "가리기", 가린수 ? `${가린수}곳${kinds.length ? " · " + kinds.join(" · ") : ""}` : (D.found.length ? "찾은 것 있음 · 가린 곳 없음" : "가린 곳 없음"), b => {
+      b.append(el("div", "desc", "자동으로 찾은 것 (전화번호 · 이메일 · 주민번호 · 카드번호 · API 키) · 켜면 그 부분만 ⟦가림⟧ 으로 바뀌어요"));
+      if (!D.found.length) b.append(el("div", "ref", "보낼 질문 · 답에서 찾은 것이 없어요."));
+      D.found.forEach(f => {
+        const r = row(`${f.tool} ${f.role === "question" ? "질문" : "답"} ${f.n} · ${f.what}`,
+                      f.hidden ? "통째로 가림" : (f.masked ? f.preview : "가리지 않음 — 원문 그대로 링크로 가요"),
+                      sw(f.masked || f.hidden, f.hidden, v => maskPart(f.id, v)));
+        b.append(r);
+      });
+      const more = el("button", "btn", showAllQ ? "질문 목록 닫기" : "+ 질문을 통째로 가리기");
+      more.onclick = () => { showAllQ = !showAllQ; render(); };
+      b.append(more);
+      if (showAllQ) {
+        if (!D.questions.length) b.append(el("div", "ref", "링크에 들어갈 질문이 없어요."));
+        D.questions.forEach(q => b.append(row(`${q.tool} 질문 ${q.n}`, q.text, sw(q.hidden, false, v => toggle(q.id, v)))));
+      }
+      b.append(el("div", "desc", "가린 곳은 링크에서 \"가림\" 으로만 보여요. 서버는 원문으로 기록 당시와 같은지 확인만 하고 가린 글만 남겨요."));
+    }));
+
+    box.append(sec(4, "링크 기간", `${dr.days}일 · ${until(dr.days)} · 언제든 끊기`, b => {
+      const sg = el("div", "seg");
+      [7, 14, 30].forEach(n => { const x = el("button", n === dr.days ? "on" : "", `${n}일`); x.onclick = () => { dr.days = n; save({ days: n }); render(); }; sg.append(x); });
+      b.append(sg, el("div", "desc", `${until(dr.days)} 교수가 링크를 열 수 있어요. 지나면 PDF 의 QR 도 안 열려요.`));
+      if (D.made) {
+        const cut = el("button", "btn", "지금 링크 끊기");
+        cut.onclick = async () => {
+          if (!confirm("교수에게 보낸 링크와 PDF 의 QR 이 더는 안 열려요. 끊을까요?")) return;
+          try { await call("POST", "/local/export/revoke", null, { work_id: wid }); } catch (e) { return say(e.message, "err"); }
+          say("링크를 끊었어요.", "ok"); load();
+        };
+        b.append(cut);
+      }
+    }));
+
+    // 아래: 내려받기 · 링크
+    $("b-dl").disabled = !D.logged_in;
+    $("i-link").value = D.made ? D.made.url : "";
+    $("b-copy").disabled = !D.made;
+    if (!D.logged_in) { const n = $("note"); n.hidden = false; n.className = "note"; n.innerHTML = ""; n.append("로그인하면 링크와 PDF 를 만들 수 있어요 · "); const a = el("a", null, "로그인"); a.href = "/"; n.append(a); }
+  }
+
+  async function pickFlow(id, v) {
+    const ids = D.flow.filter(q => q.picked && q.id !== id).map(q => q.id).concat(v ? [id] : []);
+    await save({ flow: ids });
+    await load(true);
+  }
+  async function maskPart(id, v) {
+    await save({ mask: { [id]: v } });
+    await load(true);
+  }
+  async function toggle(id, v) {
+    await save({ hide: { [id]: v } });
+    await load(true);
+  }
+
+  $("b-dl").onclick = async () => {
+    $("b-dl").disabled = true; say("내역서를 만드는 중… (서버가 자고 있으면 1분쯤 걸려요)");
+    let r;
+    try { r = await call("POST", "/local/export/make", null, { work_id: wid }); }
+    catch (e) { $("b-dl").disabled = false; return say(e.message, "err"); }
+    $("b-dl").disabled = false;
+    D.made = r; $("i-link").value = r.url; $("b-copy").disabled = false;
+    if (r.problems && r.problems.length) say(`⚠ 서버 기록과 다른 곳 ${r.problems.length}개가 내역서에 그대로 표시돼요.`, "err");
+    else say(r.reused ? "바뀐 게 없어서 전에 만든 링크를 그대로 썼어요." : "내역서와 링크를 만들었어요.", "ok");
+    window.open(r.pdf_url, "_blank");
+    draw();
+  };
+  $("b-copy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("i-link").value); say("링크를 복사했어요.", "ok"); }
+    catch (e) { $("i-link").select(); say("링크를 골라 두었어요. Ctrl+C 로 복사하세요."); }
+  };
+
+  async function load(keepPreview) {
+    const fd = new FormData(); fd.append("work_id", wid);
+    try { D = await call("POST", "/local/export", fd); }
+    catch (e) {
+      $("body").textContent = "";
+      const x = el("div", "empty");
+      if (e.data && e.data.error === "no_file") {
+        x.append(el("h3", null, "과제 파일을 먼저 열어 주세요"), el("div", null, "출처 보기에서 Word(.docx) 파일을 열면 여기서 내역서를 만들 수 있어요."));
+        const a = el("a", "next", "출처 보기로"); a.href = "/source?work=" + encodeURIComponent(wid); x.append(a);
+      } else x.append(el("h3", null, "불러오지 못했습니다"), el("div", "err", e.message));
+      $("body").append(x); return;
+    }
+    render();
+    if (!keepPreview) draw(); else draw();
+  }
+
+  TraceShell.loadWorks(wid).then(() => { if (wid) load(); });
+})();
+</script>
+</body>
+</html>

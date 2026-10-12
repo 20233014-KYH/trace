@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/ui/shell.css">
 <style>
 /* 출처 보기 — 캔버스 "Trace 화면 뼈대" 4 · 4 AI 답 기준 · 4 메뉴 접음 (1차 확정 10/11)
-   흑연(zinc) · Pretendard · 색 결정 C: 가져온 그대로 = 빨강 바탕 · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색
+   흑연(zinc) · Pretendard · 색 결정 C: AI 답과 같음 · 다른 곳에서 옴 = 빨강 바탕 (10/12 이름 바꿈 · 보면서 똑같이 쳐도 빨강) · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색
    ★ 점수·퍼센트 없음. 보기만 하는 화면 — 맞다/아니다는 다음 단계(연결 확인). */
 
 /* 도구 줄 */
@@ -203,7 +203,7 @@
   const KIND = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
                  web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
   const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "" };
-  const GROUP = { copy: "가져온 그대로", edited: "고침", viewed: "보고 씀", none: "출처 기록 없음" };
+  const GROUP = { copy: "AI 답과 같음", edited: "고침", viewed: "보고 씀", none: "출처 기록 없음" };
   const DOT = { copy: "var(--copy-d)", edited: "var(--edit-d)", viewed: "var(--edit-d)", none: "#d4d4d8" };
   const wid = new URLSearchParams(location.search).get("work") || "";
   let D = null, cur = -1, tab = "doc", qcur = -1, filt = "all", works = [];
@@ -307,12 +307,18 @@
   function render() {
     const c = D.counts;
     $("lg-doc").innerHTML = "";
-    [["copy", "sw", "var(--copy-d)"], ["edited", "sw", "var(--edit-d)"], ["viewed"], ["none", "sw", "#e4e4e7"]].forEach(([g, cls, col]) => {
-      const sp = el("span");
-      if (cls) { const i = el("i", cls); i.style.background = col; sp.append(i, GROUP[g]); }
-      else sp.append(el("span", "u", GROUP[g]));
-      sp.append(el("b", null, String(c[g]))); $("lg-doc").append(sp);
-    });
+    // 빨강 = 글이 그대로 들어온 것 (결정 C). 이름은 어떻게 들어왔는지가 아니라 무엇과 같은지로 — 보면서 똑같이 쳐도 "AI 답과 같음" (10/12)
+    const n = k => D.sentences.filter(x => k.includes(x.kind)).length;
+    const other = n(["web", "noproc"]);
+    [["AI 답과 같음", "var(--copy-d)", n(["exact", "similar"]), true], ["다른 곳에서 옴", "var(--copy-d)", other, other > 0],
+     [GROUP.edited, "var(--edit-d)", c.edited, true], [GROUP.viewed, null, c.viewed, true], [GROUP.none, "#e4e4e7", c.none, true]]
+      .forEach(([t, col, k, show]) => {
+        if (!show) return;
+        const sp = el("span");
+        if (col) { const i = el("i", "sw"); i.style.background = col; sp.append(i, t); }
+        else sp.append(el("span", "u", t));
+        sp.append(el("b", null, String(k))); $("lg-doc").append(sp);
+      });
     $("lg-ai").innerHTML = "";
     [[c.questions, "질문"], [c.used, "결과물에 글이 들어간 답"], [c.ref, "참고만 한 답"]].forEach(([n, t]) => {
       const sp = el("span", "stat"); sp.append(el("b", null, String(n)), t); $("lg-ai").append(sp);
@@ -422,7 +428,8 @@
       src.append(b, ` · ${hm(p.copied_at)} 복사 → ${hm(p.pasted_at)} ${p.where || "붙여넣음"}`);
       if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
     } else if (x.kind === "viewed" || x.kind === "exact" || x.kind === "similar") {
-      src.append(el("b", null, "붙여넣기 기록 없음"), x.kind === "viewed" ? " · 글자가 비슷해서 이은 것" : " · 글자가 같음");
+      src.append(el("b", null, "붙여넣기 기록 없음"), x.kind === "viewed" ? " · 글자가 비슷해서 이은 것"
+                 : x.kind === "exact" ? " · 보면서 쳤어도 글이 AI 답과 같아요" : " · 보면서 쳤어도 글이 AI 답과 거의 같아요");
       det.append(el("div", "note", "맞는지는 다음 단계(연결 확인)에서 고릅니다."));
     } else if (x.kind === "edited") {
       src.append(el("b", null, "붙여넣은 기록 있음"));
@@ -452,7 +459,7 @@
       const m = el("div", "qm"); m.append(el("small", null, `질문 ${q.n} · ${q.tool}`), el("div", q.question ? "" : "none", q.question || "질문 기록 없음"));
       const ch = el("div", "chips");
       if (q.uses.length) {
-        [["copy", "가져온 그대로"], ["edited", "고침"], ["viewed", "보고 씀"]].forEach(([g, t]) => {
+        [["copy", "AI 답과 같음"], ["edited", "고침"], ["viewed", "보고 씀"]].forEach(([g, t]) => {
           if (!q.groups[g]) return;
           const c = el("span", "chip " + g);
           if (g === "viewed") c.append(el("span", null, t), ` ${q.groups[g]}`); else c.textContent = `${t} ${q.groups[g]}`;

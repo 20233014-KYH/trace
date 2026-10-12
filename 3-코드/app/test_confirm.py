@@ -125,10 +125,10 @@ def main():
         검사("고른 것 없으면 출처 보기", 갈곳("W-match_web").endswith("/source?work=W-match_web"))
         검사("고르다 말았으면 연결 확인", 갈곳("W-match_view").endswith("/confirm?work=W-match_view"))
         P({"work_id": "W-match_view", "set": {k: "unsure" for k in 새키}})
-        검사("다 골랐으면 내역서 (다음 할 일)", 갈곳("W-match_view").endswith("/?work=W-match_view"))
+        검사("다 골랐으면 내역서 (다음 할 일)", 갈곳("W-match_view").endswith("/export?work=W-match_view"))
         옛것 = ST.출처._기록["statement_exists"]
         ST.출처._기록["statement_exists"] = lambda w: w == "W-match_mix"            # 서버에 내역서가 있다고 치고
-        검사("내역서를 만든 과제는 내역서", 갈곳("W-match_mix").endswith("/?work=W-match_mix") and 갈곳("W-match_web").endswith("/source?work=W-match_web"))
+        검사("내역서를 만든 과제는 내역서", 갈곳("W-match_mix").endswith("/export?work=W-match_mix") and 갈곳("W-match_web").endswith("/source?work=W-match_web"))
         ST.출처._기록["statement_exists"] = 옛것
         검사("로그인 안 했으면 서버에 안 물음 (PC 기록만)", 옛것("W-match_mix") is None)
         S_ = lambda w: c.get(f"/local/stage?work_id={w}", **HOST).json

@@ -4,7 +4,7 @@ source.py — 학생 PC 의 "출처 보기" 화면 (캔버스 4 · 10/11 박상�
   python app/statement.py  →  http://127.0.0.1:5079/source        (내역서 화면과 같은 작은 서버에 붙는다)
 
 과제 파일(.docx) 문장마다 어디서 왔는지 색으로 보여 준다. 탭 둘:
-  문서 기준  — 보고서 전문에 색 (결정 C: 가져온 그대로 = 빨강 바탕 · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색)
+  문서 기준  — 보고서 전문에 색 (결정 C: AI 답과 같음 · 다른 곳에서 옴 = 빨강 바탕 · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색)
               문장을 누르면 오른쪽에 질문 · 결과물 · AI 답 원문(쓰인 곳 칠함) · 출처(언제 복사 → 언제 붙여넣음)
   AI 답 기준 — 질문을 시간 순으로. 결과물에 글이 들어간 답과 **참고만 한 답**(이해·확인에 쓴 것)을 같이 보여 준다
 
@@ -28,12 +28,13 @@ _기록 = {}          # statement.py 가 init() 으로 넘겨줌: jsonl(pattern)
 _파일 = {}          # work_id → (파일 이름, 바이트) — 학생이 직접 고른 파일. 새로 고쳐도 다시 고르지 않게 (이 PC 메모리에만)
 _연_이름 = {}        # work_id → 기록된 자리에서 연 문서 이름 — 열 때마다 그 자리에서 다시 읽는다 (Word 에서 저장한 최신 내용)
 
-# 화면 묶음 (결정 C): 빨강 = 가져온 그대로 (일치 · 유사 · 다른 곳 붙여넣음 · 쓴 과정 기록 없음)
+# 화면 묶음 (결정 C): 빨강 = 글이 그대로 들어온 것 (일치 · 유사 · 다른 곳 붙여넣음 · 쓴 과정 기록 없음) — 붙여넣기든 보면서 똑같이 쳤든
 GROUP = {"exact": "copy", "similar": "copy", "web": "copy", "noproc": "copy", "edited": "edited", "viewed": "viewed", "none": "none"}
 
 
-def init(jsonl, sessions, data_dir=None, statement_exists=None):
-    _기록.update(jsonl=jsonl, sessions=sessions, data_dir=data_dir, statement_exists=statement_exists)
+def init(jsonl, sessions, data_dir=None, statement_exists=None, **kw):
+    """kw: server(방법, 경로, json=…) → (코드, JSON) · auth() → {token, user} · made(wid) — 내보내기가 쓴다"""
+    _기록.update(jsonl=jsonl, sessions=sessions, data_dir=data_dir, statement_exists=statement_exists, **kw)
 
 
 @bp.get("/source")
@@ -234,11 +235,14 @@ def build(paras, msgs, events, context):
         q = t["q"]
         ans = [답들[i] for i in t["answers"]]
         쓰임 = [x for x in 문장 if x.get("answer") in t["answers"]]
-        main = ans[-1] if ans else None                         # 같은 질문에 답이 여럿이면(다시 생성) 마지막 답을 보여 줌
+        # 같은 질문에 답이 여럿이면(다시 생성) 결과물 문장이 가장 많이 이어진 답을 보여 줌 (같으면 마지막 답)
+        # — 마지막 답만 보이면 앞 답에 이어진 문장을 골랐을 때 칠할 곳이 없다 (10/12)
+        보일 = max(t["answers"], key=lambda ai: (sum(1 for x in 쓰임 if x["answer"] == ai), ai)) if ans else None
+        main = 답들[보일] if ans else None
         questions.append({
             "n": n + 1, "tool": (q or main).get("tool", ""), "model": ((main or {}).get("model") or (q or {}).get("model") or ""),
             "ts": (q or main).get("ts", ""), "question": q["text"] if q else None,
-            "answer": _답_조각(main["text"], [x for x in 쓰임 if x["answer"] == t["answers"][-1]]) if main else None,
+            "answer": _답_조각(main["text"], [x for x in 쓰임 if x["answer"] == 보일]) if main else None,
             "uses": [x["k"] for x in 쓰임],
             "groups": {g: sum(1 for x in 쓰임 if x["group"] == g) for g in ("copy", "edited", "viewed")},
             "paras": sorted({x["p"] + 1 for x in 쓰임}),

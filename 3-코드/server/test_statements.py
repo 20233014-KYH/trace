@@ -165,6 +165,10 @@ def main():
     큰글 = json.dumps({"messages": [{"session_id": sid, "event_id": a_id, "text": "가" * (2 * 1024 * 1024)}]}).encode()
     코드, _ = 호출(f"/works/{wid}/statements", 토큰=갑, 날것=큰글)
     검사("13 5MB 넘으면 413", 코드 == 413, f"HTTP {코드}")
+    # v3 ③ 결과물에 들어간 것 — PC 가 센 문장 수 (숫자만 · 10/12 박상진)
+    코드, _ = 호출(f"/works/{wid}/statements", {"result_counts": {"ai": "많음"}}, 토큰=갑)
+    코드2, _ = 호출(f"/works/{wid}/statements", {"result_counts": {"문장": 3}}, 토큰=갑)
+    검사("13-1 문장 수가 숫자가 아니거나 모르는 칸이면 거절", 코드 == 400 and 코드2 == 400, f"HTTP {코드} · {코드2}")
 
     # ⑦ 최신 내역서 (학생용)
     코드, r = 호출(f"/works/{wid}/statements/latest", 토큰=갑)
@@ -234,6 +238,8 @@ def main():
         본문, 종류 = resp.read(), resp.headers.get("Content-Type", "")
     검사("34 PDF 받기", 종류.startswith("application/pdf") and 본문[:5] == b"%PDF-" and len(본문) > 10000,
          f"{종류} · {len(본문):,}바이트")
+    import re as _re
+    검사("34-1 PDF 는 한 장 (v3 · 연결 표는 링크로)", len(_re.findall(rb"/Type\s*/Page[^s]", 본문)) == 1, "")
     호출(f"/shares/{sh2['token']}", 토큰=갑, 방법="DELETE")
     코드, _ = 호출(f"/share/{sh2['token']}/pdf")
     검사("35 끊은 링크는 PDF 도 404", 코드 == 404, f"HTTP {코드}")
@@ -248,6 +254,38 @@ def main():
     검사("37 교수 규칙은 학생이 넣었을 때만", r.get("ai_scope") is None and r.get("explain_check") == "교재와 비교", "과제 메모가 있어도 저절로 안 들어감")
     검사("38 도구(모델) · 날짜별 구간", r.get("tools") == [{"tool": "chatgpt", "models": ["gpt-5-6"]}]
          and (r.get("summary") or {}).get("days") and "from_other_chars" in r["summary"]["pastes"], f"{r.get('tools')}")
+    결과수 = {"total": 30, "ai": 18, "other": 0, "edited": 1, "viewed": 3, "none": 8}
+    코드, r = 호출(f"/works/{wid}/statements", {"messages": 원문, "result_counts": 결과수}, 토큰=갑)
+    _, sh4 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
+    _, r = 호출(f"/share/{sh4['token']}")
+    검사("39 v3 ③ 문장 수가 교수 화면 · PDF 까지", 코드 == 201 and r.get("result_counts") == 결과수, f"{r.get('result_counts')}")
+    쓰임수 = {"understand": 3, "find": 1, "review": 0, "write": 1, "polish": 0}
+    질문원문 = 원문[0]                                          # q_id 의 질문
+    흐름 = [{"session_id": sid, "event_id": q_id, "usage": "understand", "used": True}]
+    코드, _ = 호출(f"/works/{wid}/statements", {"messages": 원문[1:], "flow": 흐름}, 토큰=갑)
+    검사("40 대표 질문은 원문을 같이 보내야", 코드 == 400, f"HTTP {코드}")
+    코드, r = 호출(f"/works/{wid}/statements", {"messages": 원문, "usage_counts": 쓰임수, "flow": 흐름}, 토큰=갑)
+    _, sh5 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
+    _, r = 호출(f"/share/{sh5['token']}")
+    검사("41 v3 ① 쓰임새 · ② 대표 질문이 교수 화면까지", r.get("usage_counts") == 쓰임수 and len(r.get("flow") or []) == 1
+         and r["flow"][0]["text"] == 질문원문["text"] and r["flow"][0]["usage"] == "understand", f"{r.get('flow')}")
+
+    # 일부 가림 (10/12) — 원문으로 체인을 맞춰 본 뒤 가린 글만 남긴다. 원문 조각은 서버 어디에도 안 남음
+    글 = 질문원문["text"]
+    자리 = [[0, 3, "전화번호"]]                                   # 앞 세 글자를 전화번호라 치고 가림
+    코드, _ = 호출(f"/works/{wid}/statements", {"messages": [{**질문원문, "mask": [[0, 999, "전화번호"]]}]}, 토큰=갑)
+    코드2, _ = 호출(f"/works/{wid}/statements", {"messages": [{**질문원문, "mask": [[0, 3, "아무거나"]]}]}, 토큰=갑)
+    검사("42 가릴 자리가 글 밖이거나 모르는 종류면 거절", 코드 == 400 and 코드2 == 400, f"HTTP {코드} · {코드2}")
+    코드, r = 호출(f"/works/{wid}/statements", {"messages": [{**질문원문, "mask": 자리}, 원문[1]], "flow": 흐름}, 토큰=갑)
+    _, sh6 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
+    _, p = 호출(f"/share/{sh6['token']}")
+    _, 학생 = 호출(f"/works/{wid}/statements/latest", 토큰=갑)
+    보임 = (p.get("flow") or [{}])[0]
+    검사("43 일부 가림: 기록과 일치 그대로 · 가린 글로 저장 · 원문 조각은 안 남음",
+         코드 == 201 and r.get("verified") is True and 보임.get("text") == "⟦가림:전화번호⟧" + 글[3:]
+         and 보임.get("masked") == ["전화번호"] and 보임.get("ok") is True
+         and 글[:3] + 글[3:6] not in json.dumps(p, ensure_ascii=False) + json.dumps(학생, ensure_ascii=False),
+         f"{보임.get('text', '')[:30]}")
 
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")

@@ -83,7 +83,7 @@ def _물을_것(wid):
 
 
 # ─────────────── 과제마다 지금 단계 (왼쪽 과제 목록 · ← → 가 쓴다) ───────────────
-STEPS = {"source": "/source", "confirm": "/confirm", "report": "/"}       # 출처 보기 → 연결 확인 → 내역서
+STEPS = {"source": "/source", "confirm": "/confirm", "report": "/export"}       # 출처 보기 → 연결 확인 → 내역서
 
 
 def 단계(wid):

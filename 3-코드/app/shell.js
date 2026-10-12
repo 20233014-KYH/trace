@@ -25,7 +25,7 @@ window.TraceShell = (function () {
     $("b-rail").title = t; $("b-rail").setAttribute("aria-label", t); $("b-rail").setAttribute("aria-expanded", String(!on));
   }
   // 과제 하나의 단계: 출처 보기 → 연결 확인 → 내역서. ← → 는 브라우저 기록이 아니라 "이 과제의" 앞 · 다음 단계로 간다
-  const STEPS = [["source", "/source", "출처 보기"], ["confirm", "/confirm", "연결 확인"], ["report", "/", "내역서"]];
+  const STEPS = [["source", "/source", "출처 보기"], ["confirm", "/confirm", "연결 확인"], ["report", "/export", "내역서"]];
   const stepUrl = (s, wid) => s[1] + "?work=" + encodeURIComponent(wid);
 
   function init(opt) {

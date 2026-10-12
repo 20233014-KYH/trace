@@ -188,6 +188,9 @@ class Statement(Base):
     verified = Column(Boolean)             # 올라온 원문이 전부 체인과 맞고, 쓰인 세션이 전부 봉인·검증됐는가
     problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
     summary = Column(JSON)                 # 만들 당시의 요약 숫자 (core/summary.py) — 뒤에 세션이 늘어도 이 내역서의 숫자는 그대로
+    result_counts = Column(JSON)           # v3 ③ 결과물에 들어간 것 — 보고서 문장 수 묶음 (PC 출처 보기가 셈 · 10/12) {total, ai, other, edited, viewed, none}
+    usage_counts = Column(JSON)            # v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 규칙으로 나눔 · 숫자만) {understand, find, review, write, polish}
+    flow = Column(JSON)                    # v3 ② 질문 흐름 — 학생이 고른 대표 질문 [{session_id, event_id, usage, used}] (원문은 messages 에)
 
 
 class Message(Base):
@@ -205,6 +208,7 @@ class Message(Base):
     history = Column(Boolean)              # 확장이 켜지기 전부터 있던 대화 — 받은 시각을 모른다 (체인 ai_msg.history)
     model = Column(String(64))             # 모델 이름 (gpt-5-6 등) — PC 기록에서 학생 화면이 보낸 값. 체인엔 없어 확인되지 않은 참고값
     match = Column(Boolean)                # 그 값이 체인의 해시와 같은가 (다르면 화면에 "조작됨")
+    masked = Column(JSON)                  # 학생이 일부만 가렸으면 가린 종류 ["전화번호", …] — text 는 가린 글 · 원문은 확인에만 쓰고 안 남김 (10/12)
 
 
 class Link(Base):
@@ -280,7 +284,11 @@ def _칸_추가():
                        ("sessions", "deleted_at", "VARCHAR(40)"),
                        ("statements", "explain_use", "TEXT"),    # 10/11 내역서 v3
                        ("statements", "explain_check", "TEXT"),
-                       ("messages", "model", "VARCHAR(64)")):
+                       ("messages", "model", "VARCHAR(64)"),
+                       ("statements", "result_counts", "JSON"),     # 10/12 내역서 v3 ③
+                       ("statements", "usage_counts", "JSON"),      # 10/12 내역서 v3 ①
+                       ("statements", "flow", "JSON"),              # 10/12 내역서 v3 ②
+                       ("messages", "masked", "JSON")):             # 10/12 일부 가림 (가린 종류)
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:
