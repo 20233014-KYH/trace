@@ -138,10 +138,10 @@ def main():
              and (rc.get("edited"), rc.get("viewed"), rc.get("none")) == (src["counts"]["edited"], src["counts"]["viewed"], src["counts"]["none"]),
              json.dumps(rc, ensure_ascii=False))
         uc = body.get("usage_counts") or {}
-        검사("v3 ① 쓰임새 수 = 이 과제의 질문 수 (숫자만)", sum(uc.values()) == len(E().json["flow"]) and set(uc) == {"understand", "find", "review", "write", "polish"},
+        검사("v3 ① 쓰임새 수 = 이 과제의 질문 수 (숫자만)", sum(uc.values()) == len(E().json["flow"]) and set(uc) == {"learn", "fix", "write"},
              json.dumps(uc, ensure_ascii=False))
-        검사("v3 ① 쓰임새 규칙", (EX.쓰임("1페이지짜리 보고서 써줘"), EX.쓰임("내 코드 맞는지 봐줘"), EX.쓰임("이 문장 자연스럽게 다듬어줘"),
-                                EX.쓰임("국내 사례 찾아줘"), EX.쓰임("HTTP 와 HTTPS 차이가 뭐야?")) == ("write", "review", "polish", "find", "understand"))
+        검사("v3 ① 쓰임새 규칙 (세 칸)", (EX.쓰임("1페이지짜리 보고서 써줘"), EX.쓰임("내 코드 맞는지 봐줘"), EX.쓰임("이 문장 자연스럽게 다듬어줘"),
+                                EX.쓰임("국내 사례 찾아줘"), EX.쓰임("HTTP 와 HTTPS 차이가 뭐야?")) == ("write", "fix", "fix", "learn", "learn"))
         흐름 = E().json["flow"]
         검사("v3 ② 처음엔 결과물에 글이 들어간 질문 · 가린 질문은 빠짐", all(q["used"] and not q["hidden"] for q in 흐름 if q["picked"])
              and [f["event_id"] for f in body["flow"]] == [q["id"].split("/")[1] for q in 흐름 if q["picked"]])

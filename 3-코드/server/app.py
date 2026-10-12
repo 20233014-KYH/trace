@@ -646,11 +646,11 @@ def create_statement(wid):
                                 and all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100000 for v in 결과수.values())):
         return jsonify(error="bad_request", message="result_counts 는 {total · ai · other · edited · viewed · none: 0 이상 정수} 여야 합니다"), 400
     # v3 ① 질문 쓰임새 수 (숫자만) · ② 학생이 고른 대표 질문 (최대 3 · 원문은 messages 에 같이 와야 함)
-    쓰임키 = {"understand", "find", "review", "write", "polish"}
+    쓰임키 = {"learn", "fix", "write"}
     쓰임수 = b.get("usage_counts")
     if 쓰임수 is not None and not (isinstance(쓰임수, dict) and set(쓰임수) <= 쓰임키
                                 and all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100000 for v in 쓰임수.values())):
-        return jsonify(error="bad_request", message="usage_counts 는 {understand · find · review · write · polish: 0 이상 정수} 여야 합니다"), 400
+        return jsonify(error="bad_request", message="usage_counts 는 {learn · fix · write: 0 이상 정수} 여야 합니다"), 400
     흐름 = b.get("flow")
     if 흐름 is not None:
         원문쌍 = {(m.get("session_id"), m.get("event_id")) for m in 메시지들 if isinstance(m, dict)}

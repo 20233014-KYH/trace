@@ -259,16 +259,18 @@ def main():
     _, sh4 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
     _, r = 호출(f"/share/{sh4['token']}")
     검사("39 v3 ③ 문장 수가 교수 화면 · PDF 까지", 코드 == 201 and r.get("result_counts") == 결과수, f"{r.get('result_counts')}")
-    쓰임수 = {"understand": 3, "find": 1, "review": 0, "write": 1, "polish": 0}
+    쓰임수 = {"learn": 4, "fix": 0, "write": 1}
     질문원문 = 원문[0]                                          # q_id 의 질문
-    흐름 = [{"session_id": sid, "event_id": q_id, "usage": "understand", "used": True}]
+    흐름 = [{"session_id": sid, "event_id": q_id, "usage": "learn", "used": True}]
     코드, _ = 호출(f"/works/{wid}/statements", {"messages": 원문[1:], "flow": 흐름}, 토큰=갑)
     검사("40 대표 질문은 원문을 같이 보내야", 코드 == 400, f"HTTP {코드}")
     코드, r = 호출(f"/works/{wid}/statements", {"messages": 원문, "usage_counts": 쓰임수, "flow": 흐름}, 토큰=갑)
     _, sh5 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
     _, r = 호출(f"/share/{sh5['token']}")
     검사("41 v3 ① 쓰임새 · ② 대표 질문이 교수 화면까지", r.get("usage_counts") == 쓰임수 and len(r.get("flow") or []) == 1
-         and r["flow"][0]["text"] == 질문원문["text"] and r["flow"][0]["usage"] == "understand", f"{r.get('flow')}")
+         and r["flow"][0]["text"] == 질문원문["text"] and r["flow"][0]["usage"] == "learn", f"{r.get('flow')}")
+    코드, _ = 호출(f"/works/{wid}/statements", {"messages": 원문, "usage_counts": {"understand": 3}}, 토큰=갑)
+    검사("41-1 쓰임새는 세 칸 (learn · fix · write) 만 받음", 코드 == 400, f"HTTP {코드}")
 
     # 일부 가림 (10/12) — 원문으로 체인을 맞춰 본 뒤 가린 글만 남긴다. 원문 조각은 서버 어디에도 안 남음
     글 = 질문원문["text"]

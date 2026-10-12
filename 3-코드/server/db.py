@@ -193,7 +193,7 @@ class Statement(Base):
     problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
     summary = Column(JSON)                 # 만들 당시의 요약 숫자 (core/summary.py) — 뒤에 세션이 늘어도 이 내역서의 숫자는 그대로
     result_counts = Column(JSON)           # v3 ③ 결과물에 들어간 것 — 보고서 문장 수 묶음 (PC 출처 보기가 셈 · 10/12) {total, ai, other, edited, viewed, none}
-    usage_counts = Column(JSON)            # v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 규칙으로 나눔 · 숫자만) {understand, find, review, write, polish}
+    usage_counts = Column(JSON)            # v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 규칙으로 나눔 · 숫자만) {learn, fix, write} (10/12 전 내역서는 다섯 칸 — PDF 가 셋으로 합쳐 그림)
     flow = Column(JSON)                    # v3 ② 질문 흐름 — 학생이 고른 대표 질문 [{session_id, event_id, usage, used}] (원문은 messages 에)
 
 

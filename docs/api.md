@@ -432,7 +432,8 @@ unsure?        연결 확인에서 "잘 모르겠음"·안 고른 제안 수 (�
 내역서 만들기 요청에 더 (모두 선택 · 없으면 예전처럼):
 ```
 result_counts? { total, ai, other, edited, viewed, none }        ← v3 ③ 결과물에 들어간 것 — 보고서 문장 수 (PC 출처 보기가 셈 · 숫자만)
-usage_counts?  { understand, find, review, write, polish }       ← v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 낱말 규칙으로 나눔 · 숫자만)
+usage_counts?  { learn, fix, write }                              ← v3 ① 어떻게 썼나 — 질문 쓰임새 수 (PC 가 질문 글을 낱말 규칙으로 나눔 · 숫자만)
+                                                                     learn 이해·자료 찾기 · fix 고치기·검토 · write 작성 (10/12 다섯 칸 → 셋 · 예전 키는 PDF 가 합쳐 그림)
 flow?          [{ session_id, event_id, usage, used }] (최대 3)  ← v3 ② 학생이 고른 대표 질문 · 그 질문 원문이 messages 에 같이 와야 함 (없으면 400)
 messages[].mask?  [[시작, 끝, 종류], …]                          ← 일부 가림: 서버는 원문 전체로 체인 해시를 맞춰 본 뒤 ⟦가림:종류⟧ 로 바꾼 글만 저장
                                                                      종류 = API키 · 비밀키 · 주민번호 · 카드번호 · 이메일 · 전화번호 · 직접 (collector/mask.py 와 같음)

@@ -175,22 +175,36 @@ RESULT = [("ai", "AI 답과 같음", "#e5484d"), ("other", "다른 곳에서 옴
           ("viewed", "보고 씀", None), ("none", "출처 기록 없음", "#a1a1aa")]
 MAX_Q = 3             # 질문 흐름 — 한 장에 넣는 질문 수
 # v3 ① 질문 쓰임새 (PC app/export.py 쓰임새 와 같은 키 · 순서)
-USAGE = [("understand", "이해·설명"), ("find", "자료·예시 찾기"), ("review", "내 코드 검토"), ("write", "글·코드 작성"), ("polish", "다듬기")]
+USAGE = [("learn", "이해·자료 찾기"), ("fix", "고치기·검토"), ("write", "작성")]
+옛쓰임 = {"understand": "learn", "find": "learn", "review": "fix", "polish": "fix"}     # 10/12 전 내역서는 다섯 칸 → 셋으로 합쳐 그림
+
+
+def _쓰임수(uc):
+    out = {}
+    for k, n in (uc or {}).items():
+        out[옛쓰임.get(k, k)] = out.get(옛쓰임.get(k, k), 0) + n
+    return out
 
 
 def _칩(items):
-    """[(수, 이름)] → 칩 한 줄. 0 인 칩은 흐리게 테두리만 (캔버스 ReportA3 와 같게)"""
-    cells, style, widths = [], [("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 3),
-                                ("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("LEFTPADDING", (0, 0), (-1, -1), 7),
-                                ("RIGHTPADDING", (0, 0), (-1, -1), 7)], []
+    """[(수, 이름)] → 같은 너비 칩 한 줄 (캔버스 ReportA3 · .uc 110px 를 A4 로 줄인 크기). 숫자 칸 너비를 고정해 이름이 줄 맞음.
+    0 인 칩은 흐리게 테두리만"""
+    칸, 틈, 수칸 = 82, 4, 11
+    cells, widths, style = [], [], [("VALIGN", (0, 0), (-1, -1), "MIDDLE")] + [
+        (k, (0, 0), (-1, -1), 0) for k in ("LEFTPADDING", "RIGHTPADDING", "TOPPADDING", "BOTTOMPADDING")]
     for i, (n, 이름) in enumerate(items):
-        c = i * 2
-        글 = f"<font name='PRB' size='10'>{n}</font>&nbsp; {escape(이름)}"
-        cells += [PM(글 if n else f"<font color='#a3a29e'>{글}</font>", "cell"), ""]
-        widths += [len(이름) * 8.6 + 30, 5]
-        style += [("BACKGROUND", (c, 0), (c, 0), SOFT)] if n else [("BOX", (c, 0), (c, 0), 0.6, LINE)]
+        색 = "#18181b" if n else "#a3a29e"
+        안 = Table([[PM(f"<font name='PRB' size='10' color='{색}'>{n}</font>", "cell"),
+                    PM(f"<font color='{'#52525b' if n else '#a3a29e'}'>{escape(이름)}</font>", "cell")]],
+                  colWidths=[수칸 + 6, 칸 - 수칸 - 6], rowHeights=[20])
+        안.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (0, 0), 6),
+                               ("LEFTPADDING", (1, 0), (1, 0), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                               ("TOPPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (1, 0), (1, 0), 1.5),   # 작은 이름 글자를 숫자와 같은 줄(밑선)에
+                               ("BOTTOMPADDING", (0, 0), (-1, -1), 1), ("ROUNDEDCORNERS", [7, 7, 7, 7])]
+                              + ([("BACKGROUND", (0, 0), (-1, -1), SOFT)] if n else [("BOX", (0, 0), (-1, -1), 0.6, LINE)])))
+        cells += [안, ""]
+        widths += [칸, 틈]
     t = Table([cells[:-1]], colWidths=widths[:-1], hAlign="LEFT")
-    style += [("LEFTPADDING", (c, 0), (c, 0), 0) for c in range(1, len(cells) - 1, 2)]
     t.setStyle(TableStyle(style))
     return t
 MAX_EX = 2            # 결과물에 들어간 것 — 보여 주는 문장 예
@@ -260,6 +274,7 @@ def render(d, url):
     도구별 = " · ".join(f"{TOOL.get(str(t).lower(), t)} {n}" for t, n in (ai.get("tools") or {}).items())
     uc = d.get("usage_counts")
     if uc:
+        uc = _쓰임수(uc)
         body = [_칩([(uc.get(k, 0), 이름) for k, 이름 in USAGE]),
                 Spacer(1, 4), P("쓰임새는 질문 글의 낱말로 나눔 (규칙)" + (f" · {도구별}" if 도구별 else ""), "small")]
     else:                                                 # 예전 내역서 (쓰임새 수를 안 보냄)
@@ -284,7 +299,7 @@ def render(d, url):
     이름 = dict(USAGE)
     body = []
     for f in flow[:MAX_Q]:
-        꼬리 = " · ".join(x for x in (이름.get(f.get("usage")), TOOL.get(str(f.get("tool", "")).lower(), f.get("tool")),
+        꼬리 = " · ".join(x for x in (이름.get(옛쓰임.get(f.get("usage"), f.get("usage"))), TOOL.get(str(f.get("tool", "")).lower(), f.get("tool")),
                                      "" if f.get("ok", True) else "⚠ 기록 당시와 다름") if x)
         body.append(PM(f"<font color='#37352f'>●</font>&nbsp; \"{escape(_cut(f['text'], 64))}\""
                        + (f" <font color='#787774'>· {escape(꼬리)}</font>" if 꼬리 else ""), "memo"))
