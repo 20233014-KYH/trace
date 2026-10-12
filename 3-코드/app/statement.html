@@ -110,7 +110,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
   <section id="s-links" hidden>
     <h2><span class="no">3</span>AI 답에서 온 문장 확인 <small id="links-sub"></small></h2>
     <div class="counts" id="counts"></div>
-    <div class="row" style="margin-top:0"><button class="btn" id="b-all-yes" type="button">모두 맞다</button></div>
+    <div class="row" style="margin-top:0"><button class="btn" id="b-all-yes" type="button">남은 것 모두 맞다</button></div>
     <div id="cards"></div>
     <details><summary>과제 전체 보기 (색으로)</summary><div class="doc" id="doc"></div></details>
   </section>
@@ -122,6 +122,10 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     <label for="ex-check">AI 답을 고르거나 고칠 때 어떻게 확인했나요? <span id="c-check" class="cnt"></span></label>
     <textarea id="ex-check" maxlength="150" placeholder="예: 교과서 5장과 비교해 틀린 부분을 고쳤습니다."></textarea>
     <label class="inline" id="scope-wrap" hidden><input type="checkbox" id="with-scope"> 교수 AI 규칙을 내역서에 넣기 — <span id="scope-text"></span></label>
+    <h2 style="margin-top:20px"><span class="no">+</span>교수 링크에 더 보여 주기 <small>기본은 꺼져 있습니다 · 요약과 질문 기준은 늘 보입니다</small></h2>
+    <label class="inline"><input type="checkbox" id="with-source"> <span><b>출처 보기</b> — 보고서 전문과 문장마다 어디서 왔는지, 참고만 한 질문·답까지.
+      <span class="lede" style="display:block;margin:2px 0 0">보고서 전문이 서버(싱가포르)로 갑니다. 링크를 끊거나 기간이 끝나면 서버에서 지워집니다.</span></span></label>
+    <label class="inline"><input type="checkbox" id="with-process"> <span><b>작업 과정</b> — 기록을 켜고 끈 날짜·시간·멈춤 목록</span></label>
     <div class="bar">
       <button class="btn dark" id="b-make" type="button" disabled>내역서 만들기</button>
       <span class="msg" id="m-make" role="status" style="margin:0"></span>
@@ -204,6 +208,9 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
           "주인이 없는 과제라 내역서를 만들 수 없습니다 — 기록기에 로그인을 붙인 뒤 기록한 과제만 쓸 수 있습니다.";
         show("orphans");
       }
+      // 출처 보기·연결 확인에서 "다음: 내역서" 로 오면 /?work=<과제> — 그 과제를 바로 고른다 (10/12 박상진)
+      const want = new URLSearchParams(location.search).get("work");
+      if (want && works.some(w => w.id === want)) sel.value = want;
       sel.onchange = pickWork; pickWork();
     } catch (e) { msg("m-work", e.message, "err"); }
   }
@@ -225,7 +232,9 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     msg("m-file", "이 PC 의 기록과 맞춰 보는 중…");
     try {
       analysis = await call("POST", "/local/analyze", fd, true);
+      // 연결 확인에서 고른 것 · 붙여넣기 기록으로 확실한 것은 미리 채워 둔다 (바꿀 수 있음)
       decisions = {}; hidden = new Set(); statementId = null;
+      analysis.paragraphs.flat().forEach(s => { if (s.key && s.preset) decisions[s.key] = s.preset; });
       msg("m-file", `AI 질문·답 ${analysis.ai_messages}개 · 작업 기록 ${analysis.sessions}번과 맞춰 봤습니다.`, "ok");
       renderLinks();
     } catch (e) { msg("m-file", e.message, "err"); }
@@ -251,6 +260,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
       const head = el("div", "head");
       head.append(chip(s.kind), el("span", null, `${s.key.split(".")[0] * 1 + 1}번째 문단`));
       if (s.pasted) head.append(el("span", "chip", "복사·붙여넣기 기록 있음"));
+      else if (s.preset) head.append(el("span", "chip", "연결 확인에서 고름"));
       c.append(head, el("div", "res", s.text));
       const ans = el("div", "ans");
       const at = s.answer.text, hit = s.ai_text ? at.indexOf(s.ai_text) : -1;
@@ -267,7 +277,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
         c.append(q);
       }
       const pick = el("div", "pick");
-      [["confirmed", "맞다", "yes"], ["rejected", "아니다", "no"]].forEach(([v, t, cls]) => {
+      [["confirmed", "맞다", "yes"], ["rejected", "아니다", "no"], ["unsure", "잘 모르겠음", "no"]].forEach(([v, t, cls]) => {
         const b = el("button", cls + (decisions[s.key] === v ? " on" : ""), t); b.type = "button";
         b.setAttribute("aria-pressed", decisions[s.key] === v);
         b.onclick = () => { decisions[s.key] = v; renderLinks(); };
@@ -286,14 +296,15 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
 
     show("s-links"); show("s-make");
     const done = items.filter(s => decisions[s.key]).length;
-    $("b-make").disabled = !done;
-    msg("m-make", items.length ? `${done} / ${items.length} 골랐습니다${done < items.length ? " — 고르지 않은 제안은 보내지 않습니다" : ""}` : "");
+    const sure = items.filter(s => decisions[s.key] === "confirmed" || decisions[s.key] === "rejected").length;
+    $("b-make").disabled = !sure;
+    msg("m-make", items.length ? `${done} / ${items.length} 골랐습니다 — 잘 모르겠음·고르지 않은 제안은 원문 없이 개수만 나갑니다` : "");
   }
   [["ex-use", "c-use"], ["ex-check", "c-check"]].forEach(([t, c]) => {
     const upd = () => { $(c).textContent = `${$(t).value.length} / 150`; };
     $(t).addEventListener("input", upd); upd();
   });
-  $("b-all-yes").onclick = () => { analysis.paragraphs.flat().filter(s => s.key).forEach(s => { decisions[s.key] = "confirmed"; }); renderLinks(); };
+  $("b-all-yes").onclick = () => { analysis.paragraphs.flat().filter(s => s.key && !decisions[s.key]).forEach(s => { decisions[s.key] = "confirmed"; }); renderLinks(); };
 
   // ── 4 만들기 ──
   $("b-make").onclick = async () => {
@@ -302,6 +313,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
       const w = works.find(x => x.id === $("work").value) || {};
       const r = await call("POST", "/local/statement", { analysis_id: analysis.id, decisions, hide_questions: [...hidden],
         explain_use: $("ex-use").value, explain_check: $("ex-check").value,
+        with_source: $("with-source").checked, with_process: $("with-process").checked,
         ai_scope: $("with-scope").checked ? (w.ai_scope || "") : "" });
       statementId = r.id;
       const res = $("result"); res.textContent = "";

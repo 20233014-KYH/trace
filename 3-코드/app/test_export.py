@@ -88,7 +88,8 @@ def main():
              D({"explain_use": "가" * 151}).status_code == 400 and D({"days": 10}).status_code == 400
              and D({"hide": {"x": "yes"}}).status_code == 400 and D({"hide": []}).status_code == 400)
         검사("고쳐 쓰는 것 저장", D({"explain_use": "서론은 Claude 답을 참고했어요", "days": 30}).status_code == 200
-             and E().json["draft"] == {"explain_use": "서론은 Claude 답을 참고했어요", "explain_check": "", "days": 30})
+             and E().json["draft"] == {"explain_use": "서론은 Claude 답을 참고했어요", "explain_check": "", "days": 30,
+                                       "with_source": False, "with_process": False})
 
         # 가짜 서버 · 로그인
         부름 = []
@@ -128,6 +129,8 @@ def main():
         검사("일부 가림: 원문은 확인용으로 · 가릴 자리(전화번호 · 이메일)를 같이 보냄",
              {k for _, _, k in qm.get("mask", [])} == {"전화번호", "이메일"} and "010-1234-5678" not in 가린 and "me@example.com" not in 가린
              and body["redactions"] == [])
+        검사("잘 모르겠음은 개수만 · 출처 보기 · 작업 과정은 기본 끔", body.get("unsure") == 1 and body.get("source") is None
+             and body.get("show_process") is False)
         검사("학생 설명 · 링크 기간", body.get("explain_use") == "서론은 Claude 답을 참고했어요" and 나눔[-1] == {"expires_in_days": 30})
         src = c.post("/local/source", data={"work_id": W}, headers=H, **HOST).json
         rc = body.get("result_counts") or {}
@@ -173,6 +176,18 @@ def main():
         검사("답을 가리면 그 연결은 빠지고 위치만", d["counts"]["dropped"] >= 1
              and len([l for l in b2["links"] if l["decision"] == "confirmed"]) == 4 - d["counts"]["dropped"]
              and {"session_id": a_id.split("/")[0], "event_id": a_id.split("/")[1]} in b2["redactions"])
+
+        # 교수 링크 출처 보기 · 작업 과정 켜기 (김용현 #44 의 서버 기능) — 질문 · 답 전부가 가므로 가리기도 전부를 본다
+        D({"with_source": True, "with_process": True, "hide": {a_id: False}})
+        c.post("/local/export/make", json={"work_id": W}, headers=H, **HOST)
+        b3 = 부름[-2][2]
+        src = b3.get("source") or {}
+        qs = [q for q in src.get("questions", []) if q.get("question")]
+        검사("출처 보기를 켜면 보고서 전문 · 질문 · 답이 감 (번호는 가린 글로)", b3.get("show_process") is True and src.get("sentences")
+             and qs and all("010-1234-5678" not in q["question"] for q in qs) and any("⟦가림:전화번호⟧" in q["question"] for q in qs)
+             and all(sha256_text(m["text"]) for m in b3["messages"]) and len(b3["messages"]) >= len(body["messages"]),
+             f"문장 {len(src.get('sentences', []))} · 질문 {len(src.get('questions', []))} · 원문 {len(b3['messages'])}")
+        D({"with_source": False, "with_process": False})
 
         r = c.post("/local/export/revoke", json={"work_id": W}, headers=H, **HOST)
         검사("링크 끊기 → 서버 DELETE · 화면에서 링크 지움", r.status_code == 200 and 부름[-1][0] == "DELETE"

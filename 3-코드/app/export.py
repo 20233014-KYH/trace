@@ -93,7 +93,8 @@ def export():
     return jsonify(
         file=r["file"], title=r["title"], logged_in=bool(a.get("token")),
         draft={"explain_use": 초안.get("explain_use", ""), "explain_check": 초안.get("explain_check", ""),
-               "days": 초안.get("days", 14)},
+               "days": 초안.get("days", 14), "with_source": bool(초안.get("with_source")),
+               "with_process": bool(초안.get("with_process"))},
         found=[{"id": m["id"], "role": m["role"], "tool": m["tool"], "n": m["n"],
                 "what": " · ".join(f"{이름} {n}개" for 이름, n in m["found"]), "hidden": m["id"] in 가림,
                 "masked": m["id"] in 일부, "preview": _둘레(가린_글(m["text"]))}
@@ -134,6 +135,11 @@ def save_draft():
         if not isinstance(b["hide"], dict) or not all(isinstance(k, str) and isinstance(v, bool) for k, v in b["hide"].items()):
             return jsonify(error="bad_request", message="가리기가 올바르지 않습니다"), 400
         초안.setdefault("hide", {}).update(b["hide"])
+    for k in ("with_source", "with_process"):                  # 교수 링크에 출처 보기 · 작업 과정 (기본 끔)
+        if k in b:
+            if not isinstance(b[k], bool):
+                return jsonify(error="bad_request", message="켜기 · 끄기가 올바르지 않습니다"), 400
+            초안[k] = b[k]
     if "mask" in b:                                             # 찾은 개인 정보 — 그 부분만 가릴지 (이벤트 id: true|false)
         if not isinstance(b["mask"], dict) or not all(isinstance(k, str) and isinstance(v, bool) for k, v in b["mask"].items()):
             return jsonify(error="bad_request", message="가리기가 올바르지 않습니다"), 400
@@ -247,6 +253,7 @@ def _모으기(wid):
         return 앞[-1] if 앞 else None
 
     고름 = CF._읽기(wid)
+    자리 = {k: f"{pi}.{si}" for pi, p in enumerate(d["paragraphs"]) for si, k in enumerate(p["sents"])}
     confirmed, rejected, unsure = [], [], 0
     for x in d["sentences"]:
         if x["kind"] not in ASK or x.get("answer") is None:
@@ -262,7 +269,7 @@ def _모으기(wid):
             continue
         q = 질문(a)
         l = {"answer": a, "question": q, "answer_id": _id(a), "question_id": _id(q) if q else None,
-             "text": x["text"], "paragraph": x["p"] + 1, "kind": x["kind"], "origin": origin, "file": name}
+             "text": x["text"], "paragraph": x["p"] + 1, "kind": x["kind"], "origin": origin, "file": name, "ps": 자리[x["k"]]}
         (confirmed if 결정 == "confirmed" else rejected).append(l)
 
     def 칸(m):
@@ -283,7 +290,9 @@ def _모으기(wid):
     r = {"file": name, "title": d["title"], "confirmed": confirmed, "rejected": rejected, "unsure": unsure,
          "result_counts": 결과수, "questions": 질문칸,
          "usage_counts": {k: sum(1 for q in 질문칸 if q["usage"] == k) for k, _, _ in 쓰임새},
-         "sent_base": 보냄, "events": events, "sessions": 세션}
+         "sent_base": 보냄, "events": events, "sessions": 세션,
+         # 교수 링크 출처 보기를 켜면 이 과제의 질문 · 답 전부가 간다 (김용현 #44 · statement._출처_보기 로 만듦)
+         "all_msgs": [칸(m) for m in 기록], "docx": raw, "records": (msgs, events, context)}
     _분석[wid] = (표, r)
     return r
 
@@ -323,8 +332,12 @@ def _흐름(r, 초안):
 
 
 def _보냄(r, 초안):
-    """원문이 서버로 갈 수 있는 것 = 연결함의 답 · 질문 + 학생이 대표로 고른 질문 (시간 순)"""
+    """원문이 서버로 갈 수 있는 것 = 연결함의 답 · 질문 + 학생이 대표로 고른 질문 (시간 순)
+    + 교수 링크 출처 보기를 켰으면 이 과제의 질문 · 답 전부"""
     out = dict(r["sent_base"])
+    if 초안.get("with_source"):
+        for m in r["all_msgs"]:
+            out.setdefault(m["id"], m)
     for qid in _흐름(r, 초안):
         out.setdefault(qid, next(q for q in r["questions"] if q["id"] == qid))
     return sorted(out.values(), key=lambda m: m["ts"])
@@ -371,7 +384,11 @@ def _보낼_것(r, 초안):
         messages[qid] = q["msg"]
         흐름.append({"session_id": q["msg"]["session_id"], "event_id": q["msg"]["event_id"], "usage": q["usage"], "used": q["used"]})
     일부 = _일부(r, 초안)
+    출처자료 = _출처_자료(r, 초안, messages, 가림, 일부) if 초안.get("with_source") else None
     return {"explain_use": (초안.get("explain_use") or "").strip()[:설명_최대] or None,
+            "unsure": r["unsure"],                                                # 잘 모르겠음 · 안 고름 — 개수만 (김용현 #43)
+            "show_process": bool(초안.get("with_process")),                       # 교수 링크 작업 과정 — 켰을 때만 (기본 끔)
+            "source": 출처자료,                                                   # 교수 링크 출처 보기 — 켰을 때만 (기본 끔)
             "explain_check": (초안.get("explain_check") or "").strip()[:설명_최대] or None,
             "messages": [{"session_id": m["session_id"], "event_id": m["event_id"], "text": m["text"],
                           "model": m.get("model") or None,
@@ -380,6 +397,31 @@ def _보낼_것(r, 초안):
             "links": links, "result_counts": r["result_counts"],                  # 숫자만 (문장 원문 아님)
             "usage_counts": r["usage_counts"], "flow": 흐름,                      # v3 ① 숫자만 · ② 고른 질문
             "redactions": [{"session_id": i.split("/", 1)[0], "event_id": i.split("/", 1)[1]} for i in sorted(가림)]}
+
+
+def _출처_자료(r, 초안, messages, 가림, 일부):
+    """교수 링크 출처 보기 자료 — statement._출처_보기(김용현 #44) 를 그대로 쓰고, 내보내기의 가리기를 입힌다:
+    통째로 가린 질문 → 빼고 "가림" (그 함수가 함) · 통째로 가린 답 → 원문 없이 · 일부 가림 → 보이는 글도 가린 글로"""
+    만들기 = S._기록.get("source_data")
+    if not 만들기:
+        return None
+    고름 = {l["ps"]: "confirmed" for l in r["confirmed"] if l["answer_id"] not in 가림}
+    고름.update({l["ps"]: "rejected" for l in r["rejected"]})
+    쌍 = {(m["session_id"], m["event_id"]): m for m in messages.values()}
+    out = 만들기({"file": r["file"], "docx": r["docx"], "records": r["records"]}, 고름, 가림, 쌍)
+    해시id = {m["msg"]["hash"]: m["id"] for m in r["all_msgs"]}
+    for (sid, eid), m in 쌍.items():                       # 그 함수가 더한 질문 · 답 원문 (통째로 가린 것은 빼고)
+        if f"{sid}/{eid}" not in 가림:
+            messages.setdefault(f"{sid}/{eid}", m)
+    for q in out["questions"]:
+        a_id, q_id = 해시id.get(q.get("answer_hash")), 해시id.get(q.get("question_hash"))
+        if a_id in 가림:
+            q.update(answer=None, answer_hash=None)
+        elif a_id in 일부 and q.get("answer"):
+            q["answer"] = [{**p, "t": 가린_글(p["t"])} for p in q["answer"]]
+        if q_id in 일부 and q.get("question"):
+            q["question"] = 가린_글(q["question"])
+    return out
 
 
 def _미리_보기(wid, r, 초안):

@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from core import match as M                    # noqa: E402  연결 제안 (박상진)
-from core.docx import doc_body                 # noqa: E402
+from core.docx import doc_body, read_docx      # noqa: E402
 from core.texthash import sha256_text          # noqa: E402
 
 PORT = 5079                                     # 기록기 브리지는 5077
@@ -155,7 +155,8 @@ def analyze():
     if not wid or not f:
         return jsonify(error="bad_request", message="과제와 .docx 파일이 필요합니다"), 400
     try:
-        title, body = doc_body(io.BytesIO(f.read()), name=f.filename)
+        원본 = f.read()                                        # 출처 보기를 켜면 내역서 만들 때 다시 읽는다 (이 PC 메모리에만)
+        title, body = doc_body(io.BytesIO(원본), name=f.filename)
     except Exception:
         return jsonify(error="bad_file", message="Word(.docx) 파일을 읽지 못했습니다"), 400
 
@@ -179,6 +180,10 @@ def analyze():
     proc = M.process_evidence(events, context)
     linked = M.link_document(body, [{"id": i, "text": r["text"]} for i, r in enumerate(답들)], pasted, others, proc)
 
+    # 연결 확인(app/confirm.py · 박상진)에서 고른 것: link → 맞다 · no → 아니다 · unsure → 잘 모르겠음 (10/12)
+    # 붙여넣기 기록이 있는 연결은 연결 확인이 묻지 않고 자동으로 넣는다 → 여기서도 "맞다"로 채워 둔다
+    확인 = 연결확인._읽기(wid)
+    옮김 = {"link": "confirmed", "no": "rejected", "unsure": "unsure"}
     aid, 제안, 화면 = uuid.uuid4().hex, {}, []
     for pi, row in enumerate(linked):
         문단 = []
@@ -194,12 +199,14 @@ def analyze():
                 칸.update(key=k, kind=kind, ai_text=s.get("ai_text"),
                           answer={"text": a["text"], "tool": a.get("tool"), "ts": a.get("ts"), "history": a.get("history")},
                           question={"id": f"{q['session_id']}/{q['event_id']}", "text": q["text"], "ts": q.get("ts")} if q else None,
-                          pasted=bool(s.get("paste")))
+                          pasted=bool(s.get("paste")),
+                          preset="confirmed" if s.get("paste") else 옮김.get(확인.get(연결확인.key_of(s["text"], a["hash"]))))
             elif s["label"] == "web":
                 칸["source"] = (s.get("paste") or {}).get("source", "")
             문단.append(칸)
         화면.append(문단)
-    분석들[aid] = {"work_id": wid, "file": f.filename, "links": 제안}
+    분석들[aid] = {"work_id": wid, "file": f.filename, "links": 제안,
+                  "docx": 원본, "records": (기록, events, context)}
     return jsonify(id=aid, title=title, file=f.filename, paragraphs=화면, sessions=len(세션),
                    ai_messages=len(기록), answers=len(답들))
 
@@ -217,7 +224,7 @@ def make_statement():
     for k, x in 분석["links"].items():
         d = 고름.get(k)
         if d not in ("confirmed", "rejected"):
-            continue                                            # 고르지 않은 제안은 보내지 않는다
+            continue                                            # 고르지 않은·잘 모르겠음 제안은 원문을 보내지 않는다 (개수만 아래 unsure)
         a, q = x["answer"], x["question"]
         q_id = f"{q['session_id']}/{q['event_id']}" if q else None
         loc = {"file": 분석["file"], "paragraph": x["paragraph"]}
@@ -235,15 +242,56 @@ def make_statement():
                           "kind": x["kind"], "origin": x["origin"], "decision": "rejected"})
     if not links:
         return jsonify(error="empty", message="맞다·아니다를 하나 이상 골라 주세요"), 400
+    보류 = sum(1 for k in 분석["links"] if 고름.get(k) not in ("confirmed", "rejected"))   # 잘 모르겠음 + 안 고름
+    출처자료 = _출처_보기(분석, 고름, 가림, messages) if b.get("with_source") else None
     body = {"explain_use": (b.get("explain_use") or "").strip()[:150] or None,      # v3 질문 두 칸 (10/10)
             "explain_check": (b.get("explain_check") or "").strip()[:150] or None,
             "ai_scope": (b.get("ai_scope") or "").strip() or None,                   # 학생이 넣었을 때만
+            "unsure": 보류,                                                           # 판단 보류 개수만 (원문 없음)
+            "show_process": bool(b.get("with_process")),                               # 작업 과정 탭 — 켰을 때만 (기본 끔)
+            "source": 출처자료,                                                         # 출처 보기 — 켰을 때만 (기본 끔 · 10/11)
             "messages": [{"session_id": s, "event_id": e, "text": m["text"], "model": m.get("model") or None}
                          for (s, e), m in messages.items() if (s, e) not in redactions],
             "links": links,
             "redactions": [{"session_id": s, "event_id": e} for (s, e) in redactions]}
     코드, 답 = _서버("POST", f"/works/{분석['work_id']}/statements", json=body)
     return jsonify(답), 코드
+
+
+def _출처_보기(분석, 고름, 가림, messages):
+    """교수 링크 출처 보기 (10/11 박상진 · 기본 끔 — 학생이 켰을 때만). PC 출처 보기(source.build)와 같은 자료에
+    학생의 고름을 입힌다: 아니다 → 출처 없음 · 잘 모르겠음/안 고름 → 보류 표시 · 가린 질문 → 빼고 "가림".
+    질문·답(참고만 한 것 포함) 원문은 messages 에 더해 서버가 체인 해시로 맞춰 본다. 보고서 전문은 맞춰 볼 해시가 없다."""
+    기록, events, context = 분석["records"]
+    b = 출처.build(read_docx(io.BytesIO(분석["docx"])), 기록, events, context)
+    # source.build 의 문장 순서 = link_document 의 (문단, 문장) 순서 = 이 화면의 키 "p.s"
+    자리 = {k: f"{pi}.{si}" for pi, p in enumerate(b["paragraphs"]) for si, k in enumerate(p["sents"])}
+    문장 = []
+    for x in b["sentences"]:
+        x = {k: v for k, v in x.items() if k in ("k", "p", "text", "kind", "group", "q", "sents", "paste", "proc")}
+        d = 고름.get(자리.get(x["k"]))
+        if "q" in x:
+            if d == "rejected":                       # 학생이 아니라고 함 → 출처 없음으로 (원래 제안은 보여 주지 않는다)
+                x = {k: v for k, v in x.items() if k in ("k", "p", "text")} | {"kind": "none", "group": "none", "rejected": True}
+            elif d != "confirmed":
+                x["unsure"] = True
+        문장.append(x)
+    질문 = []
+    for q in b["questions"]:
+        r = q.get("refs", {})
+        qid = f"{r['q']['session_id']}/{r['q']['event_id']}" if "q" in r else None
+        숨김 = qid in 가림
+        for 역, 글 in (("q", None if 숨김 else q.get("question")), ("a", "".join(t["t"] for t in q.get("answer") or []) or None)):
+            if 역 in r and 글 is not None:            # 원문을 서버가 맞춰 보게 messages 에 (같은 것은 한 번만)
+                원 = next((m for m in 기록 if m.get("event_id") == r[역]["event_id"] and m["session_id"] == r[역]["session_id"]), None)
+                if 원:
+                    messages[(원["session_id"], 원["event_id"])] = 원
+        질문.append({"n": q["n"], "tool": q.get("tool"), "model": q.get("model"), "ts": q.get("ts"),
+                     "question": None if 숨김 else q.get("question"), "hidden": 숨김,
+                     "question_hash": None if 숨김 else (r.get("q") or {}).get("hash"),
+                     "answer": q.get("answer"), "answer_hash": (r.get("a") or {}).get("hash"),
+                     "uses": [k for k in q.get("uses", []) if not 문장[k].get("rejected")], "paras": q.get("paras")})
+    return {"file": 분석["file"], "title": b["title"], "paragraphs": b["paragraphs"], "sentences": 문장, "questions": 질문}
 
 
 @app.post("/local/share")
@@ -282,7 +330,8 @@ def _내역서_있나(wid):
 
 import export as 내보내기                         # noqa: E402  캔버스 7 · app/export.py
 출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나,
-          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=_내역서_있음.add)
+          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=_내역서_있음.add,
+          source_data=lambda *a: _출처_보기(*a))      # 교수 링크 출처 보기 자료 (김용현 #44) — 내보내기도 같은 것을 씀
 app.register_blueprint(출처.bp)
 app.register_blueprint(연결확인.bp)
 app.register_blueprint(내보내기.bp)

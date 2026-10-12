@@ -208,12 +208,15 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     }));
     function summary1() { return [len(dr.explain_use) ? `1번 ${len(dr.explain_use)}자` : "1번 비어 있음", len(dr.explain_check) ? `2번 ${len(dr.explain_check)}자` : "2번 비어 있음"].join(" · "); }
 
-    box.append(sec(2, "QR 링크에 넣을 것", `내역서 · 연결한 질문과 답 ${c.questions ? c.questions + "개 질문" : ""} · 출처 보기 · 작업 과정은 곧`, b => {
+    const 켬 = [dr.with_source && "출처 보기", dr.with_process && "작업 과정"].filter(Boolean);
+    box.append(sec(2, "QR 링크에 넣을 것", `내역서 · 연결한 질문과 답${켬.length ? " · " + 켬.join(" · ") : " · 출처 보기 · 작업 과정은 꺼 둠"}`, b => {
       b.append(row("내역서 1장", "항상 들어가요", sw(true, true)),
                row("연결한 질문 · AI 답", `연결함 ${c.confirmed - c.dropped}곳의 원문 · 가린 것은 "가림" 으로만`, sw(true, true)),
-               row("출처 보기", "보고서 전문 + 연결된 AI 답 · 곧 켤 수 있어요 (켜면 보고서 전문이 서버로 감)", sw(false, true)),
-               row("작업 과정", "시간 순 기록 · 창 이름 포함 · 곧 켤 수 있어요", sw(false, true)),
-               el("div", "desc", "QR 을 찍은 교수에게는 켠 것만 보입니다."));
+               row("출처 보기", "보고서 전문 + 문장마다 출처 + 질문 · 답 전부 · 켜면 보고서 전문이 서버로 가요 (기본 끔)",
+                   sw(dr.with_source, false, v => setShare({ with_source: v }))),
+               row("작업 과정", "시간 순 기록 · 창 이름 포함 (기본 끔)", sw(dr.with_process, false, v => setShare({ with_process: v }))),
+               el("div", "desc", dr.with_source ? "출처 보기를 켜면 질문 · 답 전부가 링크로 가요. ③ 가리기에서 개인 정보를 다시 확인하세요."
+                                                : "QR 을 찍은 교수에게는 켠 것만 보입니다."));
     }));
 
     // ③ 가리기 — 찾은 개인 정보는 기본으로 "그 부분만" 가린다 (질문은 그대로 보여 줄 수 있게 · 10/12). 통째로 가리기는 직접 고를 때만
@@ -264,6 +267,10 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   async function pickFlow(id, v) {
     const ids = D.flow.filter(q => q.picked && q.id !== id).map(q => q.id).concat(v ? [id] : []);
     await save({ flow: ids });
+    await load(true);
+  }
+  async function setShare(part) {
+    await save(part, false);
     await load(true);
   }
   async function maskPart(id, v) {

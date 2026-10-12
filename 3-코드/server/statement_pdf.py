@@ -102,6 +102,16 @@ def _mins(v):
     return f"{v // 60}시간 {v % 60}분" if v >= 60 else f"{v}분"
 
 
+def _멈춘시간(s):
+    """10분 안쪽이면 초까지 (1분 27초) — 옛 요약엔 pause_seconds 가 없어 분으로"""
+    초 = s.get("pause_seconds")
+    if 초 is None:
+        return _mins(s.get("pause_minutes"))
+    if 초 < 600:
+        return f"{초 // 60}분 {초 % 60}초" if 초 >= 60 else f"{초}초"
+    return _mins(초 / 60)
+
+
 def _qr(url, size=64):
     w = QrCodeWidget(url)
     x1, y1, x2, y2 = w.getBounds()
@@ -214,7 +224,7 @@ def render(d, url):
     probs = d.get("problems") or []
     일치 = (f"<font color='#d44c47'>● 서버 기록과 다릅니다 ({len(probs)}개)</font>" if probs
             else "<font color='#448361'>●</font> 서버 기록과 일치")
-    멈춤 = f"잠깐 멈춤 {s.get('pauses', 0)}번 · {_mins(s.get('pause_minutes'))}" if s.get("pauses") else "멈춤 없음"
+    멈춤 = f"잠깐 멈춤 {s.get('pauses', 0)}번 · {_멈춘시간(s)}" if s.get("pauses") else "멈춤 없음"   # 10분 안쪽은 초까지 (김용현 #43)
     지운 = len(s.get("deleted_sessions") or [])
     줄 = " &nbsp;·&nbsp; ".join([일치, escape(_도구(d)), escape(멈춤),
                                 f"가림 {d['redacted']}곳" if d.get("redacted") else "가림 없음",
@@ -310,8 +320,13 @@ def render(d, url):
         도구 = TOOL.get(str(a.get("tool", "")).lower(), a.get("tool") or "AI")
         body.append(PM(f"<font color='{color}'>●</font>&nbsp; {escape(_cut(l['result']['text'], 80))} "
                        f"<font color='#787774'>— {escape(도구)} 답 · {escape(kind)} (학생 확인)</font>", "small"))
+    남은 = []
     if d.get("rejected"):
-        body.append(P(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개", "small"))
+        남은.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
+    if d.get("unsure"):                                   # 연결 확인 "잘 모르겠음" — 개수만 (김용현 #43)
+        남은.append(f"학생이 판단을 보류한 제안 {d['unsure']}개 (원문은 보내지 않음)")
+    if 남은:
+        body.append(P("  ·  ".join(남은), "small"))
     note = f"보고서 {rc['total']}문장" if rc.get("total") else f"학생이 확인한 연결 {len(links)}곳"
     out += _sec(3, "결과물에 들어간 것", note + " · 문장마다 출처는 링크에서", body)
 
