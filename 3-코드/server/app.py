@@ -22,7 +22,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, g, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, redirect, request, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -967,8 +967,23 @@ def revoke_share(token):
     return jsonify(ok=True)
 
 
+견본_토큰 = "demo"     # 실제 토큰은 32자 무작위라 겹치지 않는다
+
+
+def _견본_내용():
+    """늘 열리는 견본 내역서 — DB 를 안 쓰고 server/demo_share.json 을 그대로 준다.
+    화면을 고칠 때마다 /demo · /demo/pdf 로 바로 확인하고, 인터뷰 때 보여 주는 용도. 지어낸 기록이다."""
+    import json
+    with open(os.path.join(HERE, "demo_share.json"), encoding="utf-8") as f:
+        답 = json.load(f)
+    답["expires_at"] = (now() + timedelta(days=14)).isoformat(timespec="seconds")
+    return 답
+
+
 def _공유_내용(token):
     """교수용 내역서 데이터. 없는 링크·끊은 링크·지난 링크는 None (어느 쪽인지 알려 주지 않는다)."""
+    if token == 견본_토큰:
+        return _견본_내용()
     with db.Session() as d:
         sh = d.get(db.Share, token)
         if not sh or sh.revoked_at:
@@ -1021,6 +1036,18 @@ def share_page(token):
     """교수가 여는 화면. HTML 한 장이 /api/share/<token> 을 읽어 그린다 (server/static/share.html).
     토큰이 맞는지는 여기서 보지 않는다 — 화면이 API 를 부르고, 없으면 "볼 수 없는 링크"를 그린다."""
     return send_from_directory(os.path.join(HERE, "static"), "share.html")
+
+
+@app.get("/demo")
+def demo_page():
+    """견본 교수 화면 — 링크 없이 바로 열어 보는 주소."""
+    return redirect(f"/s/{견본_토큰}")
+
+
+@app.get("/demo/pdf")
+def demo_pdf():
+    """견본 내역서 PDF."""
+    return redirect(f"/api/share/{견본_토큰}/pdf")
 
 
 @app.after_request
