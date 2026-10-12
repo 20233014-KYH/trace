@@ -179,6 +179,10 @@ def analyze():
     proc = M.process_evidence(events, context)
     linked = M.link_document(body, [{"id": i, "text": r["text"]} for i, r in enumerate(답들)], pasted, others, proc)
 
+    # 연결 확인(app/confirm.py · 박상진)에서 고른 것: link → 맞다 · no → 아니다 · unsure → 잘 모르겠음 (10/12)
+    # 붙여넣기 기록이 있는 연결은 연결 확인이 묻지 않고 자동으로 넣는다 → 여기서도 "맞다"로 채워 둔다
+    확인 = 연결확인._읽기(wid)
+    옮김 = {"link": "confirmed", "no": "rejected", "unsure": "unsure"}
     aid, 제안, 화면 = uuid.uuid4().hex, {}, []
     for pi, row in enumerate(linked):
         문단 = []
@@ -194,7 +198,8 @@ def analyze():
                 칸.update(key=k, kind=kind, ai_text=s.get("ai_text"),
                           answer={"text": a["text"], "tool": a.get("tool"), "ts": a.get("ts"), "history": a.get("history")},
                           question={"id": f"{q['session_id']}/{q['event_id']}", "text": q["text"], "ts": q.get("ts")} if q else None,
-                          pasted=bool(s.get("paste")))
+                          pasted=bool(s.get("paste")),
+                          preset="confirmed" if s.get("paste") else 옮김.get(확인.get(연결확인.key_of(s["text"], a["hash"]))))
             elif s["label"] == "web":
                 칸["source"] = (s.get("paste") or {}).get("source", "")
             문단.append(칸)
@@ -217,7 +222,7 @@ def make_statement():
     for k, x in 분석["links"].items():
         d = 고름.get(k)
         if d not in ("confirmed", "rejected"):
-            continue                                            # 고르지 않은 제안은 보내지 않는다
+            continue                                            # 고르지 않은·잘 모르겠음 제안은 원문을 보내지 않는다 (개수만 아래 unsure)
         a, q = x["answer"], x["question"]
         q_id = f"{q['session_id']}/{q['event_id']}" if q else None
         loc = {"file": 분석["file"], "paragraph": x["paragraph"]}
@@ -235,9 +240,11 @@ def make_statement():
                           "kind": x["kind"], "origin": x["origin"], "decision": "rejected"})
     if not links:
         return jsonify(error="empty", message="맞다·아니다를 하나 이상 골라 주세요"), 400
+    보류 = sum(1 for k in 분석["links"] if 고름.get(k) not in ("confirmed", "rejected"))   # 잘 모르겠음 + 안 고름
     body = {"explain_use": (b.get("explain_use") or "").strip()[:150] or None,      # v3 질문 두 칸 (10/10)
             "explain_check": (b.get("explain_check") or "").strip()[:150] or None,
             "ai_scope": (b.get("ai_scope") or "").strip() or None,                   # 학생이 넣었을 때만
+            "unsure": 보류,                                                           # 판단 보류 개수만 (원문 없음)
             "messages": [{"session_id": s, "event_id": e, "text": m["text"], "model": m.get("model") or None}
                          for (s, e), m in messages.items() if (s, e) not in redactions],
             "links": links,

@@ -185,6 +185,7 @@ class Statement(Base):
     sentence = Column(Text)                # 요약 문장 (v2 · 지금은 아래 두 칸)
     explain_use = Column(Text)             # v3 질문 ① "AI 를 어디에 썼고, 무엇은 직접 했나요?" (150자 · 비우면 "학생이 쓰지 않음")
     explain_check = Column(Text)           # v3 질문 ② "AI 답을 고르거나 고칠 때 어떻게 확인했나요?" (150자)
+    unsure = Column(Integer)               # 연결 확인에서 "잘 모르겠음"(또는 안 고름)으로 둔 제안 수 — 원문 없이 개수만 (10/12)
     verified = Column(Boolean)             # 올라온 원문이 전부 체인과 맞고, 쓰인 세션이 전부 봉인·검증됐는가
     problems = Column(JSON)                # [{session_id, event_id, why}] — 숨기지 않고 그대로 보여 준다
     summary = Column(JSON)                 # 만들 당시의 요약 숫자 (core/summary.py) — 뒤에 세션이 늘어도 이 내역서의 숫자는 그대로
@@ -280,7 +281,8 @@ def _칸_추가():
                        ("sessions", "deleted_at", "VARCHAR(40)"),
                        ("statements", "explain_use", "TEXT"),    # 10/11 내역서 v3
                        ("statements", "explain_check", "TEXT"),
-                       ("messages", "model", "VARCHAR(64)")):
+                       ("messages", "model", "VARCHAR(64)"),
+                       ("statements", "unsure", "INTEGER")):
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:

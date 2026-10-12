@@ -96,6 +96,16 @@ def _mins(v):
     return f"{v // 60}시간 {v % 60}분" if v >= 60 else f"{v}분"
 
 
+def _멈춘시간(s):
+    """10분 안쪽이면 초까지 (1분 27초) — 옛 요약엔 pause_seconds 가 없어 분으로"""
+    초 = s.get("pause_seconds")
+    if 초 is None:
+        return _mins(s.get("pause_minutes"))
+    if 초 < 600:
+        return f"{초 // 60}분 {초 % 60}초" if 초 >= 60 else f"{초}초"
+    return _mins(초 / 60)
+
+
 def _qr(url, size=64):
     w = QrCodeWidget(url)
     x1, y1, x2, y2 = w.getBounds()
@@ -171,7 +181,7 @@ def render(d, url):
     일치 = (f"<font color='#d44c47'>● 서버 기록과 다릅니다 ({len(probs)}개)</font>" if probs
             else "<font color='#448361'>●</font> 서버 기록과 일치")
     ai = s.get("ai") or {}
-    멈춤 = f"멈춤 {s.get('pauses', 0)}번 · {_mins(s.get('pause_minutes'))}" if s.get("pauses") else "멈춤 없음"
+    멈춤 = f"멈춤 {s.get('pauses', 0)}번 · {_멈춘시간(s)}" if s.get("pauses") else "멈춤 없음"
     지운 = len(s.get("deleted_sessions") or [])
     줄 = " &nbsp;·&nbsp; ".join([일치, escape(_도구(d)) + f" · 질문 {ai.get('questions', 0)}번", escape(멈춤),
                                 f"가림 {d.get('redacted', 0)}", f"지운 기록 {지운}"])
@@ -235,8 +245,13 @@ def render(d, url):
             out += [Spacer(1, 3), P(f"외 {len(links) - MAX_ROWS}곳 — 전체는 링크에서 볼 수 있습니다.", "small")]
     else:
         out.append(P("학생이 확인한 연결이 없습니다.", "small"))
+    남은 = []
     if d.get("rejected"):
-        out += [Spacer(1, 4), P(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개", "small")]
+        남은.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
+    if d.get("unsure"):
+        남은.append(f"학생이 판단을 보류한 제안 {d['unsure']}개 (원문은 보내지 않음)")
+    if 남은:
+        out += [Spacer(1, 4), P("  ·  ".join(남은), "small")]
 
     # ── QR 옆 두 줄 (10/10 · "말하는 것/않는 것" 대신) ──
     link = Table([[_qr(url), [PM(f"근거 보기 &nbsp;<font color='#337ea9'>{escape(url)}</font>", "cell"), Spacer(1, 3),
