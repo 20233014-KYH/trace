@@ -35,6 +35,7 @@ sys.path.insert(0, ROOT)
 from core import match as M                    # noqa: E402  연결 제안 (박상진)
 from core.docx import doc_body, read_docx      # noqa: E402
 from core.texthash import sha256_text          # noqa: E402
+from core import settings                      # noqa: E402  기록기·알약과 같은 설정 파일 (10/13)
 
 PORT = 5079                                     # 기록기 브리지는 5077
 app = Flask(__name__)
@@ -110,6 +111,7 @@ def page():
 def state():
     a = _auth()
     return jsonify(server=설정["server"], server_name=_서버_이름(), config=설정.get("config"),
+                   server_local=settings.is_local(설정["server"]),
                    data_dir=설정["data_dir"], user=a.get("user"), logged_in=bool(a.get("token")))
 
 
@@ -136,6 +138,18 @@ def login():
     with open(_auth_path(), "w", encoding="utf-8") as f:            # data/ 는 .gitignore — 저장소에 안 올라간다
         json.dump({"server": 설정["server"], "token": 답["token"], "user": 답["user"]}, f, ensure_ascii=False)
     return jsonify(user=답["user"])
+
+
+@app.post("/local/server")
+def switch_server():
+    """로그인 화면의 "인터넷 서버로 바꾸기" / "이 PC 의 시험 서버로" — 내 설정(~/trace-config.json)에 적는다.
+    기록기·알약도 같은 파일을 읽으므로 다음에 켤 때 같은 서버로 간다 (켜져 있는 기록기는 다시 켜야 함)."""
+    to = (request.get_json(force=True, silent=True) or {}).get("to")
+    if to not in ("internet", "local"):
+        return jsonify(error="bad_request", message="to 는 internet 또는 local"), 400
+    설정["server"] = settings.INTERNET if to == "internet" else settings.LOCAL
+    설정["config"] = settings.set_server(설정["server"])
+    return jsonify(server=설정["server"], server_name=_서버_이름(), config=설정["config"])
 
 
 @app.post("/local/signup")
@@ -364,17 +378,16 @@ app.register_blueprint(내보내기.bp)
 def main():
     global PORT
     ap = argparse.ArgumentParser(description="Trace — 내역서 만들기 (학생 PC)")
-    ap.add_argument("--config", default=os.path.join(ROOT, "collector", "config.json"), help="기록기 설정 (server · data_dir)")
+    ap.add_argument("--config", help="설정 파일 (기본: 내 설정 ~/trace-config.json → 없으면 collector/config.json · 기록기와 같음)")
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
-    cfg = json.load(open(a.config, encoding="utf-8"))
-    설정["server"] = cfg.get("server", "http://127.0.0.1:5000/api")
-    설정["config"] = os.path.abspath(a.config)
+    cfg, 설정["config"] = settings.load(a.config)
+    설정["server"] = cfg.get("server", settings.LOCAL)
     설정["data_dir"] = os.path.normpath(os.path.join(ROOT, "collector", cfg.get("data_dir", "../data")))
     PORT = a.port
     주소 = f"http://127.0.0.1:{PORT}/"
-    print(f"Trace 내역서 만들기  {주소}\n  서버 {설정['server']}\n  기록 {설정['data_dir']}\n  끄려면 Ctrl+C")
+    print(f"Trace 내역서 만들기  {주소}\n  서버 {설정['server']}\n  설정 {설정['config']}\n  기록 {설정['data_dir']}\n  끄려면 Ctrl+C")
     if not a.no_browser:
         threading.Timer(0.8, lambda: webbrowser.open(주소)).start()
     app.run(host="127.0.0.1", port=PORT, debug=False)

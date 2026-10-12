@@ -27,6 +27,7 @@ from webview.window import FixPoint
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "collector"))
 from collector import Collector  # noqa: E402
+from core import settings          # noqa: E402  기록기·내역서 화면과 같은 설정 파일 (10/13)
 
 # 창 크기 — pill.html 의 레이아웃과 짝 (논리 px)
 SIZE = {"mini": (34, 34), "pill": (120, 34)}   # 알약 112px(시간 + ⏸ ■) + 여백 — 화면 뼈대 3
@@ -117,12 +118,11 @@ def _make_transparent(window):
 
 def main():
     ap = argparse.ArgumentParser(description="Trace 알약 창 (시제품)")
-    ap.add_argument("--config", default=os.path.join(HERE, "..", "collector", "config.json"))
+    ap.add_argument("--config", help="설정 파일 (기본: 내 설정 ~/trace-config.json → 없으면 collector/config.json)")
     ap.add_argument("--work")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    with open(a.config, encoding="utf-8") as f:
-        cfg = json.load(f)
+    cfg, _ = settings.load(a.config)
     c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
     threading.Thread(target=c.run, daemon=True, name="collector").start()
 

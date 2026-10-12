@@ -55,6 +55,7 @@ idle_seconds = osx.idle_seconds
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))  # ../core
 from core import chain as C          # noqa: E402
+from core import settings            # noqa: E402  설정 파일 찾기 — 알약·내역서 화면과 같은 파일 (10/13)
 from classify import Classifier      # noqa: E402
 from mask import mask                # noqa: E402
 
@@ -733,13 +734,13 @@ class Collector:
 
 def main():
     ap = argparse.ArgumentParser(description="Trace Tier 0 collector")
-    ap.add_argument("--config", default=os.path.join(HERE, "config.json"))
+    ap.add_argument("--config", help="설정 파일 (기본: 내 설정 ~/trace-config.json → 없으면 collector/config.json)")
     ap.add_argument("--work", help="work id (기본: config.work_id)")
     ap.add_argument("--dry-run", action="store_true", help="서버로 보내지 않고 콘솔·로컬 파일만")
     ap.add_argument("--seconds", type=int, default=0, help="테스트용: N초 뒤 자동으로 작업 마치기")
     a = ap.parse_args()
-    with open(a.config, encoding="utf-8") as f:
-        cfg = json.load(f)
+    cfg, 경로 = settings.load(a.config)
+    print(f"설정 {경로}")
     c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
     signal.signal(signal.SIGINT, lambda *_: c.stop())
     try:
