@@ -163,6 +163,32 @@ def main():
     검사("18 잘 모르겠음 = 개수만 ★", 기대 >= 1 and 교수2.get("unsure") == 기대, f"보류 {교수2.get('unsure')}개 (잘 모르겠음 + 안 고름)")
     검사("19 보류한 문장 원문은 안 나감", 보류글 not in json.dumps(교수2, ensure_ascii=False), "")
 
+    # ⑯ 교수 링크 출처 보기 — 기본 끔 · 켰을 때만 보고서 전문 (10/11 · 10/12)
+    검사("20 기본은 출처 보기 없음", "source" not in 교수2 and 교수2.get("show_process") is False, "")
+    r = c.post("/local/statement", json={"analysis_id": a2["id"], "decisions": 고름2, "hide_questions": [가림],
+                                         "with_source": True, "with_process": True}, headers=H)
+    st3 = r.get_json()
+    검사("21 출처 보기 켜고 내역서 = 검증됨", r.status_code == 201 and st3.get("verified") is True, f"문제 {st3.get('problems')}")
+    sh3 = c.post("/local/share", json={"statement_id": st3.get("id")}, headers=H).get_json()
+    t3 = sh3["url"].rsplit("/", 1)[-1]
+    교수3 = requests.get(BASE + "/share/" + t3, timeout=30).json()
+    src = 교수3.get("source") or {}
+    문장들 = src.get("sentences", [])
+    검사("22 보고서 전문 + 문장별 종류", len(문장들) >= 8 and {"copy", "none"} <= {x["group"] for x in 문장들},
+         f"문장 {len(문장들)}개 · {sorted({x['kind'] for x in 문장들})}")
+    아니다글 = 묻는것[1]["text"]
+    검사("23 '아니다' 문장은 출처 없음으로", any(x["text"] == 아니다글 and x["group"] == "none" and x.get("rejected") for x in 문장들), "")
+    Q = src.get("questions", [])
+    검사("24 질문 기준: 가린 질문은 원문 없이", any(q.get("hidden") and q.get("question") is None for q in Q)
+         and 가린질문 not in json.dumps(교수3, ensure_ascii=False), f"질문 {len(Q)}개")
+    검사("25 질문·답 원문을 서버가 맞춰 봄", all(q.get("answer_ok") is True for q in Q if q.get("answer")), "")
+    검사("26 작업 과정 켬 → 기록 목록", len((교수3.get("summary") or {}).get("by_session", [])) == 1, "")
+    requests.delete(BASE + f"/shares/{t3}", headers={"Authorization": "Bearer " + json.load(open(os.path.join(data, "auth.json")))["token"]}, timeout=30)
+    r = c.get(f"/local/works", headers=H)                                     # 끊은 뒤 학생 쪽에서 다시 보기
+    latest = requests.get(BASE + f"/works/{wid}/statements/latest",
+                          headers={"Authorization": "Bearer " + json.load(open(os.path.join(data, "auth.json")))["token"]}, timeout=30).json()
+    검사("27 링크를 끊으면 보고서 전문을 지움 ★", latest.get("id") == st3["id"] and "source" not in latest, "살아 있는 링크가 없으면 서버에 안 둠")
+
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 

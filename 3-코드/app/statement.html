@@ -122,6 +122,10 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     <label for="ex-check">AI 답을 고르거나 고칠 때 어떻게 확인했나요? <span id="c-check" class="cnt"></span></label>
     <textarea id="ex-check" maxlength="150" placeholder="예: 교과서 5장과 비교해 틀린 부분을 고쳤습니다."></textarea>
     <label class="inline" id="scope-wrap" hidden><input type="checkbox" id="with-scope"> 교수 AI 규칙을 내역서에 넣기 — <span id="scope-text"></span></label>
+    <h2 style="margin-top:20px"><span class="no">+</span>교수 링크에 더 보여 주기 <small>기본은 꺼져 있습니다 · 요약과 질문 기준은 늘 보입니다</small></h2>
+    <label class="inline"><input type="checkbox" id="with-source"> <span><b>출처 보기</b> — 보고서 전문과 문장마다 어디서 왔는지, 참고만 한 질문·답까지.
+      <span class="lede" style="display:block;margin:2px 0 0">보고서 전문이 서버(싱가포르)로 갑니다. 링크를 끊거나 기간이 끝나면 서버에서 지워집니다.</span></span></label>
+    <label class="inline"><input type="checkbox" id="with-process"> <span><b>작업 과정</b> — 기록을 켜고 끈 날짜·시간·멈춤 목록</span></label>
     <div class="bar">
       <button class="btn dark" id="b-make" type="button" disabled>내역서 만들기</button>
       <span class="msg" id="m-make" role="status" style="margin:0"></span>
@@ -309,6 +313,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
       const w = works.find(x => x.id === $("work").value) || {};
       const r = await call("POST", "/local/statement", { analysis_id: analysis.id, decisions, hide_questions: [...hidden],
         explain_use: $("ex-use").value, explain_check: $("ex-check").value,
+        with_source: $("with-source").checked, with_process: $("with-process").checked,
         ai_scope: $("with-scope").checked ? (w.ai_scope || "") : "" });
       statementId = r.id;
       const res = $("result"); res.textContent = "";

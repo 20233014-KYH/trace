@@ -242,6 +242,9 @@ def build(paras, msgs, events, context):
             "uses": [x["k"] for x in 쓰임],
             "groups": {g: sum(1 for x in 쓰임 if x["group"] == g) for g in ("copy", "edited", "viewed")},
             "paras": sorted({x["p"] + 1 for x in 쓰임}),
+            # 교수 링크 출처 보기(김용현 · 10/12): 이 질문·답이 체인의 어느 기록인지 — 서버가 원문을 해시로 맞춰 본다
+            "refs": {k: {"session_id": r["session_id"], "event_id": r["event_id"], "hash": r.get("hash", "")}
+                     for k, r in (("q", q), ("a", main)) if r and r.get("event_id")},
         })
 
     counts = {g: sum(1 for x in 문장 if x["group"] == g) for g in ("copy", "edited", "viewed", "none")}
