@@ -109,20 +109,44 @@ def page():
 @app.get("/local/state")
 def state():
     a = _auth()
-    return jsonify(server=설정["server"], data_dir=설정["data_dir"], user=a.get("user"), logged_in=bool(a.get("token")))
+    return jsonify(server=설정["server"], server_name=_서버_이름(), config=설정.get("config"),
+                   data_dir=설정["data_dir"], user=a.get("user"), logged_in=bool(a.get("token")))
+
+
+def _서버_이름():
+    """로그인 화면에 보여 줄 서버 — 다른 서버에 로그인하면 계정이 없어 '비밀번호가 틀렸다' 로만 보인다 (10/12 박상진 겪음)"""
+    s = 설정["server"]
+    if "127.0.0.1" in s or "localhost" in s:
+        return f"이 PC 의 시험 서버 ({s})"
+    return f"인터넷 서버 ({s.replace('https://', '').replace('/api', '')})"
 
 
 @app.post("/local/login")
 def login():
     b = request.get_json(force=True)
-    코드, 답 = _서버("POST", "/auth/login", json={"email": b.get("email", ""), "password": b.get("password", ""),
+    코드, 답 = _서버("POST", "/auth/login", json={"email": (b.get("email") or "").strip(), "password": b.get("password", ""),
                                                  "device": f"내역서 화면 · {platform.node()}"})
+    if 코드 == 401:
+        # 서버는 '계정 없음' 과 '비밀번호 틀림' 을 일부러 구분하지 않는다 → 어느 서버에 물었는지라도 알려 준다
+        답 = {**답, "message": f"{답.get('message', '이메일 또는 비밀번호가 맞지 않습니다')} — 로그인할 서버: {_서버_이름()}. "
+                             f"다른 서버에서 가입했다면 설정 파일({os.path.basename(설정.get('config', 'config.json'))})의 server 를 확인하세요."}
     if 코드 != 200:
         return jsonify(답), 코드
     os.makedirs(설정["data_dir"], exist_ok=True)
     with open(_auth_path(), "w", encoding="utf-8") as f:            # data/ 는 .gitignore — 저장소에 안 올라간다
         json.dump({"server": 설정["server"], "token": 답["token"], "user": 답["user"]}, f, ensure_ascii=False)
     return jsonify(user=답["user"])
+
+
+@app.post("/local/signup")
+def signup():
+    """처음 쓰는 사람 — 지금 화면이 보는 서버에 계정을 만들고 바로 로그인한다 (전엔 명령어로만 가입할 수 있었음)"""
+    b = request.get_json(force=True)
+    코드, 답 = _서버("POST", "/auth/signup", json={"email": (b.get("email") or "").strip(), "password": b.get("password", ""),
+                                                  "name": (b.get("name") or "").strip() or None})
+    if 코드 != 201:
+        return jsonify(답), 코드
+    return login()
 
 
 @app.post("/local/logout")
@@ -346,6 +370,7 @@ def main():
     a = ap.parse_args()
     cfg = json.load(open(a.config, encoding="utf-8"))
     설정["server"] = cfg.get("server", "http://127.0.0.1:5000/api")
+    설정["config"] = os.path.abspath(a.config)
     설정["data_dir"] = os.path.normpath(os.path.join(ROOT, "collector", cfg.get("data_dir", "../data")))
     PORT = a.port
     주소 = f"http://127.0.0.1:{PORT}/"
