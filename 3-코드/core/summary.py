@@ -81,6 +81,7 @@ def session_summary(sid, evs):
         # 작업 구간 = 처음~끝에서 멈춘 동안을 뺀 조각들 — 내역서의 날짜별 막대 (멈춤은 빈 틈)
         "segments": _구간(evs[0]["ts"], evs[-1]["ts"], 멈춤),
         "pause_minutes": _분(멈춘초),
+        "pause_seconds": int(멈춘초),                            # 짧은 멈춤은 초까지 보여 주려고 (10/11 박상진: "1분" 이 실제 1분 27초)
         "idle_minutes": _분(_자리비움_초(evs)),
         "typed": st["typed"], "deleted": st["deleted"], "undo": st["undo"],
         "pastes": {"count": st["paste_count"], "chars": st["pasted"],
@@ -136,6 +137,7 @@ def work_summary(sessions):
         "last_at": 각[-1]["end"] if 각 else None,
         "minutes": round(합("minutes"), 1),
         "pause_minutes": round(합("pause_minutes"), 1),
+        "pause_seconds": sum(s.get("pause_seconds", 0) for s in 각),
         "pauses": sum(len(s["pauses"]) for s in 각),
         "deleted_sessions": 지운것,
         "idle_minutes": round(합("idle_minutes"), 1),

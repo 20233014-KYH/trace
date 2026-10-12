@@ -181,7 +181,7 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     const vt = el("div");
     vt.appendChild(el("b", null, probs.length ? `서버 기록과 다릅니다 (${probs.length}개)` : "서버 기록과 일치"));
     const parts = [`${toolsTxt} · 질문 ${n(ai0.questions)}번`,
-                   s && s.pauses ? `멈춤 ${s.pauses}번 · ${mins(s.pause_minutes).join("")}` : "멈춤 없음",
+                   s && s.pauses ? `멈춤 ${s.pauses}번 · ${pauseLen(s)}` : "멈춤 없음",
                    `가림 ${d.redacted || 0}`, `지운 기록 ${((s && s.deleted_sessions) || []).length}`];
     vt.appendChild(el("p", null, parts.join(" · ")));
     if (probs.length) {
@@ -258,6 +258,7 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     const hidden = [];
     if (d.redacted) hidden.push(`학생이 가린 항목 ${d.redacted}개 (내용은 오지 않았고, 기록에는 남아 있습니다)`);
     if (d.rejected) hidden.push(`Trace가 제안했지만 학생이 "아니다"라고 고른 연결 ${d.rejected}개 (원문은 보내지 않음)`);
+    if (d.unsure) hidden.push(`학생이 판단을 보류한 제안 ${d.unsure}개 (원문은 보내지 않음)`);
     hidden.forEach(t => add(app, el("p", "sub", t)));
 
     // ── 세션 ──
@@ -315,6 +316,14 @@ td.n{text-align:right;color:var(--muted)}td.n b{color:var(--ink);font-weight:600
     });
     add(box, add(el("div", "axis"), el("span", null, `${String(lo / 60).padStart(2, "0")}시`), el("span", null, `${String(hi / 60).padStart(2, "0")}시`)));
     return box;
+  }
+
+  // 10분 안쪽이면 초까지 (1분 27초) — 옛 요약엔 pause_seconds 가 없어 분으로
+  function pauseLen(s) {
+    const t = s.pause_seconds;
+    if (t == null) return mins(s.pause_minutes).join("");
+    if (t < 600) return t >= 60 ? `${Math.floor(t / 60)}분 ${t % 60}초` : `${t}초`;
+    return mins(t / 60).join("");
   }
 
   function row(cls, label, sub, text) {

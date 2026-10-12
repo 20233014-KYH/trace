@@ -137,6 +137,32 @@ def main():
     검사("13 교수 화면: 연결 5개", len(교수.get("links", [])) == 5, f"{len(교수.get('links', []))}개")
     검사("14 질문 두 칸 · 규칙은 안 넣음", 교수.get("explain_check") == "교재와 비교했습니다." and 교수.get("ai_scope") is None, "")
 
+    # ⑮ 연결 확인(박상진 · confirm.py)에서 고른 것을 내역서가 이어받는다 (10/12)
+    import confirm as CF
+    묻는것 = [s for s in 제안 if not s["pasted"]]
+    답해시 = lambda s: ST.분석들[a["id"]]["links"][s["key"]]["answer"]["hash"]
+    고른것 = {CF.key_of(묻는것[0]["text"], 답해시(묻는것[0])): "link",
+              CF.key_of(묻는것[1]["text"], 답해시(묻는것[1])): "no",
+              CF.key_of(묻는것[2]["text"], 답해시(묻는것[2])): "unsure"}
+    r = c.post("/local/confirm/decide", json={"work_id": wid, "set": 고른것}, headers=H)
+    검사("15 연결 확인에 고름 저장", r.status_code == 200, f"HTTP {r.status_code}")
+    with open(os.path.join(FX, "report.docx"), "rb") as f:
+        a2 = c.post("/local/analyze", data={"work_id": wid, "file": (f, "정규화_보고서.docx")}, headers=H,
+                    content_type="multipart/form-data").get_json()
+    미리 = {s["text"]: s.get("preset") for p in a2["paragraphs"] for s in p if s.get("key")}
+    검사("16 붙여넣기 기록 있는 건 자동 '맞다'", all(미리[s["text"]] == "confirmed" for s in 제안 if s["pasted"]), "")
+    검사("17 연결 확인에서 고른 대로", [미리[s["text"]] for s in 묻는것[:3]] == ["confirmed", "rejected", "unsure"],
+         f"{[미리[s['text']] for s in 묻는것[:3]]}")
+    고름2 = {s["key"]: s["preset"] for p in a2["paragraphs"] for s in p if s.get("key") and s.get("preset")}
+    r = c.post("/local/statement", json={"analysis_id": a2["id"], "decisions": 고름2}, headers=H)
+    st2 = r.get_json()
+    sh2 = c.post("/local/share", json={"statement_id": st2.get("id")}, headers=H).get_json()
+    교수2 = requests.get(BASE + "/share/" + sh2["url"].rsplit("/", 1)[-1], timeout=30).json()
+    보류글 = 묻는것[2]["text"]
+    기대 = sum(1 for p in a2["paragraphs"] for s in p if s.get("key") and 고름2.get(s["key"]) not in ("confirmed", "rejected"))
+    검사("18 잘 모르겠음 = 개수만 ★", 기대 >= 1 and 교수2.get("unsure") == 기대, f"보류 {교수2.get('unsure')}개 (잘 모르겠음 + 안 고름)")
+    검사("19 보류한 문장 원문은 안 나감", 보류글 not in json.dumps(교수2, ensure_ascii=False), "")
+
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 

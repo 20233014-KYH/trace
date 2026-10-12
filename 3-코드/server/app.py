@@ -604,6 +604,9 @@ def create_statement(wid):
     for 이름 in ("ai_scope", "sentence", "explain_use", "explain_check"):
         if b.get(이름) is not None and not isinstance(b[이름], str):
             return jsonify(error="bad_request", message=f"{이름} 는 글자여야 합니다"), 400
+    보류 = b.get("unsure", 0)                                  # "잘 모르겠음" 개수 (10/12) — 원문은 받지 않는다
+    if not isinstance(보류, int) or isinstance(보류, bool) or not 0 <= 보류 <= 100000:
+        return jsonify(error="bad_request", message="unsure 는 0 이상의 정수입니다"), 400
     for 이름 in ("explain_use", "explain_check"):              # v3 질문 두 칸 — 각 150자
         if len((b.get(이름) or "").strip()) > 설명_최대:
             return jsonify(error="bad_request", message=f"{이름} 는 {설명_최대}자까지입니다"), 400
@@ -640,7 +643,7 @@ def create_statement(wid):
                           # 교수 규칙은 학생이 넣었을 때만 (10/10 · 아직 규칙 정한 교수가 거의 없어서) — 과제 메모를 저절로 옮기지 않는다
                           ai_scope=(b.get("ai_scope") or "").strip() or None, sentence=b.get("sentence"),
                           explain_use=(b.get("explain_use") or "").strip() or None,
-                          explain_check=(b.get("explain_check") or "").strip() or None)
+                          explain_check=(b.get("explain_check") or "").strip() or None, unsure=보류 or None)
         d.add(st)
         d.flush()
 
@@ -735,7 +738,9 @@ def _내역서_내용(d, st, 학생용):
              "result": {"text": l.result_text, "location": l.location},
              "kind": l.kind, "origin": l.origin} for l in 연결 if l.decision == "confirmed"]
     # 투명성 한 줄 (v3) — 쓴 도구(모델) : 내역서에 담긴 원문 기준. 모델은 PC 가 보낸 참고값
-    도구 = {}
+    # 도구 이름은 작업 기록(요약 · 체인의 ai_msg)에서 — 연결을 하나도 안 골라도 "Claude 앱 · 질문 2번" 처럼 나오게 (10/11 박상진)
+    # 모델 이름만 내역서 원문에서 (PC 가 보낸 참고값)
+    도구 = {t: set() for t in ((st.summary or {}).get("ai") or {}).get("tools", {})}
     for m in 메시지:
         도구.setdefault(m.tool or "AI", set())
         if m.model:
@@ -744,7 +749,7 @@ def _내역서_내용(d, st, 학생용):
            "explain_use": st.explain_use, "explain_check": st.explain_check,
            "tools": [{"tool": t, "models": sorted(ms)} for t, ms in 도구.items()],
            "verified": bool(st.verified), "problems": st.problems or [], "summary": st.summary, "links": 맞다,
-           "rejected": sum(l.decision == "rejected" for l in 연결), "redacted": len(가림)}
+           "rejected": sum(l.decision == "rejected" for l in 연결), "unsure": st.unsure or 0, "redacted": len(가림)}
     if not 학생용:
         # ★ 교수 화면엔 세션·이벤트 id 를 내보내지 않는다. 세션 id 를 알면 /sessions/<id>/events 로
         #   작업 기록 전체(창 이름 포함)를 읽을 수 있다 — 학생이 공유한 건 내역서뿐이다.
