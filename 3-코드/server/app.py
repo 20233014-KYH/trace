@@ -190,9 +190,44 @@ def me():
         return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
     with db.Session() as d:
         works = d.query(db.Work).filter(db.Work.user_id == g.user_id, db.Work.deleted_at.is_(None)).all()
-        답 = {"id": g.user_id, "name": g.user_name,
+        u = d.get(db.User, g.user_id)
+        답 = {"id": g.user_id, "name": g.user_name, "email": u.email if u else None,     # 이메일은 설정 › 계정에 보임 (10/13)
               "works": [{"id": w.id, "title": w.title, "ai_scope": w.ai_scope} for w in works]}
     return jsonify(답)
+
+
+@app.patch("/api/me")
+@로그인_필요
+def update_me():
+    """설정 › 계정 › 이름 고치기 (10/13 박상진) — 이름은 내역서 맨 위에 나온다. 이미 낸 내역서는 그때 이름 그대로"""
+    이름 = ((request.get_json(force=True, silent=True) or {}).get("name") or "").strip()
+    if not 이름 or len(이름) > 40:
+        return jsonify(error="bad_request", message="이름은 1~40자로 넣어 주세요"), 400
+    with db.Session() as d:
+        u = d.get(db.User, g.user_id)
+        u.name = 이름
+        d.commit()
+    return jsonify(id=g.user_id, name=이름)
+
+
+@app.post("/api/auth/password")
+@로그인_필요
+def change_password():
+    """설정 › 계정 › 비밀번호 바꾸기 (10/13 박상진) — 지금 비밀번호를 맞혀야 바뀜 · 바꾸면 이 기기 말고 다른 기기는 로그아웃"""
+    b = request.get_json(force=True, silent=True) or {}
+    새것 = b.get("new_password") or ""
+    if len(새것) < 8:
+        return jsonify(error="bad_request", message="새 비밀번호는 8자 이상이어야 합니다"), 400
+    지금토큰 = request.headers.get("Authorization", "")[7:].strip()
+    with db.Session() as d:
+        u = d.get(db.User, g.user_id)
+        if not _비번_맞음(u.password_hash, b.get("password") or ""):
+            return jsonify(error="unauthorized", message="지금 비밀번호가 맞지 않습니다"), 401
+        u.password_hash = generate_password_hash(unicodedata.normalize("NFC", 새것))   # ★ 원문은 저장하지 않는다
+        d.query(db.Token).filter(db.Token.user_id == u.id, db.Token.token != 지금토큰).delete()
+        d.commit()
+    print(f"← 비밀번호 바꿈 {g.user_id[:8]}…")
+    return jsonify(ok=True)
 
 
 # ─────────────────────────── Work (계약 2절) ───────────────────────────

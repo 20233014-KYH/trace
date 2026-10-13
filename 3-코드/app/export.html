@@ -73,12 +73,12 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   <aside class="side">
     <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
       <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
-    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav" href="/home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
     <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
-    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <a class="nav" href="/settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
     <h4>내 과제</h4>
     <nav class="works" id="works"></nav>
-    <a class="nav add off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <a class="nav add" href="/new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
     <div class="me" id="me"></div>
   </aside>
 
@@ -87,7 +87,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       <div class="tl">
         <button class="ib arw" id="b-back" title="뒤로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
         <button class="ib arw" id="b-fwd" title="앞으로" aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
-        <div class="crumb"><a>내 과제</a>/<a id="c-work">과제</a>/<b>내역서 내보내기</b></div>
+        <div class="crumb"><a href="/home">내 과제</a>/<a id="c-work">과제</a>/<b>내역서 내보내기</b></div>
       </div>
       <div class="steps" aria-label="단계">
         <span class="done"><i></i>기록</span><em></em><span class="done" data-s="source"><i></i>출처 보기</span><em></em><span class="done" data-s="confirm"><i></i>연결 확인</span><em></em><span class="cur" data-s="report"><i></i>내역서</span>
@@ -212,9 +212,9 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     box.append(sec(2, "QR 링크에 넣을 것", `내역서 · 연결한 질문과 답${켬.length ? " · " + 켬.join(" · ") : " · 출처 보기 · 작업 과정은 꺼 둠"}`, b => {
       b.append(row("내역서 1장", "항상 들어가요", sw(true, true)),
                row("연결한 질문 · AI 답", `연결함 ${c.confirmed - c.dropped}곳의 원문 · 가린 것은 "가림" 으로만`, sw(true, true)),
-               row("출처 보기", "보고서 전문 + 문장마다 출처 + 질문 · 답 전부 · 켜면 보고서 전문이 서버로 가요 (기본 끔)",
+               row("출처 보기", "보고서 전문 + 문장마다 출처 + 질문 · 답 전부 · 켜면 보고서 전문이 서버로 가요",
                    sw(dr.with_source, false, v => setShare({ with_source: v }))),
-               row("작업 과정", "시간 순 기록 · 창 이름 포함 (기본 끔)", sw(dr.with_process, false, v => setShare({ with_process: v }))),
+               row("작업 과정", "시간 순 기록 · 창 이름 포함", sw(dr.with_process, false, v => setShare({ with_process: v }))),
                el("div", "desc", dr.with_source ? "출처 보기를 켜면 질문 · 답 전부가 링크로 가요. ③ 가리기에서 개인 정보를 다시 확인하세요."
                                                 : "QR 을 찍은 교수에게는 켠 것만 보입니다."));
     }));

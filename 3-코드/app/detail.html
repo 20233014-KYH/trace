@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>과제 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/shell.css">
+<link rel="stylesheet" href="/ui/work.css">
+<style>
+/* 과제 상세 — 캔버스 2 (단계 4칸 + 다음 버튼 · 왼쪽 기록 목록 · 오른쪽 과제 파일 · 교수 AI 규칙)
+   ★ 원문은 이 PC 에만 · 기록 줄엔 개수와 시각만 */
+.body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:16px;padding:24px 32px}
+.title h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.title .meta{display:flex;gap:6px;align-items:center;margin-top:4px;font-size:13px;color:var(--muted)}
+.title .meta svg{width:14px;height:14px}
+.title .meta.soon{color:#c62f34;font-weight:600}.title .meta .muted{color:var(--muted);font-weight:400;margin-left:6px}
+.flow{padding:16px 20px;display:flex;align-items:center;gap:12px}
+.flow .s{flex:1;display:flex;gap:10px;align-items:flex-start;min-width:0}
+.flow .n{width:24px;height:24px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#fff;color:var(--faint);box-shadow:inset 0 0 0 1px var(--line)}
+.flow .s.done .n,.flow .s.cur .n{background:var(--ink);color:#fff;box-shadow:none}
+.flow .s b{display:block;font-size:14px;font-weight:500;color:var(--muted)}
+.flow .s.done b,.flow .s.cur b{font-weight:600;color:var(--ink)}
+.flow .s .desc{font-size:12px}
+.flow .ar{color:#d4d4d8;padding-top:4px}
+.flow .btn{margin-left:8px}
+.cols{display:flex;gap:16px;flex:1 0 auto;min-height:340px;align-items:stretch}
+.recs{flex:1;min-width:0;padding:18px 20px;display:flex;flex-direction:column}
+.row{position:relative;display:flex;align-items:center;gap:10px;padding:11px 8px 11px 12px;margin:0 -8px;border-radius:8px;border-bottom:1px solid var(--soft)}
+.row .when{font-size:14px;font-weight:500;width:178px;flex:none;font-variant-numeric:tabular-nums}
+.row .desc{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .ok{display:flex;align-items:center;gap:5px;font-size:12.5px;color:#15803d;white-space:nowrap}
+.row .ok.wait{color:var(--faint)}
+.row .ok svg{width:14px;height:14px}
+.recs .foot{margin-top:auto;padding-top:12px}
+.right{width:392px;flex:none;display:flex;flex-direction:column;gap:16px}
+.box{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.box .hd{display:flex;align-items:center;gap:8px}.box .hd svg{width:16px;height:16px}
+.box .hd .btn{margin-left:auto}
+.doc{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.doc b{font-size:14px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc.gone b{color:var(--faint)}
+.rule{font-size:13px;line-height:1.6;color:var(--ink2);padding:10px 12px;border-radius:10px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);white-space:pre-wrap}
+textarea{font:inherit;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;resize:vertical;min-height:96px;color:var(--ink)}
+textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba(62,99,221,.12)}
+.acts{display:flex;gap:8px;justify-content:flex-end}
+.toast{font-size:13px;padding:10px 14px;border-radius:10px;background:#eaf0fd;color:#2f50c4}
+.toast.err{background:#fdecec;color:#a4282d}
+.recbadge{height:24px}
+.empty{padding:24px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav" href="/home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav" href="/settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add" href="/new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+        <button class="ib arw" id="b-back" title="뒤로 · 홈" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <button class="ib arw" id="b-fwd" title="다음 단계" aria-label="다음 단계"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+        <div class="crumb"><a href="/home">내 과제</a>/<b id="c-work">과제</b></div>
+      </div>
+      <div></div>
+      <div class="win" style="align-items:center">
+        <span class="badge blue recbadge" id="recb" hidden></span>
+        <a class="iconbtn" id="b-set" title="과제 설정" aria-label="과제 설정" style="margin-left:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></a>
+        <span style="width:8px"></span>
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body" id="body">
+      <div class="title"><h1 id="t">…</h1><div class="meta" id="meta"></div></div>
+      <div id="toast"></div>
+      <div class="card flow" id="flow"></div>
+      <div class="cols">
+        <section class="card recs">
+          <div style="display:flex;align-items:center"><span class="h-sec">기록</span><span class="desc" id="rsum" style="margin-left:8px"></span></div>
+          <div id="rows" style="margin-top:6px"></div>
+          <div class="desc foot">원문은 이 PC 에만 · 기록을 다시 보는 화면은 준비 중이에요</div>
+        </section>
+        <div class="right">
+          <section class="card box">
+            <div class="hd"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg><span class="h-sec">과제 파일</span></div>
+            <div id="docs"></div>
+            <div class="desc" id="docs-d">기록하면서 Word 로 연 문서가 여기에 붙어요.</div>
+          </section>
+          <section class="card box">
+            <div class="hd"><svg viewBox="0 0 24 24"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span class="h-sec">교수가 정한 AI 규칙</span><button class="btn btn-ghost btn-sm" id="b-rule">고치기</button></div>
+            <div id="rule"></div>
+            <div class="desc">넣으면 내역서 ① 위에 원문 그대로 들어갑니다.</div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script src="/ui/work.js"></script>
+<script>
+(function () {
+  const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
+  const wid = new URLSearchParams(location.search).get("work") || "";
+  const FLOW = [["record", "기록", null], ["source", "출처 보기", "결과물 문장과 AI 답 잇기"], ["confirm", "연결 확인", "맞게 이어졌는지 내가 확인"], ["report", "내역서", "PDF 한 장으로 제출"]];
+  const ARROW = '<path d="m9 18 6-6-6-6"/>', OK = '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>';
+  T.init({});
+  T.loadWorks(wid, { stay: true });
+  $("b-back").onclick = () => location.href = "/home";
+  $("b-set").href = "/work/settings?work=" + encodeURIComponent(wid);
+  let d = null, tick = null;
+
+  function toast(t, ok) { $("toast").textContent = ""; if (t) $("toast").append(el("div", "toast" + (ok ? "" : " err"), t)); }
+  const 남은말 = sessionStorage.getItem("trace.msg"); if (남은말) { sessionStorage.removeItem("trace.msg"); toast(남은말, false); }
+
+  async function load() {
+    try { d = await T.call("GET", "/local/work?work_id=" + encodeURIComponent(wid)); }
+    catch (e) {
+      if (e.code === 401) { location.replace("/login"); return; }
+      $("t").textContent = "과제를 열지 못했어요"; toast(e.message, false); return;
+    }
+    const w = d.work;
+    document.title = `${w.title} · Trace`; $("t").textContent = w.title; $("c-work").textContent = w.title;
+    const dd = W.due(w.due), meta = $("meta"); meta.textContent = ""; meta.className = "meta" + (dd && dd.soon ? " soon" : "");
+    meta.append(T.icon(W.ICON.cal), document.createTextNode(dd ? dd.text : "마감 없음"));
+    if (w.course) meta.append(el("span", "muted", "· " + w.course));
+    rec(); flow(); rows(); docs(); rule();
+  }
+
+  function rec() {                                                  // 위 줄 오른쪽 "● 기록 중 01:12:40"
+    clearInterval(tick);
+    const r = d.recording, b = $("recb");
+    b.hidden = !r; if (!r) return;
+    let s = r.elapsed_sec || 0;
+    const draw = () => b.textContent = `● ${r.paused ? "잠깐 멈춤" : "기록 중"} ${W.clock(s)}`;
+    draw(); if (!r.paused) tick = setInterval(() => { s += 1; draw(); }, 1000);
+  }
+
+  function flow() {                                                 // 단계 4칸 + 다음 버튼
+    const box = $("flow"); box.textContent = "";
+    const at = d.recording ? "record" : d.stage, i = FLOW.findIndex(f => f[0] === at);
+    const n = d.sessions.length, 시간 = d.sessions.reduce((a, s) => a + (s.active_sec || 0), 0);
+    FLOW.forEach(([k, name, sub], j) => {
+      if (j) { const a = el("span", "ar"); a.append(T.icon(ARROW)); box.append(a); }
+      const done = d.report_made || j < i || (k === "record" && n > 0 && !d.recording);
+      const s = el("div", "s" + (done ? " done" : j === i ? " cur" : ""));
+      const t = el("div"); t.append(el("b", null, name), el("div", "desc", k === "record" ? (n ? `${n}번 · ${W.dur(시간)}` : "아직 기록 없음") : sub));
+      s.append(el("span", "n", String(j + 1)), t); box.append(s);
+    });
+    let btn;
+    if (d.recording) btn = null;
+    else if (!n) btn = el("a", "btn btn-default", "기록 시작");
+    else if (d.report_made) { btn = el("a", "btn btn-outline", "내역서 보기"); btn.href = d.go; }
+    else { btn = el("a", "btn btn-default", "다음: " + FLOW.find(f => f[0] === d.stage)[1]); btn.href = d.go; }
+    if (btn && !n) { btn.href = "#"; btn.onclick = e => { e.preventDefault(); W.startRecording(wid, btn, toast); }; }
+    if (btn) box.append(btn);
+    // 위 줄 → = 이 과제의 다음 단계 화면
+    $("b-fwd").disabled = !d.go || !n;
+    $("b-fwd").onclick = () => { if (d.go) location.href = d.go; };
+  }
+
+  function rows() {                                                 // 이 과제의 기록 — 새것부터
+    const box = $("rows"); box.textContent = "";
+    const ss = d.sessions, q = ss.reduce((a, s) => a + s.questions, 0), p = ss.reduce((a, s) => a + s.pastes, 0);
+    $("rsum").textContent = ss.length ? `기록 ${ss.length}번 · 질문 ${q} · 붙여넣기 ${p}` : "";
+    if (!ss.length) { box.append(el("div", "desc empty", "아직 기록이 없어요. [기록 시작] 을 누르면 기록 창이 켜지고 이 과제로 기록합니다.")); return; }
+    ss.forEach(s => {
+      const r = el("div", "row");
+      const 끝 = s.recording ? "" : s.end ? W.hm(s.end) : "?";
+      r.append(el("span", "when", `${W.day(s.start)} ${W.hm(s.start)} – ${끝}`));
+      if (s.recording) {
+        r.append(el("span", "desc", `기록 중 · 질문 ${s.questions} · 붙여넣기 ${s.pastes}`), el("span", "badge blue", "기록 중"));
+      } else {
+        const bits = [`질문 ${s.questions}`, `붙여넣기 ${s.pastes}`];
+        if (s.pause_sec >= 60) bits.push(`멈춤 ${W.dur(s.pause_sec)}`);
+        if (s.active_sec != null) bits.push(W.dur(s.active_sec));
+        r.append(el("span", "desc", bits.join(" · ")));
+        const ok = el("span", "ok" + (s.sealed ? "" : " wait"));
+        if (s.sealed) { ok.append(T.icon(OK), document.createTextNode("서버 일치")); }
+        else ok.textContent = s.sealed === false ? "서버 확인 전" : d.server_ok ? "서버에 없음" : "";
+        r.append(ok);
+      }
+      box.append(r);
+    });
+  }
+
+  function docs() {
+    const box = $("docs"); box.textContent = "";
+    if (!d.docs.length) { $("docs-d").textContent = "기록하면서 Word 로 연 문서가 여기에 붙어요."; return; }
+    d.docs.slice(0, 4).forEach(x => {
+      const r = el("div", "doc" + (x.exists ? "" : " gone")); r.title = x.exists ? x.name : `${x.name} — 지금은 그 자리에 없어요`;
+      r.append(T.svgFile(), el("b", null, x.name), el("span", "desc", x.exists ? "Word" : "옮겨짐"));
+      box.append(r);
+    });
+    $("docs-d").textContent = "이 과제를 기록하는 동안 연 문서예요. 출처 보기는 가장 최근 문서로 엽니다.";
+  }
+
+  function rule(editing) {
+    const box = $("rule"); box.textContent = "";
+    const v = d.work.ai_scope || "";
+    $("b-rule").hidden = !!editing; $("b-rule").textContent = v ? "고치기" : "넣기";
+    if (!editing) { box.append(v ? el("div", "rule", v) : el("div", "desc", "없음 — 교수가 정한 규칙이 있으면 강의계획서 문구를 그대로 넣어 두세요.")); return; }
+    const ta = el("textarea"); ta.value = v; ta.maxLength = 2000; ta.placeholder = "강의계획서의 AI 사용 규칙을 그대로 붙여넣으세요";
+    const acts = el("div", "acts"), c = el("button", "btn btn-outline btn-sm", "취소"), s = el("button", "btn btn-default btn-sm", "저장");
+    c.onclick = () => rule(false);
+    s.onclick = async () => {
+      s.disabled = true;
+      try {
+        await T.call("POST", "/local/work/save", null, { work_id: wid, title: d.work.title, course: d.work.course, due: d.work.due, ai_scope: ta.value });
+        d.work.ai_scope = ta.value.trim(); rule(false); toast("");
+      } catch (e) { toast(e.message, false); s.disabled = false; }
+    };
+    acts.append(c, s); box.append(ta, acts); ta.focus();
+  }
+  $("b-rule").onclick = () => rule(true);
+
+  load();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>

@@ -102,8 +102,9 @@ def _과제별_세션():
 
 
 # ─────────────── 화면 ───────────────
-@app.get("/")
+@app.get("/make")
 def page():
+    """옛 내역서 만들기 한 장 — 캔버스에 없는 화면. / 는 홈(app/home.py)이 받고, 이 화면은 정리될 때까지 /make 로 남긴다 (10/13)"""
     return send_from_directory(HERE, "statement.html")
 
 
@@ -373,6 +374,13 @@ import export as 내보내기                         # noqa: E402  캔버스 7 
 app.register_blueprint(출처.bp)
 app.register_blueprint(연결확인.bp)
 app.register_blueprint(내보내기.bp)
+import home as 홈                                 # noqa: E402  캔버스 홈 A · 로그인 (/ → /home · /login)
+import work as 과제                               # noqa: E402  캔버스 1-1 새 과제 · 과제 설정 · 2 과제 상세
+app.register_blueprint(홈.bp)
+app.register_blueprint(과제.bp)
+import options as 설정화면                         # noqa: E402  캔버스 곁가지 · 설정 6칸 (10/13)
+app.register_blueprint(설정화면.bp)
+과제.설정.update(bridge=홈._기록기, config=lambda: 설정.get("config"))
 
 
 def main():

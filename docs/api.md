@@ -451,6 +451,14 @@ GET /demo/pdf   → /api/share/demo/pdf      내역서 PDF 견본
 토큰 `demo` 만 DB 대신 `server/demo_share.json` 을 그대로 준다 (expires_at 은 열 때마다 지금+14일). 실제 토큰은 32자라 겹치지 않음.
 화면·PDF 를 고쳐 머지하면 같은 주소로 바로 확인 · 교수 인터뷰 때 보여 주기용. 견본 데이터를 바꾸려면 그 JSON 을 고친다.
 
+### 10-5-5. 계정 고치기 (10/13 박상진 · ✅ · PC 앱 설정 › 계정)
+
+```
+GET   /api/me                → { id, name, email, works }        ← email 더함
+PATCH /api/me                { name }  (1~40자)                    → { id, name } · 이미 낸 내역서는 그때 이름 그대로
+POST  /api/auth/password     { password, new_password (8자 이상) } → { ok } · 지금 비번 틀리면 401 · 이 기기 토큰만 남기고 다른 기기는 로그아웃
+```
+
 ### 10-5-1. 지우기 · 옮기기 · 잠깐 멈춤 (10/10 박상진 요청 · ✅ 10/11 구현)
 
 ```

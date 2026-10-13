@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>홈 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/shell.css">
+<link rel="stylesheet" href="/ui/work.css">
+<style>
+/* 홈 — 캔버스 "Trace 화면 뼈대" 홈 A (10/10 확정 · 10/13 개발)
+   위에서부터: 지금 상태(기록 중일 때만) · 문제 알림(있을 때만) · 내 과제 카드 2열 (마감 순).
+   ★ 점수·퍼센트 없음 · 숫자는 개수만 · 학생이 확인한 연결만 센다 (내역서 PDF 와 같은 셈) */
+.body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:16px;padding:24px 32px}
+/* 지금 상태 */
+.now{padding:16px 20px;display:flex;align-items:center;gap:14px}
+.recdot{width:9px;height:9px;border-radius:50%;background:#4c8dff;box-shadow:0 0 0 3px rgba(76,141,255,.22);flex:none}
+.recdot.paused{background:#a1a1aa;box-shadow:0 0 0 3px rgba(161,161,170,.22);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.recdot.paused{animation:none}}
+.now .tt{flex:1;min-width:0}
+.now b{font-size:15px;font-weight:600}
+.now .clock{font-weight:700;font-variant-numeric:tabular-nums;margin-left:6px}
+.now .pill{font-size:12.5px;color:var(--muted);white-space:nowrap}
+/* 문제 알림 */
+.alert{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:12px;align-items:center;padding:10px 12px 10px 16px;border-radius:10px;border:1px solid #fde68a;background:#fffbeb;color:#92400e;font-size:14px}
+.alert.info{border-color:#c7d6fb;background:#eaf0fd;color:#2f50c4}
+.alert svg{width:16px;height:16px;stroke-width:2}
+.alert b{font-weight:600}.alert .desc{color:#a16207}
+/* 내 과제 */
+.hd{display:flex;align-items:center;margin-top:4px}
+.hd b{font-size:14px;font-weight:600}.hd .desc{margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.empty{margin:48px auto;text-align:center;color:var(--muted);font-size:14px;max-width:420px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.empty .btn{margin-top:14px}
+.err{color:var(--copy-d);font-size:13px}
+.me .out{margin-left:auto;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.me .out:hover{background:var(--soft);color:var(--ink)}
+.rail .me .out{display:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav on" href="/home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav off" title="아직 만드는 중"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav" href="/settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add" href="/new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+        <button class="ib arw" id="b-back" disabled title="뒤로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <button class="ib arw" id="b-fwd" disabled title="앞으로" aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+        <div class="crumb"><b>홈</b></div>
+      </div>
+      <div></div>
+      <div class="win" style="align-items:center">
+        <a class="btn btn-default" href="/new" style="margin-right:8px"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>새 과제</a>
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body" id="body">
+      <div id="now"></div>
+      <div id="alerts"></div>
+      <div class="hd"><b>내 과제</b><span class="desc">마감 순</span></div>
+      <div class="grid" id="grid"></div>
+      <div id="msg"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script src="/ui/work.js"></script>
+<script>
+(function () {
+  const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
+  const ICON = {
+    warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  };
+  const enc = encodeURIComponent;
+
+  T.init({});
+  let data = null, tick = null;
+
+  async function load() {
+    try { data = await T.call("GET", "/local/home"); }
+    catch (e) {
+      if (e.code === 401) { location.replace("/login"); return; }
+      $("msg").textContent = ""; $("msg").append(el("div", "err", e.message)); return;
+    }
+    side(); now(); alerts(); cards();
+  }
+
+  // ── 왼쪽: 과제 목록 · 내 이름 · 로그아웃 ──
+  function side() {
+    const box = $("works"); box.textContent = "";
+    data.works.forEach(w => {
+      const a = el("a", "nav"); a.href = "/go?work=" + enc(w.id); a.title = w.title;
+      a.append(T.svgFile(), el("span", "t", w.title));
+      if (data.recording && data.recording.work_id === w.id) a.append(el("span", "dot"));
+      box.append(a);
+    });
+    if (!data.works.length) box.append(el("div", "hint", "아직 과제가 없습니다"));
+    const u = data.user || {}, me = $("me"); me.textContent = "";
+    const t = el("div"); t.append(el("span", null, u.name || u.email || ""), el("small", null, u.name ? u.email || "" : ""));
+    const out = el("button", "out"); out.title = "로그아웃"; out.setAttribute("aria-label", "로그아웃"); out.append(T.icon(ICON.out));
+    out.onclick = async () => { try { await T.call("POST", "/local/logout", null, {}); } catch (e) {} location.replace("/login"); };
+    me.append(el("div", "av", (u.name || u.email || "?").slice(0, 1)), t, out);
+  }
+
+  // ── 지금 상태 — 기록 중일 때만 ──
+  function now() {
+    const box = $("now"); box.textContent = ""; clearInterval(tick);
+    const r = data.recording; if (!r) return;
+    const w = data.works.find(x => x.id === r.work_id);
+    const c = el("div", "card now");
+    const dot = el("span", "recdot" + (r.paused ? " paused" : ""));
+    const tt = el("div", "tt"), b = el("b", null, `${r.paused ? "잠깐 멈춤" : "기록 중"} · ${w ? w.title : r.work_id}`);
+    const ck = el("span", "clock", W.clock(r.elapsed_sec || 0)); b.append(ck);
+    tt.append(b, el("div", "desc", r.paused ? "멈춘 동안은 아무것도 기록하지 않아요" : `지금까지 AI 질문·답 ${r.ai_count || 0}개`));
+    c.append(dot, tt, el("span", "pill", "멈추기 · 마치기는 기록 창에서"));
+    box.append(c);
+    let s = r.elapsed_sec || 0;
+    if (!r.paused) tick = setInterval(() => { s += 1; ck.textContent = W.clock(s); }, 1000);
+  }
+
+  // ── 문제 알림 — 있을 때만 ──
+  function alerts(extra) {
+    const box = $("alerts"); box.textContent = "";
+    const add = (title, desc, info) => {
+      const a = el("div", "alert" + (info ? " info" : "")); a.setAttribute("role", "status");
+      const t = el("div"); t.append(el("b", null, title)); if (desc) t.append(el("div", "desc", desc));
+      a.append(T.icon(ICON.warn), t, el("span")); box.append(a);
+    };
+    if (extra) add(extra[0], "", extra[1]);
+    if (data.error) add("서버에서 과제 목록을 받지 못했어요", data.error);
+    if (data.orphans.length) add(`로그인 없이 만든 기록이 ${data.orphans.length}개 있어요`,
+      "주인이 없는 기록이라 내역서를 만들 수 없습니다. 기록기에 로그인한 뒤 기록한 과제만 쓸 수 있어요.");
+  }
+
+  // ── 과제 카드 ──
+  function cards() {
+    const g = $("grid"); g.textContent = ""; $("msg").textContent = "";
+    if (!data.works.length) {
+      const e = el("div", "empty"), a = el("a", "btn btn-default", "새 과제 만들기"); a.href = "/new";
+      e.append(el("b", null, "아직 과제가 없어요"), document.createTextNode("과제를 만들고 기록을 시작하면 여기에 카드가 생깁니다."), document.createElement("br"), a);
+      $("msg").append(e); return;
+    }
+    data.works.forEach(w => {
+      const rec = data.recording && data.recording.work_id === w.id;
+      const c = el("div"); g.append(c);
+      const base = { title: w.title, href: "/work?work=" + enc(w.id), settings: "/work/settings?work=" + enc(w.id), due: w.due, last: w.last };
+      if (!w.pc_sessions && !rec) {                                 // 이 PC 에 기록이 없는 과제 — 기록 시작
+        W.card(c, { ...base, badge: ["기록 전", "outline"], stage: null, facts: { questions: 0, answers: 0, linked: 0 },
+          button: ["기록 시작", "#", true], onButton: btn => W.startRecording(w.id, btn, (m, ok) => alerts([m, ok])) });
+        return;
+      }
+      const parts = W.card(c, { ...base, badge: rec ? ["기록 중", "blue"] : null, stage: rec ? "record" : null, wait: "세는 중…" });
+      T.call("GET", "/local/home/card?work_id=" + enc(w.id)).then(d => fill(c, base, w, d, rec)).catch(() => {
+        W.facts(parts.facts, null, "숫자를 세지 못했어요");
+      });
+    });
+  }
+
+  function fill(c, base, w, d, rec) {                              // 배지 · 버튼 = 이 과제가 지금 할 일
+    let b, btn;
+    if (rec) { b = ["기록 중", "blue"]; btn = ["열기", base.href, false]; }
+    else if (d.report_made && d.shared) { b = ["공유 중", "green"]; btn = ["링크 보기", d.go, false]; }
+    else if (d.report_made) { b = ["내역서 만듦", "gray"]; btn = ["PDF 열기", d.go, false]; }
+    else if (d.stage === "report") { b = ["내역서 만들기 전", "outline"]; btn = ["내역서 만들기", d.go, true]; }
+    else if (d.stage === "confirm") { b = ["연결 확인 전", "outline"]; btn = ["연결 확인하기", d.go, true]; }
+    else { b = ["출처 보기 전", "outline"]; btn = ["출처 보기", d.go, true]; }
+    const dd = W.due(w.due);
+    const warn = dd && dd.days >= 0 && dd.days <= 1 && !d.report_made ? `${dd.days ? "내일" : "오늘"} 마감 — 아직 내역서를 만들지 않았어요` : null;
+    W.card(c, { ...base, badge: b, stage: rec ? "record" : d.stage, made: d.report_made, facts: d.facts,
+      wait: d.facts && d.facts.answers == null ? "과제 파일을 열면 연결 수가 보여요" : null, warn, button: btn,
+      old: d.report_made && dd && dd.days < 0 });
+  }
+
+  load();
+  // 기록기를 켜고 끄면 홈이 따라 바뀌게 — 화면을 다시 볼 때 한 번 더 읽는다
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>

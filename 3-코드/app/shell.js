@@ -74,7 +74,8 @@ window.TraceShell = (function () {
   }
 
   // ── 왼쪽 과제 목록 · 위 줄 과제 이름. 과제를 누르면 /go → 그 과제가 지금 있는 단계 화면 (보던 화면 그대로가 아님) ──
-  async function loadWorks(wid) {
+  async function loadWorks(wid, opt) {
+    opt = opt || {};
     let pc = [];
     try { pc = (await call("GET", "/local/source/works")).works; } catch (e) {}
     let mine = null;
@@ -91,10 +92,11 @@ window.TraceShell = (function () {
     } catch (e) { mine = null; }
     if (!mine) {
       $("me").innerHTML = "";
-      const a = el("a", "nav", null); a.href = "/"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
+      const a = el("a", "nav", null); a.href = "/login"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
       $("me").append(a);
     }
-    const works = mine ? mine.filter(w => w.pc_sessions) : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions }));
+    // 내 과제는 기록이 없어도 보임 (새 과제를 만들면 바로 왼쪽에 생겨야 함 · 10/13)
+    const works = mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions }));
     const box = $("works"); box.textContent = "";
     works.forEach(w => {
       const a = el("a", "nav" + (w.id === wid ? " on" : ""));
@@ -105,8 +107,8 @@ window.TraceShell = (function () {
     });
     if (!works.length) box.append(el("div", "hint", "이 PC 에 기록한 과제가 없습니다"));
     const me = works.find(w => w.id === wid);
-    $("c-work").textContent = me ? me.title : (wid || "과제");
-    if (!wid && works.length) location.replace("/go?work=" + encodeURIComponent(works[0].id));
+    if ($("c-work")) $("c-work").textContent = me ? me.title : (wid || "과제");
+    if (!wid && works.length && !opt.stay) location.replace("/go?work=" + encodeURIComponent(works[0].id));
     return works;
   }
 

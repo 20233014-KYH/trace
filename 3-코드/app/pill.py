@@ -25,9 +25,11 @@ import webview
 from webview.window import FixPoint
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ICON = os.path.join(HERE, "trace.ico")
 sys.path.insert(0, os.path.join(HERE, "..", "collector"))
 from collector import Collector  # noqa: E402
 from core import settings          # noqa: E402  기록기·내역서 화면과 같은 설정 파일 (10/13)
+from core import prefs             # noqa: E402  학생이 설정 › 기록 창에서 고른 것 (자리 · 시간 보이기 · 쉬는 시간)
 
 # 창 크기 — pill.html 의 레이아웃과 짝 (논리 px)
 SIZE = {"mini": (34, 34), "pill": (120, 34)}   # 알약 112px(시간 + ⏸ ■) + 여백 — 화면 뼈대 3
@@ -37,8 +39,8 @@ MARGIN = 12
 class Api:
     """pill.html 이 pywebview.api.* 로 부르는 것. Collector·Window 는 밑줄로 숨긴다 (pywebview 가 공개 속성을 JS 에 노출하려 든다)"""
 
-    def __init__(self, c: Collector):
-        self._c, self._win = c, None
+    def __init__(self, c: Collector, p=None):
+        self._c, self._win, self._p = c, None, p or dict(prefs.DEFAULTS)
         self._paused_total, self._pause_at = 0.0, None   # 알약 시간은 멈춘 시간을 뺀 "기록한 시간" (내역서 기록 시간과 같은 뜻)
 
     def status(self):
@@ -47,16 +49,17 @@ class Api:
         held = self._paused_total + (now - self._pause_at if self._pause_at else 0)
         e = max(0, int(s["elapsed_sec"] - held))
         s["elapsed"] = f"{e // 3600:02d}:{e % 3600 // 60:02d}:{e % 60:02d}"
+        s["show_time"] = self._p["show_time"]                # 끄면 처음부터 점만 (설정 › 기록 창)
         return s
 
     def layout(self, name: str, dock: bool = False):
         """창 크기를 바꾼다 — mini · pill. 오른쪽 아래 모서리는 그 자리에 둔다 (끌어다 놓은 위치 유지).
         dock=True(처음 한 번)면 화면 오른쪽 아래에 붙인다."""
         w, h = SIZE[name]
-        self._win.resize(w, h, FixPoint.SOUTH | FixPoint.EAST)   # 물리 픽셀로 계산 → 배율 오차 없음
+        pos = self._p["position"]
+        self._win.resize(w, h, (FixPoint.NORTH if pos[0] == "t" else FixPoint.SOUTH) | (FixPoint.WEST if pos[1] == "l" else FixPoint.EAST))
         if dock:
-            ww, wh = _work_area()
-            self._win.move(ww - w - MARGIN, wh - h - MARGIN)
+            self._win.move(*_자리(pos, w, h))
         return name
 
     def pause(self):
@@ -74,6 +77,12 @@ class Api:
         self._c.stop()
         threading.Timer(1.5, self._win.destroy).start()   # 수집기가 session_end·봉인을 보낼 시간
         return True
+
+
+def _자리(pos, w, h):
+    """설정 › 기록 창 자리 (br 오른쪽 아래 · bl · tr · tl) → 창 왼쪽 위 x, y"""
+    ww, wh = _work_area()
+    return (MARGIN if pos[1] == "l" else ww - w - MARGIN), (MARGIN if pos[0] == "t" else wh - h - MARGIN)
 
 
 def _work_area():
@@ -108,6 +117,11 @@ def _make_transparent(window):
             time.sleep(0.1)
 
         def apply():
+            try:                                  # 작업 표시줄 · Alt+Tab 에 파이썬 로고 대신 Trace 로고 (10/13)
+                from System.Drawing import Icon
+                form.Icon = Icon(ICON)
+            except Exception:
+                pass
             form.BackColor = Color.Black
             m = MARGINS(-1, -1, -1, -1)
             ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(form.Handle.ToInt32(), ctypes.byref(m))
@@ -123,15 +137,22 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     cfg, _ = settings.load(a.config)
+    p = prefs.load(os.path.normpath(os.path.join(HERE, "..", "collector", cfg.get("data_dir", "../data"))))
+    cfg = {**cfg, "idle_after_sec": p["idle_min"] * 60}  # 설정 › 기록 창 › 쉬는 시간
+    if sys.platform == "win32":                         # 작업 표시줄에서 python.exe 무리가 아니라 "Trace" 로 따로 묶이게 → 창 아이콘이 보임
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Trace.RecordWindow")
+        except Exception:
+            pass
     c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
     threading.Thread(target=c.run, daemon=True, name="collector").start()
 
-    api = Api(c)
+    api = Api(c, p)
     w, h = SIZE["pill"]
-    ww, wh = _work_area()
+    x, y = _자리(p["position"], w, h)
     api._win = webview.create_window(
-        "Trace", os.path.join(HERE, "pill.html"), js_api=api,
-        width=w, height=h, x=ww - w - MARGIN, y=wh - h - MARGIN,
+        "Trace 기록 창", os.path.join(HERE, "pill.html"), js_api=api,
+        width=w, height=h, x=x, y=y,
         frameless=True, on_top=True, transparent=True, resizable=False, easy_drag=False,
         min_size=(30, 30),                               # 기본 min_size (200,100) 이면 알약(72px)·점(34px) 크기로 못 줄어든다
     )
@@ -140,5 +161,6 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+    if sys.stdout:                                      # pythonw(콘솔 없는 창)로 켜면 없음
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     main()
