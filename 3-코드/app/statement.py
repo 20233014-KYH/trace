@@ -380,6 +380,8 @@ app.register_blueprint(홈.bp)
 app.register_blueprint(과제.bp)
 import options as 설정화면                         # noqa: E402  캔버스 곁가지 · 설정 6칸 (10/13)
 app.register_blueprint(설정화면.bp)
+import review as 돌아보기                          # noqa: E402  캔버스 곁가지 · 돌아보기 v2 (10/13)
+app.register_blueprint(돌아보기.bp)
 과제.설정.update(bridge=홈._기록기, config=lambda: 설정.get("config"))
 
 
