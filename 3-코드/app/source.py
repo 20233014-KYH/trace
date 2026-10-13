@@ -45,7 +45,7 @@ def page():
 @bp.get("/ui/<name>")
 def ui(name):
     """PC 앱 화면들이 같이 쓰는 화면 틀 (왼쪽 메뉴 · 위 줄)"""
-    if name not in ("shell.css", "shell.js", "work.css", "work.js"):
+    if name not in ("shell.css", "shell.js", "work.css", "work.js", "win.js", "trace.ico"):
         abort(404)
     return send_from_directory(HERE, name, max_age=0)    # 늘 새로 확인 — 고친 뒤에도 예전 틀이 남아 보이지 않게
 

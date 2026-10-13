@@ -84,7 +84,11 @@ def home():
         if os.name == "nt":                           # 작업 표시줄에 Trace 로 따로 묶여 앱 아이콘이 보이게 (10/13)
             import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Trace.App")
-        창 = webview.create_window(f"Trace {VERSION}", 주소, width=1280, height=820, min_size=(1024, 640))
+        조종 = _창조종()
+        # 제목 줄 없는 창 — 화면마다 위 줄 오른쪽 끝에 ─ □ ✕ 를 그려 두었다 (캔버스 1차 확정 10/11). 윈도우 제목 줄까지 있으면 버튼이 두 벌
+        창 = webview.create_window(f"Trace {VERSION}", 주소, width=1280, height=820, min_size=(1024, 640),
+                                  frameless=True, easy_drag=False, js_api=조종)
+        조종._창 = 창
         webview.start(_아이콘, 창)
     except Exception:                                 # WebView2 가 없거나 창을 못 띄우면 브라우저로
         traceback.print_exc()
@@ -93,6 +97,32 @@ def home():
         while True:                                   # 브라우저 탭이 쓰는 동안 화면 서버를 살려 둔다
             time.sleep(3600)
     os._exit(0)                                       # 화면 서버 스레드까지 같이 끝낸다
+
+
+class _창조종:
+    """화면의 ─ □ ✕ 버튼 → 창 (app/shell.js · login.html · welcome.html 이 pywebview.api.window_control 을 부른다).
+    위 줄의 class="pywebview-drag-region" 을 잡고 끌면 창이 옮겨진다 · 두 번 누르면 최대화/되돌리기"""
+
+    def __init__(self):
+        self._창, self._최대 = None, False
+
+    def window_control(self, what):
+        w = self._창
+        if not w:
+            return False
+        if what == "min":
+            w.minimize()
+        elif what == "max":
+            (w.restore if self._최대 else w.maximize)()
+            self._최대 = not self._최대
+        elif what == "close":
+            w.destroy()
+        return self._최대
+
+    def resize_to(self, width, height):
+        """화면 가장자리를 끌어 크기 바꾸기 (win.js) — 논리 px"""
+        if self._창 and not self._최대:
+            self._창.resize(int(max(1024, width)), int(max(640, height)))
 
 
 def _아이콘(창):
@@ -106,7 +136,12 @@ def _아이콘(창):
             if form:
                 break
             time.sleep(0.1)
-        form.Invoke(Action(lambda: setattr(form, "Icon", Icon(os.path.join(ROOT, "app", "trace.ico")))))
+        from System.Windows.Forms import Screen
+
+        def apply():
+            form.Icon = Icon(os.path.join(ROOT, "app", "trace.ico"))
+            form.MaximizedBounds = Screen.FromHandle(form.Handle).WorkingArea   # 제목 줄 없는 창의 최대화가 작업 표시줄을 덮지 않게
+        form.Invoke(Action(apply))
     except Exception:                                 # noqa: BLE001
         pass
 

@@ -66,11 +66,7 @@ window.TraceShell = (function () {
       railTitle(on);
       try { localStorage.setItem(RAIL, on ? "1" : "0"); } catch (e) {}
     };
-    // 창 버튼 — 앱(pywebview)에서 window_control 을 열어 주면 동작. 브라우저에선 아무것도 안 함
-    document.querySelectorAll(".win button").forEach(b => b.onclick = () => {
-      const api = window.pywebview && window.pywebview.api;
-      if (api && api.window_control) api.window_control(b.dataset.w);
-    });
+    // 창 버튼 · 위 줄 두 번 눌러 최대화 · 가장자리 크기 바꾸기는 /ui/win.js (제목 줄 없는 앱 창 · 10/13)
   }
 
   // ── 왼쪽 과제 목록 · 위 줄 과제 이름. 과제를 누르면 /go → 그 과제가 지금 있는 단계 화면 (보던 화면 그대로가 아님) ──

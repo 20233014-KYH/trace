@@ -22,6 +22,8 @@ DEFAULTS = {
     "with_source": True,        # 교수 링크에 출처 보기
     "with_process": True,       # 교수 링크에 작업 과정
     "mask_part": True,          # 찾은 개인 정보는 그 부분만 가리기
+    # 처음 한 번 (준비 점검) 을 봤나 — 로그인 뒤 홈 대신 /welcome 으로 한 번
+    "onboarded": False,
 }
 CHOICES = {"position": ("br", "bl", "tr", "tl"), "idle_min": (3, 5, 10, 15), "link_days": (7, 14, 30)}
 

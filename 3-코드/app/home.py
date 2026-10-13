@@ -20,6 +20,7 @@ import source as S
 import confirm as CF
 import export as EX
 import work as WK
+from core import prefs
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("home", __name__)
@@ -39,7 +40,17 @@ def root():
 def page():
     if not _로그인했나():
         return redirect("/login")
+    if not prefs.load(S._기록["data_dir"]())["onboarded"]:      # 처음이면 준비 점검부터 (캔버스 0b · 한 번만)
+        return redirect("/welcome")
     return send_from_directory(HERE, "home.html")
+
+
+@bp.get("/welcome")
+def welcome():
+    """처음 한 번 — 무엇을 기록하나 → 기록 준비 점검 → 첫 과제 만들기 (설정 › 앱 정보 › 도움말에서 다시)"""
+    if not _로그인했나():
+        return redirect("/login")
+    return send_from_directory(HERE, "welcome.html")
 
 
 @bp.get("/login")

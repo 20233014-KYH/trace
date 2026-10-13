@@ -53,6 +53,10 @@ def main():
         ST.출처._기록["server"] = lambda 방법, 경로, **kw: 응답.get(경로, (404, {}))
         ST.출처._기록["statement_exists"] = lambda w: False
         검사("/ → 홈", loc(c.get("/", **HOST)).endswith("/home"))
+        검사("처음이면 홈 대신 준비 점검(/welcome) · 화면 열림", loc(c.get("/home", **HOST)).endswith("/welcome")
+             and c.get("/welcome", **HOST).status_code == 200)
+        from core import prefs
+        prefs.save(data, {"onboarded": True})
         r = c.get("/home", **HOST)
         검사("홈 화면 열림", r.status_code == 200 and "내 과제" in r.get_data(as_text=True))
         d = c.get("/local/home", **HOST).json
