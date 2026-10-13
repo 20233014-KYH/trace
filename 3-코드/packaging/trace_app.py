@@ -158,6 +158,8 @@ def selftest():
 
     def 화면():
         g = runpy.run_path(STATEMENT, run_name="trace_selftest")      # main() 은 안 돈다
+        import tempfile
+        g["설정"].update(server=settings.LOCAL, data_dir=tempfile.mkdtemp(prefix="trace-selftest-"))   # main() 이 채우는 것 (로그인 안 한 빈 폴더)
         c = g["app"].test_client()
         h = {"Host": f"127.0.0.1:{HOME_PORT}"}
         assert c.get("/", headers=h).status_code == 302                     # 로그인 → 홈 (10/13 · #54)
