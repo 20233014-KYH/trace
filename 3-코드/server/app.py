@@ -1089,6 +1089,56 @@ def demo_pdf():
     return redirect(f"/api/share/{견본_토큰}/pdf")
 
 
+# ─────────────── 설치판 내려받기 (v0.1 · 10/13) ───────────────
+# 설치 파일은 GitHub 릴리스에 있다 (태그 v* 를 올리면 .github/workflows/release.yml 이 윈도우에서 묶어 올림).
+# 서버는 최신 릴리스를 10분마다 읽어 두고 → 내려받기 화면과 PC 앱의 "새 버전" 알림이 같은 것을 본다.
+릴리스_API = "https://api.github.com/repos/20233014-KYH/trace/releases/latest"
+_릴리스 = {"at": 0.0, "data": None}
+
+
+def _최신_릴리스():
+    import json
+    import time
+    import urllib.request
+    if _릴리스["data"] is not None and time.time() - _릴리스["at"] < 600:
+        return _릴리스["data"]
+    try:
+        요청 = urllib.request.Request(릴리스_API, headers={"Accept": "application/vnd.github+json", "User-Agent": "trace-server"})
+        with urllib.request.urlopen(요청, timeout=8) as r:
+            g = json.loads(r.read())
+    except Exception as e:                                   # noqa: BLE001  GitHub 가 안 되면 전에 읽은 것 (없으면 None)
+        print(f"  릴리스 읽기 실패 ({type(e).__name__}) — 전에 읽은 것으로")
+        _릴리스["at"] = time.time() - 540                      # 1분 뒤 다시
+        return _릴리스["data"]
+
+    def 파일(끝):
+        for a in g.get("assets") or []:
+            if a.get("name", "").lower().endswith(끝):
+                return {"name": a["name"], "url": a["browser_download_url"], "size": a.get("size")}
+        return None
+    _릴리스["data"] = {"version": (g.get("tag_name") or "").lstrip("vV"), "tag": g.get("tag_name"),
+                       "published_at": g.get("published_at"), "page": g.get("html_url"),
+                       "notes": (g.get("body") or "").strip()[:2000],
+                       "windows": 파일(".exe"), "extension": 파일("-extension.zip") or 파일(".zip")}
+    _릴리스["at"] = time.time()
+    return _릴리스["data"]
+
+
+@app.get("/api/app/latest")
+def app_latest():
+    """최신 설치판 {version, tag, published_at, page, notes, windows:{name,url,size}, extension:{…}} · 없으면 404"""
+    d = _최신_릴리스()
+    if not d or not d.get("version"):
+        return jsonify(error="no_release", message="아직 올린 설치판이 없습니다"), 404
+    return jsonify(d)
+
+
+@app.get("/download")
+def download_page():
+    """Trace 내려받기 화면 (static/download.html) — /api/app/latest 를 읽어 버튼을 채운다"""
+    return send_from_directory(os.path.join(HERE, "static"), "download.html")
+
+
 @app.after_request
 def 공유_머리(resp):
     """공유 링크는 주소 자체가 열쇠다. 다른 사이트로 새지 않게(Referer) · 검색에 안 잡히게 · 저장 안 되게."""

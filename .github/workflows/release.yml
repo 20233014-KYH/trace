@@ -1,0 +1,62 @@
+# 설치판 — 태그 v* 를 올리면 윈도우에서 묶고(3-코드/packaging/build.py) 자체 시험 후 GitHub 릴리스에 올린다.
+#   git tag v0.1.0 && git push origin v0.1.0
+# 손으로 돌리거나(Actions → 설치판 → Run workflow) PC 앱 코드를 바꾼 PR 이면 릴리스 없이 묶기·시험만 (결과물은 Artifacts).
+# 서버 /download 와 PC 앱의 새 버전 알림은 "최신 릴리스" 를 읽는다 (사전 릴리스는 안 보임).
+name: 설치판
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "3-코드/packaging/**"
+      - "3-코드/app/**"
+      - "3-코드/collector/**"
+      - "3-코드/core/**"
+      - ".github/workflows/release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: 3-코드/packaging/requirements-build.txt
+
+      - name: 라이브러리
+        run: python -m pip install -r "3-코드/packaging/requirements-build.txt"
+
+      - name: Inno Setup
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: 묶기 · 자체 시험 · 설치 파일
+        run: python "3-코드/packaging/build.py"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trace-windows
+          path: |
+            3-코드/packaging/dist/*.exe
+            3-코드/packaging/dist/*.zip
+
+      - name: 릴리스에 올리기
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Trace ${{ github.ref_name }}
+          body_path: 3-코드/packaging/notes/${{ github.ref_name }}.md
+          files: |
+            3-코드/packaging/dist/*.exe
+            3-코드/packaging/dist/*.zip

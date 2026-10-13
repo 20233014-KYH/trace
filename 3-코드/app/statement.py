@@ -36,6 +36,7 @@ from core import match as M                    # noqa: E402  연결 제안 (박�
 from core.docx import doc_body, read_docx      # noqa: E402
 from core.texthash import sha256_text          # noqa: E402
 from core import settings                      # noqa: E402  기록기·알약과 같은 설정 파일 (10/13)
+from core.version import VERSION, parse as parse_version  # noqa: E402  설치판 버전 (새 버전 알림)
 
 PORT = 5079                                     # 기록기 브리지는 5077
 app = Flask(__name__)
@@ -113,7 +114,44 @@ def state():
     a = _auth()
     return jsonify(server=설정["server"], server_name=_서버_이름(), config=설정.get("config"),
                    server_local=settings.is_local(설정["server"]),
-                   data_dir=설정["data_dir"], user=a.get("user"), logged_in=bool(a.get("token")))
+                   data_dir=설정["data_dir"], user=a.get("user"), logged_in=bool(a.get("token")),
+                   version=VERSION, recording=_기록_중())
+
+
+# ─────────────── 설치판 (v0.1 · 10/13) — 새 버전 알림 · 기록 시작 ───────────────
+def _기록_중():
+    """기록기가 켜져 있으면 확장 다리(5077)가 열려 있다"""
+    import socket
+    with socket.socket() as s:
+        s.settimeout(0.2)
+        return s.connect_ex(("127.0.0.1", 5077)) == 0
+
+
+@app.get("/local/update")
+def update():
+    """인터넷 서버에 최신 설치판을 묻는다 (서버가 GitHub 릴리스를 읽어 둠). 시험 서버를 쓰는 중이어도 늘 인터넷 서버에."""
+    try:
+        r = requests.get(settings.INTERNET + "/app/latest", timeout=15)
+        최신 = r.json() if r.ok else {}
+    except (requests.RequestException, ValueError):
+        최신 = {}
+    v = 최신.get("version")
+    return jsonify(current=VERSION, latest=v, newer=bool(v) and parse_version(v) > parse_version(VERSION),
+                   download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"))
+
+
+@app.post("/local/record")
+def start_record():
+    """알약 + 기록기를 따로 띄운다 (설치판은 Trace.exe record · 저장소는 python app/pill.py)"""
+    import subprocess
+    if _기록_중():
+        return jsonify(ok=True, already=True)
+    명령 = [sys.executable, "record"] if settings.FROZEN else [sys.executable, os.path.join(HERE, "pill.py")]
+    if 설정.get("config_arg"):
+        명령 += ["--config", 설정["config_arg"]]
+    subprocess.Popen(명령, cwd=ROOT, close_fds=True,
+                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) if settings.FROZEN else 0)
+    return jsonify(ok=True, already=False)
 
 
 def _서버_이름():
@@ -393,6 +431,7 @@ def main():
     ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
     cfg, 설정["config"] = settings.load(a.config)
+    설정["config_arg"] = a.config
     설정["server"] = cfg.get("server", settings.LOCAL)
     설정["data_dir"] = os.path.normpath(os.path.join(ROOT, "collector", cfg.get("data_dir", "../data")))
     PORT = a.port

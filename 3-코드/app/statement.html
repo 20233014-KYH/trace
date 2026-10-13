@@ -27,6 +27,9 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:26px 0 4px}
 .lede{color:var(--muted);margin:0 0 8px;font-size:14px}
 section{padding:22px 0;border-bottom:1px solid var(--line)}
 section[hidden]{display:none!important}
+.update{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--soft);font-size:13.5px}
+.update a{color:var(--ink);font-weight:600}
+.brand .ver{font-weight:400;color:var(--faint);font-size:12px}
 [hidden]{display:none!important}
 h2{font-size:16px;font-weight:600;margin:0 0 12px;display:flex;align-items:baseline;gap:10px}
 h2 .no{font-size:12px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
@@ -79,9 +82,10 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
 <body>
 <div class="page">
   <div class="top">
-    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Trace<small>· AI 활용 내역서 만들기</small></div>
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Trace<small>· AI 활용 내역서 만들기</small><span class="ver" id="ver"></span></div>
     <div class="who" id="who"></div>
   </div>
+  <div class="update" id="update" role="status" hidden></div>
   <h1>내역서 만들기</h1>
   <p class="lede">이 화면은 내 컴퓨터에서만 돌아갑니다. AI 질문·답 원문은 여기서 내가 "맞다"고 고른 것만 서버로 갑니다.</p>
 
@@ -185,6 +189,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
   // ── 로그인 ──
   async function boot() {
     const s = await call("GET", "/local/state");
+    $("ver").textContent = s.version ? `v${s.version}` : "";
     $("who").textContent = "";
     $("srv-note").textContent = `로그인할 서버: ${s.server_name} · 설정 파일 ${s.config || ""}`;
     $("srv-warn").hidden = !s.server_local;
@@ -192,6 +197,14 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
     if (!s.logged_in) { show("s-login"); ["s-work", "s-file", "s-links", "s-make", "s-done"].forEach(x => show(x, false)); return; }
     show("s-login", false);
     $("who").append(el("span", null, `${s.user.name} · ${s.server.replace(/^https?:\/\//, "").replace(/\/api$/, "")}`));
+    const rec = el("button", "btn dark", s.recording ? "기록 중" : "기록 시작"); rec.type = "button"; rec.disabled = !!s.recording;
+    rec.title = "화면 오른쪽 아래에 알약이 뜨고 기록이 시작됩니다";
+    rec.onclick = async () => {
+      rec.disabled = true;
+      try { const r = await call("POST", "/local/record", {}); rec.textContent = r.already ? "기록 중" : "기록 시작됨 — 알약을 확인하세요"; }
+      catch (e) { rec.disabled = false; alert(e.message); }
+    };
+    $("who").append(rec);
     const out = el("button", "btn", "로그아웃"); out.type = "button";
     out.onclick = async () => { await call("POST", "/local/logout", {}); location.reload(); };
     $("who").append(out);
@@ -379,6 +392,16 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
   };
 
   boot().catch(e => { document.querySelector(".lede").textContent = "화면을 시작하지 못했습니다: " + e.message; });
+
+  // ── 새 버전 알림 (설치판 v0.1 · 서버가 GitHub 릴리스를 읽어 둠) — 못 물어도 조용히 넘어간다 ──
+  call("GET", "/local/update").then(u => {
+    if (!u.newer) return;
+    const b = $("update"); b.textContent = "";
+    const a = el("a", null, "내려받기"); a.href = u.download; a.target = "_blank"; a.rel = "noopener";
+    b.append(el("span", null, `새 버전 v${u.latest} 이 나왔습니다 (지금 v${u.current}).`), a);
+    if (u.notes) { const n = el("span", null, String(u.notes).split("\n")[0].slice(0, 80)); n.style.color = "var(--muted)"; b.append(n); }
+    b.hidden = false;
+  }).catch(() => {});
 })();
 </script>
 </body>

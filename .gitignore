@@ -25,3 +25,7 @@ __pycache__/
 
 # Claude 데스크톱 앱 로컬 설정
 .claude/
+
+# 설치판 묶음 (packaging/build.py)
+3-코드/packaging/build/
+3-코드/packaging/dist/

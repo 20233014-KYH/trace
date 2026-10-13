@@ -138,7 +138,10 @@ def _기록_시작(wid):
     # 콘솔 없는 파이썬(pythonw)으로 — python.exe 로 켜면 검은 터미널 창이 같이 뜨고, 그 창을 닫으면 기록 창도 꺼졌다 (10/13)
     # (venv 의 python.exe 는 진짜 파이썬을 자식으로 다시 켜는 껍데기라, DETACHED 로 켜도 자식이 새 콘솔을 받음)
     창용 = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
-    명령 = [창용 if os.path.isfile(창용) else sys.executable, os.path.join(HERE, "pill.py"), "--work", wid]
+    if getattr(sys, "frozen", False):                            # 설치판 — Trace.exe record (창만 있는 exe 라 콘솔 없음)
+        명령 = [sys.executable, "record", "--work", wid]
+    else:
+        명령 = [창용 if os.path.isfile(창용) else sys.executable, os.path.join(HERE, "pill.py"), "--work", wid]
     cfg = 설정.get("config")
     cfg = cfg() if callable(cfg) else cfg                       # 이 화면과 같은 설정 파일 → 같은 서버 · 같은 data 폴더
     if cfg:
