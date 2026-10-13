@@ -39,6 +39,7 @@ async function tick() {
   try {
     const s = await pywebview.api.status();
     if (!s.recording) { end(); return; }
+    if (first && s.show_time === false) mini = true;          // 설정 › 기록 창 › 기록 시간 보이기 끔 → 처음부터 점만
     // 멈추면 시간을 그 자리에 둔다 (글자 없이 · 폭 그대로)
     if (s.paused) { if (frozen === null) frozen = $("t").textContent; $("t").textContent = frozen; }
     else { frozen = null; $("t").textContent = s.elapsed; }

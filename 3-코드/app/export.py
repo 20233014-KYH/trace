@@ -34,6 +34,7 @@ from flask import Blueprint, Response, jsonify, request, send_from_directory
 from core import match as M
 from core.docx import read_docx
 from core.summary import work_summary
+from core import prefs
 from core.texthash import sha256_text
 import confirm as CF
 import source as S
@@ -93,8 +94,8 @@ def export():
     return jsonify(
         file=r["file"], title=r["title"], logged_in=bool(a.get("token")),
         draft={"explain_use": 초안.get("explain_use", ""), "explain_check": 초안.get("explain_check", ""),
-               "days": 초안.get("days", 14), "with_source": bool(초안.get("with_source")),
-               "with_process": bool(초안.get("with_process"))},
+               "days": 초안.get("days", _기본("link_days")), "with_source": bool(초안.get("with_source", _기본("with_source"))),
+               "with_process": bool(초안.get("with_process", _기본("with_process")))},
         found=[{"id": m["id"], "role": m["role"], "tool": m["tool"], "n": m["n"],
                 "what": " · ".join(f"{이름} {n}개" for 이름, n in m["found"]), "hidden": m["id"] in 가림,
                 "masked": m["id"] in 일부, "preview": _둘레(가린_글(m["text"]))}
@@ -103,7 +104,7 @@ def export():
                    for m in 보냄 if m["role"] == "question"],
         # v3 ② 대표 질문 고르기 — 이 과제의 질문 전부 (시간 순) · ① 쓰임새 숫자
         flow=[{"id": q["id"], "tool": q["tool"], "n": q["n"], "usage": 이름[q["usage"]],
-               "text": (가린_글(q["text"]) if q["found"] and (초안.get("mask") or {}).get(q["id"], True) else q["text"])[:120],
+               "text": (가린_글(q["text"]) if q["found"] and (초안.get("mask") or {}).get(q["id"], _기본("mask_part")) else q["text"])[:120],
                "used": q["used"], "picked": q["id"] in 흐름 and q["id"] not in 가림, "hidden": q["id"] in 가림}
               for q in r["questions"]],
         usage=[{"name": n, "count": r["usage_counts"][k]} for k, n, _ in 쓰임새],
@@ -135,7 +136,7 @@ def save_draft():
         if not isinstance(b["hide"], dict) or not all(isinstance(k, str) and isinstance(v, bool) for k, v in b["hide"].items()):
             return jsonify(error="bad_request", message="가리기가 올바르지 않습니다"), 400
         초안.setdefault("hide", {}).update(b["hide"])
-    for k in ("with_source", "with_process"):                  # 교수 링크에 출처 보기 · 작업 과정 (기본 끔)
+    for k in ("with_source", "with_process"):                  # 교수 링크에 출처 보기 · 작업 과정 (10/13 기본 켬)
         if k in b:
             if not isinstance(b[k], bool):
                 return jsonify(error="bad_request", message="켜기 · 끄기가 올바르지 않습니다"), 400
@@ -177,7 +178,7 @@ def make():
         return r
     초안 = _읽기(wid)
     body = _보낼_것(r, 초안)
-    days = 초안.get("days", 14)
+    days = 초안.get("days", _기본("link_days"))
     서명 = hashlib.sha256(json.dumps([body, days], ensure_ascii=False, sort_keys=True).encode()).hexdigest()
     전 = 초안.get("made") or {}
     if 전.get("sig") == 서명 and 전.get("expires_at", "") > datetime.now().astimezone().isoformat():
@@ -297,6 +298,9 @@ def _모으기(wid):
     return r
 
 
+def _기본(k):
+    """과제마다 아직 고르지 않은 것의 처음 값 = 설정 › 내역서 기본값 (core/prefs · 10/13 모두 켬 · 링크 14일)"""
+    return prefs.load(S._기록["data_dir"]())[k]
 _분석 = {}           # work_id → (문서·기록·고른 것 표, 분석 결과)
 
 
@@ -335,7 +339,7 @@ def _보냄(r, 초안):
     """원문이 서버로 갈 수 있는 것 = 연결함의 답 · 질문 + 학생이 대표로 고른 질문 (시간 순)
     + 교수 링크 출처 보기를 켰으면 이 과제의 질문 · 답 전부"""
     out = dict(r["sent_base"])
-    if 초안.get("with_source"):
+    if 초안.get("with_source", _기본("with_source")):
         for m in r["all_msgs"]:
             out.setdefault(m["id"], m)
     for qid in _흐름(r, 초안):
@@ -353,7 +357,7 @@ def _일부(r, 초안):
     """그 부분만 가릴 이벤트 id 들 — 개인 정보가 찾아진 글 (기본 켬 · 학생이 끌 수 있음 · 통째로 가린 건 빼고)"""
     고른 = 초안.get("mask") or {}
     통째 = _가림(r, 초안)
-    return {m["id"] for m in _보냄(r, 초안) if m["found"] and m["id"] not in 통째 and 고른.get(m["id"], True)}
+    return {m["id"] for m in _보냄(r, 초안) if m["found"] and m["id"] not in 통째 and 고른.get(m["id"], _기본("mask_part"))}
 
 
 def _보낼_것(r, 초안):
@@ -384,10 +388,10 @@ def _보낼_것(r, 초안):
         messages[qid] = q["msg"]
         흐름.append({"session_id": q["msg"]["session_id"], "event_id": q["msg"]["event_id"], "usage": q["usage"], "used": q["used"]})
     일부 = _일부(r, 초안)
-    출처자료 = _출처_자료(r, 초안, messages, 가림, 일부) if 초안.get("with_source") else None
+    출처자료 = _출처_자료(r, 초안, messages, 가림, 일부) if 초안.get("with_source", _기본("with_source")) else None
     return {"explain_use": (초안.get("explain_use") or "").strip()[:설명_최대] or None,
             "unsure": r["unsure"],                                                # 잘 모르겠음 · 안 고름 — 개수만 (김용현 #43)
-            "show_process": bool(초안.get("with_process")),                       # 교수 링크 작업 과정 — 켰을 때만 (기본 끔)
+            "show_process": bool(초안.get("with_process", _기본("with_process"))),               # 교수 링크 작업 과정 (10/13 기본 켬)
             "source": 출처자료,                                                   # 교수 링크 출처 보기 — 켰을 때만 (기본 끔)
             "explain_check": (초안.get("explain_check") or "").strip()[:설명_최대] or None,
             "messages": [{"session_id": m["session_id"], "event_id": m["event_id"], "text": m["text"],
@@ -430,6 +434,7 @@ def _미리_보기(wid, r, 초안):
     원문 = {m["hash"]: m for l in r["confirmed"] for m in (l["answer"], l["question"]) if m}
     원문id = {_id(m): m for l in r["confirmed"] for m in (l["answer"], l["question"]) if m}
     원문id.update({q["id"]: q["msg"] for q in r["questions"]})          # 대표 질문 (연결 없는 질문일 수 있음)
+    원문id.update({m["id"]: m["msg"] for m in r["all_msgs"]})            # 출처 보기를 켜면 가는 질문 · 답 전부 (10/13 기본 켬)
 
     일부 = _일부(r, 초안)
 
@@ -466,7 +471,7 @@ def _미리_보기(wid, r, 초안):
                       for l in body["links"] if l["decision"] == "confirmed"],
             "rejected": sum(l["decision"] == "rejected" for l in body["links"]), "redacted": len(body["redactions"]),
             "work": {"title": _과제_이름(wid) or r["title"] or wid}, "author": (a.get("user") or {}).get("name"),
-            "expires_at": (지금 + timedelta(days=초안.get("days", 14))).isoformat(timespec="seconds")}
+            "expires_at": (지금 + timedelta(days=초안.get("days", _기본("link_days")))).isoformat(timespec="seconds")}
 
 
 _이름 = {}

@@ -134,7 +134,7 @@ def main():
         S_ = lambda w: c.get(f"/local/stage?work_id={w}", **HOST).json
         검사("단계 점: 지금 할 단계 · 내역서 만들었나", S_("W-match_view") == {"stage": "report", "report_made": False}
              and S_("W-match_web") == {"stage": "source", "report_made": False})
-        검사("과제 이름에 특수 문자도 안전", 갈곳("a%26b%3Fc").endswith("/source?work=a%26b%3Fc"))
+        검사("과제 이름에 특수 문자도 안전 · 기록 없는 과제는 과제 상세로", 갈곳("a%26b%3Fc").endswith("/work?work=a%26b%3Fc"))
 
         깨짐 = os.path.join(data, "confirm-W-match_app.json")
         open(깨짐, "w", encoding="utf-8").write("{깨진 파일")

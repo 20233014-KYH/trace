@@ -116,6 +116,8 @@ def go():
     wid = request.args.get("work", "")
     if not wid:
         return redirect("/source")
+    if not S._기록["sessions"]().get(wid):                  # 아직 기록이 없는 과제 (새로 만든 과제) → 과제 상세에서 기록 시작
+        return redirect(f"/work?work={quote(wid, safe='')}")
     return redirect(f"{STEPS[단계(wid)]}?work={quote(wid, safe='')}")
 
 

@@ -89,7 +89,7 @@ def main():
              and D({"hide": {"x": "yes"}}).status_code == 400 and D({"hide": []}).status_code == 400)
         검사("고쳐 쓰는 것 저장", D({"explain_use": "서론은 Claude 답을 참고했어요", "days": 30}).status_code == 200
              and E().json["draft"] == {"explain_use": "서론은 Claude 답을 참고했어요", "explain_check": "", "days": 30,
-                                       "with_source": False, "with_process": False})
+                                       "with_source": True, "with_process": True})         # 10/13 기본 켬
 
         # 가짜 서버 · 로그인
         부름 = []
@@ -129,8 +129,8 @@ def main():
         검사("일부 가림: 원문은 확인용으로 · 가릴 자리(전화번호 · 이메일)를 같이 보냄",
              {k for _, _, k in qm.get("mask", [])} == {"전화번호", "이메일"} and "010-1234-5678" not in 가린 and "me@example.com" not in 가린
              and body["redactions"] == [])
-        검사("잘 모르겠음은 개수만 · 출처 보기 · 작업 과정은 기본 끔", body.get("unsure") == 1 and body.get("source") is None
-             and body.get("show_process") is False)
+        검사("잘 모르겠음은 개수만 · 출처 보기 · 작업 과정은 기본 켬 (10/13)", body.get("unsure") == 1 and isinstance(body.get("source"), dict)
+             and body.get("show_process") is True)
         검사("학생 설명 · 링크 기간", body.get("explain_use") == "서론은 Claude 답을 참고했어요" and 나눔[-1] == {"expires_in_days": 30})
         src = c.post("/local/source", data={"work_id": W}, headers=H, **HOST).json
         rc = body.get("result_counts") or {}

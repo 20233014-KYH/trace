@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>처음 한 번 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/work.css">
+<style>
+/* 처음 한 번 — 캔버스 0b (로그인 뒤 한 번만 · 설정 › 앱 정보 › 도움말에서 다시 봄)
+   1 무엇을 기록하나 → 2 기록 준비 점검 → 3 첫 과제 만들기 · 오른쪽 = 끝나면 받는 내역서 샘플 */
+:root{--ink:#18181b;--ink2:#3f3f46;--muted:#71717a;--faint:#a1a1aa;--line:#e4e4e7;--soft:#f4f4f5;--bg:#fafafa;
+  --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#fff;color:var(--ink);font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[hidden]{display:none!important}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 520px;min-height:100vh}
+.l{display:flex;flex-direction:column;padding:32px 48px 32px 40px;min-width:0}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.025em}
+.mark{display:flex;align-items:flex-end;gap:2px}.mark i{display:block;border-radius:50%;background:var(--ink)}
+.mark i:nth-child(1){width:4px;height:4px;opacity:.3}.mark i:nth-child(2){width:6px;height:6px;opacity:.55}.mark i:nth-child(3){width:8px;height:8px}
+.anno{margin-left:auto;font-size:12px;color:var(--faint)}
+.steps{display:flex;align-items:center;gap:12px;margin-top:32px}
+.step{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--faint)}
+.step .n{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.step.done{color:var(--ink)}.step.done .n,.step.cur .n{background:var(--ink);color:#fff;box-shadow:none}
+.step.cur{color:var(--ink);font-weight:600}
+.step-ln{width:40px;height:1px;background:#d4d4d8}
+.head{margin-top:28px}.head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em}.head p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.pane{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.chk{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.chk .ico{width:32px;height:32px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;color:#52525b}
+.chk b{font-size:14px;font-weight:500;display:block}.chk .desc{font-size:12.5px}
+.chk .r{display:flex;align-items:center;gap:6px}
+.badge.amber{background:#fffbeb;color:#b45309;border-color:#fde68a}.badge svg{width:12px;height:12px;stroke-width:2.2}
+.help{font-size:12.5px;line-height:1.6;color:var(--ink2);background:var(--bg);border-radius:10px;padding:10px 12px;box-shadow:inset 0 0 0 1px var(--line)}
+.rec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.box{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.box h3{margin:0;font-size:13px;font-weight:600;color:var(--muted)}
+.li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.5}.li svg{width:15px;height:15px;margin-top:2px;color:var(--muted)}
+.foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:20px}
+.foot .btn{height:36px;padding:0 14px}
+.r2{background:var(--soft);padding:48px 44px;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.r2 .k{font-size:13px;color:#52525b}.r2 .big{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-top:4px;line-height:1.4}
+.sample{padding:22px 24px;display:flex;flex-direction:column;gap:12px;font-size:12px}
+.sample .nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-top:10px;border-top:1px solid var(--ink)}
+.sample .nums b{display:block;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}.sample .nums span{font-size:10.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:var(--soft);font-size:12px;color:var(--ink2)}
+.pts{display:flex;flex-direction:column;gap:8px;font-size:13px;color:#52525b}.pts div{display:flex;gap:8px;align-items:center}.pts svg{width:14px;height:14px}
+/* 제목 줄 없는 앱 창 */
+.drag{position:fixed;top:0;left:0;right:138px;height:44px;z-index:5}
+.win{position:fixed;top:0;right:0;display:flex;height:44px;z-index:6}
+.win button{width:46px;height:44px;border:0;background:none;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2)}
+.win button:hover{background:rgba(24,24,27,.06)}.win .x:hover{background:#c42b1c;color:#fff}
+.win svg{stroke-width:1.2}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.r2{display:none}}
+</style>
+</head>
+<body>
+<div class="drag pywebview-drag-region"></div>
+<div class="win">
+  <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+  <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+  <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+</div>
+<div class="wrap">
+  <section class="l">
+    <div class="logo"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>Trace<span class="anno">처음 한 번만</span></div>
+    <div class="steps" id="steps"></div>
+    <div class="head"><h1 id="h"></h1><p id="p"></p></div>
+    <div class="pane" id="pane"></div>
+    <div class="foot" id="foot"></div>
+  </section>
+  <section class="r2" aria-label="끝나면 받는 것">
+    <div><div class="k">끝나면 받는 것</div><div class="big">과제가 끝나면 이 한 장을<br>PDF 로 받아 함께 냅니다.</div></div>
+    <div class="card sample">
+      <div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-size:11px;font-weight:600;color:#52525b">AI 활용 내역서 · Trace</div><div style="font-size:17px;font-weight:700;letter-spacing:-.02em;margin-top:2px">[과제 이름]</div><div style="font-size:11px;color:var(--muted)">[학생] · [과목] · 기록 4번 · 6시간 10분</div></div><span class="badge amber" style="height:18px;font-size:11px">샘플</span></div>
+      <div class="nums"><div><b>12</b><span>AI 에 한 질문</span></div><div><b>3</b><span>결과물에 들어간 답</span></div><div><b>9</b><span>참고만 한 답</span></div><div><b>7</b><span>이어진 문장</span></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">이해·자료 찾기 10</span><span class="chip">고치기·검토 2</span><span class="chip">작성 0</span></div>
+      <div style="font-size:12.5px;line-height:1.85;color:var(--ink2)"><span style="background:#fdecec;border-radius:3px">AI 인플루언서는 가상의 인물로 SNS 에서 활동한다.</span> <span style="background:#eaf0fd;border-radius:3px">대표적인 예로 릴 미켈라와 로지가 있다.</span> <span style="text-decoration:underline dashed #3e63dd;text-decoration-thickness:1.5px;text-underline-offset:4px">시간과 장소의 제약 없이 촬영할 수 있다.</span> <span style="background:rgba(24,24,27,.03);border-radius:3px">하지만 실제 사람과의 관계는 여전히 중요하다.</span></div>
+      <div style="font-size:10.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px">점수·판정 없음 · 학생이 확인한 것만 · QR 로 근거 보기</div>
+    </div>
+    <div class="pts">
+      <div><svg viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>AI 답과 과제 글 원문은 이 PC 에만</div>
+      <div><svg viewBox="0 0 24 24"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></svg>교수에게 자동으로 가지 않음 · 내가 고른 것만</div>
+    </div>
+  </section>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script src="/ui/win.js"></script>
+<script>
+(function () {
+  const T = window.TraceShell, $ = id => document.getElementById(id), el = T.el;
+  const STEPS = ["무엇을 기록하나", "기록 준비 점검", "첫 과제 만들기"];
+  const IC = {
+    ok: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>', warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    minus: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>', refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>', app: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+    doc: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
+    yes: '<path d="M20 6 9 17l-5-5"/>', no: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  };
+  let step = 0, checks = null;
+
+  function head(h, p) { $("h").textContent = h; $("p").textContent = p; }
+  function stepsBar() {
+    const s = $("steps"); s.textContent = "";
+    STEPS.forEach((t, i) => {
+      if (i) s.append(el("span", "step-ln"));
+      const x = el("div", "step" + (i < step ? " done" : i === step ? " cur" : "")), n = el("span", "n", i < step ? "✓" : String(i + 1));
+      x.append(n, document.createTextNode(t)); s.append(x);
+    });
+  }
+  function btn(text, cls, on) { const b = el("button", "btn " + cls, text); b.type = "button"; b.onclick = on; return b; }
+  function li(ic, t) { const d = el("div", "li"); d.append(T.icon(ic), el("span", null, t)); return d; }
+
+  async function finish(go) {
+    try { await T.call("POST", "/local/settings", null, { onboarded: true }); } catch (e) {}
+    location.href = go;
+  }
+
+  const PAGES = [
+    function () {                                                    // 1 무엇을 기록하나
+      head("무엇을 기록하나", "Trace 는 과제하는 동안 AI 를 어떻게 썼는지만 기록해요. 판정하지 않아요.");
+      const r = el("div", "rec"), a = el("div", "box"), b = el("div", "box");
+      a.append(el("h3", null, "기록하는 것"), li(IC.yes, "ChatGPT · Claude · Gemini 에 한 질문과 받은 답 (웹 · 앱)"), li(IC.yes, "Word 과제 글이 바뀌는 과정 · 붙여넣은 자리"),
+               li(IC.yes, "AI 답을 복사해 붙여넣은 기록"), li(IC.yes, "쓰고 있던 창 이름 · 사이트 주소 · 켜고 끈 시각"));
+      b.append(el("h3", null, "기록하지 않는 것"), li(IC.no, "화면 사진 · 키보드로 친 글자 하나하나 (몇 번 쳤는지만 셈)"), li(IC.no, "AI 와 상관없는 앱 · 사이트의 내용 (창 이름만)"),
+               li(IC.no, "잠깐 멈춤을 누른 동안의 모든 것"), li(IC.no, "API 키 · 주민번호 · 전화번호 (저장 전에 가림)"));
+      r.append(a, b);
+      $("pane").append(r, el("div", "help", "원문은 이 PC 에만 두고, 서버에는 확인값과 시각만 가요. 교수에게는 내가 확인하고 고른 것만 내역서로 나가요."));
+      $("foot").append(el("span", "desc", "언제든 기록 창의 잠깐 멈춤으로 멈출 수 있어요"), (() => { const x = btn("다음", "btn-default", () => go(1)); x.style.marginLeft = "auto"; return x; })());
+    },
+    function () {                                                    // 2 기록 준비 점검
+      head("기록 준비 점검", "Trace 가 무엇을 기록할 수 있는지 확인했어요. 빠진 곳은 지금 채우거나 나중에 해도 됩니다.");
+      const ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc };
+      let 빠짐 = false;
+      (checks || []).forEach(x => {
+        const r = el("div", "chk"), i = el("span", "ico"); i.append(T.icon(ic[x.key]));
+        const t = el("div"); t.append(el("b", null, x.name), el("span", "desc", x.desc));
+        const right = el("div", "r"), bg = el("span", "badge " + ({ ok: "green", missing: "amber", none: "gray", unknown: "gray" })[x.state]);
+        bg.append(T.icon(x.state === "ok" ? IC.ok : x.state === "missing" ? IC.warn : IC.minus), document.createTextNode(x.label));
+        right.append(bg);
+        if (x.state === "missing") { 빠짐 = true; right.append(btn("설치", "btn-outline btn-sm", () => help.hidden = !help.hidden)); }
+        r.append(i, t, right); $("pane").append(r);
+      });
+      if (!checks) $("pane").append(el("div", "desc", "확인하는 중…"));
+      const help = el("div", "help"); help.hidden = true;
+      help.innerHTML = "<b>확장 설치 (개발판)</b> · 그 브라우저 주소창에 <b>chrome://extensions</b> (엣지는 <b>edge://extensions</b>) → 개발자 모드 켜기 → "
+        + "<b>압축해제된 확장 프로그램을 로드</b> → <b>Trace/3-코드/extension</b> 폴더 → [다시 확인]";
+      if (빠짐) $("pane").append(help);
+      const again = btn("다시 확인", "btn-outline", () => load(1)); again.prepend(T.icon(IC.refresh)); again.style.marginLeft = "auto";
+      const later = el("span", "desc"); later.append(document.createTextNode("나중에 "), el("b", null, "설정"), document.createTextNode(" 에서도 볼 수 있어요"));
+      $("foot").append(btn("이전", "btn-ghost", () => go(0)), later, again, btn("다음", "btn-default", () => go(2)));
+    },
+    function () {                                                    // 3 첫 과제 만들기
+      head("첫 과제 만들기", "과제 하나에 기록이 여러 번 쌓여요. 과제를 만들고 [기록 시작] 을 누르면 화면 구석에 기록 창이 떠요.");
+      const b = el("div", "box");
+      b.append(el("h3", null, "이렇게 써요"), li(IC.yes, "새 과제 만들기 — 이름만 넣으면 돼요"), li(IC.yes, "과제 상세에서 [기록 시작] → 평소처럼 Word · AI 로 과제"),
+               li(IC.yes, "다 하면 기록 창에서 작업 마치기"), li(IC.yes, "출처 보기 → 연결 확인 → 내역서 PDF 내려받기"));
+      $("pane").append(b);
+      const later = btn("나중에 할게요", "btn-ghost", () => finish("/home")); later.style.marginLeft = "auto";
+      $("foot").append(btn("이전", "btn-ghost", () => go(1)), later, btn("새 과제 만들기", "btn-default", () => finish("/new")));
+    },
+  ];
+
+  function go(i) { step = i; $("pane").textContent = ""; $("foot").textContent = ""; stepsBar(); PAGES[i](); }
+  async function load(i) {
+    checks = null; go(i);
+    try { checks = (await T.call("GET", "/local/settings")).checks; } catch (e) { checks = []; }
+    if (step === 1) go(1);
+  }
+  load(0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로그인 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 로그인 — 캔버스 "Trace 화면 뼈대" 로그인 (왼쪽 폼 · 오른쪽 Trace 소개 세 줄)
+   서버는 이메일 로그인만 있어서 Google · 카카오는 자리만 (준비 중). 가입도 같은 자리에서 칸만 바꿔 씀 (#47 /local/signup) */
+:root{--ink:#18181b;--ink2:#3f3f46;--muted:#71717a;--line:#e4e4e7;--soft:#f4f4f5;--red:#c62f34;
+  --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#fff;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button{font:inherit}
+svg.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-height:100vh}
+.l{display:flex;flex-direction:column;padding:40px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.025em;color:var(--ink);text-decoration:none}
+.mark{display:flex;align-items:flex-end;gap:2px}.mark i{display:block;border-radius:50%;background:var(--ink)}
+.mark i:nth-child(1){width:4px;height:4px;opacity:.3}.mark i:nth-child(2){width:6px;height:6px;opacity:.55}.mark i:nth-child(3){width:8px;height:8px}
+.center{flex:1;display:flex;align-items:center;justify-content:center}
+form{width:320px;display:flex;flex-direction:column;gap:20px}
+.head{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.muted{color:var(--muted)}
+.head p{margin:0;font-size:14px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;border:1px solid transparent;font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer;color:var(--ink);background:#fff}
+.btn-default{background:var(--ink);color:#fff}.btn-default:hover{background:#27272a}
+.btn-default:disabled{background:#a1a1aa;cursor:default}
+.soc{display:flex;flex-direction:column;gap:8px}
+.soc .btn{position:relative}
+.soc .btn:disabled{cursor:default;opacity:.55}
+.soc .soon{position:absolute;right:10px;font-size:11px;font-weight:500;color:var(--muted)}
+.or{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}.or span{flex:1;height:1px;background:var(--line)}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-size:14px;font-weight:500}
+.input{height:36px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;color:var(--ink);background:#fff}
+.input:focus{outline:none;border-color:#3e63dd;box-shadow:0 0 0 3px rgba(62,99,221,.12)}
+a,.link{color:var(--ink);text-underline-offset:4px}
+.link{background:none;border:0;padding:0;font-size:inherit;text-decoration:underline;cursor:pointer}
+.row{display:flex;align-items:center}.row .link{margin-left:auto;font-size:13px}
+.small{margin:0;text-align:center;font-size:13px}
+.tiny{margin:0;text-align:center;font-size:12px;line-height:1.5}
+.msg{font-size:13px;line-height:1.5;border-radius:10px;padding:10px 12px;background:#fdecec;color:#a4282d}
+.msg.info{background:var(--soft);color:var(--ink2)}
+.srv{margin:0;text-align:center;font-size:11.5px;color:#a1a1aa;line-height:1.5}
+.srv .link{color:#a1a1aa}
+.r{background:var(--soft);padding:56px;display:flex;flex-direction:column;justify-content:center;gap:28px}
+.r .k{font-size:13px}
+.r .big{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.35;margin-top:8px}
+.pt{display:flex;gap:12px;align-items:flex-start}
+.pt-ic{width:32px;height:32px;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(24,24,27,.1);display:flex;align-items:center;justify-content:center;flex:none}
+.pt b{display:block;font-size:14px;font-weight:600}
+.pt span{font-size:13px;color:var(--muted);line-height:1.55}
+[hidden]{display:none!important}
+/* 제목 줄 없는 앱 창 (10/13) — 위 44px 를 잡고 끌면 창이 옮겨지고, 오른쪽 위 ─ □ ✕ (윈도우 11 크기 · 닫기만 빨강) */
+.drag{position:fixed;top:0;left:0;right:138px;height:44px;z-index:5}
+.win{position:fixed;top:0;right:0;display:flex;height:44px;z-index:6}
+.win button{width:46px;height:44px;border:0;background:none;display:inline-flex;align-items:center;justify-content:center;color:var(--ink2);cursor:pointer}
+.win button:hover{background:rgba(24,24,27,.06)}.win .x:hover{background:#c42b1c;color:#fff}
+.win svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:760px){.wrap{grid-template-columns:1fr}.r{display:none}.l{padding:24px 16px}form{width:100%;max-width:320px}}
+</style>
+</head>
+<body>
+<div class="drag pywebview-drag-region"></div>
+<div class="win">
+  <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+  <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+  <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+</div>
+<div class="wrap">
+  <section class="l">
+    <a class="logo" href="/login" aria-label="Trace"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>Trace</a>
+    <div class="center">
+      <form id="f" novalidate>
+        <div class="head">
+          <h1 id="h">로그인</h1>
+          <p class="muted" id="sub">로그인하면 기록이 내 계정에 쌓입니다.</p>
+        </div>
+        <div class="soc">
+          <button type="button" class="btn" disabled title="준비 중" style="border-color:var(--line)"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>Google 로 계속하기<span class="soon">준비 중</span></button>
+          <button type="button" class="btn" disabled title="준비 중" style="background:#FEE500;color:rgba(0,0,0,.85)"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.76l-.95 3.5c-.08.3.26.54.52.37l4.17-2.77c.52.06 1.05.1 1.6.1 5.52 0 10-3.58 10-8S17.52 3 12 3z"/></svg>카카오로 계속하기<span class="soon">준비 중</span></button>
+        </div>
+        <div class="or"><span></span>또는 이메일로<span></span></div>
+        <div class="field" id="f-name" hidden><label for="nm">이름</label><input id="nm" class="input" autocomplete="name" placeholder="[학생 이름]"></div>
+        <div class="field"><label for="em">이메일</label><input id="em" class="input" type="email" autocomplete="email" placeholder="name@example.com"></div>
+        <div class="field">
+          <div class="row"><label for="pw">비밀번호</label><button type="button" class="link" id="b-forgot">비밀번호를 잊었나요?</button></div>
+          <input id="pw" class="input" type="password" autocomplete="current-password">
+        </div>
+        <div class="msg" id="msg" role="alert" hidden></div>
+        <button class="btn btn-default" type="submit" id="b-go">로그인</button>
+        <p class="small muted" id="swap">처음인가요? <button type="button" class="link" id="b-swap">가입하기</button></p>
+        <p class="tiny muted">한 번 로그인하면 이 PC 에서는 다음부터 바로 열립니다.</p>
+        <p class="srv" id="srv"></p>
+      </form>
+    </div>
+  </section>
+
+  <section class="r" aria-label="Trace 소개">
+    <div>
+      <div class="k">AI 활용 내역서</div>
+      <div class="big">과제는 평소대로.<br>AI 를 어떻게 썼는지는 Trace 가 기록합니다.</div>
+    </div>
+    <div class="pt"><span class="pt-ic"><svg class="ic" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><div><b>원문은 내 PC 에만</b><span>AI 답과 과제 글은 PC 에 두고, 서버에는 확인값과 시각만 갑니다.</span></div></div>
+    <div class="pt"><span class="pt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/></svg></span><div><b>교수에게 자동으로 가지 않음</b><span>내역서와 공유 링크는 내가 확인하고 고른 것만 내보냅니다.</span></div></div>
+    <div class="pt"><span class="pt-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span><div><b>점수·판정 없음</b><span>언제 어떤 AI 답을 어디에 썼는지, 사실만 보여 줍니다.</span></div></div>
+  </section>
+</div>
+
+<script src="/ui/win.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  let signup = false, st = null;
+
+  async function call(method, path, json) {
+    const opt = { method, headers: { "X-Trace-Local": "1" } };
+    if (json) { opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(json); }
+    const r = await fetch(path, opt);
+    let d = {}; try { d = await r.json(); } catch (e) { d = { message: `응답을 읽지 못했습니다 (HTTP ${r.status})` }; }
+    if (!r.ok) throw Object.assign(new Error(d.message || `HTTP ${r.status}`), { code: r.status });
+    return d;
+  }
+  function msg(text, info) { $("msg").hidden = !text; $("msg").textContent = text || ""; $("msg").className = "msg" + (info ? " info" : ""); }
+
+  // 어느 서버에 로그인하나 — 다른 서버에서 가입했으면 '비밀번호가 틀림' 으로만 보여서 작게 늘 보여 준다 (#47)
+  function server() {
+    const p = $("srv"); p.textContent = "";
+    if (!st) return;
+    p.append(`로그인할 서버: ${st.server_name} · `);
+    const b = document.createElement("button"); b.type = "button"; b.className = "link";
+    b.textContent = st.server_local ? "인터넷 서버로 바꾸기" : "개발용: 이 PC 의 시험 서버로";
+    b.onclick = async () => {
+      try { st = { ...st, ...(await call("POST", "/local/server", { to: st.server_local ? "internet" : "local" })) };
+        st.server_local = !st.server_local; server(); msg(""); }
+      catch (e) { msg(e.message); }
+    };
+    p.append(b);
+  }
+
+  function mode(s) {
+    signup = s;
+    $("h").textContent = s ? "가입하기" : "로그인";
+    $("sub").textContent = s ? "이메일로 Trace 계정을 만듭니다." : "로그인하면 기록이 내 계정에 쌓입니다.";
+    $("f-name").hidden = !s; $("b-forgot").hidden = s;
+    $("pw").autocomplete = s ? "new-password" : "current-password";
+    $("b-go").textContent = s ? "가입하고 시작하기" : "로그인";
+    $("swap").firstChild.textContent = s ? "이미 계정이 있나요? " : "처음인가요? ";
+    $("b-swap").textContent = s ? "로그인" : "가입하기";
+    msg("");
+  }
+  $("b-swap").onclick = () => mode(!signup);
+  $("b-forgot").onclick = () => msg("지금은 화면에서 비밀번호를 바꿀 수 없어요. 팀(김용현)에게 초기화를 부탁해 주세요.", true);
+
+  $("f").onsubmit = async e => {
+    e.preventDefault();
+    const email = $("em").value.trim(), password = $("pw").value;
+    if (!email || !password) { msg("이메일과 비밀번호를 넣어 주세요"); return; }
+    $("b-go").disabled = true; msg("");
+    try {
+      await call("POST", signup ? "/local/signup" : "/local/login", signup ? { email, password, name: $("nm").value.trim() } : { email, password });
+      location.replace(new URLSearchParams(location.search).get("next") === "make" ? "/make" : "/home");
+    } catch (err) { msg(err.message); $("b-go").disabled = false; }
+  };
+
+  call("GET", "/local/state").then(s => {
+    if (s.logged_in) { location.replace("/home"); return; }
+    st = s; server();
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>

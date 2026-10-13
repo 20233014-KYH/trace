@@ -1,0 +1,15 @@
+# 설치판 묶기 (packaging/build.py) — PC 앱이 쓰는 것 + 묶는 도구. 서버 · LLM 비교용(openai · anthropic)은 뺀다
+flask
+requests
+pyperclip
+watchdog
+pynput
+pywebview
+reportlab
+pywin32 ; sys_platform == "win32"
+psutil  ; sys_platform == "win32"
+comtypes ; sys_platform == "win32"
+pyobjc-framework-Cocoa  ; sys_platform == "darwin"
+pyobjc-framework-Quartz ; sys_platform == "darwin"
+pyinstaller>=6.10
+pillow
