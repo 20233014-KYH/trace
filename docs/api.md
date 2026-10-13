@@ -451,6 +451,15 @@ GET /demo/pdf   → /api/share/demo/pdf      내역서 PDF 견본
 토큰 `demo` 만 DB 대신 `server/demo_share.json` 을 그대로 준다 (expires_at 은 열 때마다 지금+14일). 실제 토큰은 32자라 겹치지 않음.
 화면·PDF 를 고쳐 머지하면 같은 주소로 바로 확인 · 교수 인터뷰 때 보여 주기용. 견본 데이터를 바꾸려면 그 JSON 을 고친다.
 
+### 10-5-5. 설치판 내려받기 (10/13 · ✅)
+
+```
+GET /api/app/latest   → { version, tag, published_at, page, notes, windows:{name,url,size}, extension:{name,url,size} } · 없으면 404 no_release
+GET /download         → 내려받기 화면 (server/static/download.html)
+```
+서버가 GitHub 최신 릴리스(사전 릴리스 제외)를 10분마다 읽어 둔다 · GitHub 이 안 되면 전에 읽은 것.
+PC 앱(app/statement.py `/local/update`)이 이걸 core/version.py 와 비교해 "새 버전" 알림을 띄운다. 빌드·태그는 `3-코드/packaging/README.md`.
+
 ### 10-5-1. 지우기 · 옮기기 · 잠깐 멈춤 (10/10 박상진 요청 · ✅ 10/11 구현)
 
 ```
