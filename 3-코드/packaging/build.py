@@ -67,6 +67,7 @@ def 버전_정보():
 
 def 묶기():
     shutil.rmtree(os.path.join(DIST, "Trace"), ignore_errors=True)
+    shutil.rmtree(os.path.join(WORK, "work"), ignore_errors=True)   # 지난 묶음의 Trace.exe 를 다시 쓰면 아이콘이 안 바뀜 (10/13)
     subprocess.run([sys.executable, "-m", "PyInstaller", os.path.join(HERE, "trace.spec"), "--noconfirm",
                     "--distpath", DIST, "--workpath", os.path.join(WORK, "work")], check=True)
 
