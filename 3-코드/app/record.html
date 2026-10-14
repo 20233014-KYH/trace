@@ -132,9 +132,8 @@
   const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
   const qs = new URLSearchParams(location.search), wid = qs.get("work") || "", sid = qs.get("session") || "";
   const workUrl = "/work?work=" + encodeURIComponent(wid);
-  T.init({});
+  T.init({ back: [workUrl, "과제로"] });                              // ← · 경로의 과제 이름 · 왼쪽 과제 = 과제 상세로 (캔버스)
   T.loadWorks(wid, { stay: true });
-  $("b-back").onclick = () => location.href = workUrl;                // ← · 경로의 과제 이름 · 왼쪽 과제 = 과제 상세로
   $("c-work-a").href = workUrl;
   const ICON = {
     start: '<path d="M4 22V4a1 1 0 0 1 1-1h12l-3 5 3 5H5"/>', doc: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',

@@ -120,9 +120,8 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   const wid = new URLSearchParams(location.search).get("work") || "";
   const FLOW = [["record", "기록", null], ["source", "출처 보기", "결과물 문장과 AI 답 잇기"], ["confirm", "연결 확인", "맞게 이어졌는지 내가 확인"], ["report", "내역서", "PDF 한 장으로 제출"]];
   const ARROW = '<path d="m9 18 6-6-6-6"/>', OK = '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>';
-  T.init({});
+  T.init({ back: ["/home", "홈으로"] });
   T.loadWorks(wid, { stay: true });
-  $("b-back").onclick = () => location.href = "/home";
   $("b-set").href = "/work/settings?work=" + encodeURIComponent(wid);
   let d = null, tick = null;
 

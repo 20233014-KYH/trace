@@ -94,9 +94,9 @@
   const PRIV = "나만 보는 화면 · 내역서와 공유 링크에 들어가지 않음 · 점수 아님";
   let period = new URLSearchParams(location.search).get("period") || "month", d = null;
 
-  T.init({});
+  T.init({ back: ["/home", "홈으로"] });
   T.loadWorks(null, { stay: true });
-  $("b-back").onclick = () => location.href = "/home";
+
 
   function seg() {
     const s = $("seg"); s.textContent = "";
