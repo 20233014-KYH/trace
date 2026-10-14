@@ -170,11 +170,7 @@ def pasted_from_ai(events, context):
       확장이 AI 사이트에서 받은 복사 발췌(context kind=ai_answer_excerpt) 의 sha256
         = 수집기 copy 이벤트 해시  = 수집기 paste 이벤트 해시
     붙여넣은 문서·자리는 paste 직후(10초 안) 첫 doc_paste_at 에서 가져온다 (없으면 빈칸)."""
-    excerpts = {}
-    for c in context:
-        if c.get("kind") == "ai_answer_excerpt" and c.get("text"):
-            excerpts.setdefault(_sha256(c["text"]), c)
-    copies = {e["hash"]: e for e in events if e.get("type") == "copy" and e.get("hash") in excerpts}
+    excerpts, copies = _ai_copies(events, context)
     out = []
     evs = sorted(events, key=lambda e: e.get("ts", ""))
     for i, e in enumerate(evs):
@@ -184,6 +180,29 @@ def pasted_from_ai(events, context):
         out.append({"text": excerpts[e["hash"]]["text"], "copied_at": copies[e["hash"]]["ts"], "pasted_at": e["ts"],
                     "file": at.get("file", ""), "where": at.get("where", ""), "domain": excerpts[e["hash"]].get("meta", {}).get("domain", "")})
     return out
+
+
+def _ai_copies(events, context):
+    """AI 답에서 복사한 것 → ({copy 해시: 발췌}, {copy 해시: copy 이벤트})
+    ① 해시 고리: 발췌 sha256 = copy 해시 (기본 · 확실)
+    ② 해시가 안 맞는 브라우저 복사: 같은 순간(3초 안) 확장이 보낸 발췌가 있으면 그것 (10/14 실제 시험 — ChatGPT 웹의 복사 단추는
+       표 · 굵게(**)를 화면 글과 다르게 클립보드에 넣어 해시가 달랐다. 그 뒤 기록기가 클립보드 글로 발췌를 남겨 ① 로 잡힘)"""
+    excerpts = {}
+    for c in context:
+        if c.get("kind") == "ai_answer_excerpt" and c.get("text"):
+            excerpts.setdefault(_sha256(c["text"]), c)
+    copies = {e["hash"]: e for e in events if e.get("type") == "copy" and e.get("hash") in excerpts}
+    웹발췌 = sorted((c for c in context if c.get("kind") == "ai_answer_excerpt" and c.get("text") and c.get("source") == "browser"),
+                 key=lambda c: c.get("ts", ""))
+    쓴 = {id(excerpts[h]) for h in copies}
+    for e in events:
+        if e.get("type") != "copy" or not e.get("hash") or e["hash"] in copies or (e.get("app") or "").lower() not in BROWSERS:
+            continue
+        c = next((c for c in 웹발췌 if id(c) not in 쓴 and abs(_secs(e["ts"], c["ts"])) <= 3), None)
+        if c is not None:
+            쓴.add(id(c))
+            excerpts[e["hash"]], copies[e["hash"]] = c, e
+    return excerpts, copies
 
 
 BROWSERS = {"chrome.exe", "msedge.exe", "firefox.exe", "whale.exe", "google chrome", "microsoft edge", "firefox", "safari"}
@@ -197,7 +216,7 @@ def pasted_from_other(events, context):
     · **자기 글 옮기기는 뺀다**: 복사한 곳 = 붙여넣은 곳(같은 앱 · 브라우저면 같은 도메인) — Word 안에서 잘라 붙이기 등.
     · 글자: 원문이 따로 없어서 붙여넣은 순간 문서에 새로 들어온 글(context kind=diff · doc_paste_at 과 같은 시각·자리)을 쓴다.
       capture.office 가 꺼져 있으면 글자가 없어서 문장과 잇지 못한다 (붙여넣기 사실은 과정 기록 화면에 그대로 남음)."""
-    ai = {_sha256(c["text"]) for c in context if c.get("kind") == "ai_answer_excerpt" and c.get("text")}
+    ai = set(_ai_copies(events, context)[0])
     diffs = [c for c in context if c.get("kind") == "diff" and c.get("text")]
     evs = sorted(events, key=lambda e: e.get("ts", ""))
     tab = ("", "other")                      # 지금 보던 탭 (domain, category)
@@ -271,6 +290,14 @@ def _paste_spot(evs, i):
     return None
 
 
+def _더하기(ts: str, sec: int) -> str:
+    from datetime import datetime, timedelta
+    try:
+        return (datetime.fromisoformat(ts) + timedelta(seconds=sec)).isoformat()
+    except ValueError:
+        return ts
+
+
 def _secs(a: str, b: str) -> float:
     from datetime import datetime
     return (datetime.fromisoformat(b) - datetime.fromisoformat(a)).total_seconds()
@@ -287,17 +314,40 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
           > 쓴 과정 없이 나타남(noproc) > AI 답 보고 씀·옮겨 침(글자만) > 출처 기록 없음.
     다른 곳 붙여넣기 · 과정 없는 글도 같은 글자 비교 규칙으로 잇는다 (고쳐도 이어짐 기준을 넘으면)."""
     cands = candidates(answers)
+    # 답이 언제부터 있었나 = 그 답의 **질문 시각** (asked). 답 시각(ts)은 기록한 때라 실제보다 늦다 — 확장은 답이 다 그려지고
+    # 멈춘 뒤에 보낸다 (10/14: ChatGPT 웹 답 기록 15:20:21 · 학생이 복사 15:20:04). 질문을 모르면 답 시각에 2분 여유
+    답시각 = {a["id"]: a.get("asked") or (a.get("ts") and _더하기(a["ts"], -120)) for a in answers}
+
+    def 앞서(answer_id, p):
+        """이 답이 붙여넣은 글의 출처일 수 있나 — 복사(붙여넣기)보다 늦게 물어본 답은 출처가 될 수 없다 (10/14 실제 시험:
+        14:17 에 웹에서 붙여넣은 글이 14:28 에 Claude 가 보고서를 요약한 답과 글자가 겹쳐 Claude 에서 온 것으로 잡힘).
+        시각을 모르면(옛 기록 · 시험) 막지 않는다"""
+        t, c = 답시각.get(answer_id), (p or {}).get("copied_at") or (p or {}).get("pasted_at")
+        return not t or not c or _secs(t, c) >= -5
     wcands = candidates([{"id": k, "text": p["text"]} for k, p in enumerate(others or [])])
     tcands = candidates([{"id": k, "text": t} for k, t in enumerate((proc or {}).get("typed", []))])
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
     # 붙여넣은 글이 어느 AI 답의 몇 번째 문장인지 — 붙여넣은 글도 같은 규칙으로 잇는다
-    pasted_at = {}
+    pasted_at, 붙인답 = {}, {}                 # 붙인답: 붙여넣기(id) → 그 글이 이어진 AI 답 id 들
     for p in pasted or []:
+        이른 = [c for c in cands if 앞서(c["answer"], p)]
         for s in split_sentences(p["text"]):
-            hit = link_sentence(s, cands)
+            hit = link_sentence(s, 이른)
             if hit["label"] != "none":
+                붙인답.setdefault(id(p), set()).add(hit["answer"])
                 for i in hit["sents"]:
                     pasted_at.setdefault((hit["answer"], i), p)
+    # 문장을 담은 붙여넣기 찾기용 (AI 답 붙여넣기 · 다른 곳 붙여넣기 모두) — 붙여넣은 시각 순
+    붙여넣기들 = sorted([(p, True) for p in pasted or []] + [(p, False) for p in others or []], key=lambda x: x[0].get("pasted_at") or "")
+    붙후보 = [candidates([{"id": 0, "text": p["text"]}]) for p, _ in 붙여넣기들]
+
+    def 처음_붙인(s, 그대로):
+        """이 문장을 담은 가장 이른 붙여넣기 (p, AI 답 붙여넣기인가) — 문장이 문서에 처음 들어온 때.
+        그대로=True 면 거의 그대로(90% 이상) 들어 있을 때만 (주제만 비슷한 글 · 날짜처럼 글자 조각만 겹치는 글로 바꾸지 않게)"""
+        for (p, ai), c in zip(붙여넣기들, 붙후보):
+            if c and link_sentence(s, c)["label"] in (("exact",) if 그대로 else ("exact", "edited")):
+                return p, ai
+        return None, None
     out = []
     for para in paragraphs:
         row = []
@@ -308,6 +358,21 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                 r["paste"] = next((pasted_at[(r["answer"], i)] for i in r["sents"] if (r["answer"], i) in pasted_at), None)
                 if r["label"] == "edited" and r["paste"] is None:
                     r["label"] = "viewed"
+            # 이 문장이 문서에 처음 들어온 붙여넣기가 지금 이은 것보다 이르면 그게 출처 (10/14 실제 시험: 14:17 웹에서 붙여넣은 글이
+            # 14:28 Claude 가 보고서를 요약한 답 · 그 답을 붙여넣은 기록과 글자가 겹쳐 Claude 에서 온 것으로 잡힘)
+            if 붙여넣기들 and (r["label"] != "none" or pasted is not None):
+                e, e_ai = 처음_붙인(s, True)        # 거의 그대로일 때만 — "2026년 10월 14일" 이 표의 "2026년 7월 24일" 에 걸리던 것
+                기준 = (r["paste"] or {}).get("pasted_at") or (답시각.get(r["answer"]) if r["label"] != "none" else None)
+                if e is not None and (r["label"] == "none" or (기준 and _secs(e.get("pasted_at") or 기준, 기준) > 0)):
+                    if e_ai and r["label"] != "none" and r["answer"] in 붙인답.get(id(e), ()):
+                        r["paste"] = e                                        # 같은 답 — 더 이른 붙여넣기로
+                    elif e_ai and 붙인답.get(id(e)):
+                        pass                                                  # 다른 AI 답에서 온 붙여넣기 — 드묾 · 그대로 둠
+                    elif e_ai:                                                # AI 탭에서 복사했는데 그 대화 기록이 없음 (웹 화면을 못 읽음)
+                        r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"],
+                                 paste={**e, "source": e.get("domain") or "AI", "category": "ai"})
+                    elif r["label"] != "none":                               # 다른 곳에서 먼저 붙여넣은 글
+                        r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"], paste=e)
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
                 if w["label"] != "none":

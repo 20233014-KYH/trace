@@ -56,6 +56,7 @@
 .fwarn{display:flex;gap:8px;align-items:flex-start;margin:-6px 0 18px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:13px;color:var(--ink2);line-height:1.55}
 .fwarn b{font-weight:600;color:var(--ink)}
 .fwarn svg{width:16px;height:16px;margin-top:2px;color:var(--muted)}
+.fwarn.info{background:#eef3fe;color:#2f4fb5}.fwarn.info b{color:#2f50c4}.fwarn.info svg{color:#3e63dd}
 .doc h1{font-size:20px;font-weight:700;margin:0 0 16px;letter-spacing:-.01em}
 .para{margin:0 0 14px;font-size:15px;line-height:2;color:var(--ink)}
 .para.head{font-size:16px;font-weight:700;margin:22px 0 10px;line-height:1.6}
@@ -330,6 +331,12 @@
     const box = $("doc"); box.textContent = "";
     box.append(fileRow());
     if (!D.in_records) box.append(fileWarn());
+    else if (D.found_by_content) {                       // 기록엔 저장 전 이름("문서1")만 있어 내용으로 찾은 파일 (10/14)
+      const w = el("div", "fwarn info"), t = el("div");
+      t.append(el("b", null, "내용으로 찾은 파일이에요. "),
+               `기록할 때는 저장 전 문서${(D.recorded_files || []).length ? "(" + D.recorded_files.join(" · ") + ")" : ""}였는데, 그 글과 내용이 같은 파일을 찾아 열었어요. 다른 파일이면 문서 바꾸기로 골라 주세요.`);
+      w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/>'), t); box.append(w);
+    }
     if (D.title) box.append(el("h1", null, D.title));
     D.paragraphs.forEach(p => {
       const para = el("p", "para" + (p.head ? " head" : ""));

@@ -20,10 +20,12 @@ import json
 import os
 import re
 import threading
+import time
+from datetime import datetime
 
 from flask import Blueprint, abort, jsonify, request, send_from_directory
 
-from core import match as M
+from core import match as M, safefile
 from core.docx import read_docx
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +79,91 @@ def 문서_준비(wid):
         for d in _문서_목록(wid):                       # 가장 최근에 본 문서부터
             if d["exists"] and _열기(wid, d["name"]):
                 break
+    if wid and wid not in _파일:                        # 기록된 위치가 없음 (저장 전 "문서1" 로만 기록 · 기록을 끈 뒤 저장) → 내용으로 찾기
+        p = _내용으로_찾기(wid)
+        if p:
+            try:
+                with open(p, "rb") as fh:
+                    _파일[wid] = (os.path.basename(p), fh.read())
+            except OSError:
+                pass
     return bool(wid) and wid in _파일
+
+
+# ─────────────── 기록된 위치가 없는 문서를 내용으로 찾기 (10/14) ───────────────
+# 기록하는 동안 Word 문서가 저장 전("문서1")이었고 기록을 끈 뒤에 저장하면, 기록기는 그 파일이 어디 있는지 모른다.
+# → 기록할 때 쓴 글(이 PC context 의 Word 글 변화)과 내용이 같은 .docx 를 흔한 자리(바탕화면 · 문서 · 다운로드 · OneDrive)에서 찾는다.
+#   기록을 시작한 뒤에 저장된 파일만 · 내용은 이 PC 안에서만 비교 · 찾은 것은 data/docs-found.json 에 적어 두고 다음엔 바로 연다
+_찾음_실패 = {}       # wid → 마지막으로 못 찾은 시각 (홈 카드 · 화면마다 다시 뒤지지 않게 1분)
+_찾은_이름 = {}       # wid → 내용으로 찾은 파일 이름 (화면 "내용이 같은 파일을 찾아 열었어요")
+FIND_COVER = 0.6     # 기록된 글 조각 중 이만큼이 그 파일에 있으면 같은 문서
+
+
+def _찾은_목록():
+    d = safefile.read_json(os.path.join(_기록["data_dir"](), "docs-found.json"), {})
+    return d if isinstance(d, dict) else {}
+
+
+def _내용으로_찾기(wid):
+    p = _찾은_목록().get(wid)
+    if p and os.path.isfile(p):
+        _찾은_이름[wid] = os.path.basename(p)
+        return p
+    if time.time() - _찾음_실패.get(wid, 0) < 60:
+        return None
+    rec = 과제_기록(wid)
+    if not rec:
+        return None
+    _, events, context, _ = rec
+    글 = " ".join(c.get("text", "") for c in context if c.get("source") == "office" and c.get("kind") in ("diff", "paste_at", "doc_open"))
+    조각 = M._bigrams(M.norm(글))
+    시작 = min((e["ts"] for e in events if e.get("type") == "session_start"), default="")
+    if len(조각) < 30 or not 시작:
+        _찾음_실패[wid] = time.time()
+        return None
+    t0 = datetime.fromisoformat(시작).timestamp() - 300
+    best = None
+    for path in _후보_파일(t0):
+        try:
+            d = M._bigrams(M.norm(" ".join(t for _, t in read_docx(path))))
+        except Exception:
+            continue
+        c = len(조각 & d) / len(조각)
+        if c >= FIND_COVER and (best is None or c > best[0]):
+            best = (c, path)
+    if not best:
+        _찾음_실패[wid] = time.time()
+        return None
+    목록 = _찾은_목록()
+    목록[wid] = best[1]
+    safefile.write_json(os.path.join(_기록["data_dir"](), "docs-found.json"), 목록, indent=1)
+    _찾은_이름[wid] = os.path.basename(best[1])
+    return best[1]
+
+
+def _후보_파일(t0, 최대=40):
+    """기록을 시작한 뒤 저장된 .docx — 흔한 자리 두 단계 안쪽까지 · 최근 것부터 최대 40개"""
+    집 = os.path.expanduser("~")
+    자리 = [os.path.join(집, *p) for p in (("Desktop",), ("Documents",), ("Downloads",), ("OneDrive", "Desktop"), ("OneDrive", "Documents"),
+                                         ("OneDrive", "바탕 화면"), ("OneDrive", "문서"))]
+    out = []
+    for r in 자리:
+        if not os.path.isdir(r):
+            continue
+        for d, dirs, files in os.walk(r):
+            if d[len(r):].count(os.sep) >= 2:
+                dirs[:] = []
+            dirs[:] = [x for x in dirs if not x.startswith((".", "$")) and x.lower() not in ("node_modules", "appdata")]
+            for f in files:
+                if f.lower().endswith(".docx") and not f.startswith("~$"):
+                    p = os.path.join(d, f)
+                    try:
+                        m = os.path.getmtime(p)
+                    except OSError:
+                        continue
+                    if m >= t0:
+                        out.append((m, p))
+    return [p for _, p in sorted(out, reverse=True)[:최대]]
 
 
 @bp.post("/local/source/open")
@@ -117,7 +203,8 @@ def _분석(wid):
     기록된 = _기록된_문서(wid)
     # 화면엔 경로를 안 보낸다 (이름 · 그 자리에 있는지만) — 여는 건 이 PC 서버가 한다
     docs = [{"name": d["name"], "known": d["path"] is not None, "exists": d["exists"]} for d in _문서_목록(wid)]
-    return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=_같은_문서(name, 기록된),
+    찾음 = _찾은_이름.get(wid) == name                    # 기록된 이름과 달라도 내용으로 찾은 그 파일
+    return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=찾음 or _같은_문서(name, 기록된), found_by_content=찾음,
                    sessions=len(세션), **build(paras, msgs, events, context))
 
 
@@ -226,7 +313,8 @@ def _build(paras, msgs, events, context):
         return 앞[-1] if 앞 else None
 
     pasted = M.pasted_from_ai(events, context)
-    linked = M.link_document(body, [{"id": i, "text": r["text"]} for i, r in enumerate(답들)],
+    물은때 = [(질문들[q]["ts"] if (q := 질문(r)) is not None else None) for r in 답들]     # 답이 있던 때 = 질문한 때 (match.link_document)
+    linked = M.link_document(body, [{"id": i, "text": r["text"], "ts": r.get("ts"), "asked": 물은때[i]} for i, r in enumerate(답들)],
                              pasted, M.pasted_from_other(events, context), M.process_evidence(events, context))
 
     # 질문 = 한 턴. 답은 그 질문에 붙인다 (질문 기록이 없는 답은 질문 없이 따로 한 턴)

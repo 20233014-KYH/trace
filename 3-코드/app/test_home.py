@@ -66,6 +66,7 @@ def main():
         검사("기록 있는 과제가 먼저 (최근 기록 순)", d["works"][-1]["id"] == "W-없음")
         검사("주인 없는 기록 = 내 목록에 없는 이 PC 기록", {o["id"] for o in d["orphans"]} == {f"W-{k}" for k in T.CASES} - {"W-match_view", "W-match_web"})
         검사("기록기 꺼짐 → 지금 상태 없음", d["recording"] is None)
+        검사("기록 상태만 묻는 주소 (화면이 3초마다) · 기록기 꺼짐 → null", c.get("/local/recording", **HOST).json == {"recording": None})
 
         카드 = c.get("/local/home/card?work_id=W-match_view", **HOST).json
         검사("카드: 지금 단계 · 다음 화면", 카드["stage"] == "source" and 카드["go"] == "/source?work=W-match_view" and 카드["report_made"] is False)

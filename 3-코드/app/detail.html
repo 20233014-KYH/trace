@@ -237,6 +237,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 
   load();
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  W.watchRecording(() => load());                                    // 기록 창에서 끄기 · 멈춤 → 3초 안에 "기록 중" 이 바뀜 (10/14)
 })();
 </script>
 </body>

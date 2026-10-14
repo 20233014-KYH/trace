@@ -567,10 +567,17 @@ class Collector:
         else:
             from desktop_ai import APPS
         exe = (app or "").lower()
-        if exe not in APPS or not self._clip_text or self.capture.get("ai_answer_excerpt", True) is False:
+        if not self._clip_text or self.capture.get("ai_answer_excerpt", True) is False:
             return
-        self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "desktop", "kind": "ai_answer_excerpt",
-                           "text": self._clip_text, "meta": {"tool": APPS[exe], "domain": exe}}])
+        if exe in APPS:
+            self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "desktop", "kind": "ai_answer_excerpt",
+                               "text": self._clip_text, "meta": {"tool": APPS[exe], "domain": exe}}])
+        # 웹 AI 탭(확장이 알려준 지금 탭이 AI)에서 복사 — 확장도 발췌를 보내지만, ChatGPT 복사 단추는 표 · 굵게(**)를
+        # 화면 글과 다르게 클립보드에 넣어 확장 발췌 해시 ≠ copy 해시 → AI 답 붙여넣기로 안 이어졌다 (10/14 실제 시험 3건).
+        # 클립보드 글 그대로 한 벌 더 남겨 해시 고리를 지킨다 (원문은 PC 에만)
+        elif exe in BROWSERS and self._tab and self._tab[1] == "ai" and self._tab_fits(exe):
+            self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "clipboard", "kind": "ai_answer_excerpt",
+                               "text": self._clip_text, "meta": {"domain": self._tab[0]}}])
 
     def _read_clip_hash(self):
         try:

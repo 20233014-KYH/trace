@@ -69,6 +69,13 @@ def _기록기():
     return {k: s.get(k) for k in ("work_id", "session_id", "paused", "elapsed_sec", "ai_count")}
 
 
+@bp.get("/local/recording")
+def recording():
+    """기록 창에서 끄거나 멈추면 앱 화면도 바로 바뀌게 — 화면이 몇 초마다 묻는 가벼운 상태 (서버 안 물음 · 10/14)"""
+    r = _기록기()
+    return jsonify(recording={k: r.get(k) for k in ("work_id", "session_id", "paused")} if r else None)
+
+
 @bp.get("/local/home")
 def home():
     """{user, recording, works:[{id, title, ai_scope, pc_sessions, last}], orphans, error?}
