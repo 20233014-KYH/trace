@@ -27,8 +27,50 @@
   }
   async function toggleMax() { const r = await call("window_control", "max"); if (typeof r === "boolean") setMax(r); }
 
+  // 윈도우 앱 창 (10/14): 위 줄 끌기 · 가장자리 크기를 윈도우에 맡긴다 (trace_app._창조종.native_move) — 다른 윈도우 앱처럼
+  // 화면 맨 위로 끌면 최대화 · 왼쪽/오른쪽 끝이면 반쪽 화면 · 네 가장자리 · 모서리 어디서나 크기. pywebview 의 끌기는 끈다(클래스를 바꿔서)
+  const WIN = !MAC && /Windows/.test(navigator.userAgent);
+  function 윈도우_창() {
+    document.querySelectorAll(".pywebview-drag-region").forEach(r => { r.classList.remove("pywebview-drag-region"); r.classList.add("trace-drag"); });
+    let last = 0, lx = 0, ly = 0;
+    document.addEventListener("mousedown", e => {
+      const t = e.target;
+      if (e.button !== 0 || !api() || !t.closest || !t.closest(".trace-drag")
+          || t.closest("button, a, input, select, textarea, [role=button], [role=link], .steps, .seg")) return;
+      const now = Date.now();
+      if (now - last < 450 && Math.abs(e.screenX - lx) < 6 && Math.abs(e.screenY - ly) < 6) { last = 0; toggleMax(); return; }   // 두 번 누르기 = 최대화 / 되돌리기
+      last = now; lx = e.screenX; ly = e.screenY;
+      e.preventDefault();
+      const r = call("native_move", "move");
+      // 윈도우에 못 맡기면(옛 pywebview 등) 예전 끌기로 되돌린다 — 다음 끌기부터 pywebview 가 옮김
+      if (r && r.then) r.then(ok => { if (ok === false) 예전_끌기(); });
+    }, true);
+    function 예전_끌기() {
+      document.querySelectorAll(".trace-drag").forEach(x => { x.classList.remove("trace-drag"); x.classList.add("pywebview-drag-region"); });
+    }
+    const E = 6, C = 12;
+    [["t", `top:0;left:${C}px;right:${C}px;height:${E}px;cursor:ns-resize`], ["b", `bottom:0;left:${C}px;right:${C}px;height:${E}px;cursor:ns-resize`],
+     ["l", `left:0;top:${C}px;bottom:${C}px;width:${E}px;cursor:ew-resize`], ["r", `right:0;top:${C}px;bottom:${C}px;width:${E}px;cursor:ew-resize`],
+     ["tl", `top:0;left:0;width:${C}px;height:${C}px;cursor:nwse-resize`], ["br", `bottom:0;right:0;width:${C}px;height:${C}px;cursor:nwse-resize`],
+     ["tr", `top:0;right:0;width:${C}px;height:${C}px;cursor:nesw-resize`], ["bl", `bottom:0;left:0;width:${C}px;height:${C}px;cursor:nesw-resize`]]
+      .forEach(([k, css]) => {
+        const h = document.createElement("div"); h.style.cssText = "position:fixed;z-index:9999;" + css; h.dataset.edge = k;
+        h.addEventListener("mousedown", e => { if (e.button !== 0 || !api()) return; e.preventDefault(); call("native_move", k); });
+        document.body.append(h);
+      });
+    // 끌어 놓기 맞춤으로 최대화되거나 되돌아오면 □ / ⧉ 를 맞춘다
+    let 잠깐;
+    window.addEventListener("resize", () => { clearTimeout(잠깐); 잠깐 = setTimeout(() => { const r = call("is_maximized"); if (r && r.then) r.then(v => setMax(!!v)); }, 250); });
+  }
+
   function bind() {
     document.querySelectorAll(".win [data-w]").forEach(b => { b.onclick = () => b.dataset.w === "max" ? toggleMax() : call("window_control", b.dataset.w); });
+    if (WIN) {
+      윈도우_창();
+      const ask0 = () => { const r = call("is_maximized"); if (r && r.then) r.then(v => setMax(!!v)); };
+      if (api()) ask0(); else window.addEventListener("pywebviewready", ask0, { once: true });
+      return;
+    }
     document.querySelectorAll(".pywebview-drag-region").forEach(r => {
       r.addEventListener("dblclick", e => { if (!e.target.closest("button, a, input, select, textarea, .steps, .seg")) toggleMax(); });
     });

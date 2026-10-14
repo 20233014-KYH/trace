@@ -121,12 +121,59 @@ class _창조종:
     def __init__(self):
         self._창, self._최대, self._전 = None, False, None
 
+    def _폼(self):
+        """윈도우: pywebview 창의 WinForms Form (없으면 None)"""
+        if os.name != "nt" or not self._창:
+            return None
+        try:
+            from webview.platforms.winforms import BrowserView
+            return BrowserView.instances.get(self._창.uid)
+        except Exception:                             # noqa: BLE001
+            return None
+
+    def _윈도우_최대(self):
+        """윈도우 창의 실제 최대화 상태 · 맥이거나 못 읽으면 None (그땐 기억한 값을 쓴다)"""
+        f = self._폼()
+        if f is None:
+            return None
+        try:
+            return str(f.WindowState) == "Maximized"
+        except Exception:                             # noqa: BLE001
+            return None
+
+    def native_move(self, kind="move"):
+        """윈도우 (10/14): 위 줄 끌기 · 가장자리 크기 바꾸기를 윈도우에 맡긴다 — 다른 윈도우 앱처럼
+        화면 맨 위로 끌면 최대화 · 왼쪽/오른쪽 끝이면 반쪽 화면(끌어 놓기 맞춤) · 네 가장자리 · 모서리 어디서나 크기.
+        (pywebview 의 끌기는 화면 글이 창을 한 칸씩 옮겨서 이게 안 됐다) — 제목 줄을 누른 것처럼 WM_NCLBUTTONDOWN 을 보낸다"""
+        HT = {"move": 2, "l": 10, "r": 11, "t": 12, "tl": 13, "tr": 14, "b": 15, "bl": 16, "br": 17}
+        f, code = self._폼(), HT.get(kind)
+        if f is None or code is None:
+            return False
+        try:
+            import ctypes
+            from System import Action
+            hwnd = f.Handle.ToInt64()
+
+            def 끌기():
+                ctypes.windll.user32.ReleaseCapture()
+                ctypes.windll.user32.SendMessageW(ctypes.c_void_p(hwnd), 0xA1, code, 0)   # WM_NCLBUTTONDOWN
+            f.BeginInvoke(Action(끌기))              # 창 줄(UI 스레드)에서 · 끄는 동안 이 호출이 기다리지 않게
+            return True
+        except Exception:                             # noqa: BLE001
+            traceback.print_exc()
+            return False
+
     def window_control(self, what):
         w = self._창
         if not w:
             return False
         if what == "min":
             w.minimize()
+        elif what == "max" and os.name == "nt" and self._윈도우_최대() is not None:
+            # 윈도우: 끌어 놓기 맞춤(화면 위로 끌어 최대화)도 있으니 기억한 값 말고 창의 실제 상태로
+            (w.restore if self._윈도우_최대() else w.maximize)()
+            time.sleep(0.05)
+            self._최대 = bool(self._윈도우_최대())
         elif what == "max":
             if not self._최대:
                 self._전 = (w.x, w.y, w.width, w.height)
@@ -143,7 +190,10 @@ class _창조종:
         return self._최대
 
     def is_maximized(self):
-        """화면을 옮겨도 □ / ⧉ 아이콘이 맞게 — 페이지가 열릴 때 win.js 가 묻는다 (10/14)"""
+        """화면을 옮겨도 □ / ⧉ 아이콘이 맞게 — 페이지가 열릴 때 · 창 크기가 바뀔 때 win.js 가 묻는다 (10/14)"""
+        실제 = self._윈도우_최대()
+        if 실제 is not None:
+            self._최대 = 실제
         return bool(self._최대)
 
     def resize_to(self, width, height):
