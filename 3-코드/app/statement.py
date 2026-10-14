@@ -250,7 +250,7 @@ def analyze():
     pasted = M.pasted_from_ai(events, context)
     others = M.pasted_from_other(events, context)
     proc = M.process_evidence(events, context)
-    linked = M.link_document(body, [{"id": i, "text": r["text"]} for i, r in enumerate(답들)], pasted, others, proc)
+    linked = M.link_document(body, [{"id": i, "text": r["text"], "ts": r.get("ts")} for i, r in enumerate(답들)], pasted, others, proc)
 
     # 연결 확인(app/confirm.py · 박상진)에서 고른 것: link → 맞다 · no → 아니다 · unsure → 잘 모르겠음 (10/12)
     # 붙여넣기 기록이 있는 연결은 연결 확인이 묻지 않고 자동으로 넣는다 → 여기서도 "맞다"로 채워 둔다
