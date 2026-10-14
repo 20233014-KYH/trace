@@ -12,7 +12,11 @@ python tests/연결시제품.py             # 결과물(Word) 문장 ↔ AI 답 
 python tests/test_paste_source.py      # 수집기→derive 한 바퀴 · 나무위키 등 사이트별 붙여넣기 출처 10건
 python tests/test_issue26.py           # 이슈 #26 — Word 줄바꿈 · 붙여넣은 글 안의 짧은 줄 · 생성 도중 잘린 답 (12건)
 xvfb-run -a -s "-screen 0 1440x900x24" python tests/녹화시험_위키.py   # 실제 Chromium+확장+수집기로 나무위키·위키백과 복사 녹화 (결과: 녹화시험_결과.md)
+python tests/bench_big_report.py --pages 100 --chat 1500 --screens   # 큰 과제 속도 — 100쪽 논문 · AI 대화 1500 · 화면별 시간
+python tests/bench_server.py --pages 100 --chat 1500 --mem           # 서버 쪽 — DB 묻는 횟수 · 보낸 크기 · 메모리
 ```
+
+속도를 고쳤으면 `bench_big_report.py --dump 전.json` (고치기 전 코드) · `--dump 뒤.json` (고친 코드) 를 `cmp` 로 비교해 결과가 같은지 본다 (10/14).
 
 ## 파일
 | 파일 | 무엇 |

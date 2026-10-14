@@ -13,6 +13,7 @@ source.py — 학생 PC 의 "출처 보기" 화면 (캔버스 4 · 10/11 박상�
 
 연결 판단은 statement.py 의 /local/analyze 와 같은 core/match 함수를 같은 순서로 부른다 — 두 화면 결과가 같아야 한다.
 """
+import bisect
 import copy
 import hashlib
 import io
@@ -306,11 +307,16 @@ def _build(paras, msgs, events, context):
     답들 = [r for r in 기록 if r.get("role") == "answer"]
     질문들 = [r for r in 기록 if r.get("role") == "question"]
 
+    묶음 = {}                                                  # (세션, 도구) → 질문 번호들 (시각 순) · 10/14 답마다 질문 전부를 훑지 않게
+    for i, r in enumerate(질문들):
+        묶음.setdefault((r["session_id"], r.get("tool")), []).append(i)
+    시각 = {k: [질문들[i].get("ts", "") for i in v] for k, v in 묶음.items()}
+
     def 질문(ans):
         """이 답 바로 앞의 같은 세션·같은 도구 질문 (statement.py 와 같은 규칙)"""
-        앞 = [i for i, r in enumerate(질문들) if r["session_id"] == ans["session_id"]
-              and r.get("tool") == ans.get("tool") and r.get("ts", "") <= ans.get("ts", "")]
-        return 앞[-1] if 앞 else None
+        k = (ans.get("session_id"), ans.get("tool"))
+        j = bisect.bisect_right(시각.get(k, []), ans.get("ts", ""))
+        return 묶음[k][j - 1] if j else None
 
     pasted = M.pasted_from_ai(events, context)
     물은때 = [(질문들[q]["ts"] if (q := 질문(r)) is not None else None) for r in 답들]     # 답이 있던 때 = 질문한 때 (match.link_document)
