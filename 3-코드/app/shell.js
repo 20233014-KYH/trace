@@ -75,40 +75,74 @@ window.TraceShell = (function () {
     };
     // 창 버튼 · 위 줄 두 번 눌러 최대화 · 가장자리 크기 바꾸기는 /ui/win.js (제목 줄 없는 앱 창 · 10/13)
     새버전();
+    바뀌었나();
   }
 
   // ── 새 버전 (10/14 · app/updater.py) — 왼쪽 메뉴 아래에 "새 버전 · 업데이트". 누르면 앱이 직접 받아 바꾸고 다시 연다
-  //    (맥은 내려받기 화면에서 받을 때마다 "열지 않음" 이 떠서). 서버에 묻는 건 10분에 한 번만 (화면을 옮길 때마다 묻지 않게)
+  //    (맥은 내려받기 화면에서 받을 때마다 "열지 않음" 이 떠서). 서버에 묻는 건 앱이 10분에 한 번만 (app/updater.최신)
   async function 새버전() {
-    const 키 = "trace.update.v1";
-    let u = null;
-    try { const c = JSON.parse(sessionStorage.getItem(키) || "null"); if (c && Date.now() - c.at < 600000) u = c.u; } catch (e) {}
-    if (!u) {
-      try { u = await call("GET", "/local/update"); } catch (e) { return; }
-      try { sessionStorage.setItem(키, JSON.stringify({ at: Date.now(), u })); } catch (e) {}
-    }
+    let u = null;                                  // 10분 기억은 앱(updater.최신)이 한다 — 업데이트 뒤 새로 켠 앱은 새로 물음
+    try { u = await call("GET", "/local/update"); } catch (e) { return; }
     const side = document.querySelector(".side");
     if (!u || !u.newer || !side || side.querySelector(".upd")) return;
     const box = el("div", "upd"), t = el("span", "t", `새 버전 v${u.latest}`);
     const b = el("button", "btn btn-default btn-sm", u.can_install ? "업데이트" : "내려받기"); b.type = "button";
     b.title = u.can_install ? "Trace 가 새 버전을 받아 바꾸고 다시 열어요" : "내려받기 화면에서 받아 주세요";
     box.append(t, b);
-    b.onclick = async () => {
-      if (!u.can_install) { window.open(u.download, "_blank"); return; }
-      b.disabled = true;
-      try { await call("POST", "/local/update/install", null, {}); }
-      catch (e) { t.textContent = e.message; b.disabled = false; return; }
-      const 보기 = async () => {
-        let p;
-        try { p = await call("GET", "/local/update/progress"); } catch (e) { t.textContent = "다시 여는 중…"; return; }
-        t.textContent = p.message + (p.state === "downloading" ? ` · ${p.pct}%` : "");
-        if (p.state === "error") { b.disabled = false; return; }
-        setTimeout(보기, 700);
-      };
-      보기();
-    };
+    b.onclick = () => 바뀐것(u, false, t);
     const me = side.querySelector(".me");
     me ? side.insertBefore(box, me) : side.append(box);
+  }
+
+  // ── 바뀐 것 창 (10/14) — iOS 업데이트처럼 누르기 전에 무엇이 바뀌는지. 릴리스 글의 학생용 요약 (app/updater.요약)
+  //    after=true 면 업데이트 뒤 처음 열 때 "v… 로 바뀌었어요" (한 번만)
+  function 바뀐것(u, after, 줄) {
+    const sum = u.summary || {}, v = after ? u.version : u.latest;
+    const bg = el("div", "sheet-bg"), sh = el("div", "sheet");
+    sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
+    sh.append(el("div", "eyebrow", after ? "업데이트 완료" : "새 버전"), el("h3", null, after ? `v${v} 로 바뀌었어요` : `v${v} 에서 바뀐 것`));
+    if (sum.title) sh.append(el("p", "lead", sum.title));
+    if (sum.items && sum.items.length) { const ul = el("ul"); sum.items.forEach(x => ul.append(el("li", null, x))); sh.append(ul); }
+    else if (!sum.title) sh.append(el("p", "lead", "자세한 내용은 내려받기 화면에서 볼 수 있어요."));
+    if (sum.record) { const r = el("div", "box rec"); r.append(el("b", null, "기록하는 것이 바뀌어요"), el("span", null, sum.record)); sh.append(r); }
+    if (sum.todo) { const r = el("div", "box todo"); r.append(el("b", null, after ? "해 주세요" : "업데이트 뒤 할 일"), el("span", null, sum.todo)); sh.append(r); }
+    if (!after && /Macintosh/.test(navigator.userAgent))
+      sh.append(el("p", "note", "업데이트하면 Trace 가 잠깐 꺼졌다 다시 열려요. 맥은 설정 › 기록 의 권한이 꺼질 수 있어요 — [설정 열기] 로 다시 켜 주세요."));
+    const msg = el("p", "note"), foot = el("div", "foot");
+    const 닫기 = () => { bg.remove(); if (after) call("POST", "/local/update/seen", null, {}).catch(() => {}); };
+    const later = el("button", "b", after ? "확인" : "나중에"); later.type = "button"; later.onclick = 닫기;
+    foot.append(later);
+    if (!after) {
+      const go = el("button", "b dark", u.can_install ? "지금 업데이트" : "내려받기 화면 열기"); go.type = "button";
+      go.onclick = async () => {
+        if (!u.can_install) { window.open(u.download, "_blank"); 닫기(); return; }
+        go.disabled = later.disabled = true;
+        try { await call("POST", "/local/update/install", null, {}); }
+        catch (e) { msg.textContent = e.message; go.disabled = later.disabled = false; return; }
+        const 보기 = async () => {
+          let p;
+          try { p = await call("GET", "/local/update/progress"); } catch (e) { msg.textContent = "다시 여는 중…"; return; }
+          msg.textContent = p.message + (p.state === "downloading" ? ` · ${p.pct}%` : "");
+          if (줄) 줄.textContent = msg.textContent;
+          if (p.state === "error") { go.disabled = later.disabled = false; return; }
+          setTimeout(보기, 700);
+        };
+        보기();
+      };
+      foot.append(go);
+    }
+    sh.append(msg, foot); bg.append(sh);
+    bg.onclick = e => { if (e.target === bg && !later.disabled) 닫기(); };
+    document.addEventListener("keydown", function esc(e) { if (e.key === "Escape" && !later.disabled) { 닫기(); document.removeEventListener("keydown", esc); } });
+    document.body.append(bg);
+    (after ? later : sh.querySelector(".b.dark") || later).focus();
+  }
+
+  // 업데이트 뒤 처음 열었으면 한 번 보여 준다 (서버가 아니라 이 PC 의 update-seen.json 으로 앎)
+  async function 바뀌었나() {
+    let c;
+    try { c = await call("GET", "/local/update/changes"); } catch (e) { return; }
+    if (c.just_updated) 바뀐것(c, true);
   }
 
   // ── 왼쪽 과제 목록 · 위 줄 과제 이름. 과제를 누르면 /go → 그 과제가 지금 있는 단계 화면 (보던 화면 그대로가 아님) ──

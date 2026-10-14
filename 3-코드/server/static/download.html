@@ -134,7 +134,8 @@ button:focus-visible,a:focus-visible{outline:2px solid #3e63dd;outline-offset:2p
       } else { $("mac").classList.replace("btn-dark", "btn-outline"); }
       if (d.extension) on($("ext"), d.extension);
       $("meta").textContent = [`v${d.version}`, day(d.published_at), d.windows && mb(d.windows.size)].filter(Boolean).join(" · ");
-      if (d.notes) { $("notes").textContent = d.notes; $("notes-card").hidden = false; }
+      const 글 = (d.notes || "").split("\n---")[0].trim();          // 릴리스 글의 --- 아래는 개발 메모
+      if (글) { $("notes").textContent = 글; $("notes-card").hidden = false; }
     })
     .catch(code => {
       $("win-label").textContent = code === 404 ? "아직 올린 설치판이 없습니다" : "불러오지 못했습니다";

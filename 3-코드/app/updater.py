@@ -32,13 +32,23 @@ _잠금 = threading.Lock()
 기록_중 = lambda: False            # noqa: E731  statement.py 가 넣어 준다 (확장 다리 5077 이 열려 있나)
 
 
-def 최신():
-    """인터넷 서버의 최신 설치판 {version, mac, windows, …} · 못 물으면 {}"""
+_최신 = {"at": 0.0, "d": None}
+
+
+def 최신(새로=False):
+    """인터넷 서버의 최신 설치판 {version, mac, windows, …} · 못 물으면 {}.
+    10분 기억 — 화면을 옮길 때마다 묻지 않게. 이 앱(프로세스)이 기억하니 업데이트 뒤 새로 켠 앱은 새로 묻는다"""
+    import time
+    if not 새로 and _최신["d"] is not None and time.time() - _최신["at"] < 600:
+        return _최신["d"]
     try:
         r = requests.get(settings.INTERNET + "/app/latest", timeout=15)
-        return r.json() if r.ok else {}
+        d = r.json() if r.ok else {}
     except (requests.RequestException, ValueError):
-        return {}
+        d = {}
+    if d:
+        _최신.update(at=time.time(), d=d)
+    return d
 
 
 def 내_파일(d):
@@ -66,6 +76,65 @@ def 바꿀_수_있나(d):
     return os.access(os.path.dirname(app), os.W_OK)
 
 
+def 요약(notes):
+    """릴리스 글(packaging/notes/v….md) → 학생에게 보일 요약 {title, items, record, todo} (10/14)
+    글의 첫 '---' 위만 학생용이고 아래는 개발 메모. 위쪽에서:
+      첫 줄(- 로 시작 안 함) = 한 줄 소개 · "- …" = 바뀐 것 (6개까지)
+      "기록:" 으로 시작하는 줄 = 기록하는 것이 바뀜 (화면이 따로 강조) · "할 일:" = 업데이트 뒤 할 일"""
+    if not notes:
+        return None
+    줄 = [l.strip() for l in notes.split("\n---", 1)[0].splitlines() if l.strip()]
+    out = {"title": 줄[0] if 줄 and not 줄[0].startswith("-") else "", "items": [], "record": "", "todo": ""}
+    for l in 줄:
+        if l.startswith(("기록:", "기록하는 것:")):
+            out["record"] = l.split(":", 1)[1].strip()
+        elif l.startswith(("할 일:", "업데이트 후:")):
+            out["todo"] = l.split(":", 1)[1].strip()
+        elif l.startswith("- ") and len(out["items"]) < 6:
+            out["items"].append(l[2:].strip())
+    return out
+
+
+def _본_곳():
+    return os.path.join(settings.app_data(), "update-seen.json")
+
+
+def _본_버전():
+    try:
+        import json
+        with open(_본_곳(), encoding="utf-8") as f:
+            return json.load(f).get("version")
+    except (OSError, ValueError):
+        return None
+
+
+def _봄(v):
+    import json
+    os.makedirs(os.path.dirname(_본_곳()), exist_ok=True)
+    with open(_본_곳(), "w", encoding="utf-8") as f:
+        json.dump({"version": v}, f)
+
+
+@bp.get("/local/update/changes")
+def changes():
+    """업데이트 뒤 처음 열었나 → {just_updated, version, summary}. 처음 설치(본 버전 없음)는 그냥 지금 버전을 본 것으로"""
+    본 = _본_버전()
+    if 본 is None:
+        _봄(VERSION)
+        return jsonify(just_updated=False, version=VERSION)
+    if 본 == VERSION:
+        return jsonify(just_updated=False, version=VERSION)
+    d = 최신()
+    return jsonify(just_updated=True, version=VERSION, before=본,
+                   summary=요약(d.get("notes")) if d.get("version") == VERSION else None)
+
+
+@bp.post("/local/update/seen")
+def seen():
+    _봄(VERSION)
+    return jsonify(ok=True)
+
+
 @bp.post("/local/update/install")
 def install():
     with _잠금:
@@ -73,7 +142,7 @@ def install():
             return jsonify(ok=True, **_상태)
         if 기록_중():
             return jsonify(error="recording", message="기록 중에는 업데이트할 수 없어요. 기록 창에서 작업을 마친 뒤 눌러 주세요"), 409
-        d = 최신()
+        d = 최신(새로=True)
         if not d.get("version") or parse_version(d["version"]) <= parse_version(VERSION):
             return jsonify(error="no_update", message="이미 최신 버전이에요"), 409
         if not 바꿀_수_있나(d):
