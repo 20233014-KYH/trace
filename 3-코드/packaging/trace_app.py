@@ -26,6 +26,21 @@ ROOT = (os.path.join(sys._MEIPASS, "trace") if FROZEN                      # noq
 sys.path.insert(0, ROOT)
 sys.dont_write_bytecode = True        # 설치 폴더에 __pycache__ 를 만들지 않는다
 
+
+def _이름_안_찾기():
+    """파이썬 HTTP 서버(화면 서버 werkzeug · 기록기 확장 다리)는 켤 때 socket.getfqdn() 으로 이 PC 이름을 거꾸로 찾는다.
+    맥 설치판에선 이게 30초 넘게 멈췄다 (10/14 — 새 앱은 '로컬 네트워크' 허락 전이라 mDNS 질의가 시간 초과까지 기다림).
+    우리 서버는 127.0.0.1 에서만 듣고 이름을 쓰지 않으니 찾지 않는다."""
+    import http.server
+    import socketserver
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+    http.server.HTTPServer.server_bind = server_bind
+
+
+_이름_안_찾기()
 from core import settings             # noqa: E402
 from core.version import VERSION      # noqa: E402
 
