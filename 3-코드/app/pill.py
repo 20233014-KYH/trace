@@ -81,8 +81,24 @@ class Api:
 
 def _자리(pos, w, h):
     """설정 › 기록 창 자리 (br 오른쪽 아래 · bl · tr · tl) → 창 왼쪽 위 x, y"""
+    x0, y0, ww, wh = _작업_영역()
+    return (x0 + MARGIN if pos[1] == "l" else ww - w - MARGIN), (y0 + MARGIN if pos[0] == "t" else wh - h - MARGIN)
+
+
+def _작업_영역():
+    """(왼, 위, 오른, 아래) — 맥은 메뉴 막대 · Dock 을 뺀 곳 (10/14 · 전엔 아래 48px 만 빼서 Dock 에 겹쳤다)"""
+    if sys.platform == "darwin":
+        try:
+            from AppKit import NSScreen
+            sc = NSScreen.mainScreen()
+            f, v = sc.frame(), sc.visibleFrame()                 # 왼쪽 아래가 0 인 좌표 → pywebview 는 왼쪽 위가 0
+            top = f.size.height - (v.origin.y - f.origin.y + v.size.height)
+            bottom = f.size.height - (v.origin.y - f.origin.y)
+            return int(v.origin.x - f.origin.x), int(top), int(v.origin.x - f.origin.x + v.size.width), int(bottom)
+        except Exception:                                         # noqa: BLE001
+            pass
     ww, wh = _work_area()
-    return (MARGIN if pos[1] == "l" else ww - w - MARGIN), (MARGIN if pos[0] == "t" else wh - h - MARGIN)
+    return 0, 0, ww, wh
 
 
 def _work_area():
@@ -102,6 +118,8 @@ def _make_transparent(window):
     """pywebview 의 transparent 는 WebView2 배경만 투명하게 하고 창(WinForms Form) 바탕은 회색으로 남긴다.
     TransparencyKey 방식은 레이어드 창이 되어 WebView2 가 마우스를 못 받는다 (클릭·드래그 전부 죽음).
     → DWM 방식: 바탕 검정 + 프레임을 클라이언트 전체(-1)로 확장하면 알파 0 인 곳이 뚫리고 입력은 그대로."""
+    if sys.platform != "win32":                   # 맥은 pywebview 가 창을 투명하게 만든다 (불투명 끔 · 바탕 알파 0 — 10/14 확인)
+        return
     try:
         from webview.platforms.winforms import BrowserView
         from System.Drawing import Color

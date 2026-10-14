@@ -132,7 +132,9 @@ def _데이터(이름들):
 
 # ─────────────── 기록할 곳 (이 PC 에서 찾기) ───────────────
 def 확인():
-    """[{key, name, desc, state: ok | missing | none | unknown, label}] — 윈도우에서만 찾음"""
+    """[{key, name, desc, state: ok | missing | none | unknown, label, help?}] — 윈도우 · 맥에서 찾음"""
+    if sys.platform == "darwin":
+        return _맥_확인()
     if sys.platform != "win32":
         return [{"key": k, "name": n, "desc": d_, "state": "unknown", "label": "확인 못 함"} for k, n, d_ in _목록]
     lad, pf = os.environ.get("LOCALAPPDATA", ""), [os.environ.get("ProgramFiles", ""), os.environ.get("ProgramFiles(x86)", "")]
@@ -153,6 +155,42 @@ def 확인():
             있음 = any(glob.glob(os.path.join(p, "Microsoft Office", "root", "Office1*", "WINWORD.EXE")) for p in pf if p)
             st = ("ok", "찾음") if 있음 else ("none", "설치 안 됨")
         out.append({"key": k, "name": n, "desc": d_, "state": st[0], "label": st[1]})
+    return out
+
+
+def _맥_확인():
+    """맥 (10/14) — 같은 다섯 곳 + 키 입력 횟수(입력 모니터링 권한).
+    ★ 맥의 기록기는 데스크톱 앱 대화 · Word 글 변화를 아직 못 읽는다 (윈도우 전용 부품) → 찾아도 그렇다고 적는다"""
+    home = os.path.expanduser("~")
+    지원 = os.path.join(home, "Library", "Application Support")
+
+    def 앱(이름):
+        return any(os.path.isdir(os.path.join(d, 이름)) for d in ("/Applications", os.path.join(home, "Applications")))
+    out = []
+    for k, n, d_ in _목록:
+        if k in ("chrome", "edge"):
+            root = os.path.join(지원, *(("Google", "Chrome") if k == "chrome" else ("Microsoft Edge",)))
+            st = ("none", "브라우저 없음") if not os.path.isdir(root) else ("ok", "연결됨") if _확장_있나(root) else ("missing", "없음")
+        elif k == "gptapp":
+            st, d_ = (("ok", "찾음") if 앱("ChatGPT.app") else ("none", "설치 안 됨")), "맥은 창 이름 · 복사만 (대화는 웹 확장으로)"
+        elif k == "claudeapp":
+            st, d_ = (("ok", "찾음") if 앱("Claude.app") else ("none", "설치 안 됨")), "맥은 창 이름 · 복사만 (대화는 웹 확장으로)"
+        else:
+            st, d_ = (("ok", "찾음") if 앱("Microsoft Word.app") else ("none", "설치 안 됨")), "맥은 창 이름만 (글 바뀌는 과정은 윈도우)"
+        out.append({"key": k, "name": n, "desc": d_, "state": st[0], "label": st[1]})
+    try:
+        d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "collector")
+        if d not in sys.path:
+            sys.path.insert(0, d)
+        import platform_mac
+        켜짐 = platform_mac._입력모니터링_켜졌나(요청=False)
+    except Exception:                                            # noqa: BLE001
+        켜짐 = None
+    out.append({"key": "keys", "name": "키 입력 횟수", "desc": "몇 번 쳤는지만 셈 · 맥은 '입력 모니터링' 권한이 있어야 해요",
+                "state": "ok" if 켜짐 else "unknown" if 켜짐 is None else "missing",
+                "label": "켜짐" if 켜짐 else "확인 못 함" if 켜짐 is None else "꺼짐",
+                "help": "시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링 → Trace 켜기 → Trace 를 ⌘Q 로 껐다 다시 열기. "
+                        "('손쉬운 사용' 과 다른 목록이에요. 안 켜도 창 · 복사 · AI 대화 기록은 남아요)"})
     return out
 
 
