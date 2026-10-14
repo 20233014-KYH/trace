@@ -118,9 +118,9 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
   if (!TABS.some(t => t[0] === tab)) tab = "record";
   let d = null;
 
-  T.init({});
+  T.init({ back: ["/home", "홈으로"] });
   T.loadWorks(null, { stay: true });
-  $("b-back").onclick = () => location.href = "/home";
+
 
   function nav() {
     const n = $("snav"); n.textContent = "";

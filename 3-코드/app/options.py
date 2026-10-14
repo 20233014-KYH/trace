@@ -22,10 +22,10 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 from core import prefs, safefile
+from core.version import VERSION   # 설치판과 같은 버전 (10/14 · 전엔 "0.1.0 (개발판)" 을 적어 둬서 0.1.1 설치판에도 0.1.0 으로 보임)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("options", __name__)
-VERSION = "0.1.0 (개발판)"         # 설치판(#53) 이 들어오면 core/version 으로
 
 
 @bp.get("/settings")

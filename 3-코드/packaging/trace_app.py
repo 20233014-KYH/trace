@@ -197,7 +197,7 @@ def selftest():
 
     def 원본():
         빠짐 = [p for p in ("app/statement.html", "app/pill.html", "app/shell.css", "app/home.html", "app/login.html",
-                          "app/settings.html", "app/review.html", "app/work.css", "app/work.js", "app/trace.ico", "collector/config.json",
+                          "app/settings.html", "app/review.html", "app/record.html", "app/work.css", "app/work.js", "app/trace.ico", "collector/config.json",
                           "collector/domains.json", "server/demo_share.json")
               if not os.path.exists(os.path.join(ROOT, p))]
         if 빠짐:

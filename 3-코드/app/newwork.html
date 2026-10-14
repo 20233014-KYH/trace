@@ -113,9 +113,9 @@ textarea{font:inherit;font-size:13.5px;line-height:1.6;border:1px solid var(--li
   const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
   const wid = new URLSearchParams(location.search).get("work");
   const edit = location.pathname === "/work/settings" && !!wid;
-  T.init({});
+  T.init({ back: [() => history.length > 1 ? history.back() : location.href = "/home", "뒤로"] });
   T.loadWorks(wid, { stay: true });
-  $("b-back").onclick = () => history.length > 1 ? history.back() : location.href = "/home";
+
   if (!edit) $("nav-new").classList.add("on");
 
   // 기록할 곳 — 지금 Trace 가 읽을 줄 아는 곳 (Edge · 사진은 못 함). 준비 점검 화면이 생기면 실제 상태로 바꿈

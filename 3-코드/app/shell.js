@@ -37,6 +37,13 @@ window.TraceShell = (function () {
       b.title = s ? `${t}: ${s[2]}` : (t === "이전 단계" ? "이 과제의 첫 단계입니다" : "이 과제의 마지막 단계입니다");
       b.onclick = () => { if (s) location.href = stepUrl(s, opt.wid); };
     });
+    // ← 갈 곳: 단계 화면이 아닌 곳(과제 상세 · 기록 다시 보기 · 설정 …)은 화면이 정한다 · 첫 단계(출처 보기)는 과제 상세로 (10/14 · 전엔 꺼져 있었음)
+    const back = opt.back || (opt.wid && i === 0 ? ["/work?work=" + encodeURIComponent(opt.wid), "과제로"] : null);
+    if (back) {
+      const b = $("b-back"), [to, t] = Array.isArray(back) ? back : [back, "뒤로"];
+      b.disabled = false; b.title = t; b.setAttribute("aria-label", t);
+      b.onclick = () => typeof to === "function" ? to() : location.href = to;
+    }
     // 단계 점은 이 과제가 실제로 어디까지 했는지로 칠한다 (연결 확인을 끝낸 과제는 출처 보기에서 봐도 연결 확인이 ●)
     if (opt.wid) call("GET", "/local/stage?work_id=" + encodeURIComponent(opt.wid)).then(r => {
       const at = STEPS.findIndex(s => s[0] === r.stage);
