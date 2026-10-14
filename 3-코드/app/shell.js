@@ -74,6 +74,41 @@ window.TraceShell = (function () {
       try { localStorage.setItem(RAIL, on ? "1" : "0"); } catch (e) {}
     };
     // 창 버튼 · 위 줄 두 번 눌러 최대화 · 가장자리 크기 바꾸기는 /ui/win.js (제목 줄 없는 앱 창 · 10/13)
+    새버전();
+  }
+
+  // ── 새 버전 (10/14 · app/updater.py) — 왼쪽 메뉴 아래에 "새 버전 · 업데이트". 누르면 앱이 직접 받아 바꾸고 다시 연다
+  //    (맥은 내려받기 화면에서 받을 때마다 "열지 않음" 이 떠서). 서버에 묻는 건 10분에 한 번만 (화면을 옮길 때마다 묻지 않게)
+  async function 새버전() {
+    const 키 = "trace.update.v1";
+    let u = null;
+    try { const c = JSON.parse(sessionStorage.getItem(키) || "null"); if (c && Date.now() - c.at < 600000) u = c.u; } catch (e) {}
+    if (!u) {
+      try { u = await call("GET", "/local/update"); } catch (e) { return; }
+      try { sessionStorage.setItem(키, JSON.stringify({ at: Date.now(), u })); } catch (e) {}
+    }
+    const side = document.querySelector(".side");
+    if (!u || !u.newer || !side || side.querySelector(".upd")) return;
+    const box = el("div", "upd"), t = el("span", "t", `새 버전 v${u.latest}`);
+    const b = el("button", "btn btn-default btn-sm", u.can_install ? "업데이트" : "내려받기"); b.type = "button";
+    b.title = u.can_install ? "Trace 가 새 버전을 받아 바꾸고 다시 열어요" : "내려받기 화면에서 받아 주세요";
+    box.append(t, b);
+    b.onclick = async () => {
+      if (!u.can_install) { window.open(u.download, "_blank"); return; }
+      b.disabled = true;
+      try { await call("POST", "/local/update/install", null, {}); }
+      catch (e) { t.textContent = e.message; b.disabled = false; return; }
+      const 보기 = async () => {
+        let p;
+        try { p = await call("GET", "/local/update/progress"); } catch (e) { t.textContent = "다시 여는 중…"; return; }
+        t.textContent = p.message + (p.state === "downloading" ? ` · ${p.pct}%` : "");
+        if (p.state === "error") { b.disabled = false; return; }
+        setTimeout(보기, 700);
+      };
+      보기();
+    };
+    const me = side.querySelector(".me");
+    me ? side.insertBefore(box, me) : side.append(box);
   }
 
   // ── 왼쪽 과제 목록 · 위 줄 과제 이름. 과제를 누르면 /go → 그 과제가 지금 있는 단계 화면 (보던 화면 그대로가 아님) ──
