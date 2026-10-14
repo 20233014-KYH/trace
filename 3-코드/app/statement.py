@@ -127,14 +127,12 @@ def _기록_중():
 
 @app.get("/local/update")
 def update():
-    """인터넷 서버에 최신 설치판을 묻는다 (서버가 GitHub 릴리스를 읽어 둠). 시험 서버를 쓰는 중이어도 늘 인터넷 서버에."""
-    try:
-        r = requests.get(settings.INTERNET + "/app/latest", timeout=15)
-        최신 = r.json() if r.ok else {}
-    except (requests.RequestException, ValueError):
-        최신 = {}
+    """인터넷 서버에 최신 설치판을 묻는다 (서버가 GitHub 릴리스를 읽어 둠). 시험 서버를 쓰는 중이어도 늘 인터넷 서버에.
+    can_install = 앱 안에서 바로 바꿀 수 있나 (설치판 · 이 OS 파일이 있음 · 앱 자리에 쓸 수 있음 — app/updater.py)"""
+    최신 = 업데이트.최신()
     v = 최신.get("version")
-    return jsonify(current=VERSION, latest=v, newer=bool(v) and parse_version(v) > parse_version(VERSION),
+    newer = bool(v) and parse_version(v) > parse_version(VERSION)
+    return jsonify(current=VERSION, latest=v, newer=newer, can_install=newer and 업데이트.바꿀_수_있나(최신),
                    download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"))
 
 
@@ -401,6 +399,9 @@ def _내역서_있나(wid):
 
 
 import export as 내보내기                         # noqa: E402  캔버스 7 · app/export.py
+import updater as 업데이트                        # noqa: E402  앱 안에서 새 버전으로 (10/14 · app/updater.py)
+업데이트.기록_중 = _기록_중
+app.register_blueprint(업데이트.bp)
 출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나,
           server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=_내역서_있음.add,
           source_data=lambda *a: _출처_보기(*a))      # 교수 링크 출처 보기 자료 (김용현 #44) — 내보내기도 같은 것을 씀
