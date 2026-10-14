@@ -104,7 +104,7 @@ def home():
         창 = webview.create_window(f"Trace {VERSION}", 주소, width=1280, height=820, min_size=(1024, 640),
                                   frameless=True, easy_drag=False, js_api=조종)
         조종._창 = 창
-        webview.start(_아이콘, 창)
+        webview.start(_맥_창 if sys.platform == "darwin" else _아이콘, 창)
     except Exception:                                 # WebView2 가 없거나 창을 못 띄우면 브라우저로
         traceback.print_exc()
         import webbrowser
@@ -150,6 +150,51 @@ class _창조종:
         """화면 가장자리를 끌어 크기 바꾸기 (win.js) — 논리 px"""
         if self._창 and not self._최대:
             self._창.resize(int(max(1024, width)), int(max(640, height)))
+
+
+def _맥_창(창):
+    """맥 (10/14): 맥 표준 창 버튼(빨강 닫기 · 노랑 최소화 · 초록 확대)을 쓴다 — 다른 맥 앱과 같게.
+    pywebview 의 제목 줄 없는 창(frameless)은 맥에선 '제목 줄이 투명한 보통 창' 인데 세 버튼만 숨겨 둔다 → 다시 보이게 하고
+    앱 위 줄(44px) 가운데 · 왼쪽에 놓는다. 버튼이 든 칸은 버튼 넓이만 — 넓으면 그 아래 위 줄(← → · 단계)이 눌리지 않는다.
+    맥이 창 크기 · 전체 화면 · 활성 창이 바뀔 때 버튼을 제자리로 돌려 놓아서 그때마다 다시 놓는다 (Electron 의 trafficLightPosition 과 같은 방법)"""
+    try:
+        import AppKit
+        from PyObjCTools import AppHelper
+        from webview.platforms.cocoa import BrowserView
+        bv = None
+        for _ in range(50):
+            bv = BrowserView.instances.get(창.uid)
+            if bv:
+                break
+            time.sleep(0.1)
+        nswin = bv.window
+        BAR, X, GAP = 44, 16, 20                      # 위 줄 높이 (app/shell.css --bar) · 첫 버튼 왼쪽 · 버튼 간격
+        종류 = (AppKit.NSWindowCloseButton, AppKit.NSWindowMiniaturizeButton, AppKit.NSWindowZoomButton)
+
+        def 놓기(*_):
+            버튼 = [nswin.standardWindowButton_(k) for k in 종류]
+            if any(b is None for b in 버튼):
+                return
+            for b in 버튼:
+                b.setHidden_(False)
+            if nswin.styleMask() & AppKit.NSWindowStyleMaskFullScreen:
+                return                                 # 전체 화면은 맥이 알아서 (위로 마우스를 올리면 나옴)
+            칸, 바깥 = 버튼[0].superview(), 버튼[0].superview().superview()
+            bw, bh = 버튼[0].frame().size.width, 버튼[0].frame().size.height
+            넓이, 높이 = X + 2 * GAP + bw + 8, nswin.frame().size.height
+            바깥.setFrame_(AppKit.NSMakeRect(0, 높이 - BAR, 넓이, BAR))
+            칸.setFrame_(AppKit.NSMakeRect(0, 0, 넓이, BAR))
+            for i, b in enumerate(버튼):
+                b.setFrameOrigin_(AppKit.NSMakePoint(X + i * GAP, (BAR - bh) / 2))
+
+        AppHelper.callAfter(놓기)
+        nc, q = AppKit.NSNotificationCenter.defaultCenter(), AppKit.NSOperationQueue.mainQueue()
+        창._맥_관찰 = [nc.addObserverForName_object_queue_usingBlock_(n, nswin, q, 놓기)
+                    for n in ("NSWindowDidResizeNotification", "NSWindowDidEndLiveResizeNotification",
+                              "NSWindowDidExitFullScreenNotification", "NSWindowDidBecomeKeyNotification",
+                              "NSWindowDidResignKeyNotification", "NSWindowDidDeminiaturizeNotification")]
+    except Exception:                                 # noqa: BLE001  못 하면 버튼 없이 (화면의 ─ □ ✕ 는 win.js 가 맥에서 숨김)
+        traceback.print_exc()
 
 
 def _아이콘(창):
