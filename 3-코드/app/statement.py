@@ -199,11 +199,17 @@ def auth_providers():
 
 @app.post("/local/auth/google/start")
 def google_start():
+    """mode=login(로그인 화면) | link(설정 › 계정 › Google 계정 잇기 — 로그인한 사람만 · 10/15)"""
+    mode = (request.get_json(force=True, silent=True) or {}).get("mode") or "login"
+    if mode not in ("login", "link"):
+        return jsonify(error="bad_request", message="mode 는 login 또는 link"), 400
+    if mode == "link" and not _auth().get("token"):
+        return jsonify(error="login", message="로그인한 뒤 이을 수 있어요"), 401
     for k in [k for k, v in _구글_대기.items() if time.time() - v["at"] > 600]:
         _구글_대기.pop(k, None)
     st = secrets.token_urlsafe(24)
-    _구글_대기[st] = {"at": time.time(), "done": False, "error": None}
-    주소 = 설정["server"].rstrip("/") + "/auth/google/start?" + urlencode({"pc": st, "port": PORT})
+    _구글_대기[st] = {"at": time.time(), "done": False, "error": None, "mode": mode}
+    주소 = 설정["server"].rstrip("/") + "/auth/google/start?" + urlencode({"pc": st, "port": PORT, **({"mode": "link"} if mode == "link" else {})})
     webbrowser.open(주소)
     return jsonify(state=st)
 
@@ -222,6 +228,13 @@ def google_done():
     w = _구글_대기.get(request.args.get("state", ""))
     if not w or w["done"] or time.time() - w["at"] > 600:
         return _브라우저_안내("다시 시도해 주세요", "Trace 앱 로그인 화면에서 [Google 로 계속하기] 를 다시 눌러 주세요.", 400)
+    if w.get("mode") == "link":                       # 잇기 — 이 PC 의 토큰과 함께 서버에 붙여 달라고 (누구에게 붙일지는 토큰이 정함)
+        코드, 답 = _서버("POST", "/auth/google/link", json={"ticket": request.args.get("ticket", "")})
+        if 코드 != 200:
+            w["error"] = 답.get("message") or "잇지 못했어요. 다시 눌러 주세요"
+            return _브라우저_안내("잇지 못했어요", w["error"], 400)
+        w["done"] = True
+        return _브라우저_안내("구글 계정을 이었어요", "Trace 앱으로 돌아가세요. 이제 Google 로도 이 계정에 로그인할 수 있어요.")
     코드, 답 = _서버("POST", "/auth/google/claim", json={"ticket": request.args.get("ticket", ""),
                                                        "device": f"내역서 화면 · {platform.node()}"})
     if 코드 != 200:

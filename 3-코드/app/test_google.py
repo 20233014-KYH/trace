@@ -32,11 +32,13 @@ def main():
         c = ST.app.test_client()
         H = {"X-Trace-Local": "1"}
         HOST = {"base_url": f"http://127.0.0.1:{ST.PORT}"}
-        부름, 열림, 서버답 = [], [], {"providers": (200, {"google": True}), "claim": (200, {"token": "tok-1", "user": {"id": "u1", "name": "김구글"}})}
+        부름, 열림, 서버답 = [], [], {"providers": (200, {"google": True}), "claim": (200, {"token": "tok-1", "user": {"id": "u1", "name": "김구글"}}),
+                                   "link": (200, {"google": True}), "unlink": (200, {"google": False})}
 
         def 서버(방법, 경로, **kw):
             부름.append((방법, 경로, kw.get("json"), kw.get("timeout")))
-            return 서버답["providers"] if 경로 == "/auth/providers" else 서버답["claim"] if 경로 == "/auth/google/claim" else (404, {})
+            return {"/auth/providers": 서버답["providers"], "/auth/google/claim": 서버답["claim"], "/auth/google/link": 서버답["link"],
+                    "/auth/google/unlink": 서버답["unlink"]}.get(경로, (404, {}))
         ST._서버 = 서버
         ST.webbrowser.open = 열림.append
 
@@ -73,6 +75,30 @@ def main():
         검사("서버가 표를 거절하면 로그인 화면에 그 까닭", r.status_code == 400
              and c.get(f"/local/auth/google/status?state={st2}", **HOST).json == {"done": False, "error": "로그인 시간이 지났어요"})
         검사("로그인 화면에 Google 버튼 자리 (id=b-google)", 'id="b-google"' in c.get("/login", **HOST).get_data(as_text=True))
+
+        # ── 잇기 (설정 › 계정 · 10/15) — 로그인한 사람만 · 표는 이 PC 의 토큰과 함께 /auth/google/link 로 ──
+        os.remove(os.path.join(data, "auth.json"))
+        검사("잇기는 로그인해야", c.post("/local/auth/google/start", json={"mode": "link"}, headers=H, **HOST).status_code == 401)
+        검사("이상한 mode 거절", c.post("/local/auth/google/start", json={"mode": "admin"}, headers=H, **HOST).status_code == 400)
+        json.dump({"server": "https://srv.example/api", "token": "tok-naver", "user": {"id": "u-naver", "name": "네이버계정"}},
+                  open(os.path.join(data, "auth.json"), "w", encoding="utf-8"))
+        st3 = c.post("/local/auth/google/start", json={"mode": "link"}, headers=H, **HOST).json["state"]
+        q = parse_qs(urlparse(열림[-1]).query)
+        검사("잇기: 서버 start 에 mode=link", q.get("mode") == ["link"] and q.get("pc") == [st3])
+        r = c.get(f"/local/auth/google/done?ticket=lt-1&state={st3}", **HOST)
+        auth = json.load(open(os.path.join(data, "auth.json"), encoding="utf-8"))
+        검사("잇기: 돌아오면 /auth/google/link (로그인은 그대로 · 토큰 안 바뀜)",
+             r.status_code == 200 and 부름[-1][:3] == ("POST", "/auth/google/link", {"ticket": "lt-1"}) and auth["token"] == "tok-naver"
+             and "이었어요" in r.get_data(as_text=True) and c.get(f"/local/auth/google/status?state={st3}", **HOST).json["done"] is True)
+        st4 = c.post("/local/auth/google/start", json={"mode": "link"}, headers=H, **HOST).json["state"]
+        서버답["link"] = (409, {"error": "conflict", "message": "이 구글 계정은 기록이 있는 다른 Trace 계정에 이어져 있어요"})
+        r = c.get(f"/local/auth/google/done?ticket=lt-2&state={st4}", **HOST)
+        검사("잇기 거절되면 설정 화면에 그 까닭", r.status_code == 400
+             and c.get(f"/local/auth/google/status?state={st4}", **HOST).json["error"].startswith("이 구글 계정은"))
+        r = c.post("/local/account/google/unlink", json={}, headers=H, **HOST)
+        검사("끊기 → 서버 /auth/google/unlink", r.status_code == 200 and 부름[-1][:2] == ("POST", "/auth/google/unlink"))
+        html = c.get("/settings?tab=account", **HOST).get_data(as_text=True)
+        검사("설정 화면에 잇기 · 끊기", "Google 계정 잇기" in html and "/local/account/google/unlink" in html)
     finally:
         ST._서버, ST.webbrowser.open = 옛[0], 옛[1]
         ST.설정.clear()

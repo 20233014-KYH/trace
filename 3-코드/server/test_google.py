@@ -51,9 +51,9 @@ def 가짜_구글(code, 검증값, 돌아올_곳, 설정):
     return dict(구글이_줄_것)
 
 
-def 한_바퀴(s, pc="pc-state-0123456789abcdef", port="5079", code="code-1"):
+def 한_바퀴(s, pc="pc-state-0123456789abcdef", port="5079", code="code-1", mode=None):
     """start → (구글) → callback. (start 응답, callback 응답)"""
-    r1 = s.get(f"/api/auth/google/start?pc={pc}&port={port}")
+    r1 = s.get(f"/api/auth/google/start?pc={pc}&port={port}" + (f"&mode={mode}" if mode else ""))
     q = parse_qs(urlparse(r1.headers.get("Location", "")).query)
     r2 = s.get("/api/auth/google/callback?" + f"code={code}&state={q.get('state', [''])[0]}") if q.get("state") else None
     return r1, q, r2
@@ -156,6 +156,54 @@ def main():
     구글이_줄_것.update(sub="g-999")
     _, _, r2 = 한_바퀴(s, code="code-6")
     검사("다른 구글 계정이 이미 붙은 이메일은 거절 (409)", r2.status_code == 409)
+
+    # ── 잇기 (10/15): 네이버 이메일로 가입한 계정에 구글 계정을 붙인다 ──
+    def 표(r):
+        return parse_qs(urlparse(r.headers["Location"]).query)["ticket"][0]
+    s.post("/api/auth/signup", json={"email": "yh@naver.com", "password": "네이버비번1234", "name": "네이버계정"})
+    N = {"Authorization": "Bearer " + s.post("/api/auth/login", json={"email": "yh@naver.com", "password": "네이버비번1234"}).get_json()["token"]}
+    네이버 = s.get("/api/me", headers=N).get_json()
+    구글이_줄_것.update(sub="g-111", email="kim@gmail.com", email_verified=True, name="김구글")   # 위에서 구글로만 만든 빈 계정
+    _, q, r2 = 한_바퀴(s, code="link-1", mode="link")
+    값 = json.loads(base64.urlsafe_b64decode(q["state"][0].split(".")[0] + "=="))
+    t1 = 표(r2)
+    검사("잇기: state 에 mode=link · callback 은 로그인 표가 아닌 잇기 표", 값.get("mode") == "link"
+         and s.post("/api/auth/google/claim", json={"ticket": t1}).status_code == 401)
+    _, _, r2 = 한_바퀴(s, code="link-2", mode="link")
+    t2 = 표(r2)
+    검사("잇기는 로그인해야 (토큰 없으면 401)", s.post("/api/auth/google/link", json={"ticket": t2}).status_code == 401)
+    r = s.post("/api/auth/google/link", json={"ticket": t2}, headers=N)
+    me2 = s.get("/api/me", headers=N).get_json()
+    검사("잇기: 네이버 계정에 구글 붙음 (비밀번호도 그대로)", r.status_code == 200 and me2["google"] is True and me2["password"] is True)
+    검사("잇기 표는 한 번만", s.post("/api/auth/google/link", json={"ticket": t2}, headers=N).status_code == 400)
+    검사("구글로만 만든 빈 계정에서 옮김 → 그 계정 로그인은 끊김", s.get("/api/me", headers={"Authorization": f"Bearer {tok}"}).status_code == 401)
+    _, _, r2 = 한_바퀴(s, code="link-3")
+    r = s.post("/api/auth/google/claim", json={"ticket": 표(r2)}).get_json()
+    검사("이제 구글로 로그인하면 네이버 계정", r["user"]["id"] == 네이버["id"] and r["user"]["name"] == "네이버계정")
+    pw = s.post("/api/auth/login", json={"email": "yh@naver.com", "password": "네이버비번1234"})
+    검사("비밀번호 로그인도 그대로", pw.status_code == 200)
+
+    구글이_줄_것.update(sub="g-333", email="lee@example.com")                 # 비밀번호 있는 다른 계정에 붙은 구글
+    _, _, r2 = 한_바퀴(s, code="link-4", mode="link")
+    검사("비밀번호 있는 다른 계정에 붙은 구글은 못 옮김 (409)", s.post("/api/auth/google/link", json={"ticket": 표(r2)}, headers=N).status_code == 409)
+    구글이_줄_것.update(sub="g-444", email="new@gmail.com", name="새구글")       # 구글로만 만들고 과제를 만든 계정
+    _, _, r2 = 한_바퀴(s, code="link-5")
+    G4 = {"Authorization": "Bearer " + s.post("/api/auth/google/claim", json={"ticket": 표(r2)}).get_json()["token"]}
+    s.post("/api/works", json={"title": "구글 계정의 과제"}, headers=G4)
+    _, _, r2 = 한_바퀴(s, code="link-6", mode="link")
+    검사("과제가 있는 계정에 붙은 구글도 못 옮김 (409)", s.post("/api/auth/google/link", json={"ticket": 표(r2)}, headers=N).status_code == 409
+         and s.get("/api/me", headers=G4).get_json().get("google") is True)
+    _, _, r2 = 한_바퀴(s, code="link-7", mode="link")
+    t7 = 표(r2)
+    with db.Session() as x:
+        x.get(db.LoginTicket, t7).created_at -= timedelta(minutes=3)
+        x.commit()
+    검사("2분 지난 잇기 표는 안 됨", s.post("/api/auth/google/link", json={"ticket": t7}, headers=N).status_code == 400)
+    검사("이상한 mode 거절", s.get("/api/auth/google/start?pc=pc-state-0123456789abcdef&port=5079&mode=admin").status_code == 400)
+
+    검사("끊기: 구글로만 로그인하는 계정은 못 끊음", s.post("/api/auth/google/unlink", headers=G4).status_code == 400)
+    r = s.post("/api/auth/google/unlink", headers=N)
+    검사("끊기: 비밀번호 있는 계정은 끊김", r.status_code == 200 and s.get("/api/me", headers=N).get_json()["google"] is False)
 
     print(f"  {'─' * 70}\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0

@@ -177,8 +177,9 @@ TRACE_PORT=5050 python server/test_statements.py                       # 검사 
 PC 앱 [Google 로 계속하기] → **브라우저**로 `/api/auth/google/start` → 구글 계정 고르기 → `/api/auth/google/callback` → 이 PC(`127.0.0.1:<앱 포트>/local/auth/google/done`) 로 한 번 쓰는 표(2분) → PC 앱이 `POST /api/auth/google/claim` 으로 토큰으로 바꿈. 앱 창 안에서는 구글이 로그인을 막아서(disallowed_useragent) 브라우저로 한다.
 - 같은 이메일로 먼저 가입한 계정이 있으면 그 계정에 붙는다 (구글이 이메일 주인임을 확인 · 비밀번호 로그인도 그대로). 구글로만 가입하면 비밀번호가 없다 (`password_hash = "!google"`)
 - 서버는 따로 기억하는 것이 없다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 그 쪽지로 다시 만든다. 돌려보내는 곳은 127.0.0.1 뿐
+- **잇기** (설정 › 계정 › [Google 계정 잇기]): 이메일이 다른 계정(네이버 등)에 구글을 붙인다. 같은 길로 구글을 다녀오되(`mode=link`) callback 은 로그인하지 않고 잇기 표(구글 계정 번호)만 → PC 앱이 **자기 토큰과 함께** `POST /api/auth/google/link`. 누구에게 붙일지는 토큰이 정한다 (주소가 새도 남의 계정에 못 붙임). 그 구글이 이미 다른 계정에 붙어 있으면: 구글로만 만든 빈 계정(과제 없음)이면 거기서 떼어 옮기고(계정은 남김 · 그 계정 로그인 끊음), 아니면 409. **끊기**(`/api/auth/google/unlink`)는 비밀번호 있는 계정만
 - `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` 이 없으면 `/api/auth/providers` 가 google=false → PC 앱 버튼은 "준비 중" 그대로
-- 시험: `python 3-코드/server/test_google.py` (구글 흉내 · 18개) · `python 3-코드/app/test_google.py` (PC 앱 쪽 · 11개)
+- 시험: `python 3-코드/server/test_google.py` (구글 흉내 · 31개) · `python 3-코드/app/test_google.py` (PC 앱 쪽 · 18개) · `python 3-코드/tests/test_google_e2e.py` (PC 앱 ↔ 서버 한 바퀴 · 5개)
 
 **설정 (저장소 주인 · 한 번)** — 비밀(클라이언트 보안 비밀번호)은 채팅 · 저장소에 쓰지 않는다
 1. [Google Cloud Console](https://console.cloud.google.com/) → 프로젝트 만들기 (예: Trace)

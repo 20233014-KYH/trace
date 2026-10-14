@@ -148,6 +148,13 @@ _권한_화면 = {"ax": "x-apple.systempreferences:com.apple.preference.security
            "keys": "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"}
 
 
+@bp.post("/local/account/google/unlink")
+def google_unlink():
+    """설정 › 계정 › Google [끊기] (10/15) — 비밀번호가 있는 계정만 (서버가 막음)"""
+    코드, 답 = S._기록["server"]("POST", "/auth/google/unlink", json={})
+    return jsonify(답), 코드
+
+
 @bp.post("/local/account/name")
 def rename():
     이름 = ((request.get_json(force=True, silent=True) or {}).get("name") or "").strip()

@@ -116,7 +116,7 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
   const POS = { br: "오른쪽 아래", bl: "왼쪽 아래", tr: "오른쪽 위", tl: "왼쪽 위" };
   let tab = new URLSearchParams(location.search).get("tab") || "record";
   if (!TABS.some(t => t[0] === tab)) tab = "record";
-  let d = null;
+  let d = null, 구글_지금 = null;
 
   T.init({ back: ["/home", "홈으로"] });
   T.loadWorks(null, { stay: true });
@@ -232,11 +232,45 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
       const 이름 = kv("이름", d.account.name || "", btn("고치기", "btn-ghost", () => editName()), "내역서 맨 위에 나와요 — 교수가 누구 내역서인지 알 수 있게");
       // 구글로만 가입했으면 비밀번호가 없다 (10/15) — 바꾸기 대신 구글로 로그인한다고만
       const 비번 = d.account.password === false ? kv("로그인", "Google 계정", null, "비밀번호 없이 Google 로 로그인해요")
-        : kv("비밀번호", "••••••••", btn("바꾸기", "btn-ghost", () => editPw()), d.account.google ? "Google 로도 로그인할 수 있어요" : undefined);
-      c.append(이름, kv("이메일", d.account.email || "", null, "로그인할 때 써요"), 비번,
+        : kv("비밀번호", "••••••••", btn("바꾸기", "btn-ghost", () => editPw()));
+      // Google 잇기 · 끊기 (10/15) — 이메일이 달라도(네이버 등) 이 계정에 구글을 붙여 Google 로도 로그인. 구글로만 만든 계정은 줄 없음
+      let 구글 = null;
+      if (d.account.password !== false) {
+        if (d.account.google) {
+          구글 = kv("Google", "이어짐", btn("끊기", "btn-ghost", async () => {
+            if (!confirm("구글 연결을 끊을까요? 끊으면 이 계정은 이메일 · 비밀번호로만 로그인해요")) return;
+            try { await T.call("POST", "/local/account/google/unlink", null, {}); d.account.google = false; draw(); toast($("right"), "구글 연결을 끊었어요", true); }
+            catch (e) { toast(c, e.message, false); }
+          }), "Google 로도 이 계정에 로그인할 수 있어요");
+        } else {
+          const 잇기 = btn("Google 계정 잇기", "btn-outline", () => 구글_잇기(잇기)); 잇기.hidden = true;
+          구글 = kv("Google", "이어지지 않음", 잇기, "이으면 이메일이 달라도 Google 로 이 계정에 로그인해요");
+          T.call("GET", "/local/auth/providers").then(p => { 잇기.hidden = !p.google; }).catch(() => {});
+        }
+      }
+      c.append(이름, kv("이메일", d.account.email || "", null, "로그인할 때 써요"), 비번, ...(구글 ? [구글] : []),
                kv("이 PC", "한 번 로그인하면 다음부터 바로 열려요", btn("로그아웃", "btn-outline", async () => {
                  try { await T.call("POST", "/local/logout", null, {}); } catch (e) { if (e.code === 500) return alert(e.message); } location.replace("/login");
                })));
+      // 브라우저에서 구글 계정을 고르면 서버를 거쳐 이 PC 로 돌아온다 (statement.py /local/auth/google/* · mode=link) — 끝났는지 1초마다
+      async function 구글_잇기(b) {
+        b.disabled = true;
+        let s;
+        try { s = await T.call("POST", "/local/auth/google/start", null, { mode: "link" }); } catch (e) { toast(c, e.message, false); b.disabled = false; return; }
+        구글_지금 = s.state;
+        toast(c, "브라우저에서 이을 구글 계정을 골라 주세요. 끝나면 여기서 저절로 바뀌어요", true);
+        setTimeout(() => { b.disabled = false; }, 3000);              // 브라우저를 닫아 버렸으면 다시 누를 수 있게
+        const t0 = Date.now();
+        const 보기 = async () => {
+          if (구글_지금 !== s.state) return;
+          let r = {};
+          try { r = await T.call("GET", "/local/auth/google/status?state=" + encodeURIComponent(s.state)); } catch (e) {}
+          if (r.done) { d.account.google = true; draw(); toast($("right"), "구글 계정을 이었어요. 이제 Google 로도 이 계정에 로그인할 수 있어요", true); return; }
+          if (r.error) { toast(c, r.error, false); return; }
+          if (Date.now() - t0 < 600000) setTimeout(보기, 1000);
+        };
+        보기();
+      }
       function editName() {
         const f = el("div", "form"), i = el("input", "in"); i.value = d.account.name || ""; i.maxLength = 40;
         const a = el("div", "acts"), ok = btn("저장", "btn-default", async () => {

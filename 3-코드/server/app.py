@@ -202,6 +202,9 @@ def logout():
 # ★ 앱 창(pywebview) 안에서는 구글이 로그인을 막는다(disallowed_useragent) → 늘 브라우저로
 # ★ 서버는 아무것도 기억하지 않는다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 state 로 다시 만든다
 # ★ 돌려보내는 곳은 이 PC(127.0.0.1)뿐 — 다른 사이트로 보내는 데 쓰일 수 없다
+# 잇기 (mode=link · 10/15): 이미 로그인한 사람이 설정 › 계정에서 [Google 계정 잇기] → 같은 길로 구글을 다녀오되 callback 은
+#   로그인하지 않고 "잇기 표"(구글 계정 번호)만 만든다 → PC 앱이 자기 토큰과 함께 POST /api/auth/google/link 로 그 사람 계정에 붙인다.
+#   ★ 누구에게 붙일지는 주소가 아니라 PC 앱의 토큰으로 정한다 — 주소가 새도 남의 계정에 내 구글을 붙일 수 없게
 # 설정: 구글 클라우드의 OAuth 클라이언트(웹) → GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET (Render 환경변수 · server/.env)
 #       승인된 리디렉션 URI = <서버>/api/auth/google/callback. 없으면 PC 앱에 버튼이 "준비 중" 그대로
 구글_인증 = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -266,10 +269,11 @@ def google_start():
     설정 = _구글_설정()
     if not 설정:
         return _안내("구글 로그인을 아직 준비 중이에요", "Trace 앱에서 이메일로 로그인해 주세요.", 503)
-    pc, port = request.args.get("pc", ""), request.args.get("port", "")
-    if not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", pc) or not port.isdigit() or not 1024 <= int(port) <= 65535:
+    pc, port, mode = request.args.get("pc", ""), request.args.get("port", ""), request.args.get("mode", "login")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", pc) or not port.isdigit() or not 1024 <= int(port) <= 65535 \
+            or mode not in ("login", "link"):
         return _안내("Trace 앱에서 시작해 주세요", "Trace 앱 로그인 화면의 [Google 로 계속하기] 를 눌러 주세요.", 400)
-    쪽지 = _쪽지({"pc": pc, "port": int(port), "exp": int(time.time()) + 600}, 설정[1])
+    쪽지 = _쪽지({"pc": pc, "port": int(port), "mode": mode, "exp": int(time.time()) + 600}, 설정[1])
     return redirect(구글_인증 + "?" + urlencode({
         "client_id": 설정[0], "redirect_uri": _구글_돌아올_곳(), "response_type": "code", "scope": "openid email profile",
         "state": 쪽지, "code_challenge": _b64(hashlib.sha256(_검증값(쪽지, 설정[1]).encode()).digest()),
@@ -327,15 +331,19 @@ def google_callback():
     if not c.get("sub") or not c.get("email") or c.get("email_verified") not in (True, "true"):
         return _안내("확인된 이메일이 없는 구글 계정이에요", "다른 구글 계정을 고르거나 Trace 앱에서 이메일로 가입해 주세요.", 400)
     with db.Session() as d:
-        u = _구글_사용자(d, c)
-        if not u:
-            return _안내("이미 다른 구글 계정과 이어진 이메일이에요", "처음 이은 구글 계정으로 로그인하거나 이메일 · 비밀번호로 로그인해 주세요.", 409)
         옛날 = now().replace(tzinfo=None) - timedelta(minutes=10)
         d.query(db.LoginTicket).filter(db.LoginTicket.created_at < 옛날).delete()
         표 = secrets.token_urlsafe(32)
-        d.add(db.LoginTicket(ticket=표, user_id=u.id, created_at=now().replace(tzinfo=None)))
-        d.commit()
-        print(f"← 구글 로그인 {u.id[:8]}…")
+        if st.get("mode") == "link":                       # 잇기 — 아무도 로그인시키지 않고 구글 계정 번호만 담아 둔다
+            d.add(db.LoginTicket(ticket=표, kind="link", google_sub=str(c["sub"]), created_at=now().replace(tzinfo=None)))
+            d.commit()
+        else:
+            u = _구글_사용자(d, c)
+            if not u:
+                return _안내("이미 다른 구글 계정과 이어진 이메일이에요", "처음 이은 구글 계정으로 로그인하거나 이메일 · 비밀번호로 로그인해 주세요.", 409)
+            d.add(db.LoginTicket(ticket=표, kind="login", user_id=u.id, created_at=now().replace(tzinfo=None)))
+            d.commit()
+            print(f"← 구글 로그인 {u.id[:8]}…")
     return redirect(f"http://127.0.0.1:{st['port']}/local/auth/google/done?" + urlencode({"ticket": 표, "state": st["pc"]}))
 
 
@@ -348,7 +356,7 @@ def google_claim():
         t = d.get(db.LoginTicket, 표) if 표 else None
         if t:
             d.delete(t)                                     # 맞든 늦었든 한 번 쓰면 끝
-        if not t or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
+        if not t or (t.kind or "login") != "login" or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
             d.commit()
             return jsonify(error="unauthorized", message="로그인 시간이 지났어요. [Google 로 계속하기] 를 다시 눌러 주세요"), 401
         u = d.get(db.User, t.user_id)
@@ -358,6 +366,49 @@ def google_claim():
         d.commit()
         답 = {"token": tok.token, "user": {"id": u.id, "name": u.name}}
     return jsonify(답)
+
+
+@app.post("/api/auth/google/link")
+@로그인_필요
+def google_link():
+    """설정 › 계정 › [Google 계정 잇기] — 잇기 표(2분 · 한 번)의 구글 계정을 지금 로그인한 계정에 붙인다 (10/15).
+    그 구글 계정이 이미 다른 Trace 계정에 붙어 있으면: 구글로만 만든 빈 계정(과제 없음)이면 거기서 떼어 옮기고, 아니면 거절"""
+    표 = str((request.get_json(force=True, silent=True) or {}).get("ticket") or "")
+    with db.Session() as d:
+        t = d.get(db.LoginTicket, 표) if 표 else None
+        if t:
+            d.delete(t)
+        if not t or t.kind != "link" or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
+            d.commit()
+            return jsonify(error="expired", message="시간이 지났어요. [Google 계정 잇기] 를 다시 눌러 주세요"), 400
+        u = d.get(db.User, g.user_id)
+        다른 = d.query(db.User).filter(db.User.google_sub == t.google_sub, db.User.id != u.id).first()
+        if 다른:
+            과제 = d.query(db.Work).filter(db.Work.user_id == 다른.id, db.Work.deleted_at.is_(None)).count()
+            if 다른.password_hash != 구글_비번 or 과제:
+                d.commit()
+                return jsonify(error="conflict", message="이 구글 계정은 기록이 있는 다른 Trace 계정에 이어져 있어요. "
+                                                         "그 계정으로 로그인해 주세요"), 409
+            다른.google_sub = None                          # 구글로만 만든 빈 계정 — 연결만 떼어 옮긴다 (계정은 지우지 않음 · 그 계정 로그인은 끊음)
+            d.query(db.Token).filter(db.Token.user_id == 다른.id).delete()
+            print(f"← 구글 연결 옮김 {다른.id[:8]}… → {u.id[:8]}… (빈 계정에서)")
+        u.google_sub = t.google_sub
+        d.commit()
+    print(f"← 구글 계정 이음 {g.user_id[:8]}…")
+    return jsonify(google=True)
+
+
+@app.post("/api/auth/google/unlink")
+@로그인_필요
+def google_unlink():
+    """구글 연결 끊기 — 비밀번호가 있는 계정만 (구글로만 만든 계정이 끊으면 로그인할 길이 없어짐)"""
+    with db.Session() as d:
+        u = d.get(db.User, g.user_id)
+        if u.password_hash == 구글_비번:
+            return jsonify(error="no_password", message="비밀번호 없이 구글로만 로그인하는 계정이라 끊을 수 없어요"), 400
+        u.google_sub = None
+        d.commit()
+    return jsonify(google=False)
 
 
 @app.get("/api/me")
