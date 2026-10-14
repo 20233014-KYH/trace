@@ -185,7 +185,11 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
         right.append(bg);
         if (x.state === "missing" && x.help) {             // 맥 키 입력 권한처럼 그 줄만의 방법 (10/14)
           const h = el("div", "help", x.help); h.hidden = true;
-          right.append(btn("켜는 법", "btn-outline", () => h.hidden = !h.hidden)); r.append(i, t, right); g.append(r, h); return;
+          // 맥 권한은 [설정 열기] — 맥에 정식으로 물어 목록에 Trace 를 넣고 그 설정 화면을 연다 (10/14 · 묻기 전엔 목록에 없었음)
+          right.append(btn(x.perm ? "설정 열기" : "켜는 법", "btn-outline", async () => {
+            h.hidden = false;
+            if (x.perm) { try { await T.call("POST", "/local/settings/permission", null, { kind: x.perm }); } catch (e) { h.textContent = e.message; } }
+          })); r.append(i, t, right); g.append(r, h); return;
         }
         if (x.state === "missing") { 도움 = true; right.append(btn("설치", "btn-outline", () => help.hidden = !help.hidden)); }
         r.append(i, t, right); g.append(r);
