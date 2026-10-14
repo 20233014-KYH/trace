@@ -14,6 +14,7 @@ app.py — Trace Backend (A)
 참고 구현: 3-코드/collector/dev_receiver.py  — 둘은 같은 응답을 내야 한다
 """
 import functools
+import json
 import os
 import re
 import secrets
@@ -22,9 +23,11 @@ import unicodedata
 import urllib.error
 import urllib.request
 import uuid
+import zlib
 from datetime import datetime, timedelta, timezone
 
 from flask import Flask, g, jsonify, redirect, request, send_from_directory
+from sqlalchemy import insert
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -596,7 +599,8 @@ def get_context(sid):
 #
 #   도구·역할·시각은 학생이 보낸 값을 쓰지 않고 체인 이벤트의 값을 쓴다 (PC 가 보낸 숫자를 믿지 않음).
 
-내역서_최대 = 5 * 1024 * 1024       # 한 요청 5MB
+내역서_최대 = 5 * 1024 * 1024       # 한 요청 5MB (보낸 크기 — PC 앱은 큰 내역서를 gzip 으로 줄여 보낸다 · 10/14)
+풀린_최대 = 40 * 1024 * 1024        # 줄인 것을 푼 크기 (AI 를 아주 많이 쓴 100쪽 ≈ 9MB · 지나치게 부푸는 파일 막기)
 원문_최대 = 256 * 1024              # 원문 한 개 256KB (긴 AI 답)
 설명_최대 = 150                     # 내역서 v3 질문 두 칸 (10/10 박상진)
 공유_기본일, 공유_최대일 = 14, 90
@@ -670,7 +674,10 @@ def summary(wid):
 def create_statement(wid):
     if (request.content_length or 0) > 내역서_최대:
         return jsonify(error="too_large", message="한 요청은 5MB 까지입니다"), 413
-    b = request.get_json(force=True, silent=True)
+    try:
+        b = _몸통_json()
+    except OverflowError:
+        return jsonify(error="too_large", message="내역서가 너무 큽니다 (풀어서 40MB 까지)"), 413
     if not isinstance(b, dict):
         return jsonify(error="bad_request", message="JSON 이 필요합니다"), 400
     메시지들, 연결들, 가림들 = b.get("messages") or [], b.get("links") or [], b.get("redactions") or []
@@ -733,9 +740,12 @@ def create_statement(wid):
         if not w:
             return jsonify(error="not_found"), 404
         세션들 = {s.id: s for s in d.query(db.Sess).filter(db.Sess.work_id == wid).all()}
+        # 원문 · 가림이 가리키는 이벤트를 한꺼번에 불러 둔다 (10/14) — 하나씩 물으면 100쪽 보고서는 수백 번 DB 를 오간다
+        # (Render 싱가포르 ↔ Supabase 서울 한 번 ≈ 75ms → 몇 분)
+        이벤트표 = _이벤트_모아(d, {_쌍(m, "messages") for m in 메시지들} | 가림쌍, 세션들)
 
         def 이벤트(sid, eid):
-            return d.get(db.Event, (sid, eid)) if sid in 세션들 else None
+            return 이벤트표.get((sid, eid))
 
         문제들, 쓰인세션 = [], set()
         st = db.Statement(id=str(uuid.uuid4()), work_id=wid, user_id=g.user_id,
@@ -751,6 +761,7 @@ def create_statement(wid):
 
         # ① 원문 — 하나씩 체인과 맞춰 본다
         원문해시 = {}                                         # 서버가 계산한 해시 → role (연결 확인용, 맞은 것만)
+        넣을 = {db.Message: [], db.Link: [], db.Redaction: []}   # 줄마다 INSERT 하지 않고 표마다 한 번에 (10/14)
         for m in 메시지들:
             sid, eid = _쌍(m, "messages")
             해시 = sha256_text(m["text"])
@@ -770,12 +781,12 @@ def create_statement(wid):
                 원문해시[해시] = p.get("role")
                 쓰인세션.add(sid)
             칸 = _가릴자리(m)                                      # 일부 가림 — 원문으로 확인했으니 가린 글만 남긴다
-            d.add(db.Message(statement_id=st.id, session_id=sid, event_id=eid,
-                             tool=p.get("tool") if e else m.get("tool"), role=p.get("role") if e else m.get("role"),
-                             ts=e.ts if e else m.get("ts"), text=_가린글(m["text"], 칸), hash=해시,
-                             history=bool(p.get("history")), match=왜 is None,
-                             model=str(m.get("model") or "")[:64] or None,
-                             masked=sorted({x[2] for x in 칸}) or None))
+            넣을[db.Message].append(dict(statement_id=st.id, session_id=sid, event_id=eid,
+                                        tool=p.get("tool") if e else m.get("tool"), role=p.get("role") if e else m.get("role"),
+                                        ts=e.ts if e else m.get("ts"), text=_가린글(m["text"], 칸), hash=해시,
+                                        history=bool(p.get("history")), match=왜 is None,
+                                        model=str(m.get("model") or "")[:64] or None,
+                                        masked=sorted({x[2] for x in 칸}) or None))
 
         # ② 연결 — "맞다"는 위에서 확인된 답을 가리켜야 한다. "아니다"는 원문을 받지 않는다
         for l in 연결들:
@@ -788,17 +799,20 @@ def create_statement(wid):
                     문제들.append({"question_hash": l["question_hash"], "why": "question_not_verified"})
                 if 결과 is not None and sha256_text(결과) != l["result_hash"]:
                     문제들.append({"result_hash": l["result_hash"], "why": "result_hash_mismatch"})
-            d.add(db.Link(statement_id=st.id, answer_hash=l["answer_hash"],
-                          question_hash=l.get("question_hash") if 맞다 else None,
-                          result_hash=l["result_hash"], result_text=결과, location=l.get("location"),
-                          kind=l.get("kind"), origin=l.get("origin"), decision=l["decision"],
-                          decision_event_id=l.get("decision_event_id")))
+            넣을[db.Link].append(dict(statement_id=st.id, answer_hash=l["answer_hash"],
+                                     question_hash=l.get("question_hash") if 맞다 else None,
+                                     result_hash=l["result_hash"], result_text=결과, location=l.get("location"),
+                                     kind=l.get("kind"), origin=l.get("origin"), decision=l["decision"],
+                                     decision_event_id=l.get("decision_event_id")))
 
         # ③ 가림 — 어느 이벤트인지만. 이 과제의 체인에 있어야 한다
         for sid, eid in sorted(가림쌍):
             if not 이벤트(sid, eid):
                 문제들.append({"session_id": sid, "event_id": eid, "why": "redaction_not_in_chain"})
-            d.add(db.Redaction(statement_id=st.id, session_id=sid, event_id=eid))
+            넣을[db.Redaction].append(dict(statement_id=st.id, session_id=sid, event_id=eid))
+        for 표, 줄들 in 넣을.items():
+            if 줄들:
+                d.execute(insert(표), 줄들)                   # 받은 순서 그대로 (연결은 id 순으로 읽는다)
 
         # ④ 원문이 나온 세션은 봉인·검증돼 있어야 한다 (아직 기록 중이거나 체인이 어긋난 세션)
         세션상태 = []
@@ -826,6 +840,36 @@ def create_statement(wid):
     print(f"← 내역서 {답['id'][:8]}…  work={wid}  원문 {len(메시지들)} · 연결 {len(연결들)} · 가림 {len(가림쌍)}  "
           f"{'검증됨' if 답['verified'] else '문제 ' + str(len(문제들)) + '건 ⚠'}")
     return jsonify(답), 201
+
+
+def _몸통_json():
+    """요청 JSON — Content-Encoding: gzip 이면 풀어서 (PC 앱 0.1.8~ 은 큰 내역서를 줄여 보낸다 · 10/14). 못 읽으면 None.
+    푼 크기가 풀린_최대 를 넘으면 OverflowError (작게 줄여 크게 부풀린 파일)"""
+    if request.headers.get("Content-Encoding", "").strip().lower() != "gzip":
+        return request.get_json(force=True, silent=True)
+    try:
+        풀기 = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        글 = 풀기.decompress(request.get_data(cache=False), 풀린_최대 + 1)
+        if len(글) > 풀린_최대 or 풀기.unconsumed_tail:
+            raise OverflowError
+        return json.loads(글)
+    except (zlib.error, ValueError):
+        return None
+
+
+def _이벤트_모아(d, 쌍들, 세션들):
+    """{(세션, 이벤트 id)} → {(세션, 이벤트 id): Event}. 이 과제의 세션 것만 · 세션마다 500개씩 묶어 묻는다"""
+    세션별 = {}
+    for sid, eid in 쌍들:
+        if sid in 세션들:
+            세션별.setdefault(sid, set()).add(eid)
+    표 = {}
+    for sid, ids in 세션별.items():
+        ids = sorted(ids)
+        for i in range(0, len(ids), 500):
+            for e in d.query(db.Event).filter(db.Event.session_id == sid, db.Event.id.in_(ids[i:i + 500])):
+                표[(sid, e.id)] = e
+    return 표
 
 
 def _출처_정리(d, st):
@@ -960,6 +1004,8 @@ def latest_statement(wid):
               .order_by(db.Statement.created_at.desc(), db.Statement.id.desc()).first())
         if not st:
             return jsonify(error="not_found", message="아직 만든 내역서가 없습니다"), 404
+        if request.args.get("brief"):                # 있나만 (PC 앱이 과제를 누를 때 · 10/14 — 100쪽이면 내용이 10MB 넘음)
+            return jsonify(id=st.id, work_id=wid, created_at=st.created_at)
         답 = _내역서_내용(d, st, 학생용=True)
         답["shares"] = [{"token": s.token, "expires_at": s.expires_at, "revoked_at": s.revoked_at}
                         for s in d.query(db.Share).filter(db.Share.statement_id == st.id).all()]

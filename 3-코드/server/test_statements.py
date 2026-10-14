@@ -10,6 +10,7 @@ test_statements.py — AI 활용 내역서(docs/api.md 10절)가 제대로 도�
   · "아니다"로 고른 연결의 결과물 원문이 서버에 남지 않나                            ★ 원칙: 확인 전엔 밖으로 안 나감
   · 남의 과제로 내역서를 만들거나 공유 링크를 끊을 수 없나
 """
+import gzip
 import json
 import os
 import sys
@@ -27,8 +28,8 @@ BASE = f"http://127.0.0.1:{os.environ.get('TRACE_PORT', '5000')}/api"   # 맥은
 통과, 실패 = 0, 0
 
 
-def 호출(경로, 몸=None, 토큰=None, 방법=None, 날것=None):
-    머리 = {"Content-Type": "application/json"}
+def 호출(경로, 몸=None, 토큰=None, 방법=None, 날것=None, 머리_더=None):
+    머리 = {"Content-Type": "application/json", **(머리_더 or {})}
     if 토큰:
         머리["Authorization"] = f"Bearer {토큰}"
     자료 = 날것 if 날것 is not None else (json.dumps(몸).encode() if 몸 is not None else None)
@@ -288,6 +289,20 @@ def main():
          and 보임.get("masked") == ["전화번호"] and 보임.get("ok") is True
          and 글[:3] + 글[3:6] not in json.dumps(p, ensure_ascii=False) + json.dumps(학생, ensure_ascii=False),
          f"{보임.get('text', '')[:30]}")
+
+    # 큰 내역서는 줄여 보낸다 (10/14 · AI 를 많이 쓴 100쪽은 15MB) — PC 앱 0.1.8~ 은 gzip · UTF-8
+    줄임 = {"Content-Encoding": "gzip"}
+    몸 = json.dumps({"messages": 원문, "links": [맞다, 아니다], "sentence": "줄여 보낸 내역서"}, ensure_ascii=False).encode()
+    코드, r = 호출(f"/works/{wid}/statements", 토큰=갑, 날것=gzip.compress(몸), 머리_더=줄임)
+    검사("44 gzip 으로 줄여 보낸 내역서", 코드 == 201 and r.get("verified") is True and r["counts"]["messages"] == 2
+         and r["counts"]["links_confirmed"] == 1, f"HTTP {코드} · {r.get('problems')}")
+    코드, _ = 호출(f"/works/{wid}/statements", 토큰=갑, 날것=gzip.compress(b" " * (41 * 1024 * 1024)), 머리_더=줄임)
+    코드2, _ = 호출(f"/works/{wid}/statements", 토큰=갑, 날것=b"gzip \xec\x95\x84\xeb\x8b\x98", 머리_더=줄임)
+    검사("45 풀면 40MB 넘으면 413 · 깨진 gzip 은 400", 코드 == 413 and 코드2 == 400, f"HTTP {코드} · {코드2}")
+    코드, r = 호출(f"/works/{wid}/statements/latest?brief=1", 토큰=갑)
+    코드2, _ = 호출(f"/works/{wid}/statements/latest?brief=1", 토큰=을)
+    검사("46 있나만 (brief) — 내용 없이 id 만", 코드 == 200 and set(r) == {"id", "work_id", "created_at"} and 코드2 == 404,
+         f"HTTP {코드} · {sorted(r)} · 남 {코드2}")
 
     print("  " + "─" * 74)
     print(f"  {통과}개 통과, {실패}개 실패")

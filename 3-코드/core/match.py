@@ -22,7 +22,11 @@ edited / viewed 는 글자 비교가 아니라 **과정 기록**으로 가른다
 
 파이썬 기본 기능만 쓴다 (difflib · re). 한국어는 띄어쓰기·조사가 바뀌어도 잡히게 공백·문장부호를 빼고 글자 두 개씩(bigram) 본다.
 """
+import bisect
 import difflib
+from collections import Counter
+from functools import lru_cache
+from itertools import chain
 import hashlib
 import re
 
@@ -92,10 +96,65 @@ def _빠른_비교(r, br, c, need_ratio):
     return ratio, cover
 
 
+class _후보들(list):
+    """candidates() 결과 — 글자 조각(bigram) → 후보 번호 색인을 처음 쓸 때 한 번 만든다 (10/14).
+    100쪽 문서(문장 2,600)에서 문장마다 후보 전부(수천)를 훑어 38초 걸렸다 → 글자 조각이 하나라도 겹친 후보만 본다.
+    하나도 안 겹친 후보는 cover 0 · ratio 0 이라 결과에 영향이 없다 (그래서 결과가 전과 같다)"""
+
+    def 색인(self):
+        idx = getattr(self, "_색인", None)
+        if idx is None:
+            idx = {}
+            for i, c in enumerate(self):
+                for g in _prep(c)["_b"]:
+                    idx.setdefault(g, []).append(i)
+            self._색인 = idx
+        return idx
+
+
+def _겹침(br, cands):
+    """{후보 번호: 겹친 글자 조각 수} — 하나라도 겹친 후보만 (= len(br & 후보 조각))"""
+    idx = cands.색인()
+    return Counter(chain.from_iterable(idx[g] for g in br if g in idx))
+
+
+def _그대로_될_수(r, D, a, k):
+    """이 후보가 90% 이상 같을(ratio ≥ EXACT_RATIO) 수 있나 — 겹친 글자 조각 수 k 로 먼저 거른다 (못 되면 difflib 을 아예 안 부름).
+    증명 (n = len(r) · m = len(a) · T = n + m · D = r 의 서로 다른 글자 조각 수 · M = 맞은 글자 수):
+      ratio = 2M/T ≥ E(0.9) → M ≥ (E/2)T. 맞은 덩어리(block) 수 b 는 덩어리 사이마다 안 맞은 글자가 하나 이상 → b ≤ T − 2M + 1.
+      덩어리 안의 글자 조각 자리 = M − b ≥ 3M − T − 1 ≥ (1.5E − 1)T − 1 = 0.35T − 1 — 이 자리들의 글자 조각은 a 에도 있다.
+      r 에서 같은 조각이 되풀이된 자리는 많아야 (n − 1 − D) 이니 서로 다른 겹친 조각 k ≥ 0.35T − n + D.
+    그러니 k 가 이보다 작으면 90% 가 될 수 없다 — 결과는 전과 같다"""
+    return k >= (1.5 * EXACT_RATIO - 1) * (len(r) + len(a)) - len(r) + D - 1e-9      # 0.9 → 0.35 (위 식의 일반형)
+
+
+def _문턱(r, D):
+    """겹친 글자 조각 수가 이보다 적은 후보는 결론(그대로 · 고침)에 들 수 없다 (10/14 · AI 대화가 아주 많으면 문장마다 수천 개를 훑었다).
+      고침: cover = k/D ≥ EDIT_COVER 여야 함
+      그대로: 길이 조건(2·짧은 길이 ≥ E·두 길이 합)이 후보 길이 m ≥ E·n/(2−E) 를 요구하고, _그대로_될_수 의 한계는 m 이 클수록
+             커지니 그 가장 작은 m 의 한계보다 적게 겹친 후보는 그대로가 될 수 없다
+    둘 다 못 되는 후보는 "가장 가까운 것"(시험 출력용 _cover · _ratio)에만 쓰이던 것 — 그 값만 달라질 수 있고 결론은 같다.
+    1e-6 은 소수 계산 오차 여유 (조금 더 많이 보는 쪽)"""
+    n = len(r)
+    m = EXACT_RATIO * n / (2 - EXACT_RATIO)
+    return min(EDIT_COVER * D, (1.5 * EXACT_RATIO - 1) * (n + m) - n + D) - 1e-6
+
+
+def _순서_비교(r, c):
+    """difflib ratio — 90% 에 닿을 수 있을 때만 (quick_ratio 로 먼저 거름). 후보 쪽 준비(SequenceMatcher 의 b)는 한 번만:
+    전엔 비교마다 SequenceMatcher 를 새로 만들어 후보 글자표(b2j)를 다시 만들었다 — 값은 같다"""
+    sm = c.get("_sm")
+    if sm is None:
+        sm = c["_sm"] = difflib.SequenceMatcher(None, autojunk=False)
+        sm.set_seq2(c["_n"])
+    sm.set_seq1(r)
+    return sm.ratio() if sm.quick_ratio() >= EXACT_RATIO else 0.0
+
+
 def candidates(answers):
     """AI 답들 → 비교 후보: 문장 하나씩 + 이웃한 두 문장을 합친 것 (두 문장을 합쳐 다시 쓴 경우용)
     answers: [{"id", "text", ...}] → [{"answer": id, "sents": (i,) | (i, i+1), "text"}]"""
-    out = []
+    out = _후보들()
     for a in answers:
         ss = split_sentences(a["text"])
         for i, s in enumerate(ss):
@@ -105,16 +164,30 @@ def candidates(answers):
     return out
 
 
-def link_sentence(sentence: str, cands):
-    """한 문장 → {"label", "answer", "sents", "ai_text", "_ratio", "_cover"}  (밑줄 칸은 시험용 · 화면에 안 냄)"""
+def link_sentence(sentence: str, cands, keep=None):
+    """한 문장 → {"label", "answer", "sents", "ai_text", "_ratio", "_cover"}  (밑줄 칸은 시험용 · 화면에 안 냄)
+    keep(후보) 가 있으면 그게 참인 후보만 본다 (전엔 걸러 낸 목록을 새로 만들어 넘겼다 — 그러면 색인을 못 씀)"""
     best = {"label": "none", "answer": None, "sents": None, "ai_text": None, "_ratio": 0.0, "_cover": 0.0}
     r = norm(sentence)
     if len(r) < MIN_CHARS:
         return best
     br = _bigrams(r)
     one = two = None                    # "고침" 후보: 가장 잘 맞는 한 문장 · 가장 잘 맞는 이웃 두 문장
-    for c in cands:
-        ratio, cover = _빠른_비교(r, br, _prep(c), len(c["sents"]) == 1)
+    if isinstance(cands, _후보들):           # 색인: 겹친 후보만 · 원래 차례대로 (같은 값이면 먼저 나온 후보가 이기는 규칙 그대로)
+        겹, D = _겹침(br, cands), len(br)
+        문턱 = _문턱(r, D)
+        보기 = ((cands[i], 겹[i] / D) for i in sorted(i for i, k in 겹.items() if k >= 문턱))
+    else:
+        보기 = ((c, None) for c in cands)
+    for c, cover in 보기:
+        if keep is not None and not keep(c):
+            continue
+        if cover is None:
+            ratio, cover = _빠른_비교(r, br, _prep(c), len(c["sents"]) == 1)
+        else:
+            a = c["_n"]
+            ratio = (_순서_비교(r, c) if len(c["sents"]) == 1 and 2 * min(len(r), len(a)) >= EXACT_RATIO * (len(r) + len(a))
+                     and _그대로_될_수(r, len(br), a, round(cover * len(br))) else 0.0)
         if len(c["sents"]) == 1 and ratio >= EXACT_RATIO and ratio > best["_ratio"]:
             best = {"label": "exact", "answer": c["answer"], "sents": c["sents"], "ai_text": c["text"], "_ratio": ratio, "_cover": cover}
         elif cover >= EDIT_COVER:
@@ -133,6 +206,30 @@ def link_sentence(sentence: str, cands):
     return one or best
 
 
+def _라벨들(sentence, cands):
+    """{후보의 answer: "exact" | "edited"} — answer 마다 link_sentence(sentence, 그 answer 의 후보들) 의 결론과 같다:
+    한 문장 후보 중 90% 이상 같은 게 있으면 exact · 아니면 글자 조각이 EDIT_COVER 넘게 겹친 후보가 있으면 edited"""
+    r = norm(sentence)
+    if len(r) < MIN_CHARS:
+        return {}
+    br = _bigrams(r)
+    out = {}
+    문턱 = _문턱(r, len(br))
+    for i, k in _겹침(br, cands).items():
+        if k < 문턱:
+            continue
+        c = cands[i]
+        if out.get(c["answer"]) == "exact":
+            continue
+        a = c["_n"]
+        if (len(c["sents"]) == 1 and 2 * min(len(r), len(a)) >= EXACT_RATIO * (len(r) + len(a))
+                and _그대로_될_수(r, len(br), a, k) and _순서_비교(r, c) >= EXACT_RATIO):
+            out[c["answer"]] = "exact"
+        elif k / len(br) >= EDIT_COVER:
+            out[c["answer"]] = "edited"
+    return out
+
+
 def latest_messages(records):
     """ai-messages 기록 → 생성 도중 잘린 답을 뺀 것 (이슈 #26-4).
     · 기록기가 "replaces"(이 글이 대체한 앞 글의 해시)를 남겼으면 그 앞 글을 뺀다
@@ -141,15 +238,17 @@ def latest_messages(records):
         문단 끝에 \\u200b 와 빈 줄만 더 넣어서, 같은 답이 두 번 남아 문장이 앞 답에 붙는 일이 있었다 (10/12 실제 시험)"""
     gone = {r["replaces"] for r in records if r.get("replaces")}
     키 = lambda r: (r.get("session_id"), r.get("tool"), r.get("turn"), r.get("role"))     # 같은 기록 안에서만
-    out = []
-    for i, r in enumerate(records):
-        if r.get("hash") in gone:
-            continue
-        t = _보이는_글(r.get("text", ""))
-        if any(키(o) == 키(r) and _보이는_글(o.get("text", "")).startswith(t) for o in records[i + 1:]):
-            continue
-        out.append(r)
-    return out
+    # 뒤에서부터 · 같은 키의 뒤 글들을 정렬해 두고 찾는다 (10/14 · 전엔 글마다 뒤 글 전부를 훑어 대화가 많으면 몇 초)
+    # 정렬된 목록에서 t 로 시작하는 글은 t 가 들어갈 자리 바로 뒤에 모여 있다
+    뒤, 뺄 = {}, set()
+    for i in range(len(records) - 1, -1, -1):
+        t = _보이는_글(records[i].get("text", ""))
+        글들 = 뒤.setdefault(키(records[i]), [])
+        j = bisect.bisect_left(글들, t)
+        if j < len(글들) and 글들[j].startswith(t):
+            뺄.add(i)
+        글들.insert(j, t)
+    return [r for i, r in enumerate(records) if r.get("hash") not in gone and i not in 뺄]
 
 
 _안보임 = re.compile(r"[​-‏⁠﻿]")
@@ -341,9 +440,14 @@ def _더하기(ts: str, sec: int) -> str:
         return ts
 
 
-def _secs(a: str, b: str) -> float:
+@lru_cache(maxsize=65536)
+def _시각(ts: str):
     from datetime import datetime
-    return (datetime.fromisoformat(b) - datetime.fromisoformat(a)).total_seconds()
+    return datetime.fromisoformat(ts)
+
+
+def _secs(a: str, b: str) -> float:
+    return (_시각(b) - _시각(a)).total_seconds()
 
 
 def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
@@ -372,23 +476,27 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
     # 붙여넣은 글이 어느 AI 답의 몇 번째 문장인지 — 붙여넣은 글도 같은 규칙으로 잇는다
     pasted_at, 붙인답 = {}, {}                 # 붙인답: 붙여넣기(id) → 그 글이 이어진 AI 답 id 들
+    답_id = {c["answer"] for c in cands}
     for p in pasted or []:
-        이른 = [c for c in cands if 앞서(c["answer"], p)]
+        된다 = {i for i in 답_id if 앞서(i, p)}               # 붙여넣기보다 늦게 물어본 답은 빼고 — 답마다 한 번만 셈
+        이른 = lambda c, 된다=된다: c["answer"] in 된다     # noqa: E731
         for s in split_sentences(p["text"]):
-            hit = link_sentence(s, 이른)
+            hit = link_sentence(s, cands, keep=이른)
             if hit["label"] != "none":
                 붙인답.setdefault(id(p), set()).add(hit["answer"])
                 for i in hit["sents"]:
                     pasted_at.setdefault((hit["answer"], i), p)
     # 문장을 담은 붙여넣기 찾기용 (AI 답 붙여넣기 · 다른 곳 붙여넣기 모두) — 붙여넣은 시각 순
     붙여넣기들 = sorted([(p, True) for p in pasted or []] + [(p, False) for p in others or []], key=lambda x: x[0].get("pasted_at") or "")
-    붙후보 = [candidates([{"id": 0, "text": p["text"]}]) for p, _ in 붙여넣기들]
+    붙후보 = candidates([{"id": k, "text": p["text"]} for k, (p, _) in enumerate(붙여넣기들)])   # 한 색인 · answer = 붙여넣기 번호
 
     def 처음_붙인(s, 그대로):
         """이 문장을 담은 가장 이른 붙여넣기 (p, AI 답 붙여넣기인가) — 문장이 문서에 처음 들어온 때.
-        그대로=True 면 거의 그대로(90% 이상) 들어 있을 때만 (주제만 비슷한 글 · 날짜처럼 글자 조각만 겹치는 글로 바꾸지 않게)"""
-        for (p, ai), c in zip(붙여넣기들, 붙후보):
-            if c and link_sentence(s, c)["label"] in (("exact",) if 그대로 else ("exact", "edited")):
+        그대로=True 면 거의 그대로(90% 이상) 들어 있을 때만 (주제만 비슷한 글 · 날짜처럼 글자 조각만 겹치는 글로 바꾸지 않게)
+        (10/14) 붙여넣기마다 link_sentence 를 따로 부르던 것을 한 번에 — 붙여넣기마다의 결론(그대로 · 고침)은 같다"""
+        라벨 = _라벨들(s, 붙후보)
+        for k, (p, ai) in enumerate(붙여넣기들):
+            if 라벨.get(k) == "exact" or (라벨.get(k) == "edited" and not 그대로):
                 return p, ai
         return None, None
     out = []

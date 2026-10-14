@@ -17,6 +17,7 @@ statement.py — 학생 PC 의 "내역서 만들기" 화면 (docs/api.md 10절 �
 """
 import argparse
 import glob
+import gzip
 import io
 import json
 import os
@@ -72,6 +73,12 @@ def _서버(방법, 경로, **kw):
     t = _auth().get("token")
     if t:
         머리["Authorization"] = f"Bearer {t}"
+    if kw.get("json") is not None:
+        글 = json.dumps(kw["json"], ensure_ascii=False).encode("utf-8")
+        if len(글) > 64 * 1024:     # 큰 내역서(보고서 전문 · AI 대화 원문)는 줄여 보낸다 (10/14 · AI 를 많이 쓴 100쪽은 15MB 라 서버가 거절했다)
+            del kw["json"]
+            kw["data"] = gzip.compress(글, 6)
+            머리.update({"Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip"})
     try:
         r = requests.request(방법, 설정["server"].rstrip("/") + 경로, headers=머리, timeout=90, **kw)
     except requests.RequestException as e:
@@ -389,7 +396,7 @@ def _내역서_있나(wid):
     if not t:
         return None
     try:
-        r = requests.get(설정["server"].rstrip("/") + f"/works/{quote(wid, safe='')}/statements/latest",
+        r = requests.get(설정["server"].rstrip("/") + f"/works/{quote(wid, safe='')}/statements/latest?brief=1",   # 있나만 (10/14)
                          headers={"Authorization": f"Bearer {t}"}, timeout=4)
     except requests.RequestException:
         return None
