@@ -40,9 +40,10 @@ def read():
     if a.get("token"):
         코드, me = S._기록["server"]("GET", "/me")
         if 코드 == 200:
-            계정 = {"name": me.get("name"), "email": me.get("email"), "works": {w["id"]: w["title"] for w in me.get("works", [])}}
+            계정 = {"name": me.get("name"), "email": me.get("email"), "works": {w["id"]: w["title"] for w in me.get("works", [])},
+                  "password": me.get("password", True), "google": bool(me.get("google"))}     # 로그인 방법 (10/15 · 옛 서버는 없음 → 비밀번호)
     return jsonify(prefs=prefs.load(S._기록["data_dir"]()), choices=prefs.CHOICES, checks=확인(),
-                   account=계정 and {"name": 계정["name"], "email": 계정["email"]},
+                   account=계정 and {k: 계정[k] for k in ("name", "email", "password", "google")},
                    data=_데이터((계정 or {}).get("works", {})), version=VERSION)
 
 

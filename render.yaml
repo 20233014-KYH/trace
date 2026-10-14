@@ -14,3 +14,7 @@ services:
         value: 3.11.9
       - key: TRACE_DB_URL
         sync: false              # 비밀 — Render 화면에서 직접 넣음
+      - key: GOOGLE_CLIENT_ID     # 구글 로그인 (10/15 · server/README.md "구글 로그인") — 없으면 PC 앱 버튼이 "준비 중"
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

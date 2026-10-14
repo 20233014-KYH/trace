@@ -66,8 +66,18 @@ class User(Base):
     __tablename__ = "users"
     id = Column(String(64), primary_key=True)
     email = Column(String(255), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=False)    # 구글로만 가입한 사람은 "!google" (어떤 비밀번호와도 안 맞음)
     name = Column(String(100))
+    created_at = Column(DateTime)
+    google_sub = Column(String(64))                        # 구글 계정 번호 (10/15 구글 로그인) — 같은 이메일로 가입했으면 같은 계정에 붙음
+
+
+class LoginTicket(Base):
+    """구글 로그인이 끝나고 PC 앱에 건네는 한 번 쓰는 표 (10/15). 2분 안에 PC 앱이 토큰으로 바꾸고, 바꾸면 지운다.
+    토큰을 바로 주소에 실어 보내지 않는 까닭: 주소는 브라우저 방문 기록에 남는다."""
+    __tablename__ = "login_tickets"
+    ticket = Column(String(64), primary_key=True)
+    user_id = Column(String(64), ForeignKey("users.id"))
     created_at = Column(DateTime)
 
 
@@ -295,7 +305,8 @@ def _칸_추가():
                        ("statements", "result_counts", "JSON"),     # 10/12 내역서 v3 ③
                        ("statements", "usage_counts", "JSON"),      # 10/12 내역서 v3 ①
                        ("statements", "flow", "JSON"),              # 10/12 내역서 v3 ②
-                       ("messages", "masked", "JSON")):             # 10/12 일부 가림 (가린 종류)
+                       ("messages", "masked", "JSON"),              # 10/12 일부 가림 (가린 종류)
+                       ("users", "google_sub", "VARCHAR(64)")):     # 10/15 구글 로그인
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:

@@ -22,10 +22,13 @@ import io
 import json
 import os
 import platform
+import secrets
 import sys
 import threading
+import time
 import uuid
 import webbrowser
+from urllib.parse import urlencode
 
 import requests
 from flask import Flask, abort, jsonify, request, send_from_directory
@@ -80,7 +83,7 @@ def _서버(방법, 경로, **kw):
             kw["data"] = gzip.compress(글, 6)
             머리.update({"Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip"})
     try:
-        r = requests.request(방법, 설정["server"].rstrip("/") + 경로, headers=머리, timeout=90, **kw)
+        r = requests.request(방법, 설정["server"].rstrip("/") + 경로, headers=머리, timeout=kw.pop("timeout", 90), **kw)
     except requests.RequestException as e:
         return 502, {"error": "server_unreachable", "message": f"서버에 연결하지 못했습니다 ({type(e).__name__}). 무료 서버는 처음 깨울 때 1분쯤 걸립니다."}
     try:
@@ -180,6 +183,64 @@ def login():
     # data/ 는 .gitignore — 저장소에 안 올라간다
     safefile.write_json(_auth_path(), {"server": 설정["server"], "token": 답["token"], "user": 답["user"]})
     return jsonify(user=답["user"])
+
+
+# ── 구글 로그인 (10/15) — 브라우저로 구글 → 서버 → 이 PC(127.0.0.1:PORT) 로 돌아온다. 흐름 · 까닭은 server/app.py "구글 로그인"
+#    로그인 화면은 /local/auth/google/status 를 1초마다 물어 끝나면 홈으로. 앱 창 안에서는 구글이 로그인을 막아서 브라우저로
+_구글_대기 = {}                                   # 이 앱이 시작한 것만 {state: {at, done, error}} — 다른 사이트가 이 주소를 불러도 state 를 모름
+
+
+@app.get("/local/auth/providers")
+def auth_providers():
+    """로그인 화면이 Google 버튼을 살릴지 — 서버가 구글 로그인을 켰을 때만 (안 켰거나 늦으면 "준비 중" 그대로)"""
+    코드, 답 = _서버("GET", "/auth/providers", timeout=8)
+    return jsonify(google=bool(코드 == 200 and 답.get("google")))
+
+
+@app.post("/local/auth/google/start")
+def google_start():
+    for k in [k for k, v in _구글_대기.items() if time.time() - v["at"] > 600]:
+        _구글_대기.pop(k, None)
+    st = secrets.token_urlsafe(24)
+    _구글_대기[st] = {"at": time.time(), "done": False, "error": None}
+    주소 = 설정["server"].rstrip("/") + "/auth/google/start?" + urlencode({"pc": st, "port": PORT})
+    webbrowser.open(주소)
+    return jsonify(state=st)
+
+
+@app.get("/local/auth/google/status")
+def google_status():
+    w = _구글_대기.get(request.args.get("state", ""))
+    if not w:
+        return jsonify(error="not_found", message="다시 눌러 주세요"), 404
+    return jsonify(done=w["done"], error=w["error"])
+
+
+@app.get("/local/auth/google/done")
+def google_done():
+    """서버가 브라우저를 여기로 돌려보낸다 — 한 번 쓰는 표를 토큰으로 바꿔 로그인. 이 앱이 시작한 state 일 때만"""
+    w = _구글_대기.get(request.args.get("state", ""))
+    if not w or w["done"] or time.time() - w["at"] > 600:
+        return _브라우저_안내("다시 시도해 주세요", "Trace 앱 로그인 화면에서 [Google 로 계속하기] 를 다시 눌러 주세요.", 400)
+    코드, 답 = _서버("POST", "/auth/google/claim", json={"ticket": request.args.get("ticket", ""),
+                                                       "device": f"내역서 화면 · {platform.node()}"})
+    if 코드 != 200:
+        w["error"] = 답.get("message") or "로그인하지 못했어요. 다시 눌러 주세요"
+        return _브라우저_안내("로그인하지 못했어요", w["error"], 400)
+    safefile.write_json(_auth_path(), {"server": 설정["server"], "token": 답["token"], "user": 답["user"]})
+    w["done"] = True
+    return _브라우저_안내("로그인됐어요", "Trace 앱으로 돌아가세요. 이 탭은 닫아도 돼요.")
+
+
+def _브라우저_안내(제목, 글, 코드=200):
+    import html
+    return (f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{html.escape(제목)} · Trace</title><style>body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f4f4f5;color:#18181b}}
+.c{{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;margin:16px;box-shadow:0 0 0 1px rgba(24,24,27,.08)}}
+h1{{font-size:20px;margin:0 0 8px}}p{{margin:0;font-size:14px;line-height:1.6;color:#52525b}}</style></head>
+<body><div class="c"><h1>{html.escape(제목)}</h1><p>{html.escape(글)}</p></div></body></html>""",
+            코드, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
 
 
 @app.post("/local/server")
