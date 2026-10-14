@@ -562,10 +562,12 @@ class Collector:
         """데스크톱 AI 앱(ChatGPT 앱 · Claude 앱)에서 복사하면, 복사한 글을 '복사 발췌'로 PC 에 남긴다 (10/9).
         웹 AI 는 확장이 같은 일을 한다 — 발췌 해시 = copy 해시 = paste 해시 고리로 붙여넣은 글이 AI 답과 이어진다.
         이게 없으면 앱에서 복사한 글이 '다른 곳에서 붙여넣음'으로 잘못 갔다. 원문은 context 파일(PC)에만 · capture.ai_answer_excerpt 로 끔"""
-        if sys.platform == "darwin":
-            from desktop_ai_mac import APPS
-        else:
-            from desktop_ai import APPS
+        from desktop_ai import APPS as 윈도우                     # 윈도우 exe 이름 · 맥 앱 이름 둘 다 (시험 자료는 윈도우 이름)
+        try:
+            from desktop_ai_mac import APPS as 맥
+        except Exception:                                        # noqa: BLE001
+            맥 = {}
+        APPS = {**윈도우, **맥}
         exe = (app or "").lower()
         if not self._clip_text or self.capture.get("ai_answer_excerpt", True) is False:
             return

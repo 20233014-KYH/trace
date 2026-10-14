@@ -177,6 +177,8 @@ def pasted_from_ai(events, context):
         if e.get("type") != "paste" or e.get("hash") not in copies:
             continue
         at = _paste_spot(evs, i) or {}
+        if not at and (e.get("app") or "").lower() in BROWSERS | AI_APPS:
+            continue                         # 문서가 아니라 웹 · AI 앱 입력칸에 붙여넣음 (10/14: Claude 답을 구글 AI 에 질문으로 → 문서의 구글 답이 Claude 로 잡힘)
         out.append({"text": excerpts[e["hash"]]["text"], "copied_at": copies[e["hash"]]["ts"], "pasted_at": e["ts"],
                     "file": at.get("file", ""), "where": at.get("where", ""), "domain": excerpts[e["hash"]].get("meta", {}).get("domain", "")})
     return out
@@ -236,7 +238,7 @@ def pasted_from_other(events, context):
             at = _paste_spot(evs, i)
             if not at:
                 continue
-            text = " ".join(d["text"] for d in diffs if d["ts"] == at["ts"] and d.get("meta", {}).get("where") == at.get("where"))
+            text = "\n".join(d["text"] for d in _붙인_글(at, diffs, int(e.get("len") or 0)))
             if not text.strip():
                 continue
             src = (c["domain"] or c["app"].removesuffix(".exe").removesuffix(".EXE")) if c else ""
@@ -258,6 +260,7 @@ def process_evidence(events, context):
     · 과정 없음: ① 문서를 처음 볼 때 이미 있던 글(doc_open) ② 키 입력 없이 들어온 글 변화
     붙여넣기 글 변화(doc_paste_at 과 같은 시각·자리)는 여기서 빼고 pasted_from_ai / pasted_from_other 가 다룬다."""
     pastes = {(d["ts"], d.get("where")) for d in events if d.get("type") == "doc_paste_at"}
+    붙인 = {id(d) for _, _, ds in paste_groups(events, context) for d in ds}      # 여러 문단 붙여넣기의 나머지 문단까지 (10/14)
     keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_EXE.values()),
                   key=lambda k: k[0])
     typed, noproc = [], []
@@ -265,7 +268,7 @@ def process_evidence(events, context):
         meta = c.get("meta", {})
         if c.get("kind") == "doc_open" and c.get("text", "").strip():
             noproc.append({"text": c["text"], "how": "open", "ts": c["ts"], "file": meta.get("file", "")})
-        elif c.get("kind") == "diff" and c.get("text", "").strip() and (c["ts"], meta.get("where")) not in pastes:
+        elif c.get("kind") == "diff" and c.get("text", "").strip() and (c["ts"], meta.get("where")) not in pastes and id(c) not in 붙인:
             n, got = len(c["text"].strip()), 0
             need = max(2, int(n * TYPED_KEYS))
             for k in keys:
@@ -277,6 +280,46 @@ def process_evidence(events, context):
             (typed.append(c["text"]) if got >= need else
              noproc.append({"text": c["text"], "how": "nokeys", "ts": c["ts"], "file": meta.get("file", "")}))
     return {"typed": typed, "noproc": noproc}
+
+
+PASTE_TICK = 1          # 초 — 붙여넣기 직후 Word 를 읽은 그 한 번(같은 순간)에 생긴 글 변화는 모두 그 붙여넣기 (10/14)
+AI_APPS = {"claude", "chatgpt", "claude.exe", "chatgpt.exe"}   # 여기에 붙여넣은 건 AI 에게 한 질문 — 문서에 들어간 글이 아님
+
+
+def _문단번호(where):
+    m = re.search(r"\d+", where or "")
+    return int(m.group()) if m else 10 ** 6
+
+
+def _붙인_글(at, diffs, n):
+    """붙여넣은 자리(doc_paste_at)와 같은 순간 · 같은 문서에 새로 생긴 글 변화들 (문단 순서).
+    여러 문단을 한 번에 붙여넣으면 문단마다 diff 가 하나씩 생기는데 전엔 커서가 놓인 문단 하나만 붙여넣은 글로 봤다
+    (10/14 맥 시험: 구글 AI 답 14문단을 붙여넣었는데 13문단이 '쓴 과정 기록 없음' · 일부는 비슷한 Claude 답으로 감).
+    커서 문단에서 가까운 것부터 붙여넣은 글자 수(n · 표 칸 · 줄바꿈 여유 1.3배)를 넘지 않을 만큼만 — 그 사이 친 글이 섞이지 않게"""
+    f, p0 = at.get("file"), _문단번호(at.get("where"))
+    같은때 = [d for d in diffs if d.get("meta", {}).get("file", f) == f and abs(_secs(at["ts"], d["ts"])) <= PASTE_TICK]
+    같은때.sort(key=lambda d: (abs(_문단번호(d["meta"].get("where")) - p0), d["meta"].get("where") != at.get("where")))
+    한도 = n * 1.3 + 30 if n else None
+    out, 합 = [], 0
+    for d in 같은때:
+        if out and 한도 is not None and 합 + len(d["text"]) > 한도:
+            continue
+        out.append(d)
+        합 += len(d["text"])
+    return sorted(out, key=lambda d: _문단번호(d["meta"].get("where")))
+
+
+def paste_groups(events, context):
+    """붙여넣기마다 그때 문서에 들어온 글 변화 → [(paste 이벤트, doc_paste_at, [diff 맥락])]"""
+    diffs = [c for c in context if c.get("kind") == "diff" and c.get("text")]
+    evs = sorted(events, key=lambda e: e.get("ts", ""))
+    out = []
+    for i, e in enumerate(evs):
+        if e.get("type") == "paste":
+            at = _paste_spot(evs, i)
+            if at:
+                out.append((e, at, _붙인_글(at, diffs, int(e.get("len") or 0))))
+    return out
 
 
 def _paste_spot(evs, i):
@@ -375,7 +418,9 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                         r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"], paste=e)
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
-                if w["label"] != "none":
+                # AI 답과 거의 그대로(exact) 이어진 문장은 다른 곳 붙여넣기가 '고쳐 씀' 정도로만 닮았을 땐 안 바꾼다
+                # (10/14: 표 칸 "M5 Pro / M5 Max" 가 긴 구글 답 문장과 글자 조각만 겹쳐 '다른 곳' 으로 넘어감)
+                if w["label"] != "none" and (r["label"] != "exact" or w["label"] == "exact"):
                     r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
             # 붙여넣기 기록이 없는데 타이핑 기록도 없이 문서에 나타난 글 → 쓴 과정 기록 없음 (10/7)
             if ncands and r["label"] in ("none", "viewed") and link_sentence(s, tcands)["label"] == "none":
@@ -401,7 +446,7 @@ def _link_short_lines(out, cands):
             p = nb.get("paste") if nb else None
             # 붙여넣은 원문의 **한 줄 전체**와 같을 때만 — 글 안 어딘가에 들어 있기만 하면(부분 문자열) 직접 친 소제목
             # "현재" 가 붙여넣은 "현재 하린은 23살." 에 걸렸다 (10/7 첫 연결 보고서에서 찾음)
-            if not p or not any(norm(line) == n for line in p.get("text", "").split("\n")):
+            if not p or not any(norm(line) == n for line in re.split(r"[\n\t]", p.get("text", ""))):     # 표 칸(탭)도 한 줄 (10/14)
                 continue
             if nb["label"] == "web":
                 r.update(label="web", full=False, answer=None, sents=None, ai_text=r["text"], paste=p)
