@@ -104,5 +104,7 @@ if sys.platform == "darwin":
             "LSMinimumSystemVersion": "11.0",
             "NSHighResolutionCapable": True,
             "NSHumanReadableCopyright": "Trace — 창의프로젝트1",
+            # Word · PowerPoint 를 AppleScript 로 읽을 때 맥이 묻는 창에 나오는 글 (없으면 묻지도 않고 거부될 수 있음 · 10/14)
+            "NSAppleEventsUsageDescription": "과제 문서(Word · PowerPoint)의 글이 바뀌는 과정을 기록하려고 열린 문서의 글을 읽습니다. 글은 이 Mac 에만 남습니다.",
         },
     )

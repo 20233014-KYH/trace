@@ -136,7 +136,7 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
     },
     function () {                                                    // 2 기록 준비 점검
       head("기록 준비 점검", "Trace 가 무엇을 기록할 수 있는지 확인했어요. 빠진 곳은 지금 채우거나 나중에 해도 됩니다.");
-      const ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc, keys: IC.key };
+      const ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc, keys: IC.key, ax: IC.app };
       let 빠짐 = false;
       (checks || []).forEach(x => {
         const r = el("div", "chk"), i = el("span", "ico"); i.append(T.icon(ic[x.key]));

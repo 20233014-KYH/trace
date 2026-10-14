@@ -175,7 +175,7 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
     record() {
       const c1 = card("기록할 곳", "", btn("다시 확인", "btn-outline", load));
       c1.querySelector(".btn").prepend(T.icon(IC.refresh));
-      const g = el("div", "chks"), ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc, keys: IC.key };
+      const g = el("div", "chks"), ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc, keys: IC.key, ax: IC.app };
       let 도움 = false;
       d.checks.forEach(x => {
         const r = el("div", "chk"), i = el("span", "ico"); i.append(T.icon(ic[x.key]));

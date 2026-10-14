@@ -211,6 +211,11 @@ def selftest():
             검사(f"윈도우 {m}", lambda m=m: importlib.import_module(m) and None)
         for m in ("platform_win", "keys", "office", "desktop_ai"):
             검사(f"기록기 {m}", lambda m=m: importlib.import_module(m) and None)
+    if sys.platform == "darwin":                      # 맥 — 창 제목 · 데스크톱 AI 앱(손쉬운 사용) · Word · PowerPoint(AppleScript) (10/14)
+        for m in ("ApplicationServices", "AppKit", "Quartz", "pynput.keyboard"):
+            검사(f"맥 {m}", lambda m=m: importlib.import_module(m) and None)
+        for m in ("platform_mac", "keys", "mac_ax", "office_mac", "desktop_ai_mac"):
+            검사(f"기록기 {m}", lambda m=m: importlib.import_module(m) and None)
     for m in ("collector", "bridge", "file_watch", "mask", "classify"):
         검사(f"기록기 {m}", lambda m=m: importlib.import_module(m) and None)
 

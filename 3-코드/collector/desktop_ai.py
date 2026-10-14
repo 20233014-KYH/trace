@@ -17,7 +17,7 @@ desktop_ai.py — 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱 …)의 질문·
 · 같은 메시지 글이 두 번 연속 같을 때(생성 끝) 보낸다 → collector._on_context (확장과 같은 길: 가림 → 해시 → PC 원문 + 체인 ai_msg)
 · 이전 대화(history) = 그 대화를 처음 읽을 때 이미 있던 메시지. 단 ① 바로 전(2분 안)에 새 채팅 화면(메시지 없음)을 봤거나
   ② 처음 읽은 뒤 마지막 답이 아직 바뀌고 있으면(생성 중) 새 대화로 본다 — 새 채팅은 질문을 보낸 뒤에야 대화가 생겨서 (10/7)
-안 하는 것: 화면 캡처 · 키 입력 · 앱 밖 창. 맥은 접근성 권한이 필요해서 아직 없음 (윈도우만).
+안 하는 것: 화면 캡처 · 키 입력 · 앱 밖 창. 맥은 desktop_ai_mac.py (손쉬운 사용 권한 · 10/14).
 
 config.json:  "desktop_ai": {"enabled": true, "poll_sec": 2, "debug": false}  ·  원문 토글은 capture.ai_question / ai_answer
 debug=true 면 메시지를 못 찾을 때 화면 구조(역할·클래스·이름 앞부분)를 data/desktop-ai-debug.txt 에 남긴다 (화면이 바뀌어 셀렉터를 고칠 때)
@@ -52,6 +52,8 @@ def _get(el, attr, default=""):
 
 
 class DesktopAIWatcher(threading.Thread):
+    APPS = APPS               # 맥은 desktop_ai_mac.py 가 앱 이름(소문자)으로 바꿔 쓴다 — 대화 · 이전 대화 · 생성 끝 판단(_send)은 같이 쓴다
+
     def __init__(self, emit_context, toggles, poll_sec=2.0, data_dir=".", debug=False):
         """emit_context(items) : collector._on_context · toggles : capture (ai_question · ai_answer 가 꺼져 있으면 그 쪽은 안 보냄)"""
         super().__init__(daemon=True, name="desktop_ai")
@@ -141,7 +143,7 @@ class DesktopAIWatcher(threading.Thread):
                 continue
             self.emit_context([{"id": str(uuid.uuid4()), "ts": datetime.now(KST).isoformat(timespec="seconds"),
                                 "source": "desktop", "kind": kind, "text": text,
-                                "meta": {"tool": APPS[exe], "domain": exe, "conv": conv, "turn": n,
+                                "meta": {"tool": self.APPS[exe], "domain": exe, "conv": conv, "turn": n,
                                          "history": key in self._history}}])
 
     # ── 메시지 찾기 · 읽기 ──

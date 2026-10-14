@@ -11,5 +11,6 @@ psutil  ; sys_platform == "win32"
 comtypes ; sys_platform == "win32"
 pyobjc-framework-Cocoa  ; sys_platform == "darwin"
 pyobjc-framework-Quartz ; sys_platform == "darwin"
+pyobjc-framework-ApplicationServices ; sys_platform == "darwin"   # 손쉬운 사용 — 데스크톱 AI 앱 · 창 제목 (collector/mac_ax.py)
 pyinstaller>=6.10
 pillow
