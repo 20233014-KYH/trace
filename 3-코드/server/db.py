@@ -55,7 +55,9 @@ if "[YOUR-PASSWORD]" in DB_URL:
 DB_URL_SAFE = make_url(DB_URL).render_as_string(hide_password=True)
 인터넷DB = DB_URL.startswith("postgresql")
 
-engine = create_engine(DB_URL, future=True,
+# DB 연결은 많아야 14 (10/15) — 서버 스레드 12(render.yaml)가 하나씩 쓰고 여유 2. Supabase 무료 연결 한도(15) 안
+풀 = {"pool_size": 12, "max_overflow": 2} if 인터넷DB else {}
+engine = create_engine(DB_URL, future=True, **풀,
                        pool_pre_ping=인터넷DB,          # 인터넷 DB 는 쉬는 동안 연결이 끊길 수 있다 → 쓰기 전에 확인
                        connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 Session = sessionmaker(bind=engine, future=True)
