@@ -104,7 +104,7 @@ class _창조종:
     위 줄의 class="pywebview-drag-region" 을 잡고 끌면 창이 옮겨진다 · 두 번 누르면 최대화/되돌리기"""
 
     def __init__(self):
-        self._창, self._최대 = None, False
+        self._창, self._최대, self._전 = None, False, None
 
     def window_control(self, what):
         w = self._창
@@ -113,7 +113,15 @@ class _창조종:
         if what == "min":
             w.minimize()
         elif what == "max":
-            (w.restore if self._최대 else w.maximize)()
+            if not self._최대:
+                self._전 = (w.x, w.y, w.width, w.height)
+                w.maximize()
+            elif sys.platform == "darwin" and self._전:     # 맥 pywebview 의 restore 는 최소화만 되돌린다 → 전 크기·자리로 (10/14)
+                x, y, 너비, 높이 = self._전
+                w.resize(int(너비), int(높이))
+                w.move(int(x), int(y))
+            else:
+                w.restore()
             self._최대 = not self._최대
         elif what == "close":
             w.destroy()
