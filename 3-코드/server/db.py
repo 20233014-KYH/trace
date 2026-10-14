@@ -79,8 +79,10 @@ class LoginTicket(Base):
     토큰을 바로 주소에 실어 보내지 않는 까닭: 주소는 브라우저 방문 기록에 남는다."""
     __tablename__ = "login_tickets"
     ticket = Column(String(64), primary_key=True)
-    user_id = Column(String(64), ForeignKey("users.id"))
+    user_id = Column(String(64), ForeignKey("users.id"))   # 로그인 표: 로그인할 사람 · 잇기 표: 비어 있음 (잇는 사람은 PC 앱의 토큰으로)
     created_at = Column(DateTime)
+    kind = Column(String(8))                               # login | link (10/15 · 비어 있으면 login)
+    google_sub = Column(String(64))                        # 잇기 표: 이을 구글 계정 번호
 
 
 class Token(Base):
@@ -308,7 +310,9 @@ def _칸_추가():
                        ("statements", "usage_counts", "JSON"),      # 10/12 내역서 v3 ①
                        ("statements", "flow", "JSON"),              # 10/12 내역서 v3 ②
                        ("messages", "masked", "JSON"),              # 10/12 일부 가림 (가린 종류)
-                       ("users", "google_sub", "VARCHAR(64)")):     # 10/15 구글 로그인
+                       ("users", "google_sub", "VARCHAR(64)"),      # 10/15 구글 로그인
+                       ("login_tickets", "kind", "VARCHAR(8)"),     # 10/15 구글 계정 잇기
+                       ("login_tickets", "google_sub", "VARCHAR(64)")):
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:
