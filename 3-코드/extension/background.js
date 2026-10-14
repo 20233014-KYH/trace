@@ -19,8 +19,14 @@ async function refreshStatus() {
 
 function domainOf(url) {
   // http(s) 가 아닌 내부 페이지(새 탭 · chrome://)는 "" — 수집기가 "AI 탭에서 나갔다"로 알 수 있게 빈 도메인도 보낸다
-  try { const u = new URL(url); return u.protocol.startsWith("http") ? u.hostname.replace(/^www\./, "") : ""; }
-  catch { return ""; }
+  try {
+    const u = new URL(url);
+    if (!u.protocol.startsWith("http")) return "";
+    // 구글 검색의 AI 모드(udm=50)는 AI 답 화면 — 보통 검색과 가르려고 "google.com/ai" 로 보낸다 (10/14 맥 시험: 구글 AI 답을
+    // 붙여넣었는데 google.com = 보통 웹으로만 잡힘). 주소 전체(검색어)는 여전히 안 보낸다
+    if (/(^|\.)google\.[a-z.]+$/.test(u.hostname) && u.pathname === "/search" && u.searchParams.get("udm") === "50") return "google.com/ai";
+    return u.hostname.replace(/^www\./, "");
+  } catch { return ""; }
 }
 
 async function report(tab) {
