@@ -13,16 +13,22 @@ app.py — Trace Backend (A)
 계약: docs/api.md
 참고 구현: 3-코드/collector/dev_receiver.py  — 둘은 같은 응답을 내야 한다
 """
+import base64
 import functools
+import hashlib
+import hmac
+import html
 import json
 import os
 import re
 import secrets
 import sys
+import time
 import unicodedata
 import urllib.error
 import urllib.request
 import uuid
+from urllib.parse import urlencode
 import zlib
 from datetime import datetime, timedelta, timezone
 
@@ -188,6 +194,172 @@ def logout():
     return jsonify(ok=True)
 
 
+# ─────────────────────────── 구글 로그인 (10/15) ───────────────────────────
+# PC 앱 [Google 로 계속하기] → 브라우저로 /api/auth/google/start?pc=<앱이 만든 무작위>&port=<앱 포트>
+#   → 구글 계정 고르기 → /api/auth/google/callback (구글이 준 code 를 토큰 주소에서 바꿔 이메일 확인)
+#   → 한 번 쓰는 표(2분)를 만들어 http://127.0.0.1:<port>/local/auth/google/done?ticket=…&state=<pc> 로 돌려보냄
+#   → PC 앱이 state 가 자기가 만든 것인지 보고 POST /api/auth/google/claim 으로 표를 토큰으로 바꾼다
+# ★ 앱 창(pywebview) 안에서는 구글이 로그인을 막는다(disallowed_useragent) → 늘 브라우저로
+# ★ 서버는 아무것도 기억하지 않는다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 state 로 다시 만든다
+# ★ 돌려보내는 곳은 이 PC(127.0.0.1)뿐 — 다른 사이트로 보내는 데 쓰일 수 없다
+# 설정: 구글 클라우드의 OAuth 클라이언트(웹) → GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET (Render 환경변수 · server/.env)
+#       승인된 리디렉션 URI = <서버>/api/auth/google/callback. 없으면 PC 앱에 버튼이 "준비 중" 그대로
+구글_인증 = "https://accounts.google.com/o/oauth2/v2/auth"
+구글_토큰 = "https://oauth2.googleapis.com/token"
+구글_비번 = "!google"                      # 구글로만 가입한 사람의 password_hash — 어떤 비밀번호와도 안 맞음 (werkzeug 가 False)
+
+
+def _구글_설정():
+    i, s = os.environ.get("GOOGLE_CLIENT_ID", "").strip(), os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+    return (i, s) if i and s else None
+
+
+def _b64(b):
+    return base64.urlsafe_b64encode(b).decode().rstrip("=")
+
+
+def _쪽지(값, 비밀):
+    본문 = _b64(json.dumps(값, separators=(",", ":")).encode())
+    return 본문 + "." + hmac.new(비밀.encode(), 본문.encode(), hashlib.sha256).hexdigest()
+
+
+def _쪽지_읽기(쪽지, 비밀):
+    """서명이 맞고 시간이 안 지났으면 값 · 아니면 None"""
+    본문, _, 서명 = (쪽지 or "").partition(".")
+    if not 본문 or not hmac.compare_digest(서명, hmac.new(비밀.encode(), 본문.encode(), hashlib.sha256).hexdigest()):
+        return None
+    try:
+        값 = json.loads(base64.urlsafe_b64decode(본문 + "=" * (-len(본문) % 4)))
+    except ValueError:
+        return None
+    return 값 if isinstance(값, dict) and 값.get("exp", 0) >= time.time() else None
+
+
+def _검증값(쪽지, 비밀):
+    """PKCE code_verifier — 쪽지로 다시 만들 수 있게 (서버가 따로 기억하지 않음). 43자 [A-Za-z0-9_-]"""
+    return _b64(hmac.new(비밀.encode(), ("pkce:" + 쪽지).encode(), hashlib.sha256).digest())
+
+
+def _구글_돌아올_곳():
+    return request.host_url.rstrip("/") + "/api/auth/google/callback"     # ProxyFix 로 https · Render 주소
+
+
+def _안내(제목, 글, 코드=200):
+    """브라우저에 뜨는 짧은 안내 화면 (구글 로그인 중간)"""
+    return (f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{html.escape(제목)} · Trace</title><style>body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f4f4f5;color:#18181b}}
+.c{{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;margin:16px;box-shadow:0 0 0 1px rgba(24,24,27,.08)}}
+h1{{font-size:20px;margin:0 0 8px}}p{{margin:0;font-size:14px;line-height:1.6;color:#52525b}}</style></head>
+<body><div class="c"><h1>{html.escape(제목)}</h1><p>{html.escape(글)}</p></div></body></html>""",
+            코드, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
+
+
+@app.get("/api/auth/providers")
+def auth_providers():
+    """PC 앱 로그인 화면이 어떤 버튼을 살릴지 (10/15)"""
+    return jsonify(google=bool(_구글_설정()), kakao=False)
+
+
+@app.get("/api/auth/google/start")
+def google_start():
+    설정 = _구글_설정()
+    if not 설정:
+        return _안내("구글 로그인을 아직 준비 중이에요", "Trace 앱에서 이메일로 로그인해 주세요.", 503)
+    pc, port = request.args.get("pc", ""), request.args.get("port", "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", pc) or not port.isdigit() or not 1024 <= int(port) <= 65535:
+        return _안내("Trace 앱에서 시작해 주세요", "Trace 앱 로그인 화면의 [Google 로 계속하기] 를 눌러 주세요.", 400)
+    쪽지 = _쪽지({"pc": pc, "port": int(port), "exp": int(time.time()) + 600}, 설정[1])
+    return redirect(구글_인증 + "?" + urlencode({
+        "client_id": 설정[0], "redirect_uri": _구글_돌아올_곳(), "response_type": "code", "scope": "openid email profile",
+        "state": 쪽지, "code_challenge": _b64(hashlib.sha256(_검증값(쪽지, 설정[1]).encode()).digest()),
+        "code_challenge_method": "S256", "prompt": "select_account"}))
+
+
+def _구글_코드_바꾸기(code, 검증값, 돌아올_곳, 설정):
+    """구글 토큰 주소에서 code → id_token 의 내용 {sub, email, email_verified, name, …}.
+    구글에서 TLS 로 바로 받은 id_token 이라 서명 대신 TLS 로 발급자를 믿는다 (OpenID Connect Core 3.1.3.7) — 받는 쪽 · 발급자 · 시간은 본다"""
+    몸 = urlencode({"code": code, "client_id": 설정[0], "client_secret": 설정[1], "redirect_uri": 돌아올_곳,
+                    "grant_type": "authorization_code", "code_verifier": 검증값}).encode()
+    요청 = urllib.request.Request(구글_토큰, data=몸, headers={"Content-Type": "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(요청, timeout=15) as r:
+        답 = json.loads(r.read())
+    본문 = 답["id_token"].split(".")[1]
+    c = json.loads(base64.urlsafe_b64decode(본문 + "=" * (-len(본문) % 4)))
+    if c.get("aud") != 설정[0] or c.get("iss") not in ("https://accounts.google.com", "accounts.google.com") \
+            or c.get("exp", 0) < time.time():
+        raise ValueError("id_token 의 받는 쪽 · 발급자 · 시간이 맞지 않음")
+    return c
+
+
+def _구글_사용자(d, c):
+    """구글 계정 번호로 찾고 → 없으면 같은 이메일 계정에 붙이고 → 없으면 새로 만든다. 다른 구글 계정이 이미 붙은 이메일이면 None"""
+    sub, 이메일 = str(c["sub"]), str(c["email"]).strip().lower()
+    u = d.query(db.User).filter(db.User.google_sub == sub).first()
+    if u:
+        return u
+    u = d.query(db.User).filter(db.User.email == 이메일).first()
+    if u:                                               # 이메일로 먼저 가입한 사람 — 구글이 이메일 주인임을 확인했으니 같은 계정으로
+        if u.google_sub and u.google_sub != sub:
+            return None
+        u.google_sub = sub
+        return u
+    u = db.User(id=str(uuid.uuid4()), email=이메일, password_hash=구글_비번, google_sub=sub,
+                name=(str(c.get("name") or "").strip() or 이메일.split("@")[0])[:40], created_at=now().replace(tzinfo=None))
+    d.add(u)
+    return u
+
+
+@app.get("/api/auth/google/callback")
+def google_callback():
+    설정 = _구글_설정()
+    쪽지 = request.args.get("state", "")
+    st = _쪽지_읽기(쪽지, 설정[1]) if 설정 else None
+    if not st:
+        return _안내("다시 시도해 주세요", "로그인 시간이 지났거나 잘못된 주소예요. Trace 앱에서 [Google 로 계속하기] 를 다시 눌러 주세요.", 400)
+    if request.args.get("error") or not request.args.get("code"):
+        return _안내("구글 로그인을 취소했어요", "Trace 앱으로 돌아가 다시 시도할 수 있어요.", 400)
+    try:
+        c = _구글_코드_바꾸기(request.args["code"], _검증값(쪽지, 설정[1]), _구글_돌아올_곳(), 설정)
+    except Exception as e:                                  # noqa: BLE001
+        print(f"← 구글 로그인 실패 ({type(e).__name__}: {str(e)[:120]})")
+        return _안내("구글에서 확인하지 못했어요", "잠시 뒤 Trace 앱에서 다시 시도해 주세요.", 502)
+    if not c.get("sub") or not c.get("email") or c.get("email_verified") not in (True, "true"):
+        return _안내("확인된 이메일이 없는 구글 계정이에요", "다른 구글 계정을 고르거나 Trace 앱에서 이메일로 가입해 주세요.", 400)
+    with db.Session() as d:
+        u = _구글_사용자(d, c)
+        if not u:
+            return _안내("이미 다른 구글 계정과 이어진 이메일이에요", "처음 이은 구글 계정으로 로그인하거나 이메일 · 비밀번호로 로그인해 주세요.", 409)
+        옛날 = now().replace(tzinfo=None) - timedelta(minutes=10)
+        d.query(db.LoginTicket).filter(db.LoginTicket.created_at < 옛날).delete()
+        표 = secrets.token_urlsafe(32)
+        d.add(db.LoginTicket(ticket=표, user_id=u.id, created_at=now().replace(tzinfo=None)))
+        d.commit()
+        print(f"← 구글 로그인 {u.id[:8]}…")
+    return redirect(f"http://127.0.0.1:{st['port']}/local/auth/google/done?" + urlencode({"ticket": 표, "state": st["pc"]}))
+
+
+@app.post("/api/auth/google/claim")
+def google_claim():
+    """PC 앱이 한 번 쓰는 표를 토큰으로 바꾼다 (2분 · 한 번만) — /auth/login 과 같은 답"""
+    b = request.get_json(force=True, silent=True) or {}
+    표 = str(b.get("ticket") or "")
+    with db.Session() as d:
+        t = d.get(db.LoginTicket, 표) if 표 else None
+        if t:
+            d.delete(t)                                     # 맞든 늦었든 한 번 쓰면 끝
+        if not t or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
+            d.commit()
+            return jsonify(error="unauthorized", message="로그인 시간이 지났어요. [Google 로 계속하기] 를 다시 눌러 주세요"), 401
+        u = d.get(db.User, t.user_id)
+        tok = db.Token(token=secrets.token_urlsafe(32), user_id=u.id, device=str(b.get("device") or "")[:100],
+                       created_at=now().replace(tzinfo=None))
+        d.add(tok)
+        d.commit()
+        답 = {"token": tok.token, "user": {"id": u.id, "name": u.name}}
+    return jsonify(답)
+
+
 @app.get("/api/me")
 @로그인_필요
 def me():
@@ -197,6 +369,7 @@ def me():
         works = d.query(db.Work).filter(db.Work.user_id == g.user_id, db.Work.deleted_at.is_(None)).all()
         u = d.get(db.User, g.user_id)
         답 = {"id": g.user_id, "name": g.user_name, "email": u.email if u else None,     # 이메일은 설정 › 계정에 보임 (10/13)
+              "password": bool(u and u.password_hash != 구글_비번), "google": bool(u and u.google_sub),   # 로그인 방법 (10/15)
               "works": [{"id": w.id, "title": w.title, "ai_scope": w.ai_scope} for w in works]}
     return jsonify(답)
 

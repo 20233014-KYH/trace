@@ -172,6 +172,24 @@ TRACE_PORT=5050 python server/test_statements.py                       # 검사 
 지우면 내용은 없애고 **지운 사실과 시각만** 남긴다 — 이미 낸 링크는 "학생이 10/12 에 지운 기록입니다", 기록기가 더 보내면 410.
 잠깐 멈춤은 체인 `pause_start`·`pause_end` (알약 ⏸) — 요약의 기록 시간에서 빠진다. 검사: `server/test_delete_move.py` (19개)
 
+## 구글 로그인 (10/15)
+
+PC 앱 [Google 로 계속하기] → **브라우저**로 `/api/auth/google/start` → 구글 계정 고르기 → `/api/auth/google/callback` → 이 PC(`127.0.0.1:<앱 포트>/local/auth/google/done`) 로 한 번 쓰는 표(2분) → PC 앱이 `POST /api/auth/google/claim` 으로 토큰으로 바꿈. 앱 창 안에서는 구글이 로그인을 막아서(disallowed_useragent) 브라우저로 한다.
+- 같은 이메일로 먼저 가입한 계정이 있으면 그 계정에 붙는다 (구글이 이메일 주인임을 확인 · 비밀번호 로그인도 그대로). 구글로만 가입하면 비밀번호가 없다 (`password_hash = "!google"`)
+- 서버는 따로 기억하는 것이 없다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 그 쪽지로 다시 만든다. 돌려보내는 곳은 127.0.0.1 뿐
+- `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` 이 없으면 `/api/auth/providers` 가 google=false → PC 앱 버튼은 "준비 중" 그대로
+- 시험: `python 3-코드/server/test_google.py` (구글 흉내 · 18개) · `python 3-코드/app/test_google.py` (PC 앱 쪽 · 11개)
+
+**설정 (저장소 주인 · 한 번)** — 비밀(클라이언트 보안 비밀번호)은 채팅 · 저장소에 쓰지 않는다
+1. [Google Cloud Console](https://console.cloud.google.com/) → 프로젝트 만들기 (예: Trace)
+2. **Google 인증 플랫폼 → 브랜딩**: 앱 이름 Trace · 지원 이메일 · 대상 **외부**. 범위는 기본(openid · email · profile)만 — 이것만 쓰면 구글 심사가 필요 없다
+3. **대상**: 처음엔 "테스트" — **테스트 사용자**에 쓸 구글 계정(우리 둘)을 넣는다. 다른 학생도 쓰게 하려면 **앱 게시**
+4. **클라이언트 → 클라이언트 만들기 → 웹 애플리케이션** → 승인된 리디렉션 URI:
+   - `https://trace-server-8aa0.onrender.com/api/auth/google/callback`
+   - (이 PC 의 시험 서버로도 해 볼 때) `http://127.0.0.1:5000/api/auth/google/callback`
+5. 만든 **클라이언트 ID** · **클라이언트 보안 비밀번호** → Render → trace-server → **Environment** 에 `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` (저장하면 다시 배포됨). 이 PC 시험 서버는 `server/.env`
+6. 확인: `https://trace-server-8aa0.onrender.com/api/auth/providers` 가 `{"google": true, …}`
+
 ## 로그인이 안 될 때 (10/12)
 
 - 학생 화면 로그인 칸 위에 **"로그인할 서버"** 가 보인다. `3_내역서만들기` 는 기본 `collector/config.json` 의 server(= 이 PC 의 시험 서버)를 본다 → 인터넷 서버에서 가입했으면 `--config` 로 그 설정을 줘야 한다

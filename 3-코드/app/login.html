@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
 /* 로그인 — 캔버스 "Trace 화면 뼈대" 로그인 (왼쪽 폼 · 오른쪽 Trace 소개 세 줄)
-   서버는 이메일 로그인만 있어서 Google · 카카오는 자리만 (준비 중). 가입도 같은 자리에서 칸만 바꿔 씀 (#47 /local/signup) */
+   Google 은 서버가 켰을 때만 살아남 (10/15 · /local/auth/providers) · 카카오는 자리만 (준비 중). 가입도 같은 자리에서 칸만 바꿔 씀 (#47 /local/signup) */
 :root{--ink:#18181b;--ink2:#3f3f46;--muted:#71717a;--line:#e4e4e7;--soft:#f4f4f5;--red:#c62f34;
   --font:"Pretendard","Apple SD Gothic Neo","Segoe UI","Malgun Gothic",sans-serif}
 *{box-sizing:border-box}
@@ -80,7 +80,7 @@ a,.link{color:var(--ink);text-underline-offset:4px}
           <p class="muted" id="sub">로그인하면 기록이 내 계정에 쌓입니다.</p>
         </div>
         <div class="soc">
-          <button type="button" class="btn" disabled title="준비 중" style="border-color:var(--line)"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>Google 로 계속하기<span class="soon">준비 중</span></button>
+          <button type="button" class="btn" id="b-google" disabled title="준비 중" style="border-color:var(--line)"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>Google 로 계속하기<span class="soon">준비 중</span></button>
           <button type="button" class="btn" disabled title="준비 중" style="background:#FEE500;color:rgba(0,0,0,.85)"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.76l-.95 3.5c-.08.3.26.54.52.37l4.17-2.77c.52.06 1.05.1 1.6.1 5.52 0 10-3.58 10-8S17.52 3 12 3z"/></svg>카카오로 계속하기<span class="soon">준비 중</span></button>
         </div>
         <div class="or"><span></span>또는 이메일로<span></span></div>
@@ -153,6 +153,35 @@ a,.link{color:var(--ink);text-underline-offset:4px}
     msg("");
   }
   $("b-swap").onclick = () => mode(!signup);
+  const 다음 = () => location.replace(new URLSearchParams(location.search).get("next") === "make" ? "/make" : "/home");
+
+  // Google (10/15) — 브라우저에서 구글 계정을 고르면 서버를 거쳐 이 PC 로 돌아온다 (statement.py /local/auth/google/*).
+  // 앱 창 안에서는 구글이 로그인을 막아서 브라우저로. 여기선 끝났는지 1초마다 묻다가 끝나면 홈으로. 다시 누르면 새로 시작
+  let 지금 = null;
+  call("GET", "/local/auth/providers").then(p => {
+    if (!p.google) return;
+    const b = $("b-google"); b.disabled = false; b.title = "브라우저에서 구글 계정을 골라요";
+    const soon = b.querySelector(".soon"); if (soon) soon.remove();
+  }).catch(() => {});
+  $("b-google").onclick = async () => {
+    const b = $("b-google"); b.disabled = true;
+    let s;
+    try { s = await call("POST", "/local/auth/google/start"); } catch (e) { msg(e.message); b.disabled = false; return; }
+    지금 = s.state;
+    msg("브라우저에서 구글 계정을 골라 주세요. 끝나면 여기서 저절로 넘어가요.", true);
+    setTimeout(() => { b.disabled = false; }, 3000);     // 브라우저를 닫아 버렸으면 다시 누를 수 있게
+    const t0 = Date.now();
+    const 보기 = async () => {
+      if (지금 !== s.state) return;                       // 다시 눌러 새로 시작함
+      let r = {};
+      try { r = await call("GET", "/local/auth/google/status?state=" + encodeURIComponent(s.state)); } catch (e) {}
+      if (r.done) { 다음(); return; }
+      if (r.error) { msg(r.error); return; }
+      if (Date.now() - t0 > 600000) { msg("시간이 지났어요. [Google 로 계속하기] 를 다시 눌러 주세요."); return; }
+      setTimeout(보기, 1000);
+    };
+    보기();
+  };
   $("b-forgot").onclick = () => msg("지금은 화면에서 비밀번호를 바꿀 수 없어요. 팀(김용현)에게 초기화를 부탁해 주세요.", true);
 
   $("f").onsubmit = async e => {
@@ -162,7 +191,7 @@ a,.link{color:var(--ink);text-underline-offset:4px}
     $("b-go").disabled = true; msg("");
     try {
       await call("POST", signup ? "/local/signup" : "/local/login", signup ? { email, password, name: $("nm").value.trim() } : { email, password });
-      location.replace(new URLSearchParams(location.search).get("next") === "make" ? "/make" : "/home");
+      다음();
     } catch (err) { msg(err.message); $("b-go").disabled = false; }
   };
 

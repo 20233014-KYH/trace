@@ -59,7 +59,8 @@ def main():
         검사("기록할 곳 5개 (크롬 · 엣지 · ChatGPT 앱 · Claude 앱 · Word) · 상태만",
              [x["key"] for x in d["checks"]] == ["chrome", "edge", "gptapp", "claudeapp", "word"] + (["ax", "keys"] if sys.platform == "darwin" else [])
              and all(x["state"] in ("ok", "missing", "none", "unknown") for x in d["checks"]))
-        검사("계정: 이름 · 이메일 (서버 주소는 안 보냄)", d["account"] == {"name": "시험 학생", "email": "s@example.test"}
+        검사("계정: 이름 · 이메일 · 로그인 방법 (서버 주소는 안 보냄 · 옛 서버면 비밀번호로 봄)",
+             d["account"] == {"name": "시험 학생", "email": "s@example.test", "password": True, "google": False}
              and "server" not in json.dumps(d))
         w = d["data"]["works"]
         검사("내 데이터: 내 과제만 과제별 크기 · 나머지는 개수만 · PC 경로 없음",
@@ -92,6 +93,13 @@ def main():
         검사("비밀번호: 지금 비번 틀림 400 · 짧으면 거절(서버 안 부름) · 맞으면 바뀜", r.status_code == 400 and r2.status_code == 400
              and r3.status_code == 200 and 보냄[-1][1] == "/auth/password")
         검사("X-Trace-Local 없으면 못 바꿈", c.post("/local/settings", json={"show_time": False}, **HOST).status_code == 403)
+
+        옛서버 = ST.출처._기록["server"]
+        ST.출처._기록["server"] = lambda 방법, 경로, **kw: ((200, {"name": "구글", "email": "g@gmail.com", "works": [], "password": False, "google": True})
+                                                        if 경로 == "/me" else 옛서버(방법, 경로, **kw))
+        검사("구글로만 가입한 계정은 비밀번호 없음 (10/15)", c.get("/local/settings", **HOST).json["account"]
+             == {"name": "구글", "email": "g@gmail.com", "password": False, "google": True})
+        ST.출처._기록["server"] = 옛서버
 
         # 맥 권한 (10/14) — 업데이트로 서명이 바뀌어 꺼졌을 때 왼쪽 메뉴 알림 · [설정 열기] 가 예전 줄을 지우고 다시 물음
         p = c.get("/local/settings/mac-permissions", headers=H, **HOST).json

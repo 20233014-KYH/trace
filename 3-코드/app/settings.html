@@ -230,7 +230,9 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
       const c = card("계정");
       if (!d.account) { c.append(el("div", "desc", "로그인하면 보여요"), (() => { const a = el("a", "btn btn-default btn-sm", "로그인"); a.href = "/login"; a.style.alignSelf = "flex-start"; return a; })()); return [c]; }
       const 이름 = kv("이름", d.account.name || "", btn("고치기", "btn-ghost", () => editName()), "내역서 맨 위에 나와요 — 교수가 누구 내역서인지 알 수 있게");
-      const 비번 = kv("비밀번호", "••••••••", btn("바꾸기", "btn-ghost", () => editPw()));
+      // 구글로만 가입했으면 비밀번호가 없다 (10/15) — 바꾸기 대신 구글로 로그인한다고만
+      const 비번 = d.account.password === false ? kv("로그인", "Google 계정", null, "비밀번호 없이 Google 로 로그인해요")
+        : kv("비밀번호", "••••••••", btn("바꾸기", "btn-ghost", () => editPw()), d.account.google ? "Google 로도 로그인할 수 있어요" : undefined);
       c.append(이름, kv("이메일", d.account.email || "", null, "로그인할 때 써요"), 비번,
                kv("이 PC", "한 번 로그인하면 다음부터 바로 열려요", btn("로그아웃", "btn-outline", async () => {
                  try { await T.call("POST", "/local/logout", null, {}); } catch (e) { if (e.code === 500) return alert(e.message); } location.replace("/login");

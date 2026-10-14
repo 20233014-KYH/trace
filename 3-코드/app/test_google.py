@@ -1,0 +1,87 @@
+"""
+test_google.py — PC 앱 쪽 구글 로그인 (10/15 · statement.py /local/auth/*) — 서버 · 브라우저는 흉내
+
+  python app/test_google.py
+
+확인하는 것:
+  · 서버가 구글을 켰을 때만 버튼을 살림 (서버가 없거나 늦으면 "준비 중" 그대로)
+  · [Google 로 계속하기] → 브라우저로 서버 start (이 앱이 만든 state · 이 앱 포트)
+  · 돌아오면 그 state 일 때만 표를 토큰으로 바꿔 로그인 (auth.json) · 같은 state 두 번 안 됨 · 모르는 state 는 서버를 안 부름
+  · 서버가 표를 거절하면 로그인 화면에 그 까닭
+"""
+import json
+import os
+import shutil
+import sys
+import tempfile
+from urllib.parse import parse_qs, urlparse
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import test_source as T                          # noqa: E402
+ST = T.ST
+검사 = T.검사
+
+
+def main():
+    print("\n  PC 앱 구글 로그인 검사 — 서버 · 브라우저 흉내\n  " + "─" * 70)
+    data = tempfile.mkdtemp(prefix="trace-google-pc-")
+    옛 = (ST._서버, ST.webbrowser.open, dict(ST.설정))
+    try:
+        ST.설정.update(server="https://srv.example/api", data_dir=data)
+        c = ST.app.test_client()
+        H = {"X-Trace-Local": "1"}
+        HOST = {"base_url": f"http://127.0.0.1:{ST.PORT}"}
+        부름, 열림, 서버답 = [], [], {"providers": (200, {"google": True}), "claim": (200, {"token": "tok-1", "user": {"id": "u1", "name": "김구글"}})}
+
+        def 서버(방법, 경로, **kw):
+            부름.append((방법, 경로, kw.get("json"), kw.get("timeout")))
+            return 서버답["providers"] if 경로 == "/auth/providers" else 서버답["claim"] if 경로 == "/auth/google/claim" else (404, {})
+        ST._서버 = 서버
+        ST.webbrowser.open = 열림.append
+
+        검사("서버가 구글을 켰으면 버튼 살림 (8초만 기다림)", c.get("/local/auth/providers", **HOST).json == {"google": True}
+             and 부름[-1][3] == 8)
+        서버답["providers"] = (502, {"error": "server_unreachable"})
+        검사("서버가 없으면 준비 중 그대로", c.get("/local/auth/providers", **HOST).json == {"google": False})
+
+        r = c.post("/local/auth/google/start", headers=H, **HOST)
+        st = r.json["state"]
+        u = urlparse(열림[-1])
+        q = parse_qs(u.query)
+        검사("브라우저로 서버 start · 이 앱의 state · 포트", u.netloc == "srv.example" and u.path == "/api/auth/google/start"
+             and q == {"pc": [st], "port": [str(ST.PORT)]} and len(st) >= 30, 열림[-1][:70])
+        검사("X-Trace-Local 없이는 시작 못 함", c.post("/local/auth/google/start", **HOST).status_code == 403)
+        검사("시작 직후 상태 = 아직", c.get(f"/local/auth/google/status?state={st}", **HOST).json == {"done": False, "error": None})
+
+        n = len(부름)
+        r = c.get("/local/auth/google/done?ticket=t-1&state=다른것", **HOST)
+        검사("모르는 state 로 돌아오면 거절 · 서버도 안 부름", r.status_code == 400 and len(부름) == n and "다시 시도" in r.get_data(as_text=True))
+        r = c.get(f"/local/auth/google/done?ticket=t-1&state={st}", **HOST)
+        auth = json.load(open(os.path.join(data, "auth.json"), encoding="utf-8"))
+        검사("돌아오면 표 → 토큰 · auth.json 에 로그인 · 브라우저엔 '로그인됐어요'",
+             r.status_code == 200 and 부름[-1][:3] == ("POST", "/auth/google/claim", {"ticket": "t-1", "device": 부름[-1][2]["device"]})
+             and auth == {"server": "https://srv.example/api", "token": "tok-1", "user": {"id": "u1", "name": "김구글"}}
+             and "로그인됐어요" in r.get_data(as_text=True) and r.headers.get("Cache-Control") == "no-store")
+        검사("로그인 화면이 끝난 걸 앎", c.get(f"/local/auth/google/status?state={st}", **HOST).json == {"done": True, "error": None})
+        n = len(부름)
+        검사("같은 state 두 번 안 됨", c.get(f"/local/auth/google/done?ticket=t-2&state={st}", **HOST).status_code == 400 and len(부름) == n)
+
+        st2 = c.post("/local/auth/google/start", headers=H, **HOST).json["state"]
+        서버답["claim"] = (401, {"error": "unauthorized", "message": "로그인 시간이 지났어요"})
+        r = c.get(f"/local/auth/google/done?ticket=old&state={st2}", **HOST)
+        검사("서버가 표를 거절하면 로그인 화면에 그 까닭", r.status_code == 400
+             and c.get(f"/local/auth/google/status?state={st2}", **HOST).json == {"done": False, "error": "로그인 시간이 지났어요"})
+        검사("로그인 화면에 Google 버튼 자리 (id=b-google)", 'id="b-google"' in c.get("/login", **HOST).get_data(as_text=True))
+    finally:
+        ST._서버, ST.webbrowser.open = 옛[0], 옛[1]
+        ST.설정.clear()
+        ST.설정.update(옛[2])
+        shutil.rmtree(data, ignore_errors=True)
+    print(f"\n  {'─' * 70}\n  통과 {T.통과} · 실패 {T.실패}\n")
+    return 1 if T.실패 else 0
+
+
+if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+    sys.exit(main())
