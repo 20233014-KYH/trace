@@ -4,11 +4,25 @@
   const api = () => window.pywebview && window.pywebview.api;
   function call(name, ...a) { const x = api(); return x && x[name] ? x[name](...a) : null; }
 
-  function bind() {
-    document.querySelectorAll(".win [data-w]").forEach(b => { b.onclick = () => call("window_control", b.dataset.w); });
-    document.querySelectorAll(".pywebview-drag-region").forEach(r => {
-      r.addEventListener("dblclick", e => { if (!e.target.closest("button, a, input, select, textarea, .steps, .seg")) call("window_control", "max"); });
+  // □ 최대화 ↔ ⧉ 이전 크기로 (10/14) — 최대화 상태면 겹친 네모로 바꿔 그린다
+  const ICON = { max: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+                 restore: '<rect x="5" y="9" width="10" height="10" rx="1.5"/><path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5h7A1.5 1.5 0 0 1 19 6.5v7a1.5 1.5 0 0 1-1.5 1.5H15"/>' };
+  function setMax(on) {
+    document.querySelectorAll('.win [data-w="max"]').forEach(b => {
+      const svg = b.querySelector("svg"); if (svg) svg.innerHTML = on ? ICON.restore : ICON.max;
+      const t = on ? "이전 크기로" : "최대화"; b.title = t; b.setAttribute("aria-label", t);
     });
+  }
+  async function toggleMax() { const r = await call("window_control", "max"); if (typeof r === "boolean") setMax(r); }
+
+  function bind() {
+    document.querySelectorAll(".win [data-w]").forEach(b => { b.onclick = () => b.dataset.w === "max" ? toggleMax() : call("window_control", b.dataset.w); });
+    document.querySelectorAll(".pywebview-drag-region").forEach(r => {
+      r.addEventListener("dblclick", e => { if (!e.target.closest("button, a, input, select, textarea, .steps, .seg")) toggleMax(); });
+    });
+    // 페이지를 옮기면 새로 그려져 □ 로 돌아가니 지금 상태를 묻는다 (pywebview 가 준비된 뒤)
+    const ask = () => { const r = call("is_maximized"); if (r && r.then) r.then(v => setMax(!!v)); };
+    if (api()) ask(); else window.addEventListener("pywebviewready", ask, { once: true });
     // 가장자리 크기 바꾸기 — 제목 줄 없는 창은 윈도우가 크기 조절 테두리를 안 줘서 직접 (오른쪽 · 아래 · 오른쪽 아래)
     [["r", "position:fixed;top:0;right:0;width:6px;height:100vh;cursor:ew-resize"],
      ["b", "position:fixed;left:0;bottom:0;width:100vw;height:6px;cursor:ns-resize"],

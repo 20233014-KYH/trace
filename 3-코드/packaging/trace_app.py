@@ -142,6 +142,10 @@ class _창조종:
             w.destroy()
         return self._최대
 
+    def is_maximized(self):
+        """화면을 옮겨도 □ / ⧉ 아이콘이 맞게 — 페이지가 열릴 때 win.js 가 묻는다 (10/14)"""
+        return bool(self._최대)
+
     def resize_to(self, width, height):
         """화면 가장자리를 끌어 크기 바꾸기 (win.js) — 논리 px"""
         if self._창 and not self._최대:
