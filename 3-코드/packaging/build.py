@@ -112,10 +112,21 @@ def 설치_파일():
 
 def 맥_dmg():
     """Trace.app 을 .dmg 로 — 열면 Trace 와 '응용 프로그램' 바로가기가 보이고 끌어 넣으면 설치.
-    서명은 임시(ad-hoc) — 애플 개발자 등록 전이라 처음 열 때 '확인되지 않은 개발자' 가 뜬다 (내려받기 화면에 여는 법)."""
+    애플 개발자 등록 전이라 처음 열 때 '확인되지 않은 개발자' 가 뜬다 (내려받기 화면에 여는 법).
+    서명 (10/14): TRACE_MAC_SIGN_ID(인증서) 가 있으면 그것으로 — 맥은 권한(손쉬운 사용 · 입력 모니터링)을 서명으로 기억하는데,
+      임시(ad-hoc) 서명은 빌드마다 지문(cdhash)이 달라 업데이트할 때마다 권한이 풀렸다. 같은 인증서로 서명하면 버전이 바뀌어도
+      맥이 같은 Trace 로 알아본다. 인증서는 packaging/맥_서명_준비.command 로 한 번 만들어 GitHub 비밀값에 둔다.
+      없으면 임시 서명 (내 맥에서 시험 빌드할 때)"""
     app = os.path.join(DIST, "Trace.app")
-    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", app], check=True)       # 고친 파일까지 다시 임시 서명
+    누구 = os.environ.get("TRACE_MAC_SIGN_ID") or "-"
+    열쇠 = ["--keychain", os.environ["TRACE_MAC_KEYCHAIN"]] if os.environ.get("TRACE_MAC_KEYCHAIN") and 누구 != "-" else []
+    subprocess.run(["codesign", "--force", "--deep", "--sign", 누구, *열쇠, app], check=True)   # 고친 파일까지 다시 서명
     subprocess.run(["codesign", "--verify", "--deep", "--strict", app], check=True)
+    요구 = [x for x in subprocess.run(["codesign", "-d", "-r-", app], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                     text=True).stdout.splitlines() if "designated" in x]
+    print("서명:", "인증서" if 누구 != "-" else "임시(ad-hoc) — 업데이트하면 맥 권한이 풀림", "·", *요구)
+    if 누구 != "-" and any("cdhash" in x for x in 요구):
+        sys.exit("인증서로 서명했는데 맥이 알아보는 기준이 빌드 지문(cdhash)이에요 — 업데이트하면 권한이 풀려요")
     판 = os.path.join(WORK, "dmg")
     shutil.rmtree(판, ignore_errors=True)
     os.makedirs(판)
