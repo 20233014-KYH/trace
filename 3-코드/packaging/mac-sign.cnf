@@ -1,0 +1,13 @@
+# 맥 서명 인증서 모양 — 코드 서명 전용 · 스스로 서명 (맥_서명_준비.command · release.yml 시험 서명이 같이 씀 · 10/14)
+[req]
+distinguished_name = dn
+x509_extensions = ext
+prompt = no
+[dn]
+CN = Trace Code Signing
+O = Trace
+[ext]
+basicConstraints = critical, CA:false
+keyUsage = critical, digitalSignature
+extendedKeyUsage = critical, codeSigning
+subjectKeyIdentifier = hash

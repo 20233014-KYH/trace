@@ -92,6 +92,26 @@ def main():
         검사("비밀번호: 지금 비번 틀림 400 · 짧으면 거절(서버 안 부름) · 맞으면 바뀜", r.status_code == 400 and r2.status_code == 400
              and r3.status_code == 200 and 보냄[-1][1] == "/auth/password")
         검사("X-Trace-Local 없으면 못 바꿈", c.post("/local/settings", json={"show_time": False}, **HOST).status_code == 403)
+
+        # 맥 권한 (10/14) — 업데이트로 서명이 바뀌어 꺼졌을 때 왼쪽 메뉴 알림 · [설정 열기] 가 예전 줄을 지우고 다시 물음
+        p = c.get("/local/settings/mac-permissions", headers=H, **HOST).json
+        검사("맥 권한 두 가지 {ax, keys} = 켬 · 꺼짐 · 모름", set(p) == {"ax", "keys"} and all(v in (True, False, None) for v in p.values())
+             and (sys.platform == "darwin" or p == {"ax": None, "keys": None}))
+        import subprocess
+        from core import settings as 설정값
+        import options as OP
+        불림, 옛_run, 옛_frozen = [], subprocess.run, 설정값.FROZEN
+        subprocess.run = lambda cmd, **kw: 불림.append(cmd)          # 진짜 tccutil 은 절대 안 부름 (이 맥의 권한을 건드리지 않게)
+        try:
+            OP._권한_줄_지우기("Accessibility")
+            저장소 = list(불림)
+            설정값.FROZEN = True
+            OP._권한_줄_지우기("ListenEvent")
+        finally:
+            subprocess.run, 설정값.FROZEN = 옛_run, 옛_frozen
+        검사("권한 줄 지우기: 저장소에서 돌리면 안 함 · 설치판은 이 앱 줄만 (tccutil reset 서비스 앱id)",
+             저장소 == [] and len(불림) == 1 and 불림[0][:3] == ["tccutil", "reset", "ListenEvent"] and len(불림[0]) == 4
+             and 불림[0][3] not in ("", "*"), f"{불림}")
         print(f"\n  {'─' * 70}\n  통과 {T.통과} · 실패 {T.실패}\n")
     finally:
         ST.출처._기록.clear(); ST.출처._기록.update(옛)

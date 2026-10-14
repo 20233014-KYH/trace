@@ -76,6 +76,24 @@ window.TraceShell = (function () {
     // 창 버튼 · 위 줄 두 번 눌러 최대화 · 가장자리 크기 바꾸기는 /ui/win.js (제목 줄 없는 앱 창 · 10/13)
     새버전();
     바뀌었나();
+    맥권한();
+  }
+
+  // ── 맥 권한이 꺼져 있으면 왼쪽 메뉴 아래에 알림 (10/14) — 업데이트로 서명이 바뀌면 맥이 다른 앱으로 보고 권한을 끈다.
+  //    누르면 설정 › 기록 (거기 [설정 열기] 가 예전 권한 줄을 지우고 다시 물어 켜기만 하면 되게 함 · app/options.py)
+  async function 맥권한() {
+    if (!/Macintosh/.test(navigator.userAgent)) return;
+    let p;
+    try { p = await call("GET", "/local/settings/mac-permissions"); } catch (e) { return; }
+    const side = document.querySelector(".side");
+    if (!side || side.querySelector(".upd.perm") || (p.ax !== false && p.keys !== false)) return;
+    const box = el("div", "upd perm"), t = el("span", "t", p.ax === false ? "맥 권한이 꺼져 있어요 — AI 앱 대화가 기록되지 않아요" : "키 입력 권한이 꺼져 있어요");
+    const b = el("button", "btn btn-default btn-sm", "켜기"); b.type = "button";
+    b.title = "설정 › 기록 에서 [설정 열기] 를 눌러 다시 켜요";
+    b.onclick = () => location.href = "/settings?tab=record";
+    box.append(t, b);
+    const me = side.querySelector(".me");
+    me ? side.insertBefore(box, me) : side.append(box);
   }
 
   // ── 새 버전 (10/14 · app/updater.py) — 왼쪽 메뉴 아래에 "새 버전 · 업데이트". 누르면 앱이 직접 받아 바꾸고 다시 연다
@@ -106,8 +124,8 @@ window.TraceShell = (function () {
     else if (!sum.title) sh.append(el("p", "lead", "자세한 내용은 내려받기 화면에서 볼 수 있어요."));
     if (sum.record) { const r = el("div", "box rec"); r.append(el("b", null, "기록하는 것이 바뀌어요"), el("span", null, sum.record)); sh.append(r); }
     if (sum.todo) { const r = el("div", "box todo"); r.append(el("b", null, after ? "해 주세요" : "업데이트 뒤 할 일"), el("span", null, sum.todo)); sh.append(r); }
-    if (!after && /Macintosh/.test(navigator.userAgent))
-      sh.append(el("p", "note", "업데이트하면 Trace 가 잠깐 꺼졌다 다시 열려요. 맥은 설정 › 기록 의 권한이 꺼질 수 있어요 — [설정 열기] 로 다시 켜 주세요."));
+    if (!after && /Macintosh/.test(navigator.userAgent))     // 0.1.9~ 같은 인증서로 서명 → 권한이 안 풀림. 풀리면 왼쪽 메뉴에 알림 (맥권한)
+      sh.append(el("p", "note", "업데이트하면 Trace 가 잠깐 꺼졌다 다시 열려요."));
     const msg = el("p", "note"), foot = el("div", "foot");
     const 닫기 = () => { bg.remove(); if (after) call("POST", "/local/update/seen", null, {}).catch(() => {}); };
     const later = el("button", "b", after ? "확인" : "나중에"); later.type = "button"; later.onclick = 닫기;

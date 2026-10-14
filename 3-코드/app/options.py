@@ -21,7 +21,7 @@ import sys
 from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
-from core import prefs, safefile
+from core import prefs, safefile, settings
 from core.version import VERSION   # 설치판과 같은 버전 (10/14 · 전엔 "0.1.0 (개발판)" 을 적어 둬서 0.1.1 설치판에도 0.1.0 으로 보임)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -85,15 +85,62 @@ def ask_permission():
     try:
         if kind == "ax":
             import mac_ax
-            켜짐 = mac_ax.trusted(ask=True)                      # 맥이 "손쉬운 사용 접근" 창을 띄우고 목록에 Trace 를 넣는다
+            켜짐 = mac_ax.trusted()
+            if not 켜짐:
+                _권한_줄_지우기("Accessibility")
+                mac_ax._물음["done"] = False
+                켜짐 = mac_ax.trusted(ask=True)                  # 맥이 "손쉬운 사용 접근" 창을 띄우고 목록에 Trace 를 넣는다
         else:
             import platform_mac
-            켜짐 = platform_mac._입력모니터링_켜졌나(요청=True)     # "키 입력 수신" 창 · 목록에 Trace
+            켜짐 = platform_mac._입력모니터링_켜졌나(요청=False)
+            if not 켜짐:
+                _권한_줄_지우기("ListenEvent")
+                켜짐 = platform_mac._입력모니터링_켜졌나(요청=True)  # "키 입력 수신" 창 · 목록에 Trace
     except Exception:                                            # noqa: BLE001
         켜짐 = False
     if not 켜짐:
         subprocess.Popen(["open", _권한_화면[kind]])
     return jsonify(ok=True, granted=bool(켜짐))
+
+
+def _권한_줄_지우기(서비스):
+    """권한 목록에서 이 앱(Trace) 줄만 지운다 — 설치판에서 권한이 꺼져 있을 때만 (10/14).
+    맥은 권한을 앱 서명으로 기억한다. 서명이 바뀐 앱(임시 서명 때의 업데이트 · 서명 방식을 바꾼 첫 업데이트)은 목록의 Trace 가
+    켜져 있어 보여도 안 먹어서 학생이 끄고 다시 켜거나 − 로 지워야 했다. 지우고 다시 물으면 새 줄이 생겨 켜기만 하면 된다.
+    다른 앱 줄은 건드리지 않는다 · 안 되면 그냥 둔다 (그때는 도움말대로 손으로)"""
+    if not settings.FROZEN:
+        return                                                   # 저장소에서 돌리면 권한 주인이 터미널 · VS Code 라 지우면 안 됨
+    try:
+        from Foundation import NSBundle
+        앱 = str(NSBundle.mainBundle().bundleIdentifier() or "kr.trace.app")
+    except Exception:                                            # noqa: BLE001
+        앱 = "kr.trace.app"
+    import subprocess
+    try:
+        subprocess.run(["tccutil", "reset", 서비스, 앱], capture_output=True, timeout=10)
+    except Exception:                                            # noqa: BLE001
+        pass
+
+
+@bp.get("/local/settings/mac-permissions")
+def mac_permissions():
+    """맥 권한 두 가지가 켜져 있나 {ax, keys} — True · False · None(모름 · 맥 아님). 왼쪽 메뉴 알림용 (10/14 · 업데이트 뒤 꺼졌는지)"""
+    if sys.platform != "darwin":
+        return jsonify(ax=None, keys=None)
+    d = os.path.join(os.path.dirname(HERE), "collector")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    try:
+        import mac_ax
+        ax = mac_ax.trusted()
+    except Exception:                                            # noqa: BLE001
+        ax = None
+    try:
+        import platform_mac
+        keys = platform_mac._입력모니터링_켜졌나(요청=False)
+    except Exception:                                            # noqa: BLE001
+        keys = None
+    return jsonify(ax=ax, keys=keys)
 
 
 _권한_화면 = {"ax": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",

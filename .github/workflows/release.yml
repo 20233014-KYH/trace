@@ -69,6 +69,45 @@ jobs:
       - name: 라이브러리
         run: python -m pip install -r "3-코드/packaging/requirements-build.txt"
 
+      # 같은 인증서로 서명해야 업데이트해도 맥 권한(손쉬운 사용 · 입력 모니터링)이 안 풀린다 (10/14 · build.py 맥_dmg)
+      # 릴리스(태그)는 비밀값 MAC_SIGN_P12 · MAC_SIGN_PASSWORD 가 꼭 있어야 함 — 없으면 멈춤 (임시 서명으로 내보내면 모두 권한이 풀림)
+      # PR · 손으로 돌림은 비밀값이 없으면 그때만 쓰는 인증서로 서명해 본다 (서명 길이 되는지 시험 · 릴리스엔 안 씀)
+      - name: 서명 인증서
+        env:
+          MAC_SIGN_P12: ${{ secrets.MAC_SIGN_P12 }}
+          MAC_SIGN_PASSWORD: ${{ secrets.MAC_SIGN_PASSWORD }}
+          IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          set -euo pipefail
+          P12="$RUNNER_TEMP/sign.p12"
+          if [ -n "$MAC_SIGN_P12" ]; then
+            printf %s "$MAC_SIGN_P12" | base64 --decode > "$P12"
+            PW="$MAC_SIGN_PASSWORD"
+          elif [ "$IS_TAG" = "true" ]; then
+            echo "::error::비밀값 MAC_SIGN_P12 가 없어요 — 3-코드/packaging/맥_서명_준비.command 를 한 번 돌려 주세요"
+            exit 1
+          else
+            echo "::notice::비밀값이 없어 이번만 쓰는 인증서로 서명해 봄 (시험용)"
+            PW=$(/usr/bin/openssl rand -hex 16)
+            /usr/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout "$RUNNER_TEMP/k.pem" -out "$RUNNER_TEMP/c.pem" \
+              -config "3-코드/packaging/mac-sign.cnf"
+            /usr/bin/openssl pkcs12 -export -inkey "$RUNNER_TEMP/k.pem" -in "$RUNNER_TEMP/c.pem" -name "Trace Code Signing" \
+              -out "$P12" -passout "pass:$PW"
+          fi
+          KC="$RUNNER_TEMP/trace-sign.keychain-db"
+          KCPW=$(/usr/bin/openssl rand -hex 16)
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          security import "$P12" -k "$KC" -P "$PW" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" > /dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$P12" "$RUNNER_TEMP/k.pem"
+          ID=$(security find-identity -p codesigning "$KC" | awk '/\)/ {print $2; exit}')
+          [ -n "$ID" ] || { echo "::error::인증서를 키체인에서 못 찾음"; exit 1; }
+          echo "TRACE_MAC_SIGN_ID=$ID" >> "$GITHUB_ENV"
+          echo "TRACE_MAC_KEYCHAIN=$KC" >> "$GITHUB_ENV"
+
       - name: 묶기 · 자체 시험 · .dmg
         run: python "3-코드/packaging/build.py"
 
