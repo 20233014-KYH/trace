@@ -7,7 +7,7 @@ services:
     region: singapore            # 서울(Supabase)에 가장 가까운 Render 지역
     plan: free                   # 15분 안 쓰면 잠듦 → 첫 요청 1분쯤. 기록기는 실패하면 큐에 쌓았다 다시 보냄
     buildCommand: pip install -r "3-코드/server/requirements.txt"
-    startCommand: gunicorn --chdir "3-코드/server" app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60   # 서버 하나: 여럿이면 처음 켤 때 동시에 표를 만들다 죽음 (10/7 시험)
+    startCommand: gunicorn --chdir "3-코드/server" app:app --bind 0.0.0.0:$PORT --workers 1 --threads 12 --timeout 60   # 서버 하나: 여럿이면 처음 켤 때 동시에 표를 만들다 죽음 (10/7 시험) · 스레드 12 (10/15): 요청은 대부분 DB(서울 ≈75ms)를 기다리는 시간이라 4 → 12 로 동시 기록 한도 3배 (DB 연결 14 — db.py)
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
