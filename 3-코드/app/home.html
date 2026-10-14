@@ -117,7 +117,7 @@
     const u = data.user || {}, me = $("me"); me.textContent = "";
     const t = el("div"); t.append(el("span", null, u.name || u.email || ""), el("small", null, u.name ? u.email || "" : ""));
     const out = el("button", "out"); out.title = "로그아웃"; out.setAttribute("aria-label", "로그아웃"); out.append(T.icon(ICON.out));
-    out.onclick = async () => { try { await T.call("POST", "/local/logout", null, {}); } catch (e) {} location.replace("/login"); };
+    out.onclick = async () => { try { await T.call("POST", "/local/logout", null, {}); } catch (e) { if (e.code === 500) return alert(e.message); } location.replace("/login"); };
     me.append(el("div", "av", (u.name || u.email || "?").slice(0, 1)), t, out);
   }
 

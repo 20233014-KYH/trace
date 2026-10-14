@@ -229,7 +229,7 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
       const 비번 = kv("비밀번호", "••••••••", btn("바꾸기", "btn-ghost", () => editPw()));
       c.append(이름, kv("이메일", d.account.email || "", null, "로그인할 때 써요"), 비번,
                kv("이 PC", "한 번 로그인하면 다음부터 바로 열려요", btn("로그아웃", "btn-outline", async () => {
-                 try { await T.call("POST", "/local/logout", null, {}); } catch (e) {} location.replace("/login");
+                 try { await T.call("POST", "/local/logout", null, {}); } catch (e) { if (e.code === 500) return alert(e.message); } location.replace("/login");
                })));
       function editName() {
         const f = el("div", "form"), i = el("input", "in"); i.value = d.account.name || ""; i.maxLength = 40;

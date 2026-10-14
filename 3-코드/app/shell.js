@@ -70,30 +70,34 @@ window.TraceShell = (function () {
   }
 
   // ── 왼쪽 과제 목록 · 위 줄 과제 이름. 과제를 누르면 /go → 그 과제가 지금 있는 단계 화면 (보던 화면 그대로가 아님) ──
-  async function loadWorks(wid, opt) {
-    opt = opt || {};
+  // 인터넷 서버(/me)는 1~2초 걸린다 → 지난번 목록을 먼저 그리고 본문도 바로 불러오게, 새 목록은 뒤에서 받아 다시 그림 (10/14)
+  const 목록_키 = "trace.works.v1";
+  function 기억(v) {
+    try { if (v === undefined) return JSON.parse(sessionStorage.getItem(목록_키) || "null"); sessionStorage.setItem(목록_키, JSON.stringify(v)); }
+    catch (e) { return null; }
+  }
+  async function fetchWorks() {
     let pc = [];
     try { pc = (await call("GET", "/local/source/works")).works; } catch (e) {}
-    let mine = null;
+    let mine = null, user = null;
     try {
       const s = await call("GET", "/local/state");
-      if (s.logged_in) {
-        const d = await call("GET", "/local/works");
-        mine = d.works;
-        $("me").innerHTML = "";
-        const av = el("div", "av", (s.user.name || "?").slice(0, 1));
-        const t = el("div"); t.append(el("span", null, s.user.name || ""), el("small", null, s.user.email || ""));
-        $("me").append(av, t);
-      }
+      if (s.logged_in) { mine = (await call("GET", "/local/works")).works; user = s.user; }
     } catch (e) { mine = null; }
-    if (!mine) {
-      $("me").innerHTML = "";
+    return { works: mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions })), user: mine ? user : null };
+  }
+  function drawWorks(wid, d) {
+    $("me").innerHTML = "";
+    if (d.user) {
+      const av = el("div", "av", (d.user.name || "?").slice(0, 1));
+      const t = el("div"); t.append(el("span", null, d.user.name || ""), el("small", null, d.user.email || ""));
+      $("me").append(av, t);
+    } else {
       const a = el("a", "nav", null); a.href = "/login"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
       $("me").append(a);
     }
     // 내 과제는 기록이 없어도 보임 (새 과제를 만들면 바로 왼쪽에 생겨야 함 · 10/13)
-    const works = mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions }));
-    const box = $("works"); box.textContent = "";
+    const works = d.works, box = $("works"); box.textContent = "";
     works.forEach(w => {
       const a = el("a", "nav" + (w.id === wid ? " on" : ""));
       a.href = "/go?work=" + encodeURIComponent(w.id);
@@ -104,8 +108,14 @@ window.TraceShell = (function () {
     if (!works.length) box.append(el("div", "hint", "이 PC 에 기록한 과제가 없습니다"));
     const me = works.find(w => w.id === wid);
     if ($("c-work")) $("c-work").textContent = me ? me.title : (wid || "과제");
-    if (!wid && works.length && !opt.stay) location.replace("/go?work=" + encodeURIComponent(works[0].id));
-    return works;
+  }
+  async function loadWorks(wid, opt) {
+    opt = opt || {};
+    const 옛 = 기억();
+    const 새로 = fetchWorks().then(d => { 기억(d); drawWorks(wid, d); return d; });
+    const d = 옛 && (!wid || 옛.works.some(w => w.id === wid)) ? (drawWorks(wid, 옛), 옛) : await 새로;
+    if (!wid && d.works.length && !opt.stay) location.replace("/go?work=" + encodeURIComponent(d.works[0].id));
+    return d.works;
   }
 
   return { call, el, hm, md, icon, svgFile, init, loadWorks };

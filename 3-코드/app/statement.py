@@ -36,6 +36,7 @@ from core import match as M                    # noqa: E402  연결 제안 (박�
 from core.docx import doc_body, read_docx      # noqa: E402
 from core.texthash import sha256_text          # noqa: E402
 from core import settings                      # noqa: E402  기록기·알약과 같은 설정 파일 (10/13)
+from core import safefile                      # noqa: E402  여러 요청이 같은 파일을 읽고 써도 (10/14)
 from core.version import VERSION, parse as parse_version  # noqa: E402  설치판 버전 (새 버전 알림)
 
 PORT = 5079                                     # 기록기 브리지는 5077
@@ -61,11 +62,8 @@ def _auth_path():
 
 
 def _auth():
-    try:
-        a = json.load(open(_auth_path(), encoding="utf-8"))
-        return a if a.get("server") == 설정["server"] else {}
-    except (OSError, ValueError):
-        return {}
+    a = safefile.read_json(_auth_path(), {})
+    return a if isinstance(a, dict) and a.get("server") == 설정["server"] else {}
 
 
 def _서버(방법, 경로, **kw):
@@ -173,9 +171,8 @@ def login():
                              f"다른 서버에서 가입했다면 설정 파일({os.path.basename(설정.get('config', 'config.json'))})의 server 를 확인하세요."}
     if 코드 != 200:
         return jsonify(답), 코드
-    os.makedirs(설정["data_dir"], exist_ok=True)
-    with open(_auth_path(), "w", encoding="utf-8") as f:            # data/ 는 .gitignore — 저장소에 안 올라간다
-        json.dump({"server": 설정["server"], "token": 답["token"], "user": 답["user"]}, f, ensure_ascii=False)
+    # data/ 는 .gitignore — 저장소에 안 올라간다
+    safefile.write_json(_auth_path(), {"server": 설정["server"], "token": 답["token"], "user": 답["user"]})
     return jsonify(user=답["user"])
 
 
@@ -205,10 +202,8 @@ def signup():
 @app.post("/local/logout")
 def logout():
     _서버("POST", "/auth/logout", json={})
-    try:
-        os.remove(_auth_path())
-    except OSError:
-        pass
+    if not safefile.remove(_auth_path()):           # 10/14: 다른 요청이 읽는 중이라 못 지웠는데 ok 라서 홈으로 튕김 → 이제 알림
+        return jsonify(error="busy", message="로그아웃하지 못했어요. 잠시 뒤 다시 눌러 주세요"), 500
     return jsonify(ok=True)
 
 

@@ -18,7 +18,7 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 import export as EX
-from core import match as M
+from core import match as M, safefile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("review", __name__)
@@ -87,16 +87,12 @@ def _목표_경로():
 
 
 def _목표():
-    try:
-        g = json.load(open(_목표_경로(), encoding="utf-8"))
-        return [x for x in g if isinstance(x, dict) and x.get("key") in TIPS]
-    except (OSError, ValueError):
-        return []
+    g = safefile.read_json(_목표_경로(), [])
+    return [x for x in g if isinstance(x, dict) and x.get("key") in TIPS] if isinstance(g, list) else []
 
 
 def _목표_쓰기(g):
-    os.makedirs(S._기록["data_dir"](), exist_ok=True)
-    json.dump(g, open(_목표_경로(), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    safefile.write_json(_목표_경로(), g, indent=1)
 
 
 def _셈(key, qs, 같은):

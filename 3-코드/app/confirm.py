@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 from flask import Blueprint, jsonify, redirect, request, send_from_directory
 
-from core import match as M
+from core import match as M, safefile
 from core.docx import read_docx
 from core.texthash import sha256_text
 import source as S
@@ -60,6 +60,8 @@ def confirm():
     if isinstance(r, tuple):
         return r
     keys = {it["key"] for g in r["groups"] for it in g["items"]}
+    if not keys and not os.path.exists(_경로(wid)):
+        _쓰기(wid, {})                           # 물을 것이 없는 과제 — 이 화면을 본 것으로 다음 단계(내역서)로 (10/14 · 안 그러면 늘 "출처 보기 전")
     return jsonify(file=r["file"], title=r["title"], groups=r["groups"],
                    decisions={k: v for k, v in _읽기(wid).items() if k in keys}, auto=r["auto"])
 
@@ -93,7 +95,7 @@ def 단계(wid):
     if 있나 and 있나(wid):
         return "report"
     고름 = _읽기(wid)
-    if not 고름:
+    if not 고름 and not os.path.exists(_경로(wid)):     # 고른 것 파일이 없음 = 연결 확인 화면을 아직 안 봄 (물을 것 0 이면 빈 파일)
         return "source"
     r = _물을_것(wid)
     if isinstance(r, tuple):
@@ -218,17 +220,12 @@ def _읽기(wid):
     if not wid:
         return {}
     try:
-        with open(_경로(wid), encoding="utf-8") as f:
-            d = json.load(f).get("decisions", {})
+        d = safefile.read_json(_경로(wid), {}).get("decisions", {})
         return {k: v for k, v in d.items() if _KEY.match(k) and v in DECISIONS}
-    except (OSError, ValueError, AttributeError):
+    except AttributeError:
         return {}
 
 
 def _쓰기(wid, 고름):
-    p = _경로(wid)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p + ".tmp", "w", encoding="utf-8") as f:
-        json.dump({"work_id": wid, "updated": datetime.now().astimezone().isoformat(timespec="seconds"), "decisions": 고름},
-                  f, ensure_ascii=False, indent=1)
-    os.replace(p + ".tmp", p)                    # 쓰다가 꺼져도 예전 파일은 남게
+    safefile.write_json(_경로(wid), {"work_id": wid, "updated": datetime.now().astimezone().isoformat(timespec="seconds"),
+                                    "decisions": 고름}, indent=1)        # 쓰다가 꺼져도 예전 파일은 남게 · 읽기와 겹쳐도 (10/14)

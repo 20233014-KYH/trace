@@ -34,7 +34,7 @@ from flask import Blueprint, Response, jsonify, request, send_from_directory
 from core import match as M
 from core.docx import read_docx
 from core.summary import work_summary
-from core import prefs
+from core import prefs, safefile
 from core.texthash import sha256_text
 import confirm as CF
 import source as S
@@ -510,17 +510,9 @@ def _경로(wid):
 
 
 def _읽기(wid):
-    try:
-        with open(_경로(wid), encoding="utf-8") as f:
-            d = json.load(f)
-        return d if isinstance(d, dict) else {}
-    except (OSError, ValueError):
-        return {}
+    d = safefile.read_json(_경로(wid), {})
+    return d if isinstance(d, dict) else {}
 
 
 def _쓰기(wid, d):
-    p = _경로(wid)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p + ".tmp", "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=1)
-    os.replace(p + ".tmp", p)
+    safefile.write_json(_경로(wid), d, indent=1)          # 칠 때마다 저장 · 미리 보기 읽기와 겹쳐도 안 깨지게 (10/14)

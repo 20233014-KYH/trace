@@ -166,6 +166,7 @@ a,.link{color:var(--ink);text-underline-offset:4px}
     } catch (err) { msg(err.message); $("b-go").disabled = false; }
   };
 
+  try { sessionStorage.removeItem("trace.works.v1"); } catch (e) {}   // 로그인 화면 = 로그아웃했거나 계정이 바뀔 때 → 왼쪽 과제 목록 기억 지움 (shell.js)
   call("GET", "/local/state").then(s => {
     if (s.logged_in) { location.replace("/home"); return; }
     st = s; server();

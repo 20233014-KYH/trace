@@ -13,9 +13,13 @@ source.py — 학생 PC 의 "출처 보기" 화면 (캔버스 4 · 10/11 박상�
 
 연결 판단은 statement.py 의 /local/analyze 와 같은 core/match 함수를 같은 순서로 부른다 — 두 화면 결과가 같아야 한다.
 """
+import copy
+import hashlib
 import io
+import json
 import os
 import re
+import threading
 
 from flask import Blueprint, abort, jsonify, request, send_from_directory
 
@@ -180,7 +184,34 @@ def _문서_목록(wid):
     return docs
 
 
+_결과 = {}           # 입력 표 → build 결과 (최근 몇 개) — 같은 문서 · 같은 기록이면 다시 계산하지 않는다 (10/14)
+_결과_잠금 = threading.Lock()
+_계산중 = {}         # 입력 표 → 잠금. 같은 것을 여러 요청이 한꺼번에 부르면 한 번만 계산하고 나머지는 기다렸다 받는다
+
+
 def build(paras, msgs, events, context):
+    """_build 를 기억해 두고 다시 쓴다. 출처 보기 · 연결 확인 · 내보내기(미리 보기는 글자 칠 때마다)가 같은 것을 부른다.
+    10/14 실제 22쪽 문서: 미리 보기마다 다시 계산하다 요청이 쌓여 앱이 멈췄다. 결과는 매번 새 복사본 (부른 쪽이 고쳐도 안전)"""
+    표 = hashlib.sha1(json.dumps([paras, msgs, events, context], ensure_ascii=False, sort_keys=True, default=str)
+                     .encode("utf-8", "surrogatepass")).hexdigest()
+    with _결과_잠금:
+        if 표 in _결과:
+            return copy.deepcopy(_결과[표])
+        잠금 = _계산중.setdefault(표, threading.Lock())
+    with 잠금:
+        with _결과_잠금:
+            r = _결과.get(표)
+        if r is None:
+            r = _build(paras, msgs, events, context)
+            with _결과_잠금:
+                _결과[표] = r
+                while len(_결과) > 4:
+                    _결과.pop(next(iter(_결과)))
+                _계산중.pop(표, None)
+    return copy.deepcopy(r)
+
+
+def _build(paras, msgs, events, context):
     """read_docx 문단 [(style, text)] + 이 PC 기록 → {title, paragraphs, sentences, questions, counts}
     문장 번호(k)는 문서 처음부터 셈. 질문 번호(n)는 시간 순 1 부터."""
     title, body, heads = _제목_본문(paras)
