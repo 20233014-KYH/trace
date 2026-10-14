@@ -133,7 +133,8 @@ def update():
     v = 최신.get("version")
     newer = bool(v) and parse_version(v) > parse_version(VERSION)
     return jsonify(current=VERSION, latest=v, newer=newer, can_install=newer and 업데이트.바꿀_수_있나(최신),
-                   download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"))
+                   download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"),
+                   summary=업데이트.요약(최신.get("notes")))
 
 
 @app.post("/local/record")

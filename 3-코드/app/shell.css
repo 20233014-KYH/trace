@@ -41,6 +41,19 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
 .upd .t{flex:1;min-width:0;color:var(--ink, #18181b)}.upd .btn{flex:none}
 .upd + .me{margin-top:8px}
 .rail .upd{display:none}
+/* 바뀐 것 창 (업데이트 전 · 뒤) — work.css 없이도 보이게 버튼까지 여기서 */
+.sheet-bg{position:fixed;inset:0;background:rgba(24,24,27,.32);display:flex;align-items:center;justify-content:center;z-index:9000}
+.sheet{width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 64px);overflow:auto;background:var(--card);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18),0 0 0 1px rgba(24,24,27,.08);padding:22px 22px 18px}
+.sheet .eyebrow{font-size:12px;color:var(--muted)}
+.sheet h3{margin:4px 0 6px;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.sheet .lead{margin:0 0 10px;color:var(--ink2);font-size:13.5px;line-height:1.55}
+.sheet ul{margin:0 0 12px;padding-left:18px;font-size:13.5px;line-height:1.6;color:var(--ink)}.sheet li{margin:3px 0}
+.sheet .box{display:flex;flex-direction:column;gap:2px;border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:13px;line-height:1.5}
+.sheet .box b{font-weight:600}.sheet .rec{background:#fff7ed;color:#9a3412}.sheet .todo{background:var(--soft);color:var(--ink2)}
+.sheet .note{margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5}.sheet .note:empty{display:none}
+.sheet .foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.sheet .b{height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;font-size:13.5px;font-weight:500;color:var(--ink);cursor:pointer}
+.sheet .b.dark{background:var(--ink);border-color:var(--ink);color:#fff}.sheet .b:disabled{opacity:.5;cursor:default}
 .rail .side{width:56px}
 /* 접힘: 글자는 자리를 그대로 두고 흐리게만 → 위아래로도 안 움직임 */
 .rail .brand b,.rail .nav .t,.rail .nav .dot,.rail .side h4,.rail .me div{opacity:0;pointer-events:none}
