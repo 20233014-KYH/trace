@@ -183,8 +183,8 @@ def make():
     전 = 초안.get("made") or {}
     if 전.get("sig") == 서명 and 전.get("expires_at", "") > datetime.now().astimezone().isoformat():
         return jsonify(**{k: 전[k] for k in ("url", "pdf_url", "expires_at", "at")}, reused=True)
-    if not body["links"]:
-        return jsonify(error="empty", message="내역서에 넣을 연결이 없어요. 연결 확인에서 하나 이상 연결해 주세요"), 400
+    # 연결이 0 이어도 만든다 (10/14) — AI 를 이해·자료 찾기에만 쓴 학생은 결과물로 이어진 문장이 없는 게 정상.
+    # 그런 학생도 쓰임새 · 대표 질문 · 쓴 과정 · 학생 설명으로 내역서를 낸다 (v3 를 만든 이유 · 서버도 links 빈 목록을 받음)
     서버 = S._기록["server"]
     코드, st = 서버("POST", f"/works/{wid}/statements", json=body)
     if 코드 != 201:
