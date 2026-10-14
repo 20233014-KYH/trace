@@ -30,6 +30,22 @@ function isBusyChatGPT(el) {
   if (rs === null && resp === null) return undefined;
   return (rs !== null && rs !== "ready") || (resp !== null && resp !== "complete");
 }
+// ChatGPT (10/14 새 화면): 질문·답 덩어리 이름표가 바뀜 — 한 턴 = [data-turn-key] (다 쓰면 *-turn-state="complete")
+//   질문 = [data-user-message-bubble] · 메시지 id 는 바깥 [data-chatgpt-search-message-ids]
+//   답   = [data-markdown-copy="contents"][data-dil-source-message-id] (ChatGPT 복사 단추가 복사하는 바로 그 덩어리 · 버튼 없음)
+// 화면에 보이는 턴만 그린다(가상 스크롤) — 메시지 id 로 열쇠를 잡으니 스크롤로 다시 그려도 한 번만 보냄. 모델 이름은 화면에 없음
+const turnState = (el) => { for (let p = el; p; p = p.parentElement) { const v = attrEnd(p, "-turn-state"); if (v !== null) return v; } return null; };
+function chatgptTurns() {
+  return [...document.querySelectorAll('[data-user-message-bubble], [data-markdown-copy="contents"][data-dil-source-message-id]')].map((el) => {
+    const q = el.matches("[data-user-message-bubble]"), st = turnState(el);
+    return {
+      el, role: q ? "question" : "answer",
+      id: (q ? el.closest("[data-chatgpt-search-message-ids]")?.getAttribute("data-chatgpt-search-message-ids") : el.getAttribute("data-dil-source-message-id")) || "",
+      model: "", body: el,
+      streaming: q ? undefined : st === null ? undefined : st !== "complete",
+    };
+  });
+}
 // Claude (2026-10 화면): 답 본문 = .standard-markdown. 바깥 덩어리를 통째로 읽으면 화면낭독용 제목("Claude 응답: …")·버튼·시각("지금")이 섞인다.
 // 웹 검색 등 도구를 쓰면 본문이 여러 덩어리로 나뉘어서 다 이어 붙인다. 못 찾으면 null → 덩어리 전체(clean)로.
 function claudeAnswer(el) {
@@ -54,18 +70,22 @@ const SITES = [
   {
     tool: "ChatGPT",
     host: /(^|\.)chatgpt\.com$|(^|\.)chat\.openai\.com$/,
-    messages: () => [...document.querySelectorAll("[data-message-author-role]")].map((el) => {
-      const r = el.getAttribute("data-message-author-role");
-      return {
-        el, role: r === "user" ? "question" : r === "assistant" ? "answer" : null,
-        id: el.getAttribute("data-message-id") || "",
-        model: el.getAttribute("data-message-model-slug") || "",
-        body: el.querySelector(".markdown") || el.querySelector(".whitespace-pre-wrap") || el,
-        // 2026-10 화면: 답 덩어리에 *-render-state="ready", 답 묶음에 *-response-state="complete" 가 붙으면 생성 끝
-        streaming: r === "assistant" ? isBusyChatGPT(el) : undefined,
-      };
-    }),
-    generating: () => !!document.querySelector('[data-testid="stop-button"], .result-streaming'),
+    messages: () => {
+      const old = document.querySelectorAll("[data-message-author-role]");
+      if (!old.length) return chatgptTurns();                       // 10/14 새 화면 — data-message-author-role 이 없어짐
+      return [...old].map((el) => {
+        const r = el.getAttribute("data-message-author-role");
+        return {
+          el, role: r === "user" ? "question" : r === "assistant" ? "answer" : null,
+          id: el.getAttribute("data-message-id") || "",
+          model: el.getAttribute("data-message-model-slug") || "",
+          body: el.querySelector(".markdown") || el.querySelector(".whitespace-pre-wrap") || el,
+          // 2026-10 화면: 답 덩어리에 *-render-state="ready", 답 묶음에 *-response-state="complete" 가 붙으면 생성 끝
+          streaming: r === "assistant" ? isBusyChatGPT(el) : undefined,
+        };
+      });
+    },
+    generating: () => !!document.querySelector('[data-testid="stop-button"], .result-streaming'),   // 새 화면은 답 덩어리 바깥 *-turn-state 로 (chatgptTurns)
     conv: () => (location.pathname.match(/\/c\/([\w-]+)/) || [])[1] || "",
   },
   {
