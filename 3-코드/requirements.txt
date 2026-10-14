@@ -17,3 +17,4 @@ reportlab         # AI 활용 내역서 PDF (server/statement_pdf.py)
 psycopg[binary]   # 인터넷 DB (Supabase · PostgreSQL) 에 붙을 때. 맥 안의 파일(SQLite)만 쓰면 없어도 됨
 pyobjc-framework-Cocoa  ; sys_platform == "darwin"
 pyobjc-framework-Quartz ; sys_platform == "darwin"
+pyobjc-framework-ApplicationServices ; sys_platform == "darwin"   # 손쉬운 사용 — 데스크톱 AI 앱 · 창 제목 (collector/mac_ax.py)

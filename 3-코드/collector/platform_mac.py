@@ -5,11 +5,10 @@ platform_mac.py — 맥에서 "지금 무슨 창?" "얼마나 쉬었나?"
 
 준비물 : pip install pyobjc-framework-Cocoa pyobjc-framework-Quartz
 
-★ 맥에서 못 하는 것 ★
-  창 제목을 못 읽는다. 다른 앱의 창 제목을 보려면 '화면 기록' 권한이 필요한데
-  그것까지 요구하면 부담이 커서 안 쓰기로 했다. 그래서 title 은 늘 "" 이다.
-  결과적으로 domains.json 의 title_keywords 가 맥에서는 동작하지 않고,
-  브라우저는 항상 other 로 떨어진다. 브라우저 탭 구분은 Tier 1 확장이 붙어야 한다.
+★ 창 제목 (10/14 고침) ★
+  전엔 창 제목을 못 읽었다 — 창 목록(CGWindowList)으로 읽으려면 '화면 기록' 권한이 필요해서 안 쓰기로 했었다.
+  이제 '손쉬운 사용' 권한(데스크톱 AI 앱 읽기에 어차피 필요)으로 앞 창의 제목을 읽는다 (mac_ax.window_title).
+  권한이 없으면 전처럼 "" — 브라우저 탭 구분은 확장이 한다.
 """
 import ctypes
 import ctypes.util
@@ -31,13 +30,15 @@ except Exception:
          "\n      pip install -r 3-코드/requirements.txt") +
         "\n  " + "─" * 62 + "\n")
 
+import mac_ax               # noqa: E402  앞 창 제목 (손쉬운 사용)
+
 _모든입력 = 0xFFFFFFFF       # kCGAnyInputEventType
 _들을_권한 = 1               # kIOHIDRequestTypeListenEvent
 _허용됨 = 0                  # kIOHIDAccessTypeGranted
 
 
 def foreground() -> tuple[str, str]:
-    """(앱 이름, "") — 창 제목은 위 설명대로 읽지 않는다.
+    """(앱 이름, 창 제목) — 창 제목은 '손쉬운 사용' 권한이 있을 때만 (없으면 "").
 
     ★ 런루프(run loop)를 한 번 돌려야 한다 ★
       맥은 "지금 이 앱이 활성이다" 같은 알림을 프로세스의 이벤트 큐에 쌓아둔다.
@@ -51,7 +52,7 @@ def foreground() -> tuple[str, str]:
             NSDate.dateWithTimeIntervalSinceNow_(0.05))
         for 앱 in NSWorkspace.sharedWorkspace().runningApplications():
             if 앱.isActive():
-                return (앱.localizedName() or "?"), ""
+                return (앱.localizedName() or "?"), mac_ax.window_title(int(앱.processIdentifier()))
     except Exception:
         pass
     return "?", ""

@@ -7,7 +7,7 @@ collector.py — Trace Tier 0 수집기 (윈도우 · 맥 상주 프로그램)
   · 클립보드 변경 → 길이와 SHA256 만 (원문 저장 안 함)
   · 입력·삭제 횟수, Ctrl+V / Ctrl+Z / Ctrl+Y / Ctrl+X 감지 — config.keys.enabled (Proof 필수)
   · (옵션) 감시 폴더 파일 생성·수정·저장 — config.files.watch_dirs
-  · Word · PowerPoint 문서 변화 — office.py (COM). 숫자(+n자/-m자 · 붙여넣은 자리 · 저장 통계)는 두 모드, 텍스트는 Learn 만
+  · Word · PowerPoint 문서 변화 — office.py (윈도우 COM) · office_mac.py (맥 AppleScript). 숫자(+n자/-m자 · 붙여넣은 자리 · 저장 통계)는 체인에, 텍스트는 PC 에만
 
 무엇을 안 하나: 화면 캡처, 키 내용, 클립보드 원문, 창 제목 밖의 문서 내용.
 
@@ -429,7 +429,8 @@ class Collector:
         if self.sender:
             self.sender.start()
             self.sender.session_start({"id": self.session_id, "started_at": now_iso(),
-                                       "device": {"name": platform.node(), "os": "win", "collector_version": VERSION}})
+                                       "device": {"name": platform.node(), "os": "mac" if sys.platform == "darwin" else "win",
+                                                  "collector_version": VERSION}})
         self.sink.emit({"type": "session_start", "work_id": self.work_id, "idle_after_sec": self.idle_after})
 
         if cfg.get("clipboard", {}).get("enabled", True):
@@ -452,11 +453,14 @@ class Collector:
                 print(f"  확장 다리 http://127.0.0.1:{bridge.PORT}  (브라우저 확장 → tab · context)")
             except OSError as e:
                 print(f"  확장 다리 실패 ({e}) — 확장 없이 계속")
-        # Office 맥락은 윈도우 COM(pythoncom) 전용이다. 맥에서는 건너뛴다.
+        # Office 맥락 — 윈도우는 COM(office.py), 맥은 AppleScript(office_mac.py · 10/14). 비교 규칙은 같다
         # (import 는 office.py 의 스레드 안에서 일어나서 try 로 안 잡힌다)
-        if cfg.get("office", {}).get("enabled", True) and sys.platform == "win32":
+        if cfg.get("office", {}).get("enabled", True) and sys.platform in ("win32", "darwin"):
             try:
-                from office import OfficeWatcher
+                if sys.platform == "darwin":
+                    from office_mac import MacOfficeWatcher as OfficeWatcher
+                else:
+                    from office import OfficeWatcher
                 with_text = self.capture.get("office", True)          # 문서 텍스트 — 결과물–AI 답 비교 재료 (PC 에만)
                 self._office = OfficeWatcher(self.sink.emit, lambda exe: bool(self._cur) and self._cur[0].lower() == exe.lower(),
                                              poll_sec=cfg.get("office", {}).get("poll_sec", 5),
@@ -466,11 +470,19 @@ class Collector:
                 print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트(PC 에만)' if with_text else '만'})")
             except Exception as e:
                 print(f"  Office 감시 실패 ({e}) — 없이 계속")
-        # 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱) 질문·답 — 윈도우 화면 읽기(UI Automation). 앱이 앞에 있을 때만 읽고 원문은 PC 에만
+        # 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱) 질문·답 — 윈도우는 UI Automation(desktop_ai.py), 맥은 손쉬운 사용(desktop_ai_mac.py · 10/14).
+        # 앱이 앞에 있을 때만 읽고 원문은 PC 에만
         dcfg = cfg.get("desktop_ai", {})
-        if dcfg.get("enabled", True) and sys.platform == "win32" and (self.capture.get("ai_question", True) or self.capture.get("ai_answer", True)):
+        if dcfg.get("enabled", True) and sys.platform in ("win32", "darwin") and (self.capture.get("ai_question", True) or self.capture.get("ai_answer", True)):
             try:
-                from desktop_ai import DesktopAIWatcher
+                if sys.platform == "darwin":
+                    from desktop_ai_mac import MacDesktopAIWatcher as DesktopAIWatcher
+                    import mac_ax
+                    if not mac_ax.trusted(ask=True):
+                        print("  ⚠️  데스크톱 AI 앱 · 창 제목을 읽으려면 '손쉬운 사용' 권한이 필요합니다.\n"
+                              "     시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용 → 이 프로그램 켜기 (안 켜도 나머지 기록은 계속)")
+                else:
+                    from desktop_ai import DesktopAIWatcher
                 self._desktop = DesktopAIWatcher(self._on_context, self.capture, poll_sec=dcfg.get("poll_sec", 2),
                                                  data_dir=self.sink.data_dir, debug=bool(dcfg.get("debug")))
                 self._desktop.start()
@@ -550,7 +562,10 @@ class Collector:
         """데스크톱 AI 앱(ChatGPT 앱 · Claude 앱)에서 복사하면, 복사한 글을 '복사 발췌'로 PC 에 남긴다 (10/9).
         웹 AI 는 확장이 같은 일을 한다 — 발췌 해시 = copy 해시 = paste 해시 고리로 붙여넣은 글이 AI 답과 이어진다.
         이게 없으면 앱에서 복사한 글이 '다른 곳에서 붙여넣음'으로 잘못 갔다. 원문은 context 파일(PC)에만 · capture.ai_answer_excerpt 로 끔"""
-        from desktop_ai import APPS
+        if sys.platform == "darwin":
+            from desktop_ai_mac import APPS
+        else:
+            from desktop_ai import APPS
         exe = (app or "").lower()
         if exe not in APPS or not self._clip_text or self.capture.get("ai_answer_excerpt", True) is False:
             return
