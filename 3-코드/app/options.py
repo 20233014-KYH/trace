@@ -71,6 +71,35 @@ def open_folder():
     return jsonify(ok=True)
 
 
+@bp.post("/local/settings/permission")
+def ask_permission():
+    """맥 (10/14): 권한을 맥에 정식으로 물어 시스템 설정 목록에 Trace 가 나타나게 하고, 그 설정 화면을 연다.
+    묻기 전엔 목록에 Trace 가 없어서 학생이 켤 곳을 못 찾았다 ("+ 로 추가" 를 몰라서). kind = ax(손쉬운 사용) · keys(입력 모니터링)"""
+    kind = (request.get_json(force=True, silent=True) or {}).get("kind")
+    if sys.platform != "darwin" or kind not in _권한_화면:
+        return jsonify(error="bad_request", message="맥에서만 쓰는 권한이에요"), 400
+    import subprocess
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "collector")
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    try:
+        if kind == "ax":
+            import mac_ax
+            켜짐 = mac_ax.trusted(ask=True)                      # 맥이 "손쉬운 사용 접근" 창을 띄우고 목록에 Trace 를 넣는다
+        else:
+            import platform_mac
+            켜짐 = platform_mac._입력모니터링_켜졌나(요청=True)     # "키 입력 수신" 창 · 목록에 Trace
+    except Exception:                                            # noqa: BLE001
+        켜짐 = False
+    if not 켜짐:
+        subprocess.Popen(["open", _권한_화면[kind]])
+    return jsonify(ok=True, granted=bool(켜짐))
+
+
+_권한_화면 = {"ax": "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+           "keys": "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"}
+
+
 @bp.post("/local/account/name")
 def rename():
     이름 = ((request.get_json(force=True, silent=True) or {}).get("name") or "").strip()
@@ -188,11 +217,11 @@ def _맥_확인():
             st, d_ = (("ok", "찾음") if 앱("Microsoft Word.app") else ("none", "설치 안 됨")), "과제 글이 바뀌는 과정 · 처음 한 번 'Word 제어' 허용"
         row = {"key": k, "name": n, "desc": d_, "state": st[0], "label": st[1]}
         if st[1] == "권한 필요":
-            row["help"] = _화면_도움
+            row["help"], row["perm"] = _화면_도움, "ax"
         out.append(row)
     out.append({"key": "ax", "name": "앱 화면 읽기", "desc": "데스크톱 AI 앱 대화 · 창 제목 — 맥은 '손쉬운 사용' 권한이 있어야 해요",
                 "state": "ok" if 화면 else "unknown" if 화면 is None else "missing",
-                "label": "켜짐" if 화면 else "확인 못 함" if 화면 is None else "꺼짐", "help": _화면_도움})
+                "label": "켜짐" if 화면 else "확인 못 함" if 화면 is None else "꺼짐", "help": _화면_도움, "perm": "ax"})
     try:
         import platform_mac
         켜짐 = platform_mac._입력모니터링_켜졌나(요청=False)
@@ -201,12 +230,12 @@ def _맥_확인():
     out.append({"key": "keys", "name": "키 입력 횟수", "desc": "몇 번 쳤는지만 셈 · 맥은 '입력 모니터링' 권한이 있어야 해요",
                 "state": "ok" if 켜짐 else "unknown" if 켜짐 is None else "missing",
                 "label": "켜짐" if 켜짐 else "확인 못 함" if 켜짐 is None else "꺼짐",
-                "help": "시스템 설정 → 개인정보 보호 및 보안 → 입력 모니터링 → Trace 켜기 → Trace 를 ⌘Q 로 껐다 다시 열기. "
-                        "('손쉬운 사용' 과 다른 목록이에요. 안 켜도 창 · 복사 · AI 대화 기록은 남아요)"})
+                "help": "[설정 열기] → 입력 모니터링 목록에서 Trace 켜기 → Trace 를 ⌘Q 로 껐다 다시 열기. "
+                        "('손쉬운 사용' 과 다른 목록이에요. 안 켜도 창 · 복사 · AI 대화 기록은 남아요)", "perm": "keys"})
     return out
 
 
-_화면_도움 = ("시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용 → Trace 켜기 (목록에 없으면 + 로 응용 프로그램의 Trace 추가) "
+_화면_도움 = ("[설정 열기] → 손쉬운 사용 목록에서 Trace 켜기 (목록에 없으면 + 로 응용 프로그램의 Trace 추가) "
            "→ 기록 창을 껐다 다시 켜기. 화면낭독기와 같은 길로 AI 앱 글을 읽어요 — 화면을 찍지 않아요.")
 
 
