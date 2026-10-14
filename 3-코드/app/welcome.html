@@ -96,6 +96,7 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
   const T = window.TraceShell, $ = id => document.getElementById(id), el = T.el;
   const STEPS = ["무엇을 기록하나", "기록 준비 점검", "첫 과제 만들기"];
   const IC = {
+    key: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>',
     ok: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>', warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
     minus: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>', refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>', app: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
@@ -135,7 +136,7 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
     },
     function () {                                                    // 2 기록 준비 점검
       head("기록 준비 점검", "Trace 가 무엇을 기록할 수 있는지 확인했어요. 빠진 곳은 지금 채우거나 나중에 해도 됩니다.");
-      const ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc };
+      const ic = { chrome: IC.globe, edge: IC.globe, gptapp: IC.app, claudeapp: IC.app, word: IC.doc, keys: IC.key };
       let 빠짐 = false;
       (checks || []).forEach(x => {
         const r = el("div", "chk"), i = el("span", "ico"); i.append(T.icon(ic[x.key]));
@@ -143,13 +144,17 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
         const right = el("div", "r"), bg = el("span", "badge " + ({ ok: "green", missing: "amber", none: "gray", unknown: "gray" })[x.state]);
         bg.append(T.icon(x.state === "ok" ? IC.ok : x.state === "missing" ? IC.warn : IC.minus), document.createTextNode(x.label));
         right.append(bg);
+        if (x.state === "missing" && x.help) {             // 맥 키 입력 권한처럼 그 줄만의 방법 (10/14)
+          const h = el("div", "help", x.help); h.hidden = true;
+          right.append(btn("켜는 법", "btn-outline btn-sm", () => h.hidden = !h.hidden)); r.append(i, t, right); $("pane").append(r, h); return;
+        }
         if (x.state === "missing") { 빠짐 = true; right.append(btn("설치", "btn-outline btn-sm", () => help.hidden = !help.hidden)); }
         r.append(i, t, right); $("pane").append(r);
       });
       if (!checks) $("pane").append(el("div", "desc", "확인하는 중…"));
       const help = el("div", "help"); help.hidden = true;
       help.innerHTML = "<b>확장 설치 (개발판)</b> · 그 브라우저 주소창에 <b>chrome://extensions</b> (엣지는 <b>edge://extensions</b>) → 개발자 모드 켜기 → "
-        + "<b>압축해제된 확장 프로그램을 로드</b> → <b>Trace/3-코드/extension</b> 폴더 → [다시 확인]";
+        + "<b>압축해제된 확장 프로그램을 로드</b> → <b>내려받기 화면의 확장 zip 을 푼 폴더</b> (개발판은 Trace/3-코드/extension) → [다시 확인]";
       if (빠짐) $("pane").append(help);
       const again = btn("다시 확인", "btn-outline", () => load(1)); again.prepend(T.icon(IC.refresh)); again.style.marginLeft = "auto";
       const later = el("span", "desc"); later.append(document.createTextNode("나중에 "), el("b", null, "설정"), document.createTextNode(" 에서도 볼 수 있어요"));

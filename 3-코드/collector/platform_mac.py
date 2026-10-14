@@ -86,12 +86,13 @@ def input_permission_hint():
     )
 
 
-def _입력모니터링_켜졌나():
+def _입력모니터링_켜졌나(요청=True):
+    """요청=False 면 묻지 않고 보기만 (설정 › 기록할 곳 · 처음 한 번 점검 — 화면을 열 때마다 시스템 창이 뜨지 않게)"""
     try:
         lib = ctypes.cdll.LoadLibrary(ctypes.util.find_library("IOKit"))
         lib.IOHIDCheckAccess.restype = ctypes.c_int
         lib.IOHIDCheckAccess.argtypes = [ctypes.c_int]
-        if lib.IOHIDCheckAccess(_들을_권한) != _허용됨:
+        if 요청 and lib.IOHIDCheckAccess(_들을_권한) != _허용됨:
             lib.IOHIDRequestAccess.restype = ctypes.c_bool
             lib.IOHIDRequestAccess.argtypes = [ctypes.c_int]
             lib.IOHIDRequestAccess(_들을_권한)      # 설정 목록에 나타나게 정식 요청

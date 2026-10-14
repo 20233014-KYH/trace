@@ -57,7 +57,7 @@ def main():
              and d["prefs"]["idle_min"] == 5 and d["prefs"]["position"] == "br")
         검사("원문 기록을 끄는 설정은 없음", not any(k in d["prefs"] for k in ("ai_question", "ai_answer", "office", "capture", "mask")))
         검사("기록할 곳 5개 (크롬 · 엣지 · ChatGPT 앱 · Claude 앱 · Word) · 상태만",
-             [x["key"] for x in d["checks"]] == ["chrome", "edge", "gptapp", "claudeapp", "word"]
+             [x["key"] for x in d["checks"]] == ["chrome", "edge", "gptapp", "claudeapp", "word"] + (["keys"] if sys.platform == "darwin" else [])
              and all(x["state"] in ("ok", "missing", "none", "unknown") for x in d["checks"]))
         검사("계정: 이름 · 이메일 (서버 주소는 안 보냄)", d["account"] == {"name": "시험 학생", "email": "s@example.test"}
              and "server" not in json.dumps(d))
