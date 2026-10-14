@@ -79,5 +79,20 @@ window.TraceWork = (function () {
     catch (e) { say(e.message, false); if (btn) btn.removeAttribute("aria-disabled"); }
   }
 
-  return { card, due, day, steps, facts, clock, dur, hm, startRecording, ICON };
+  // 기록 상태 지켜보기 — 기록 창(별도 창)에서 끄기 · 멈춤 · 다시 시작을 하면 이 창은 그대로 보여서 새로 읽을 일이 없었다
+  // (10/14: 끈 뒤에도 "기록 중" 이 남다가 홈으로 가야 바뀜). 3초마다 상태만 묻고 바뀌면 onChange()
+  function watchRecording(onChange) {
+    const key = r => r ? `${r.work_id}|${r.session_id}|${!!r.paused}` : "";
+    let last = null;
+    const look = async () => {
+      if (document.hidden) return;
+      let r; try { r = (await T.call("GET", "/local/recording")).recording; } catch (e) { return; }
+      const k = key(r);
+      if (last !== null && k !== last) onChange(r);
+      last = k;
+    };
+    look(); return setInterval(look, 3000);
+  }
+
+  return { card, due, day, steps, facts, clock, dur, hm, startRecording, watchRecording, ICON };
 })();

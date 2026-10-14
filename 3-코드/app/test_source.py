@@ -50,6 +50,9 @@ def 학생_PC(data):
     문서 위치(doc_path): 기록에 남은 이름으로 data/문서/ 에 report.docx 를 복사해 두고 그 자리를 적는다 (NO_PATH 빼고)"""
     ev_all, ctx_all, msg_all = [], [], []
     os.makedirs(os.path.join(data, "문서"), exist_ok=True)
+    # 내용으로 문서 찾기(source._후보_파일)가 실제 PC 의 바탕화면 · 문서를 뒤지지 않게 — 시험 자료 안의 빈 홈 (10/14)
+    os.makedirs(os.path.join(data, "홈", "Desktop"), exist_ok=True)
+    os.environ["USERPROFILE"] = os.environ["HOME"] = os.path.join(data, "홈")
     for n, case in enumerate(CASES):
         sid, wid = f"S-{case}", f"W-{case}"
         evs = L(case, "events")

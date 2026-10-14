@@ -191,8 +191,9 @@
   }
 
   load();
-  // 기록기를 켜고 끄면 홈이 따라 바뀌게 — 화면을 다시 볼 때 한 번 더 읽는다
+  // 기록기를 켜고 끄면 홈이 따라 바뀌게 — 화면을 다시 볼 때 한 번 더 읽고, 기록 창에서 끄거나 멈추면 3초 안에 (10/14)
   document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  W.watchRecording(() => load());
 })();
 </script>
 </body>

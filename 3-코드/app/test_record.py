@@ -21,6 +21,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import test_source as T                          # noqa: E402  학생 PC 만들기 · 같은 자료
+from core import safefile                       # noqa: E402
 ST = T.ST
 검사 = T.검사
 
@@ -97,6 +98,28 @@ def main():
         d = G("W-match_proc", "S-match_proc").json
         검사("탐색기 등 과제 프로그램 아닌 키 입력은 빼고 셈",
              d["stats"]["typed"] == sum(e.get("count", 0) for e in T.L("match_proc", "events") if e["type"] == "keys" and e.get("category") == "work"))
+
+        print("\n  ━━ 기록된 위치가 없는 문서 — 내용으로 찾기 (10/14)")
+        r = c.post("/local/source", data={"work_id": f"W-{T.NO_PATH}"}, headers=H, **HOST)
+        검사("Word 글 기록이 없는 옛 기록은 찾지 않고 고르라고 함 (실제 PC 도 안 뒤짐)", r.status_code == 400 and r.json["error"] == "no_file")
+        # match_view: 문서 위치(doc_path)를 지움 = 저장 전 "문서1" 로만 기록되고 기록을 끈 뒤 다른 이름으로 저장한 것
+        p = os.path.join(data, "context-2026-10-05.jsonl")
+        줄 = [l for l in open(p, encoding="utf-8") if not ('"doc_path"' in l and "S-match_view" in l)]
+        open(p, "w", encoding="utf-8").writelines(줄)
+        ST.출처._파일.pop("W-match_view", None); ST.출처._연_이름.pop("W-match_view", None); ST.출처._찾음_실패.clear()
+        r = c.post("/local/source", data={"work_id": "W-match_view"}, headers=H, **HOST)
+        검사("같은 내용 파일이 없으면 고르라고 함", r.status_code == 400)
+        바탕 = os.path.join(data, "홈", "Desktop", "수업", "다른이름으로저장.docx")
+        os.makedirs(os.path.dirname(바탕), exist_ok=True)
+        shutil.copy(os.path.join(T.FX, "match_view", "report.docx"), 바탕)
+        shutil.copy(os.path.join(T.FX, "match_web", "report.docx"), os.path.join(data, "홈", "Desktop", "상관없는파일.docx"))
+        ST.출처._찾음_실패.clear()
+        r = c.post("/local/source", data={"work_id": "W-match_view"}, headers=H, **HOST)
+        검사("기록할 때 쓴 글과 내용이 같은 파일을 찾아 엶 (상관없는 파일은 안 고름) · 경고 대신 '내용으로 찾음'",
+             r.status_code == 200 and r.json["file"] == "다른이름으로저장.docx" and r.json["found_by_content"] and r.json["in_records"],
+             str({k: r.json.get(k) for k in ("file", "found_by_content", "error")}))
+        검사("찾은 자리는 data/docs-found.json 에 (다음엔 바로)",
+             safefile.read_json(os.path.join(data, "docs-found.json"), {}).get("W-match_view") == 바탕)
         print(f"\n  {'─' * 70}\n  통과 {T.통과} · 실패 {T.실패}\n")
     finally:
         ST.출처._기록.clear(); ST.출처._기록.update(옛)
