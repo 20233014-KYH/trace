@@ -7,6 +7,7 @@ build.py — 설치판 만들기 (v0.1 · 10/13)
 결과 (packaging/dist/):
   Trace/                       묶인 앱 폴더 (Trace.exe + _internal)
   Trace-Setup-<버전>.exe        윈도우 설치 파일 (Inno Setup · 관리자 권한 없이 내 계정에 설치)
+  Trace-<버전>-mac.dmg          맥 설치 파일 (Trace.app 을 응용 프로그램으로 끌어 넣기 · Apple 칩)
   Trace-<버전>-extension.zip    크롬 확장 (압축 풀어 "압축해제된 확장 프로그램 로드")
 
 GitHub 에서는 .github/workflows/release.yml 이 태그(v0.1.0)를 올릴 때 윈도우에서 이걸 부르고 릴리스에 올린다.
@@ -28,6 +29,7 @@ from core.version import VERSION                    # noqa: E402
 from core import settings                           # noqa: E402
 
 WIN = sys.platform == "win32"
+MAC = sys.platform == "darwin"
 
 
 def 단계(t):
@@ -67,13 +69,15 @@ def 버전_정보():
 
 def 묶기():
     shutil.rmtree(os.path.join(DIST, "Trace"), ignore_errors=True)
+    shutil.rmtree(os.path.join(DIST, "Trace.app"), ignore_errors=True)
     shutil.rmtree(os.path.join(WORK, "work"), ignore_errors=True)   # 지난 묶음의 Trace.exe 를 다시 쓰면 아이콘이 안 바뀜 (10/13)
     subprocess.run([sys.executable, "-m", "PyInstaller", os.path.join(HERE, "trace.spec"), "--noconfirm",
                     "--distpath", DIST, "--workpath", os.path.join(WORK, "work")], check=True)
 
 
 def 자체_시험():
-    exe = os.path.join(DIST, "Trace", "Trace.exe" if WIN else "Trace")
+    exe = (os.path.join(DIST, "Trace.app", "Contents", "MacOS", "Trace") if MAC       # 맥은 학생이 받는 .app 안의 것으로
+           else os.path.join(DIST, "Trace", "Trace.exe" if WIN else "Trace"))
     결과 = os.path.join(settings.app_data(), "selftest.txt")
     if os.path.exists(결과):
         os.remove(결과)
@@ -106,6 +110,24 @@ def 설치_파일():
     subprocess.run(인자 + [os.path.join(HERE, "trace.iss")], check=True)
 
 
+def 맥_dmg():
+    """Trace.app 을 .dmg 로 — 열면 Trace 와 '응용 프로그램' 바로가기가 보이고 끌어 넣으면 설치.
+    서명은 임시(ad-hoc) — 애플 개발자 등록 전이라 처음 열 때 '확인되지 않은 개발자' 가 뜬다 (내려받기 화면에 여는 법)."""
+    app = os.path.join(DIST, "Trace.app")
+    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", app], check=True)       # 고친 파일까지 다시 임시 서명
+    subprocess.run(["codesign", "--verify", "--deep", "--strict", app], check=True)
+    판 = os.path.join(WORK, "dmg")
+    shutil.rmtree(판, ignore_errors=True)
+    os.makedirs(판)
+    subprocess.run(["ditto", app, os.path.join(판, "Trace.app")], check=True)          # 심볼릭 링크 · 서명 그대로 복사
+    os.symlink("/Applications", os.path.join(판, "응용 프로그램"))
+    out = os.path.join(DIST, f"Trace-{VERSION}-mac.dmg")
+    if os.path.exists(out):
+        os.remove(out)
+    subprocess.run(["hdiutil", "create", "-volname", f"Trace {VERSION}", "-srcfolder", 판, "-ov", "-format", "UDZO", out], check=True)
+    print(out)
+
+
 def 확장_zip():
     src = os.path.join(ROOT, "extension")
     out = os.path.join(DIST, f"Trace-{VERSION}-extension.zip")
@@ -128,6 +150,8 @@ def main():
     단계("자체 시험"); 자체_시험()
     if WIN and not a.no_installer:
         단계("설치 파일 (Inno Setup)"); 설치_파일()
+    if MAC and not a.no_installer:
+        단계("설치 파일 (.dmg)"); 맥_dmg()
     단계("크롬 확장 zip"); 확장_zip()
     단계("끝")
     for n in sorted(os.listdir(DIST)):

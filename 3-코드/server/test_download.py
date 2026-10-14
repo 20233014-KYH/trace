@@ -39,11 +39,27 @@ def main():
     검사("3 최신 릴리스", r.status_code == 200 and d["version"] == "0.1.0" and d["windows"]["name"].endswith(".exe"), d)
 
     서버._릴리스.update(at=0)                                                     # 10분 지남 + GitHub 이 안 됨 → 전에 읽은 것
-    본래 = 서버.릴리스_API
-    서버.릴리스_API = "http://127.0.0.1:9/없음"
+    본래 = 서버._github
+    서버._github = lambda url, method="GET": (_ for _ in ()).throw(OSError("연결 안 됨"))
     r = c.get("/api/app/latest")
-    서버.릴리스_API = 본래
     검사("4 GitHub 이 안 되면 전에 읽은 것", r.status_code == 200 and r.get_json()["version"] == "0.1.0", r.status_code)
+
+    # GitHub API 없이 웹 주소로 읽기 (10/14) — releases/latest 가 넘겨 주는 주소 · 파일 HEAD · 저장소의 notes
+    def 가짜(url, method="GET"):
+        if url.endswith("/releases/latest"):
+            return 302, {"Location": "https://github.com/20233014-KYH/trace/releases/tag/v0.2.0"}, b""
+        if url.endswith("Trace-Setup-0.2.0.exe") or url.endswith("Trace-0.2.0-mac.dmg"):
+            return 302, {}, b""
+        if "raw.githubusercontent.com" in url and url.endswith("v0.2.0.md"):
+            return 200, {}, "맥 설치판\n- 둘째 줄".encode()
+        return 404, {}, b""
+    서버._github = 가짜
+    d = 서버._릴리스_읽기()
+    검사("6 웹 주소로 태그 · 파일 · 글", d["version"] == "0.2.0" and d["windows"]["url"].endswith("/v0.2.0/Trace-Setup-0.2.0.exe")
+         and d["mac"]["name"] == "Trace-0.2.0-mac.dmg" and d["extension"] is None and d["notes"].startswith("맥 설치판"), d)
+    서버._github = lambda url, method="GET": (302, {"Location": "https://github.com/20233014-KYH/trace/releases"}, b"")
+    검사("7 릴리스가 없으면 version 빈칸 → 404", 서버._릴리스_읽기()["version"] == "", "")
+    서버._github = 본래
 
     sys.path.insert(0, os.path.dirname(HERE))
     from core.version import parse

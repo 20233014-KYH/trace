@@ -86,3 +86,23 @@ exe = EXE(                                        # noqa: F821
     version=os.path.join(HERE, "build", "version_info.txt") if sys.platform == "win32" else None,
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="Trace")   # noqa: F821
+
+# ── 맥: Trace.app (10/14) — build.py 가 이걸 .dmg 에 담는다. 윈도우는 Inno Setup 이 설치 파일로 ──
+if sys.platform == "darwin":
+    import re
+    버전 = re.search(r'VERSION = "([^"]+)"', open(os.path.join(ROOT, "core", "version.py"), encoding="utf-8").read()).group(1)
+    app = BUNDLE(                                 # noqa: F821
+        coll,
+        name="Trace.app",
+        icon=icon if os.path.exists(icon) else None,   # .ico → .icns 는 PyInstaller 가 (Pillow) 바꾼다
+        bundle_identifier="kr.trace.app",
+        version=버전,
+        info_plist={
+            "CFBundleDisplayName": "Trace",
+            "CFBundleShortVersionString": 버전,
+            "CFBundleVersion": 버전,
+            "LSMinimumSystemVersion": "11.0",
+            "NSHighResolutionCapable": True,
+            "NSHumanReadableCopyright": "Trace — 창의프로젝트1",
+        },
+    )

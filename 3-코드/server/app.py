@@ -19,6 +19,8 @@ import re
 import secrets
 import sys
 import unicodedata
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -1090,43 +1092,70 @@ def demo_pdf():
 
 
 # ─────────────── 설치판 내려받기 (v0.1 · 10/13) ───────────────
-# 설치 파일은 GitHub 릴리스에 있다 (태그 v* 를 올리면 .github/workflows/release.yml 이 윈도우에서 묶어 올림).
+# 설치 파일은 GitHub 릴리스에 있다 (태그 v* 를 올리면 .github/workflows/release.yml 이 윈도우 · 맥에서 묶어 올림).
 # 서버는 최신 릴리스를 10분마다 읽어 두고 → 내려받기 화면과 PC 앱의 "새 버전" 알림이 같은 것을 본다.
-릴리스_API = "https://api.github.com/repos/20233014-KYH/trace/releases/latest"
+# ★ GitHub API 는 쓰지 않는다 (10/14) — 로그인 없는 API 는 IP 마다 시간당 60번인데 Render 는 여러 서비스가 IP 를 같이 써서
+#   첫 릴리스(v0.1.0) 를 올려도 계속 "없음" 이었다. 대신 보통 웹 주소를 본다:
+#   ① …/releases/latest 가 넘겨 주는 주소(…/tag/v0.1.0) 로 태그 ② 파일 이름은 build.py 가 정한 대로 ③ 바뀐 것 글은 저장소의 notes/<태그>.md
+저장소 = "20233014-KYH/trace"
 _릴리스 = {"at": 0.0, "data": None}
+설치_파일 = {"windows": "Trace-Setup-{v}.exe", "mac": "Trace-{v}-mac.dmg", "extension": "Trace-{v}-extension.zip"}
+
+
+class _안_따라감(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):                     # 넘겨 주는 주소만 보고 따라가지 않는다
+        return None
+
+
+def _github(url, method="GET"):
+    """(상태, 머리, 몸) — 넘겨 주기(30x)를 따라가지 않는다"""
+    요청 = urllib.request.Request(url, method=method, headers={"User-Agent": "trace-server"})
+    try:
+        with urllib.request.build_opener(_안_따라감).open(요청, timeout=8) as r:
+            return r.status, r.headers, r.read() if method == "GET" else b""
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers, b""
+
+
+def _릴리스_읽기():
+    """→ {version, tag, page, notes, windows, mac, extension} · 릴리스가 없으면 {"version": ""}"""
+    from urllib.parse import quote
+    코드, 머리, _ = _github(f"https://github.com/{저장소}/releases/latest", "HEAD")
+    m = re.search(r"/releases/tag/([^/?#]+)$", 머리.get("Location") or "") if 코드 in (301, 302, 303, 307, 308) else None
+    if not m:
+        if 코드 in (301, 302, 303, 307, 308, 404):              # 릴리스 목록으로 넘어감 = 아직 없음
+            return {"version": "", "tag": None}
+        raise OSError(f"releases/latest HTTP {코드}")
+    tag = m.group(1)
+    v = tag.lstrip("vV")
+    d = {"version": v, "tag": tag, "published_at": None, "page": f"https://github.com/{저장소}/releases/tag/{tag}", "notes": ""}
+    for 키, 틀 in 설치_파일.items():
+        이름 = 틀.format(v=v)
+        url = f"https://github.com/{저장소}/releases/download/{tag}/{이름}"
+        코드, _, _ = _github(url, "HEAD")                      # 있으면 내려받는 곳으로 넘겨 줌(302)
+        d[키] = {"name": 이름, "url": url, "size": None} if 코드 in (200, 302) else None
+    코드, _, 몸 = _github(f"https://raw.githubusercontent.com/{저장소}/{tag}/" + quote(f"3-코드/packaging/notes/{tag}.md"))
+    if 코드 == 200:
+        d["notes"] = 몸.decode("utf-8", "replace").strip()[:2000]
+    return d
 
 
 def _최신_릴리스():
-    import json
     import time
-    import urllib.request
     if _릴리스["data"] is not None and time.time() - _릴리스["at"] < 600:
         return _릴리스["data"]
     try:
-        요청 = urllib.request.Request(릴리스_API, headers={"Accept": "application/vnd.github+json", "User-Agent": "trace-server"})
-        with urllib.request.urlopen(요청, timeout=8) as r:
-            g = json.loads(r.read())
-    except Exception as e:                                   # noqa: BLE001  GitHub 가 안 되면 전에 읽은 것 (없으면 None)
-        print(f"  릴리스 읽기 실패 ({type(e).__name__}) — 전에 읽은 것으로")
+        _릴리스["data"] = _릴리스_읽기()
+        _릴리스["at"] = time.time()
+    except Exception as e:                                   # noqa: BLE001  GitHub 이 안 되면 전에 읽은 것 (없으면 None)
+        print(f"  릴리스 읽기 실패 ({type(e).__name__}: {e}) — 전에 읽은 것으로")
         _릴리스["at"] = time.time() - 540                      # 1분 뒤 다시
-        return _릴리스["data"]
-
-    def 파일(끝):
-        for a in g.get("assets") or []:
-            if a.get("name", "").lower().endswith(끝):
-                return {"name": a["name"], "url": a["browser_download_url"], "size": a.get("size")}
-        return None
-    _릴리스["data"] = {"version": (g.get("tag_name") or "").lstrip("vV"), "tag": g.get("tag_name"),
-                       "published_at": g.get("published_at"), "page": g.get("html_url"),
-                       "notes": (g.get("body") or "").strip()[:2000],
-                       "windows": 파일(".exe"), "extension": 파일("-extension.zip") or 파일(".zip")}
-    _릴리스["at"] = time.time()
     return _릴리스["data"]
 
 
 @app.get("/api/app/latest")
 def app_latest():
-    """최신 설치판 {version, tag, published_at, page, notes, windows:{name,url,size}, extension:{…}} · 없으면 404"""
+    """최신 설치판 {version, tag, page, notes, windows · mac · extension: {name, url} | null} · 없으면 404"""
     d = _최신_릴리스()
     if not d or not d.get("version"):
         return jsonify(error="no_release", message="아직 올린 설치판이 없습니다"), 404
