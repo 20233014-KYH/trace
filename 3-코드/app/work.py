@@ -23,7 +23,7 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 import confirm as CF
-from core import match as M
+from core import match as M, safefile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -54,16 +54,12 @@ def _경로(wid):
 
 
 def meta(wid):
-    try:
-        return json.load(open(_경로(wid), encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+    d = safefile.read_json(_경로(wid), {})
+    return d if isinstance(d, dict) else {}
 
 
 def _meta_쓰기(wid, d):
-    os.makedirs(S._기록["data_dir"](), exist_ok=True)
-    with open(_경로(wid), "w", encoding="utf-8") as f:
-        json.dump(d, f, ensure_ascii=False, indent=1)
+    safefile.write_json(_경로(wid), d, indent=1)
 
 
 def _입력(b):

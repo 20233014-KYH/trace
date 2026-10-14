@@ -122,6 +122,9 @@ def main():
 
         print("\n  ━━ 왼쪽 과제를 누르면 그 과제의 지금 단계로 (/go)")
         갈곳 = lambda w: c.get(f"/go?work={w}", **HOST).headers.get("Location", "")
+        웹 = os.path.join(data, "confirm-W-match_web.json")       # match_web 은 물을 것 0 (붙여넣기 기록으로 다 확실)
+        검사("물을 것 없는 과제는 연결 확인을 보면 내역서로 (10/14)", os.path.exists(웹) and 갈곳("W-match_web").endswith("/export?work=W-match_web"))
+        os.remove(웹)                                             # ↓ 연결 확인을 아직 안 본 과제로 되돌림
         검사("고른 것 없으면 출처 보기", 갈곳("W-match_web").endswith("/source?work=W-match_web"))
         검사("고르다 말았으면 연결 확인", 갈곳("W-match_view").endswith("/confirm?work=W-match_view"))
         P({"work_id": "W-match_view", "set": {k: "unsure" for k in 새키}})

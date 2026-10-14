@@ -9,6 +9,8 @@ prefs.py — 학생이 설정 화면에서 고르는 것 (이 PC 의 data/settin
 import json
 import os
 
+from core import safefile
+
 FILE = "settings.json"
 DEFAULTS = {
     # 기록 창
@@ -32,10 +34,9 @@ def load(data_dir):
     """기본값 위에 저장한 것을 얹어서 → dict (파일이 없거나 깨져도 기본값)"""
     out = dict(DEFAULTS)
     try:
-        with open(os.path.join(data_dir, FILE), encoding="utf-8") as f:
-            saved = json.load(f)
+        saved = safefile.read_json(os.path.join(data_dir, FILE), {})
         out.update({k: v for k, v in saved.items() if k in DEFAULTS and check(k, v)})
-    except (OSError, ValueError, AttributeError):
+    except AttributeError:
         pass
     return out
 
@@ -56,7 +57,5 @@ def save(data_dir, changes):
         return None, f"바꿀 수 없는 값이에요: {', '.join(bad)}"
     cur = load(data_dir)
     cur.update(changes)
-    os.makedirs(data_dir, exist_ok=True)
-    with open(os.path.join(data_dir, FILE), "w", encoding="utf-8") as f:
-        json.dump({k: v for k, v in cur.items() if v != DEFAULTS[k]}, f, ensure_ascii=False, indent=1)
+    safefile.write_json(os.path.join(data_dir, FILE), {k: v for k, v in cur.items() if v != DEFAULTS[k]}, indent=1)
     return cur, None

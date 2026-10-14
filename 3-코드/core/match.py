@@ -68,6 +68,30 @@ def compare(result: str, ai: str):
     return ratio, cover
 
 
+def _prep(c):
+    """후보의 비교용 글(norm) · 글자 조각을 한 번만 만든다 (10/14 · 22쪽 문서에서 문장마다 다시 만들어 27초 걸림)"""
+    if "_n" not in c:
+        c["_n"] = norm(c["text"])
+        c["_b"] = _bigrams(c["_n"])
+    return c
+
+
+def _빠른_비교(r, br, c, need_ratio):
+    """compare() 와 같은 값 — 다만 ratio 는 need_ratio 이고 90% 에 닿을 수 있을 때만 셈 (못 닿으면 0.0).
+    difflib ratio = 2·맞은 글자 / 두 길이 합 ≤ 2·짧은 길이 / 두 길이 합 → 이게 기준 아래면 "그대로" 가 될 수 없다.
+    ratio 는 "그대로" 판단에만 쓰이고(나머지는 시험 출력용 _ratio) 결과는 compare() 로 돌린 것과 같다."""
+    a = c["_n"]
+    if len(r) < 2 or len(a) < 2:
+        return 0.0, 0.0
+    cover = len(br & c["_b"]) / len(br)
+    ratio = 0.0
+    if need_ratio and 2 * min(len(r), len(a)) >= EXACT_RATIO * (len(r) + len(a)):
+        sm = difflib.SequenceMatcher(None, r, a, autojunk=False)
+        if sm.quick_ratio() >= EXACT_RATIO:            # 글자 모음만 본 위 한계 — 이것도 못 넘으면 순서 비교 생략
+            ratio = sm.ratio()
+    return ratio, cover
+
+
 def candidates(answers):
     """AI 답들 → 비교 후보: 문장 하나씩 + 이웃한 두 문장을 합친 것 (두 문장을 합쳐 다시 쓴 경우용)
     answers: [{"id", "text", ...}] → [{"answer": id, "sents": (i,) | (i, i+1), "text"}]"""
@@ -84,11 +108,13 @@ def candidates(answers):
 def link_sentence(sentence: str, cands):
     """한 문장 → {"label", "answer", "sents", "ai_text", "_ratio", "_cover"}  (밑줄 칸은 시험용 · 화면에 안 냄)"""
     best = {"label": "none", "answer": None, "sents": None, "ai_text": None, "_ratio": 0.0, "_cover": 0.0}
-    if len(norm(sentence)) < MIN_CHARS:
+    r = norm(sentence)
+    if len(r) < MIN_CHARS:
         return best
+    br = _bigrams(r)
     one = two = None                    # "고침" 후보: 가장 잘 맞는 한 문장 · 가장 잘 맞는 이웃 두 문장
     for c in cands:
-        ratio, cover = compare(sentence, c["text"])
+        ratio, cover = _빠른_비교(r, br, _prep(c), len(c["sents"]) == 1)
         if len(c["sents"]) == 1 and ratio >= EXACT_RATIO and ratio > best["_ratio"]:
             best = {"label": "exact", "answer": c["answer"], "sents": c["sents"], "ai_text": c["text"], "_ratio": ratio, "_cover": cover}
         elif cover >= EDIT_COVER:

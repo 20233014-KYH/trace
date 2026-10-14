@@ -21,7 +21,7 @@ import sys
 from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
-from core import prefs
+from core import prefs, safefile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("options", __name__)
@@ -80,12 +80,11 @@ def rename():
     if 코드 != 200:
         return jsonify(답), 코드
     경로 = os.path.join(S._기록["data_dir"](), "auth.json")      # 왼쪽 아래 내 이름도 바로 바뀌게
-    try:
-        a = json.load(open(경로, encoding="utf-8"))
-        a.setdefault("user", {})["name"] = 이름
-        json.dump(a, open(경로, "w", encoding="utf-8"), ensure_ascii=False)
-    except (OSError, ValueError):
-        pass
+    with safefile.lock(경로):
+        a = safefile.read_json(경로)
+        if isinstance(a, dict):
+            a.setdefault("user", {})["name"] = 이름
+            safefile.write_json(경로, a)
     return jsonify(name=이름)
 
 

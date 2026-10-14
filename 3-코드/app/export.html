@@ -56,6 +56,9 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 .dl{height:46px;border-radius:12px;background:var(--ink);color:#fff;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
 .dl:hover{background:#27272a}.dl:disabled{background:#d4d4d8;cursor:default}
 .dl svg{width:18px;height:18px;stroke-width:2}
+.acts{display:flex;gap:8px}.acts .dl{flex:1}
+.sv{height:46px;padding:0 18px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);background:var(--card,#fff);font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap}
+.sv:hover{background:var(--bg)}.sv:disabled{color:var(--faint);cursor:default}
 .lk{display:flex;gap:8px}
 .lk input{flex:1;min-width:0;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13.5px;color:var(--ink2);background:var(--bg)}
 .lk button{height:38px;padding:0 12px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--line);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
@@ -108,7 +111,8 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       <section class="rc">
         <div class="secs" id="secs"></div>
         <div class="ft">
-          <button class="dl" id="b-dl"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>PDF 내려받기</button>
+          <div class="acts"><button class="sv" id="b-save" title="PDF 없이 저장 — 과제 화면에서 언제든 이어서 할 수 있어요">저장하고 나가기</button>
+          <button class="dl" id="b-dl"><svg viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>PDF 내려받기</button></div>
           <div class="lk"><input id="i-link" readonly placeholder="PDF 를 내려받으면 교수 확인 링크가 만들어져요" aria-label="교수 확인 링크">
             <button id="b-copy" disabled><svg viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>링크 복사</button></div>
           <div class="note" id="note" hidden></div>
@@ -126,7 +130,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   const { call, el, icon } = TraceShell;
   const wid = new URLSearchParams(location.search).get("work") || "";
   const MAX = 150;
-  let D = null, open = 1, showAllQ = false, drawT = null, saveT = null;
+  let D = null, open = 1, showAllQ = false, drawT = null, saveT = null, pend = {};
 
   TraceShell.init({ wid, step: "report" });
 
@@ -152,6 +156,12 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     try { await call("POST", "/local/export/draft", null, { work_id: wid, ...part }); }
     catch (e) { return say(e.message, "err"); }
     if (redraw) draw();
+  }
+  // 학생 설명: 칠 때마다 모아 두었다가 잠깐 멈추면 한 번에 저장 (두 칸을 번갈아 쳐도 앞 칸이 빠지지 않게 · 10/14)
+  function flush(redraw = true) {
+    clearTimeout(saveT);
+    const p = pend; pend = {};
+    return Object.keys(p).length ? save(p, redraw) : Promise.resolve();
   }
   function say(t, cls) { const n = $("note"); n.hidden = !t; n.className = "note" + (cls ? " " + cls : ""); n.textContent = t || ""; }
 
@@ -188,7 +198,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
         ta.oninput = () => {
           dr[k] = ta.value; cnt.textContent = `${len(ta.value)} / ${MAX}`; cnt.classList.toggle("over", len(ta.value) > MAX);
           if (len(ta.value) > MAX) return;
-          clearTimeout(saveT); saveT = setTimeout(() => save({ [k]: ta.value }), 250);   // 잠깐 멈추면 저장 → PDF 다시 (깜빡임 없이 바꿔 끼움)
+          pend[k] = ta.value; clearTimeout(saveT); saveT = setTimeout(flush, 250);   // 잠깐 멈추면 저장 → PDF 다시 (깜빡임 없이 바꿔 끼움)
         };
         ta.onblur = () => { const sm = box.querySelector(".sec.open .sh small"); if (sm) sm.textContent = summary1(); };
         b.append(lb, ta, cnt);
@@ -294,6 +304,16 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     else say(r.reused ? "바뀐 게 없어서 전에 만든 링크를 그대로 썼어요." : "내역서와 링크를 만들었어요.", "ok");
     window.open(r.pdf_url, "_blank");
     draw();
+  };
+  // PDF 를 만들지 않고 끝내고 싶을 때 (10/14 박상진) — 고른 것은 이미 이 PC 에 저장돼 있다. 마지막 입력까지 저장하고 과제 화면으로
+  $("b-save").onclick = async () => {
+    $("b-save").disabled = true;
+    if ([...document.querySelectorAll("#secs textarea")].some(t => t.value.trim().length > MAX)) {
+      $("b-save").disabled = false; return say(`설명은 ${MAX}자까지 쓸 수 있어요`, "err");
+    }
+    await flush(false);
+    if (!$("note").classList.contains("err")) location.href = "/work?work=" + encodeURIComponent(wid);
+    else $("b-save").disabled = false;
   };
   $("b-copy").onclick = async () => {
     try { await navigator.clipboard.writeText($("i-link").value); say("링크를 복사했어요.", "ok"); }
