@@ -32,6 +32,8 @@
 .row .ok{display:flex;align-items:center;gap:5px;font-size:12.5px;color:#15803d;white-space:nowrap}
 .row .ok.wait{color:var(--faint)}
 .row .ok svg{width:14px;height:14px}
+.row.go{cursor:pointer}.row.go:hover{background:#f6f6f7}
+.row .chev{color:#d4d4d8;display:flex}
 .recs .foot{margin-top:auto;padding-top:12px}
 .right{width:392px;flex:none;display:flex;flex-direction:column;gap:16px}
 .box{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
@@ -90,7 +92,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
         <section class="card recs">
           <div style="display:flex;align-items:center"><span class="h-sec">기록</span><span class="desc" id="rsum" style="margin-left:8px"></span></div>
           <div id="rows" style="margin-top:6px"></div>
-          <div class="desc foot">원문은 이 PC 에만 · 기록을 다시 보는 화면은 준비 중이에요</div>
+          <div class="desc foot">원문은 이 PC 에만 · 기록을 누르면 그때 한 일을 시간 순으로 다시 봐요</div>
         </section>
         <div class="right">
           <section class="card box">
@@ -193,6 +195,12 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
         if (s.sealed) { ok.append(T.icon(OK), document.createTextNode("서버 일치")); }
         else ok.textContent = s.sealed === false ? "서버 확인 전" : d.server_ok ? "서버에 없음" : "";
         r.append(ok);
+      }
+      if (!s.recording) {                                           // 누르면 기록 다시 보기 (캔버스 Record · 10/14)
+        r.classList.add("go"); r.tabIndex = 0; r.title = "이 기록 자세히 보기";
+        const ch = el("span", "chev"); ch.append(T.icon(ARROW)); r.append(ch);
+        const go = () => location.href = `/record?work=${encodeURIComponent(wid)}&session=${encodeURIComponent(s.id)}`;
+        r.onclick = go; r.onkeydown = e => { if (e.key === "Enter") go(); };
       }
       box.append(r);
     });

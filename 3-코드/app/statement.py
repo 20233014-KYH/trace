@@ -416,6 +416,8 @@ app.register_blueprint(설정화면.bp)
 import review as 돌아보기                          # noqa: E402  캔버스 곁가지 · 돌아보기 v2 (10/13)
 app.register_blueprint(돌아보기.bp)
 과제.설정.update(bridge=홈._기록기, config=lambda: 설정.get("config"))
+import record as 기록보기                          # noqa: E402  캔버스 Record · 기록 다시 보기 (10/14)
+app.register_blueprint(기록보기.bp)
 
 
 def main():

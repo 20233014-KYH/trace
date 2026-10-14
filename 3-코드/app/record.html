@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>기록 · Trace</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="/ui/shell.css">
+<link rel="stylesheet" href="/ui/work.css">
+<style>
+/* 기록 다시 보기 — 캔버스 Record (위 숫자 · 시간 막대 · 왼쪽 시간 순 목록 · 오른쪽 고른 줄) · 원문은 이 PC 화면에만 */
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:20px 32px 22px}
+.head{display:flex;align-items:flex-end;gap:16px}
+.head h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.head .sub{font-size:13px;color:var(--muted)}
+.stats{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13px;color:var(--ink2);white-space:nowrap}
+.stats b{font-weight:700;color:var(--ink);margin-right:3px;font-variant-numeric:tabular-nums}
+.okb{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:12.5px;font-weight:600}
+.okb.wait{background:var(--soft);color:var(--muted);border-color:var(--line)}
+.okb svg{width:14px;height:14px}
+/* 시간 막대 */
+.lanes{padding:14px 20px 10px;flex:none}
+.lane{display:flex;align-items:center;height:23px}
+.lane .ln{width:88px;flex:none;font-size:12px;color:var(--muted)}
+.lane .tr{position:relative;flex:1;height:100%}
+.tr .dot{position:absolute;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--ink)}
+.tr .tick{position:absolute;top:5px;bottom:5px;width:3px;margin-left:-1px;border-radius:2px;background:var(--copy-d)}
+.tr .bar{position:absolute;top:7px;bottom:7px;min-width:4px;border-radius:3px;background:#d4d4d8}
+.tr .pz{position:absolute;top:-70px;bottom:0;border-radius:6px;border:1px solid #d4d4d8;background:repeating-linear-gradient(135deg,#f4f4f5 0 6px,#e9e9ec 6px 7px);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--muted)}
+.axis{display:flex;margin-left:88px;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;justify-content:space-between;padding-top:4px}
+/* 아래 두 칸 */
+.cols{flex:1;min-height:0;display:flex;gap:16px}
+.list{flex:1;min-width:0;display:flex;flex-direction:column;padding:14px 16px 10px}
+.lh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.seg{display:inline-flex;background:#ececee;border-radius:10px;padding:3px;flex:none}
+.seg button{height:28px;padding:0 11px;border-radius:7px;font-size:13.5px;color:var(--muted);font-weight:500}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.lh .desc{margin-left:auto}
+.rows{flex:1;min-height:0;overflow:auto;margin:0 -6px;padding:0 6px}
+.r{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px}
+.r:hover{background:#f6f6f7}.r.on{background:#f0f0f2}
+.r .t{width:42px;flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.r .ic{width:16px;flex:none;color:var(--muted);display:flex}
+.r .k{width:132px;flex:none;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .x{flex:1;min-width:0;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r.dim .k,.r.dim .x{color:var(--muted);font-weight:500}
+.tag{flex:none;font-size:12px;font-weight:600;height:22px;display:inline-flex;align-items:center;padding:0 8px;border-radius:6px;white-space:nowrap}
+.tag.copy{background:var(--copy);color:#a4282d}.tag.edited{background:var(--edit);color:#2f50c4}
+.tag.viewed{color:#2f50c4;background:#fff;box-shadow:inset 0 0 0 1px #c6d4f7;text-decoration:underline dashed;text-underline-offset:3px}
+.tag.ref{background:var(--soft);color:var(--ink2)}.tag.plain{color:var(--muted);font-weight:500;padding:0}
+.det{width:360px;flex:none;display:flex;flex-direction:column;padding:16px 18px;min-height:0}
+.det .in{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.det .dh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+.det .dh i{width:8px;height:8px;border-radius:50%;background:var(--ink);flex:none}
+.det .dh .tag{margin-left:auto}
+.det .m{font-size:12.5px;color:var(--muted)}
+.det label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.det .q{font-size:14px;line-height:1.6}
+.det .use{font-size:14px;line-height:1.6;padding:10px 12px;border-radius:10px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.det .use + .use{margin-top:6px}
+.det .use small{display:block;font-size:11.5px;color:var(--muted)}
+.det .ans{font-size:13.5px;line-height:1.7;color:var(--ink2);white-space:pre-wrap}
+.det .g-copy{background:#fde3e3}.det .g-edited{background:#dfe7fb}
+.det .g-viewed,.use.viewed span{text-decoration:underline dashed var(--edit-d);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.use.copy span{background:#fde3e3}.use.edited span{background:#dfe7fb}
+.det .ex{font-size:13px;line-height:1.6;color:var(--ink2);padding:10px 12px;border-radius:10px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);white-space:pre-wrap;max-height:260px;overflow:auto}
+.det .ft{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:12.5px;color:var(--muted)}
+.det .empty{margin:auto;text-align:center;color:var(--muted);font-size:13px}
+.det .go{align-self:flex-start}
+.toast{font-size:13px;padding:10px 14px;border-radius:10px;background:#fdecec;color:#a4282d}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span><b>Trace</b>
+      <button class="tg" id="b-rail" title="메뉴 접기" aria-label="메뉴 접기" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button></div>
+    <a class="nav" href="/home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="t">홈</span></a>
+    <a class="nav" href="/review"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="t">돌아보기</span></a>
+    <a class="nav" href="/settings"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span class="t">설정</span></a>
+    <h4>내 과제</h4>
+    <nav class="works" id="works"></nav>
+    <a class="nav add" href="/new"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="t">새 과제</span></a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top pywebview-drag-region">
+      <div class="tl">
+        <button class="ib arw" id="b-back" title="과제로" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+        <button class="ib arw" id="b-fwd" disabled aria-label="앞으로"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></button>
+        <div class="crumb"><a href="/home">내 과제</a>/<a id="c-work-a"><span id="c-work">과제</span></a>/<b id="c-rec">기록</b></div>
+      </div>
+      <div></div>
+      <div class="win" style="align-items:center">
+        <a class="btn btn-outline btn-sm" id="b-src">출처 보기</a>
+        <span style="width:10px"></span>
+        <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+        <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+        <button data-w="close" class="x" title="닫기" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      </div>
+    </header>
+
+    <div class="body" id="body">
+      <div class="head">
+        <div><h1 id="h">불러오는 중…</h1><div class="sub" id="sub"></div></div>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div id="toast"></div>
+      <section class="card lanes" id="tl"></section>
+      <div class="cols">
+        <section class="card list">
+          <div class="lh">
+            <div class="seg" role="tablist" id="seg">
+              <button class="on" data-f="all">전체</button><button data-f="ai">AI 질문·답</button><button data-f="paste">붙여넣기</button><button data-f="word">Word 글</button>
+            </div>
+            <span class="desc" id="lhint">오른쪽 칸 = 결과물과 이어진 것</span>
+          </div>
+          <div class="rows" id="rows" role="listbox" tabindex="0"></div>
+        </section>
+        <section class="card det"><div class="in" id="det"><div class="empty">왼쪽에서 줄을 고르면 자세히 보여요</div></div></section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/ui/shell.js"></script>
+<script src="/ui/win.js"></script>
+<script src="/ui/work.js"></script>
+<script>
+(function () {
+  const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
+  const qs = new URLSearchParams(location.search), wid = qs.get("work") || "", sid = qs.get("session") || "";
+  const workUrl = "/work?work=" + encodeURIComponent(wid);
+  T.init({});
+  T.loadWorks(wid, { stay: true });
+  $("b-back").onclick = () => location.href = workUrl;                // ← · 경로의 과제 이름 · 왼쪽 과제 = 과제 상세로
+  $("c-work-a").href = workUrl;
+  const ICON = {
+    start: '<path d="M4 22V4a1 1 0 0 1 1-1h12l-3 5 3 5H5"/>', doc: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
+    q: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', a: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    paste: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+    word: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    pause: '<path d="M9 5v14M15 5v14"/>', end: '<path d="m5 12 5 5L20 7"/>',
+  };
+  const 묶음 = { all: null, ai: ["q", "a"], paste: ["paste"], word: ["word", "doc"] };
+  let D = null, filt = "all", pick = null;
+
+  const hm = iso => (iso || "").slice(11, 16);
+  function dur(s) { return s == null ? "" : W.dur(s); }
+  function toast(t) { $("toast").textContent = ""; if (t) $("toast").append(el("div", "toast", t)); }
+
+  async function load() {
+    try { D = await T.call("GET", `/local/record/detail?work_id=${encodeURIComponent(wid)}&session_id=${encodeURIComponent(sid)}`); }
+    catch (e) { $("h").textContent = "기록을 열지 못했어요"; toast(e.message); return; }
+    const s = D.session;
+    const 날 = W.day(s.start), 제목 = `${날} ${hm(s.start)} – ${hm(s.end)}`;
+    $("h").textContent = 제목; $("c-rec").textContent = `${날} 기록`; document.title = `${날} 기록 · Trace`;
+    $("sub").textContent = `기록 ${dur(s.active_sec)} · ${s.total}번 중 ${s.n}번째 기록` + (D.linked ? "" : " · 과제 파일을 열면 결과물과 이어진 것도 보여요");
+    $("lhint").hidden = !D.linked;
+    $("b-src").href = D.source;
+    stats(null);
+    timeline(); rows();
+    const 첫 = D.items.find(x => x.kind === "a" && x.tag && x.tag.c !== "ref") || D.items.find(x => x.kind === "q");
+    if (첫) choose(첫.id);
+    // 과제 이름 · 서버 일치는 서버를 물어야 해서 뒤에서 (1~2초)
+    T.call("GET", "/local/work?work_id=" + encodeURIComponent(wid)).then(w => {
+      $("c-work").textContent = w.work.title;
+      const x = (w.sessions || []).find(v => v.id === sid);
+      stats(x ? x.sealed : undefined, w.server_ok);
+    }).catch(() => {});
+  }
+
+  function stats(sealed, serverOk) {
+    const t = D.stats, box = $("stats"); box.textContent = "";
+    const kv = (n, label) => { const s = el("span"); s.append(el("b", null, n), document.createTextNode(label)); return s; };
+    box.append(kv(String(t.questions), "AI 질문"), kv(String(t.pastes), "붙여넣기"), kv(`+${t.typed.toLocaleString()}자`, "키보드로 친 글자"));
+    if (t.pause_sec >= 60) box.append(kv(dur(t.pause_sec), "멈춤"));
+    if (sealed === undefined) return;
+    const b = el("span", "okb" + (sealed ? "" : " wait"));
+    if (sealed) { b.append(T.icon('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'), document.createTextNode("서버 기록과 일치합니다")); }
+    else b.textContent = sealed === false ? "서버 확인 전" : serverOk ? "서버에 없음" : "서버 연결 안 됨";
+    box.append(b);
+  }
+
+  // ── 시간 막대: AI 질문·답 점 · 붙여넣기 빨간 눈금 · Word 글 회색 막대 · 멈춤 빗금 ──
+  function timeline() {
+    const box = $("tl"); box.textContent = "";
+    const t0 = Date.parse(D.session.start), t1 = Math.max(Date.parse(D.session.end), t0 + 60e3), span = t1 - t0;
+    const x = iso => Math.min(100, Math.max(0, (Date.parse(iso) - t0) / span * 100));
+    const lane = (name, fill) => { const l = el("div", "lane"), tr = el("div", "tr"); l.append(el("span", "ln", name), tr); fill(tr); box.append(l); return tr; };
+    const ai = lane("AI 질문·답", tr => D.lanes.ai.forEach(ts => { const d = el("i", "dot"); d.style.left = x(ts) + "%"; tr.append(d); }));
+    lane("붙여넣기", tr => D.lanes.paste.forEach(ts => { const d = el("i", "tick"); d.style.left = x(ts) + "%"; tr.append(d); }));
+    const wd = lane("Word 글", tr => D.lanes.word.forEach(([a, b]) => { const d = el("i", "bar"); d.style.left = x(a) + "%"; d.style.width = Math.max(.4, x(b) - x(a)) + "%"; tr.append(d); }));
+    D.lanes.pause.forEach(([a, b]) => { const p = el("div", "pz", "멈춤"); p.style.left = x(a) + "%"; p.style.width = Math.max(1, x(b) - x(a)) + "%"; p.style.top = "-46px"; wd.append(p); });
+    const ax = el("div", "axis"); const n = 5;
+    for (let i = 0; i <= n; i++) ax.append(el("span", null, new Date(t0 + span * i / n).toTimeString().slice(0, 5)));
+    box.append(ax);
+  }
+
+  function rows() {
+    const box = $("rows"); box.textContent = "";
+    const 보일 = D.items.filter(x => !묶음[filt] || 묶음[filt].includes(x.kind));
+    if (!보일.length) box.append(el("div", "desc", "이 기록에는 없어요"));
+    보일.forEach(x => {
+      const r = el("div", "r" + (x.kind === "start" || x.kind === "end" || x.kind === "pause" ? " dim" : "") + (x.id === pick ? " on" : ""));
+      r.dataset.id = x.id; r.setAttribute("role", "option");
+      const ic = el("span", "ic"); ic.append(T.icon(ICON[x.kind] || ICON.doc));
+      r.append(el("span", "t", hm(x.ts)), ic, el("span", "k", x.title), el("span", "x", x.text || ""));
+      if (x.tag) r.append(el("span", "tag " + x.tag.c, x.tag.t));
+      if (x.more) r.onclick = () => choose(x.id);
+      box.append(r);
+    });
+  }
+  $("seg").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    filt = b.dataset.f; $("seg").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); rows();
+  };
+  $("rows").onkeydown = e => {                                   // ↑ ↓ 로 줄 옮기기
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const ids = [...$("rows").querySelectorAll(".r")].map(r => +r.dataset.id).filter(i => D.items[i].more);
+    let i = ids.indexOf(pick); i = e.key === "ArrowDown" ? Math.min(ids.length - 1, i + 1) : Math.max(0, i - 1);
+    if (ids[i] != null) { choose(ids[i]); e.preventDefault(); }
+  };
+
+  // ── 오른쪽: 고른 줄 ──
+  function choose(id) {
+    pick = id;
+    $("rows").querySelectorAll(".r").forEach(r => r.classList.toggle("on", +r.dataset.id === id));
+    const cur = $("rows").querySelector(".r.on"); if (cur) cur.scrollIntoView({ block: "nearest" });
+    const x = D.items[id], m = x.more, box = $("det"); box.textContent = "";
+    const dh = el("div", "dh"); dh.append(el("i"), el("span", null, x.title));
+    if (x.tag) dh.append(el("span", "tag " + x.tag.c, x.tag.t));
+    box.append(dh);
+    if (x.kind === "q" || x.kind === "a") {
+      box.append(el("div", "m", [m.tool, m.model, hm(m.ts)].filter(Boolean).join(" · ")));
+      if (m.question) { const f = el("div"); f.append(el("label", null, "질문"), el("div", "q", m.question)); box.append(f); }
+      if (m.uses && m.uses.length) {
+        const f = el("div"); f.append(el("label", null, "결과물에 이어진 문장"));
+        m.uses.forEach(u => { const c = el("div", "use " + u.group); c.append(el("small", null, `문단 ${u.p}`), el("span", null, u.text)); f.append(c); });
+        box.append(f);
+      } else if (D.linked) box.append(el("div", "m", "결과물에 이어진 문장 없음 — 이해 · 확인에 쓴 답 (참고만)"));
+      if (m.answer) {
+        const f = el("div"), a = el("div", "ans");
+        m.answer.forEach(p => a.append(p.g ? el("span", "g-" + p.g, p.t) : document.createTextNode(p.t)));
+        f.append(el("label", null, "AI 답 원문"), a); box.append(f);
+      }
+      const go = el("a", "btn btn-outline btn-sm go", "출처 보기에서 열기"); go.href = D.source; box.append(go);
+    } else if (x.kind === "paste") {
+      box.append(el("div", "m", [m.from && `${m.from} 에서`, m.to && `→ ${m.to}`, `${(m.len || 0).toLocaleString()}자`].filter(Boolean).join(" ")));
+      if (m.copied_at) box.append(el("div", "m", `${hm(m.copied_at)} 복사 → ${hm(x.ts)} 붙여넣음`));
+      if (m.excerpt) { const f = el("div"); f.append(el("label", null, "붙여넣은 글"), el("div", "ex", m.excerpt)); box.append(f); }
+      else box.append(el("div", "m", "붙여넣은 글은 AI 답 · 과제 문서에 들어간 것만 이 PC 에 남겨요"));
+    } else if (x.kind === "doc") {
+      box.append(el("div", "m", `${m.file} · 열 때부터 있던 글 ${m.chars.toLocaleString()}자`));
+      box.append(el("div", "m", "이 PC 에서 치거나 붙여넣은 기록 없이 문서에 있던 글이에요. AI 가 만든 파일이나 다른 기기에서 쓴 파일일 수 있어요 — 내역서 학생 설명에서 밝혀 주세요."));
+      if (m.excerpt) { const f = el("div"); f.append(el("label", null, "열 때 첫 부분"), el("div", "ex", m.excerpt)); box.append(f); }
+    } else if (x.kind === "word") {
+      const 때 = `${hm(m.from)}${m.to !== m.from ? "–" + hm(m.to) : ""}`;
+      box.append(el("div", "m", m.added != null ? `${m.app} · ${때} · ${m.where ? m.where + " · " : ""}+${m.added.toLocaleString()}자${m.removed ? " −" + m.removed.toLocaleString() + "자" : ""}`
+                                        : `${m.app} · ${때} · 키보드로 ${m.typed.toLocaleString()}자${m.deleted ? " · 지움 " + m.deleted : ""}`));
+      box.append(el("div", "m", "친 글자 수만 남겨요 — 무엇을 쳤는지는 과제 문서에 있어요."));
+    }
+    const ft = el("div", "ft", x.kind === "q" || x.kind === "a" ? "원문은 이 PC 에만 · 칠한 곳 = 결과물로 간 문장" : "원문은 이 PC 에만");
+    box.parentElement.querySelectorAll(".ft").forEach(f => f.remove()); box.parentElement.append(ft);
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
