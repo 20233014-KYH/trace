@@ -1,0 +1,28 @@
+# 인터넷 서버 깨워 두기 — Render 무료 요금제는 15분 동안 요청이 없으면 잠들고, 깨우는 첫 요청이 30초~1분 걸린다
+# (그동안 Trace 앱에 "서버에 연결하지 못했습니다"). 10분마다 상태 주소를 한 번 불러 잠들지 않게 한다 (10/14).
+#   · 무료: Render 무료 750시간/월 = 서비스 하나를 한 달 내내 켜 두기에 충분
+#   · GitHub 예약 실행은 몇 분 늦을 때가 있어 가끔은 잠들 수 있다 · 저장소에 60일 동안 활동이 없으면 GitHub 이 예약을 멈춘다
+#   · 손으로 깨우기: Actions → 서버 깨워 두기 → Run workflow
+name: 서버 깨워 두기
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 상태 주소 부르기
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -m 90 https://trace-server-8aa0.onrender.com/api/health || true)
+            echo "시도 $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "서버가 응답하지 않음"; exit 1
