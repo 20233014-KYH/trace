@@ -24,6 +24,7 @@ import re
 import secrets
 import sys
 import time
+import traceback
 import unicodedata
 import urllib.error
 import urllib.request
@@ -380,8 +381,32 @@ def oauth_callback(p):
         c = (_구글_코드_바꾸기(request.args["code"], _검증값(쪽지, 설정[1]), _돌아올_곳(p), 설정) if p == "google"
              else _카카오_코드_바꾸기(request.args["code"], _돌아올_곳(p), 설정))
     except Exception as e:                                  # noqa: BLE001
-        print(f"← {이름} 로그인 실패 ({type(e).__name__}: {str(e)[:120]})")
-        return _안내(f"{이름}에서 확인하지 못했어요", "잠시 뒤 Trace 앱에서 다시 시도해 주세요.", 502)
+        왜 = _회사_오류(e)
+        print(f"← {이름} 로그인 실패 ({왜})")
+        traceback.print_exc()
+        return _안내(f"{이름}에서 확인하지 못했어요", f"잠시 뒤 Trace 앱에서 다시 시도해 주세요. (까닭: {왜})", 502)
+    try:
+        return _로그인_마무리(p, 이름, st, c)
+    except Exception as e:                                  # noqa: BLE001  (10/15 처음 카카오 시험에서 까닭 없이 500 — 기록을 남긴다)
+        print(f"← {이름} 로그인 마무리 실패 ({type(e).__name__}: {str(e)[:200]})")
+        traceback.print_exc()
+        return _안내("로그인을 마치지 못했어요", f"서버에서 막혔어요 ({type(e).__name__}). 잠시 뒤 다시 시도하고, 계속되면 이 화면을 알려 주세요.", 500)
+
+
+def _회사_오류(e):
+    """구글 · 카카오가 돌려준 오류의 까닭 — 화면 · 서버 기록용 (비밀은 안 들어 있음: 오류 코드 · 설명만)"""
+    if isinstance(e, urllib.error.HTTPError):
+        try:
+            몸 = json.loads(e.read().decode("utf-8", "replace") or "{}")
+        except ValueError:
+            몸 = {}
+        코드 = 몸.get("error_code") or 몸.get("error") or ""
+        설명 = 몸.get("error_description") or 몸.get("msg") or ""
+        return f"HTTP {e.code} {코드} {설명}".strip()[:160]
+    return f"{type(e).__name__}: {str(e)[:120]}"
+
+
+def _로그인_마무리(p, 이름, st, c):
     if not c.get("sub") or (p == "google" and (not c.get("email") or c.get("email_verified") not in (True, "true"))):
         return _안내(f"확인된 이메일이 없는 {이름} 계정이에요", f"다른 {이름} 계정을 고르거나 Trace 앱에서 이메일로 가입해 주세요.", 400)
     with db.Session() as d:
