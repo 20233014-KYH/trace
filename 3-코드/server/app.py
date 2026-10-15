@@ -648,6 +648,48 @@ def _내_기록(d, sid):
     return s if 내_과제(d, s.work_id) else None
 
 
+def _과제_비우기(d, w):
+    """과제 하나의 기록 · 내역서 내용을 지우고 과제 줄엔 지운 시각만 (과제 지우기 · 계정 지우기가 같이 씀). 기록 수"""
+    세션 = d.query(db.Sess).filter(db.Sess.work_id == w.id).all()
+    for s in 세션:
+        _기록_비우기(d, s.id)
+    for st in d.query(db.Statement).filter(db.Statement.work_id == w.id).all():
+        for 표 in (db.Message, db.Link, db.Redaction):
+            d.query(표).filter(표.statement_id == st.id).delete(synchronize_session=False)
+        st.sentence = st.ai_scope = None
+        st.problems, st.summary, st.source = None, None, None
+    w.title, w.ai_scope, w.deleted_at = None, None, iso()
+    return len(세션)
+
+
+@app.post("/api/me/delete")
+@로그인_필요
+def delete_me():
+    """계정 지우기 (10/15) — 과제마다 과제 지우기와 같은 규칙(내용은 지우고 지운 사실 · 시각만) + 계정 줄엔 지운 시각만.
+    이메일 · 이름 · 비밀번호 · 구글 · 카카오 연결을 지운다 → 이 계정으론 다시 로그인할 수 없고, 같은 이메일로 새로 가입할 수 있다.
+    ★ 토큰만으로는 못 지운다: 비밀번호가 있으면 비밀번호, 없으면(구글 · 카카오로만) "계정 삭제" 를 그대로 쳐야 한다"""
+    b = request.get_json(force=True, silent=True) or {}
+    with db.Session() as d:
+        u = d.get(db.User, g.user_id)
+        if not _비번_없음(u):
+            if not _비번_맞음(u.password_hash, b.get("password") or ""):
+                return jsonify(error="wrong_password", message="비밀번호가 맞지 않아요"), 403
+        elif str(b.get("confirm") or "").strip() != "계정 삭제":
+            return jsonify(error="confirm", message="'계정 삭제' 를 그대로 써 주세요"), 400
+        지운, n = [], 0
+        for w in d.query(db.Work).filter(db.Work.user_id == u.id, db.Work.deleted_at.is_(None)).all():
+            n += _과제_비우기(d, w)
+            지운.append(w.id)
+        d.query(db.Token).filter(db.Token.user_id == u.id).delete(synchronize_session=False)
+        d.query(db.LoginTicket).filter(db.LoginTicket.user_id == u.id).delete(synchronize_session=False)
+        u.email, u.name, u.password_hash = f"deleted-{u.id}@deleted.trace", None, "!deleted"
+        u.google_sub = u.kakao_sub = None
+        u.deleted_at = iso()
+        d.commit()
+    print(f"← 계정 지움 {g.user_id[:8]}…  과제 {len(지운)}개 · 기록 {n}개")
+    return jsonify(ok=True, works=지운, sessions=n)
+
+
 @app.delete("/api/works/<wid>")
 @로그인_필요
 def delete_work(wid):
@@ -656,17 +698,9 @@ def delete_work(wid):
         w = 내_과제(d, wid)
         if not w:
             return jsonify(error="not_found"), 404
-        세션 = d.query(db.Sess).filter(db.Sess.work_id == wid).all()
-        for s in 세션:
-            _기록_비우기(d, s.id)
-        for st in d.query(db.Statement).filter(db.Statement.work_id == wid).all():
-            for 표 in (db.Message, db.Link, db.Redaction):
-                d.query(표).filter(표.statement_id == st.id).delete(synchronize_session=False)
-            st.sentence = st.ai_scope = None
-            st.problems, st.summary, st.source = None, None, None
-        w.title, w.ai_scope, w.deleted_at = None, None, iso()
+        n = _과제_비우기(d, w)
         d.commit()
-        답 = {"id": wid, "deleted_at": w.deleted_at, "sessions": len(세션)}
+        답 = {"id": wid, "deleted_at": w.deleted_at, "sessions": n}
     print(f"← 과제 지움 {wid}  기록 {답['sessions']}개")
     return jsonify(답)
 

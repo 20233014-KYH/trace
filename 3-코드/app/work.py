@@ -188,6 +188,12 @@ def delete_work():
         return jsonify(error="login", message="다시 로그인해 주세요"), 401
     if 코드 not in (200, 404):                                     # 404 = 서버엔 없는 과제 (이 PC 기록만) → PC 만 지움
         return jsonify(error="server", message=(답 or {}).get("message") or "서버에서 지우지 못했어요. 이 PC 기록은 그대로예요"), 502
+    세션, 줄, 것 = _이PC_과제_지우기(wid)
+    return jsonify(ok=True, sessions=len(세션), lines=줄, report_made=것["report_made"])
+
+
+def _이PC_과제_지우기(wid):
+    """이 PC 에서 과제 하나 — 기록 줄 · 과제 · 연결 확인 · 내보내기 파일 · 찾은 문서 · 기억. (세션들, 지운 줄 수, 지울 것)"""
     세션, 것 = _지울_것(wid)
     줄 = _이PC_기록_지우기(세션)
     for p in (_경로(wid), CF._경로(wid), EX._경로(wid)):
@@ -198,7 +204,31 @@ def delete_work():
         safefile.write_json(찾은, 목록, indent=1)
     for 기억 in (S._파일, S._연_이름):
         기억.pop(wid, None)
-    return jsonify(ok=True, sessions=len(세션), lines=줄, report_made=것["report_made"])
+    return 세션, 줄, 것
+
+
+@bp.post("/local/account/delete")
+def delete_account():
+    """설정 › 내 데이터 › 계정 지우기 (10/15) — {password} 또는 (구글 · 카카오로만) {confirm: "계정 삭제"}.
+    서버 먼저(과제마다 과제 지우기와 같은 규칙 · 계정은 지운 시각만) → 서버가 지운 과제들의 이 PC 기록 → 로그아웃.
+    서버가 실패하면 이 PC 는 그대로. 다른 계정 · 로그인 없이 만든 기록은 안 건드린다"""
+    if 설정["bridge"]():
+        return jsonify(error="recording", message="기록 중에는 계정을 지울 수 없어요. 기록 창에서 작업을 마친 뒤 해 주세요"), 409
+    b = request.get_json(force=True, silent=True) or {}
+    코드, 답 = S._기록["server"]("POST", "/me/delete", json={k: b[k] for k in ("password", "confirm") if isinstance(b.get(k), str)})
+    if 코드 == 401:
+        return jsonify(error="login", message="다시 로그인해 주세요"), 401
+    if 코드 in (400, 403):                                           # 비밀번호 틀림 · 확인 글 틀림 — 화면이 로그인으로 튀지 않게 400
+        return jsonify(error=(답 or {}).get("error") or "bad_request", message=(답 or {}).get("message") or "확인이 맞지 않아요"), 400
+    if 코드 != 200:
+        return jsonify(error="server", message=(답 or {}).get("message") or "서버에서 지우지 못했어요. 이 PC 기록은 그대로예요"), 502
+    과제, 줄 = 0, 0
+    for wid in 답.get("works") or []:
+        if _WID.match(str(wid)):
+            _, n, _ = _이PC_과제_지우기(str(wid))
+            과제, 줄 = 과제 + 1, 줄 + n
+    safefile.remove(os.path.join(S._기록["data_dir"](), "auth.json"))   # 로그아웃 (서버는 이 계정의 토큰을 모두 지웠다)
+    return jsonify(ok=True, works=과제, lines=줄)
 
 
 def _내_기록(b):

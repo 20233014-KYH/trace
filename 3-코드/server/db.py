@@ -81,6 +81,7 @@ class User(Base):
     created_at = Column(DateTime)
     google_sub = Column(String(64))                        # 구글 계정 번호 (10/15 구글 로그인) — 같은 이메일로 가입했으면 같은 계정에 붙음
     kakao_sub = Column(String(64))                         # 카카오 회원번호 (10/15 카카오 로그인) — 이메일은 안 줄 수 있음 (kakao-<번호>@kakao.trace)
+    deleted_at = Column(String(40))                        # 계정 지우기 (10/15) — 지운 시각만 남고 이메일 · 이름 · 비밀번호 · 연결은 지워짐
 
 
 class LoginTicket(Base):
@@ -326,7 +327,8 @@ def _칸_추가():
                        ("login_tickets", "google_sub", "VARCHAR(64)"),
                        ("users", "kakao_sub", "VARCHAR(64)"),       # 10/15 카카오 로그인
                        ("login_tickets", "provider", "VARCHAR(16)"),
-                       ("login_tickets", "sub", "VARCHAR(64)")):
+                       ("login_tickets", "sub", "VARCHAR(64)"),
+                       ("users", "deleted_at", "VARCHAR(40)")):     # 10/15 계정 지우기
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:
