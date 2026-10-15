@@ -194,27 +194,48 @@ def logout():
     return jsonify(ok=True)
 
 
-# ─────────────────────────── 구글 로그인 (10/15) ───────────────────────────
-# PC 앱 [Google 로 계속하기] → 브라우저로 /api/auth/google/start?pc=<앱이 만든 무작위>&port=<앱 포트>
-#   → 구글 계정 고르기 → /api/auth/google/callback (구글이 준 code 를 토큰 주소에서 바꿔 이메일 확인)
-#   → 한 번 쓰는 표(2분)를 만들어 http://127.0.0.1:<port>/local/auth/google/done?ticket=…&state=<pc> 로 돌려보냄
-#   → PC 앱이 state 가 자기가 만든 것인지 보고 POST /api/auth/google/claim 으로 표를 토큰으로 바꾼다
-# ★ 앱 창(pywebview) 안에서는 구글이 로그인을 막는다(disallowed_useragent) → 늘 브라우저로
-# ★ 서버는 아무것도 기억하지 않는다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 state 로 다시 만든다
+# ─────────────────────────── 구글 · 카카오 로그인 (10/15) ───────────────────────────
+# PC 앱 [Google · 카카오로 계속하기] → 브라우저로 /api/auth/<p>/start?pc=<앱이 만든 무작위>&port=<앱 포트>   (p = google | kakao)
+#   → 그 회사 로그인 · 계정 고르기 → /api/auth/<p>/callback (받은 code 를 그 회사 토큰 주소에서 바꿔 계정 번호 · 이메일 확인)
+#   → 한 번 쓰는 표(2분)를 만들어 http://127.0.0.1:<port>/local/auth/<p>/done?ticket=…&state=<pc> 로 돌려보냄
+#   → PC 앱이 state 가 자기가 만든 것인지 보고 POST /api/auth/<p>/claim 으로 표를 토큰으로 바꾼다
+# ★ 앱 창(pywebview) 안에서는 구글이 로그인을 막는다(disallowed_useragent) → 늘 브라우저로 (카카오도 같게)
+# ★ 서버는 아무것도 기억하지 않는다 — state 는 서명한 쪽지(10분 · 어느 회사인지까지) · 구글 PKCE 검증값도 state 로 다시 만든다
 # ★ 돌려보내는 곳은 이 PC(127.0.0.1)뿐 — 다른 사이트로 보내는 데 쓰일 수 없다
-# 잇기 (mode=link · 10/15): 이미 로그인한 사람이 설정 › 계정에서 [Google 계정 잇기] → 같은 길로 구글을 다녀오되 callback 은
-#   로그인하지 않고 "잇기 표"(구글 계정 번호)만 만든다 → PC 앱이 자기 토큰과 함께 POST /api/auth/google/link 로 그 사람 계정에 붙인다.
-#   ★ 누구에게 붙일지는 주소가 아니라 PC 앱의 토큰으로 정한다 — 주소가 새도 남의 계정에 내 구글을 붙일 수 없게
-# 설정: 구글 클라우드의 OAuth 클라이언트(웹) → GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET (Render 환경변수 · server/.env)
-#       승인된 리디렉션 URI = <서버>/api/auth/google/callback. 없으면 PC 앱에 버튼이 "준비 중" 그대로
+# 잇기 (mode=link): 이미 로그인한 사람이 설정 › 계정에서 [Google · 카카오 계정 잇기] → 같은 길로 다녀오되 callback 은
+#   로그인하지 않고 "잇기 표"(그 회사 계정 번호)만 만든다 → PC 앱이 자기 토큰과 함께 POST /api/auth/<p>/link 로 그 사람 계정에 붙인다.
+#   ★ 누구에게 붙일지는 주소가 아니라 PC 앱의 토큰으로 정한다 — 주소가 새도 남의 계정에 내 구글 · 카카오를 붙일 수 없게
+# 계정 고르기: 그 회사 계정 번호로 찾고 → 없으면 **확인된** 같은 이메일 계정에 붙이고 → 없으면 새로 만든다.
+#   카카오는 이메일을 기본으로 안 준다(비즈 앱이어야 함) → 이메일 없이도 카카오 계정 번호로 계정을 만든다 (kakao-<번호>@kakao.trace · 화면엔 안 보임)
+# 설정 (server/README.md "구글 · 카카오 로그인"): GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET · KAKAO_CLIENT_ID(REST API 키) · KAKAO_CLIENT_SECRET
+#   돌아올 주소 = <서버>/api/auth/<p>/callback. 없으면 PC 앱에 그 버튼이 "준비 중" 그대로
 구글_인증 = "https://accounts.google.com/o/oauth2/v2/auth"
 구글_토큰 = "https://oauth2.googleapis.com/token"
+카카오_인증 = "https://kauth.kakao.com/oauth/authorize"
+카카오_토큰 = "https://kauth.kakao.com/oauth/token"
+카카오_나 = "https://kapi.kakao.com/v2/user/me"
 구글_비번 = "!google"                      # 구글로만 가입한 사람의 password_hash — 어떤 비밀번호와도 안 맞음 (werkzeug 가 False)
+가짜_메일 = "@kakao.trace"                 # 이메일을 안 준 카카오 계정의 자리 채움 (보내지지 않는 주소 · /me 는 이메일 없음으로)
+제공자 = {"google": {"이름": "Google", "로": "Google 로", "env": ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"), "칸": "google_sub", "비번": 구글_비번},
+         "kakao": {"이름": "카카오", "로": "카카오로", "env": ("KAKAO_CLIENT_ID", "KAKAO_CLIENT_SECRET"), "칸": "kakao_sub", "비번": "!kakao"}}
+
+
+def _설정(p):
+    i, s = (os.environ.get(k, "").strip() for k in 제공자[p]["env"])
+    return (i, s) if i and s else None
 
 
 def _구글_설정():
-    i, s = os.environ.get("GOOGLE_CLIENT_ID", "").strip(), os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
-    return (i, s) if i and s else None
+    return _설정("google")
+
+
+def _비번_없음(u):
+    """구글 · 카카오로만 가입해 비밀번호가 없는 계정 ("!google" · "!kakao")"""
+    return (u.password_hash or "").startswith("!")
+
+
+def _보이는_메일(u):
+    return None if (u.email or "").endswith(가짜_메일) else u.email
 
 
 def _b64(b):
@@ -239,16 +260,16 @@ def _쪽지_읽기(쪽지, 비밀):
 
 
 def _검증값(쪽지, 비밀):
-    """PKCE code_verifier — 쪽지로 다시 만들 수 있게 (서버가 따로 기억하지 않음). 43자 [A-Za-z0-9_-]"""
+    """PKCE code_verifier (구글) — 쪽지로 다시 만들 수 있게 (서버가 따로 기억하지 않음). 43자 [A-Za-z0-9_-]"""
     return _b64(hmac.new(비밀.encode(), ("pkce:" + 쪽지).encode(), hashlib.sha256).digest())
 
 
-def _구글_돌아올_곳():
-    return request.host_url.rstrip("/") + "/api/auth/google/callback"     # ProxyFix 로 https · Render 주소
+def _돌아올_곳(p):
+    return request.host_url.rstrip("/") + f"/api/auth/{p}/callback"     # ProxyFix 로 https · Render 주소
 
 
 def _안내(제목, 글, 코드=200):
-    """브라우저에 뜨는 짧은 안내 화면 (구글 로그인 중간)"""
+    """브라우저에 뜨는 짧은 안내 화면 (구글 · 카카오 로그인 중간)"""
     return (f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(제목)} · Trace</title><style>body{{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
 font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f4f4f5;color:#18181b}}
@@ -261,21 +282,26 @@ h1{{font-size:20px;margin:0 0 8px}}p{{margin:0;font-size:14px;line-height:1.6;co
 @app.get("/api/auth/providers")
 def auth_providers():
     """PC 앱 로그인 화면이 어떤 버튼을 살릴지 (10/15)"""
-    return jsonify(google=bool(_구글_설정()), kakao=False)
+    return jsonify(**{p: bool(_설정(p)) for p in 제공자})
 
 
-@app.get("/api/auth/google/start")
-def google_start():
-    설정 = _구글_설정()
+@app.get("/api/auth/<p>/start")
+def oauth_start(p):
+    if p not in 제공자:
+        return jsonify(error="not_found"), 404
+    이름, 설정 = 제공자[p]["이름"], _설정(p)
     if not 설정:
-        return _안내("구글 로그인을 아직 준비 중이에요", "Trace 앱에서 이메일로 로그인해 주세요.", 503)
+        return _안내(f"{이름} 로그인을 아직 준비 중이에요", "Trace 앱에서 이메일로 로그인해 주세요.", 503)
     pc, port, mode = request.args.get("pc", ""), request.args.get("port", ""), request.args.get("mode", "login")
     if not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", pc) or not port.isdigit() or not 1024 <= int(port) <= 65535 \
             or mode not in ("login", "link"):
-        return _안내("Trace 앱에서 시작해 주세요", "Trace 앱 로그인 화면의 [Google 로 계속하기] 를 눌러 주세요.", 400)
-    쪽지 = _쪽지({"pc": pc, "port": int(port), "mode": mode, "exp": int(time.time()) + 600}, 설정[1])
+        return _안내("Trace 앱에서 시작해 주세요", f"Trace 앱 로그인 화면의 [{제공자[p]['로']} 계속하기] 를 눌러 주세요.", 400)
+    쪽지 = _쪽지({"p": p, "pc": pc, "port": int(port), "mode": mode, "exp": int(time.time()) + 600}, 설정[1])
+    if p == "kakao":
+        return redirect(카카오_인증 + "?" + urlencode({"client_id": 설정[0], "redirect_uri": _돌아올_곳(p),
+                                                     "response_type": "code", "state": 쪽지}))
     return redirect(구글_인증 + "?" + urlencode({
-        "client_id": 설정[0], "redirect_uri": _구글_돌아올_곳(), "response_type": "code", "scope": "openid email profile",
+        "client_id": 설정[0], "redirect_uri": _돌아올_곳(p), "response_type": "code", "scope": "openid email profile",
         "state": 쪽지, "code_challenge": _b64(hashlib.sha256(_검증값(쪽지, 설정[1]).encode()).digest()),
         "code_challenge_method": "S256", "prompt": "select_account"}))
 
@@ -296,60 +322,91 @@ def _구글_코드_바꾸기(code, 검증값, 돌아올_곳, 설정):
     return c
 
 
-def _구글_사용자(d, c):
-    """구글 계정 번호로 찾고 → 없으면 같은 이메일 계정에 붙이고 → 없으면 새로 만든다. 다른 구글 계정이 이미 붙은 이메일이면 None"""
-    sub, 이메일 = str(c["sub"]), str(c["email"]).strip().lower()
-    u = d.query(db.User).filter(db.User.google_sub == sub).first()
+def _카카오_코드_바꾸기(code, 돌아올_곳, 설정):
+    """카카오 토큰 주소에서 code → 접근 토큰 → 사용자 정보 → {sub, email, email_verified, name}.
+    우리 REST 키 · 비밀로 카카오에서 TLS 로 바로 받은 토큰이라, 그 토큰으로 물은 사용자 정보는 우리 앱에 로그인한 그 사람이다.
+    이메일은 동의 항목(비즈 앱)을 켰고 학생이 동의했을 때만 온다 — 유효하고 인증된 이메일만 확인된 것으로 본다"""
+    머리 = {"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"}
+    몸 = urlencode({"grant_type": "authorization_code", "client_id": 설정[0], "client_secret": 설정[1],
+                    "redirect_uri": 돌아올_곳, "code": code}).encode()
+    with urllib.request.urlopen(urllib.request.Request(카카오_토큰, data=몸, headers=머리), timeout=15) as r:
+        토큰 = json.loads(r.read())["access_token"]
+    with urllib.request.urlopen(urllib.request.Request(카카오_나, headers={**머리, "Authorization": f"Bearer {토큰}"}), timeout=15) as r:
+        나 = json.loads(r.read())
+    계정 = 나.get("kakao_account") or {}
+    return {"sub": str(나["id"]), "email": 계정.get("email"),
+            "email_verified": bool(계정.get("is_email_valid") and 계정.get("is_email_verified")),
+            "name": (계정.get("profile") or {}).get("nickname") or (나.get("properties") or {}).get("nickname")}
+
+
+def _외부_사용자(d, p, c):
+    """그 회사 계정 번호로 찾고 → 없으면 확인된 같은 이메일 계정에 붙이고 → 없으면 새로 만든다.
+    같은 이메일 계정에 이미 다른 그 회사 계정이 붙어 있으면 None"""
+    칸 = 제공자[p]["칸"]
+    sub = str(c["sub"])
+    u = d.query(db.User).filter(getattr(db.User, 칸) == sub).first()
     if u:
         return u
-    u = d.query(db.User).filter(db.User.email == 이메일).first()
-    if u:                                               # 이메일로 먼저 가입한 사람 — 구글이 이메일 주인임을 확인했으니 같은 계정으로
-        if u.google_sub and u.google_sub != sub:
-            return None
-        u.google_sub = sub
-        return u
-    u = db.User(id=str(uuid.uuid4()), email=이메일, password_hash=구글_비번, google_sub=sub,
-                name=(str(c.get("name") or "").strip() or 이메일.split("@")[0])[:40], created_at=now().replace(tzinfo=None))
+    이메일 = str(c.get("email") or "").strip().lower()
+    확인됨 = bool(이메일) and c.get("email_verified") in (True, "true")
+    if 확인됨:
+        u = d.query(db.User).filter(db.User.email == 이메일).first()
+        if u:                                           # 이메일로 먼저 가입한 사람 — 그 회사가 이메일 주인임을 확인했으니 같은 계정으로
+            if getattr(u, 칸) and getattr(u, 칸) != sub:
+                return None
+            setattr(u, 칸, sub)
+            return u
+    else:                                               # 이메일을 안 줬거나 확인 안 됨 — 그 이메일로 남의 계정에 붙거나 자리를 차지하지 않게
+        이메일 = f"{p}-{sub}{가짜_메일}"
+    u = db.User(id=str(uuid.uuid4()), email=이메일, password_hash=제공자[p]["비번"], **{칸: sub},
+                name=(str(c.get("name") or "").strip() or (이메일.split("@")[0] if 확인됨 else "카카오 사용자"))[:40],
+                created_at=now().replace(tzinfo=None))
     d.add(u)
     return u
 
 
-@app.get("/api/auth/google/callback")
-def google_callback():
-    설정 = _구글_설정()
+@app.get("/api/auth/<p>/callback")
+def oauth_callback(p):
+    if p not in 제공자:
+        return jsonify(error="not_found"), 404
+    이름, 설정 = 제공자[p]["이름"], _설정(p)
     쪽지 = request.args.get("state", "")
     st = _쪽지_읽기(쪽지, 설정[1]) if 설정 else None
-    if not st:
-        return _안내("다시 시도해 주세요", "로그인 시간이 지났거나 잘못된 주소예요. Trace 앱에서 [Google 로 계속하기] 를 다시 눌러 주세요.", 400)
+    if not st or st.get("p", "google") != p:
+        return _안내("다시 시도해 주세요", f"로그인 시간이 지났거나 잘못된 주소예요. Trace 앱에서 [{제공자[p]['로']} 계속하기] 를 다시 눌러 주세요.", 400)
     if request.args.get("error") or not request.args.get("code"):
-        return _안내("구글 로그인을 취소했어요", "Trace 앱으로 돌아가 다시 시도할 수 있어요.", 400)
+        return _안내(f"{이름} 로그인을 취소했어요", "Trace 앱으로 돌아가 다시 시도할 수 있어요.", 400)
     try:
-        c = _구글_코드_바꾸기(request.args["code"], _검증값(쪽지, 설정[1]), _구글_돌아올_곳(), 설정)
+        c = (_구글_코드_바꾸기(request.args["code"], _검증값(쪽지, 설정[1]), _돌아올_곳(p), 설정) if p == "google"
+             else _카카오_코드_바꾸기(request.args["code"], _돌아올_곳(p), 설정))
     except Exception as e:                                  # noqa: BLE001
-        print(f"← 구글 로그인 실패 ({type(e).__name__}: {str(e)[:120]})")
-        return _안내("구글에서 확인하지 못했어요", "잠시 뒤 Trace 앱에서 다시 시도해 주세요.", 502)
-    if not c.get("sub") or not c.get("email") or c.get("email_verified") not in (True, "true"):
-        return _안내("확인된 이메일이 없는 구글 계정이에요", "다른 구글 계정을 고르거나 Trace 앱에서 이메일로 가입해 주세요.", 400)
+        print(f"← {이름} 로그인 실패 ({type(e).__name__}: {str(e)[:120]})")
+        return _안내(f"{이름}에서 확인하지 못했어요", "잠시 뒤 Trace 앱에서 다시 시도해 주세요.", 502)
+    if not c.get("sub") or (p == "google" and (not c.get("email") or c.get("email_verified") not in (True, "true"))):
+        return _안내(f"확인된 이메일이 없는 {이름} 계정이에요", f"다른 {이름} 계정을 고르거나 Trace 앱에서 이메일로 가입해 주세요.", 400)
     with db.Session() as d:
         옛날 = now().replace(tzinfo=None) - timedelta(minutes=10)
         d.query(db.LoginTicket).filter(db.LoginTicket.created_at < 옛날).delete()
         표 = secrets.token_urlsafe(32)
-        if st.get("mode") == "link":                       # 잇기 — 아무도 로그인시키지 않고 구글 계정 번호만 담아 둔다
-            d.add(db.LoginTicket(ticket=표, kind="link", google_sub=str(c["sub"]), created_at=now().replace(tzinfo=None)))
+        if st.get("mode") == "link":                       # 잇기 — 아무도 로그인시키지 않고 그 회사 계정 번호만 담아 둔다
+            d.add(db.LoginTicket(ticket=표, kind="link", provider=p, sub=str(c["sub"]), created_at=now().replace(tzinfo=None)))
             d.commit()
         else:
-            u = _구글_사용자(d, c)
+            u = _외부_사용자(d, p, c)
             if not u:
-                return _안내("이미 다른 구글 계정과 이어진 이메일이에요", "처음 이은 구글 계정으로 로그인하거나 이메일 · 비밀번호로 로그인해 주세요.", 409)
-            d.add(db.LoginTicket(ticket=표, kind="login", user_id=u.id, created_at=now().replace(tzinfo=None)))
+                return _안내(f"이미 다른 {이름} 계정과 이어진 이메일이에요",
+                            f"처음 이은 {이름} 계정으로 로그인하거나 이메일 · 비밀번호로 로그인해 주세요.", 409)
+            d.add(db.LoginTicket(ticket=표, kind="login", provider=p, user_id=u.id, created_at=now().replace(tzinfo=None)))
             d.commit()
-            print(f"← 구글 로그인 {u.id[:8]}…")
-    return redirect(f"http://127.0.0.1:{st['port']}/local/auth/google/done?" + urlencode({"ticket": 표, "state": st["pc"]}))
+            print(f"← {이름} 로그인 {u.id[:8]}…")
+    return redirect(f"http://127.0.0.1:{st['port']}/local/auth/{p}/done?" + urlencode({"ticket": 표, "state": st["pc"]}))
 
 
-@app.post("/api/auth/google/claim")
-def google_claim():
+@app.post("/api/auth/<p>/claim")
+def oauth_claim(p):
     """PC 앱이 한 번 쓰는 표를 토큰으로 바꾼다 (2분 · 한 번만) — /auth/login 과 같은 답"""
+    if p not in 제공자:
+        return jsonify(error="not_found"), 404
     b = request.get_json(force=True, silent=True) or {}
     표 = str(b.get("ticket") or "")
     with db.Session() as d:
@@ -358,7 +415,7 @@ def google_claim():
             d.delete(t)                                     # 맞든 늦었든 한 번 쓰면 끝
         if not t or (t.kind or "login") != "login" or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
             d.commit()
-            return jsonify(error="unauthorized", message="로그인 시간이 지났어요. [Google 로 계속하기] 를 다시 눌러 주세요"), 401
+            return jsonify(error="unauthorized", message=f"로그인 시간이 지났어요. [{제공자[p]['로']} 계속하기] 를 다시 눌러 주세요"), 401
         u = d.get(db.User, t.user_id)
         tok = db.Token(token=secrets.token_urlsafe(32), user_id=u.id, device=str(b.get("device") or "")[:100],
                        created_at=now().replace(tzinfo=None))
@@ -368,47 +425,56 @@ def google_claim():
     return jsonify(답)
 
 
-@app.post("/api/auth/google/link")
+@app.post("/api/auth/<p>/link")
 @로그인_필요
-def google_link():
-    """설정 › 계정 › [Google 계정 잇기] — 잇기 표(2분 · 한 번)의 구글 계정을 지금 로그인한 계정에 붙인다 (10/15).
-    그 구글 계정이 이미 다른 Trace 계정에 붙어 있으면: 구글로만 만든 빈 계정(과제 없음)이면 거기서 떼어 옮기고, 아니면 거절"""
+def oauth_link(p):
+    """설정 › 계정 › [Google · 카카오 계정 잇기] — 잇기 표(2분 · 한 번)의 그 회사 계정을 지금 로그인한 계정에 붙인다 (10/15).
+    그 회사 계정이 이미 다른 Trace 계정에 붙어 있으면: 비밀번호 없이 만든 빈 계정(과제 없음)이면 거기서 떼어 옮기고, 아니면 거절"""
+    if p not in 제공자:
+        return jsonify(error="not_found"), 404
+    이름, 칸 = 제공자[p]["이름"], 제공자[p]["칸"]
     표 = str((request.get_json(force=True, silent=True) or {}).get("ticket") or "")
     with db.Session() as d:
         t = d.get(db.LoginTicket, 표) if 표 else None
         if t:
             d.delete(t)
-        if not t or t.kind != "link" or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
+        if not t or t.kind != "link" or (t.provider or "google") != p \
+                or (now().replace(tzinfo=None) - t.created_at).total_seconds() > 120:
             d.commit()
-            return jsonify(error="expired", message="시간이 지났어요. [Google 계정 잇기] 를 다시 눌러 주세요"), 400
+            return jsonify(error="expired", message=f"시간이 지났어요. [{이름} 계정 잇기] 를 다시 눌러 주세요"), 400
+        sub = t.sub or t.google_sub                      # (10/15 처음 잇기 표는 google_sub 칸에 담았다)
         u = d.get(db.User, g.user_id)
-        다른 = d.query(db.User).filter(db.User.google_sub == t.google_sub, db.User.id != u.id).first()
+        다른 = d.query(db.User).filter(getattr(db.User, 칸) == sub, db.User.id != u.id).first()
         if 다른:
             과제 = d.query(db.Work).filter(db.Work.user_id == 다른.id, db.Work.deleted_at.is_(None)).count()
-            if 다른.password_hash != 구글_비번 or 과제:
+            if not _비번_없음(다른) or 과제:
                 d.commit()
-                return jsonify(error="conflict", message="이 구글 계정은 기록이 있는 다른 Trace 계정에 이어져 있어요. "
+                return jsonify(error="conflict", message=f"이 {이름} 계정은 기록이 있는 다른 Trace 계정에 이어져 있어요. "
                                                          "그 계정으로 로그인해 주세요"), 409
-            다른.google_sub = None                          # 구글로만 만든 빈 계정 — 연결만 떼어 옮긴다 (계정은 지우지 않음 · 그 계정 로그인은 끊음)
-            d.query(db.Token).filter(db.Token.user_id == 다른.id).delete()
-            print(f"← 구글 연결 옮김 {다른.id[:8]}… → {u.id[:8]}… (빈 계정에서)")
-        u.google_sub = t.google_sub
+            setattr(다른, 칸, None)                       # 비밀번호 없이 만든 빈 계정 — 연결만 떼어 옮긴다 (계정은 지우지 않음)
+            if not (다른.google_sub or 다른.kakao_sub):     # 로그인할 길이 없어졌으면 그 계정 로그인도 끊음
+                d.query(db.Token).filter(db.Token.user_id == 다른.id).delete()
+            print(f"← {이름} 연결 옮김 {다른.id[:8]}… → {u.id[:8]}… (빈 계정에서)")
+        setattr(u, 칸, sub)
         d.commit()
-    print(f"← 구글 계정 이음 {g.user_id[:8]}…")
-    return jsonify(google=True)
+    print(f"← {이름} 계정 이음 {g.user_id[:8]}…")
+    return jsonify(**{p: True})
 
 
-@app.post("/api/auth/google/unlink")
+@app.post("/api/auth/<p>/unlink")
 @로그인_필요
-def google_unlink():
-    """구글 연결 끊기 — 비밀번호가 있는 계정만 (구글로만 만든 계정이 끊으면 로그인할 길이 없어짐)"""
+def oauth_unlink(p):
+    """연결 끊기 — 끊어도 로그인할 길(비밀번호 · 다른 회사 계정)이 남을 때만"""
+    if p not in 제공자:
+        return jsonify(error="not_found"), 404
     with db.Session() as d:
         u = d.get(db.User, g.user_id)
-        if u.password_hash == 구글_비번:
-            return jsonify(error="no_password", message="비밀번호 없이 구글로만 로그인하는 계정이라 끊을 수 없어요"), 400
-        u.google_sub = None
+        남는길 = not _비번_없음(u) or any(getattr(u, 제공자[q]["칸"]) for q in 제공자 if q != p)
+        if not 남는길:
+            return jsonify(error="no_password", message=f"비밀번호 없이 {제공자[p]['로']}만 로그인하는 계정이라 끊을 수 없어요"), 400
+        setattr(u, 제공자[p]["칸"], None)
         d.commit()
-    return jsonify(google=False)
+    return jsonify(**{p: False})
 
 
 @app.get("/api/me")
@@ -419,8 +485,9 @@ def me():
     with db.Session() as d:
         works = d.query(db.Work).filter(db.Work.user_id == g.user_id, db.Work.deleted_at.is_(None)).all()
         u = d.get(db.User, g.user_id)
-        답 = {"id": g.user_id, "name": g.user_name, "email": u.email if u else None,     # 이메일은 설정 › 계정에 보임 (10/13)
-              "password": bool(u and u.password_hash != 구글_비번), "google": bool(u and u.google_sub),   # 로그인 방법 (10/15)
+        답 = {"id": g.user_id, "name": g.user_name, "email": _보이는_메일(u) if u else None,     # 이메일은 설정 › 계정에 보임 (10/13 · 카카오가 안 준 것은 없음)
+              "password": bool(u and not _비번_없음(u)),                                  # 로그인 방법 (10/15)
+              "google": bool(u and u.google_sub), "kakao": bool(u and u.kakao_sub),
               "works": [{"id": w.id, "title": w.title, "ai_scope": w.ai_scope} for w in works]}
     return jsonify(답)
 
