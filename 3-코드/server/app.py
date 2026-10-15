@@ -363,7 +363,8 @@ def _외부_사용자(d, p, c):
                 name=(str(c.get("name") or "").strip() or (이메일.split("@")[0] if 확인됨 else "카카오 사용자"))[:40],
                 created_at=now().replace(tzinfo=None))
     d.add(u)
-    return u
+    d.flush()          # ★ 계정을 먼저 DB 에 — 표(login_tickets.user_id → users.id)를 같은 번에 넣으면 순서가 바뀌어
+    return u           #   인터넷 DB(PostgreSQL)가 "없는 계정" 으로 거절했다 (10/15 카카오 첫 시험 IntegrityError · SQLite 는 안 막아서 시험에선 몰랐음)
 
 
 @app.get("/api/auth/<p>/callback")

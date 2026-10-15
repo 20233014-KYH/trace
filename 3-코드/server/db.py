@@ -61,6 +61,14 @@ engine = create_engine(DB_URL, future=True, **풀,
                        pool_pre_ping=인터넷DB,          # 인터넷 DB 는 쉬는 동안 연결이 끊길 수 있다 → 쓰기 전에 확인
                        connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 Session = sessionmaker(bind=engine, future=True)
+
+if DB_URL.startswith("sqlite"):
+    # SQLite 는 기본으로 외래 키(다른 표를 가리키는 칸)를 안 막는다 → 인터넷 DB(PostgreSQL)에서만 터지는 순서 실수를 시험에서 못 봤다 (10/15)
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _외래키_켜기(연결, _):
+        연결.execute("PRAGMA foreign_keys=ON")
 Base = declarative_base()
 
 

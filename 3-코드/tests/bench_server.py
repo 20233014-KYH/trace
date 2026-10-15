@@ -128,6 +128,7 @@ def main():
 
         get = staticmethod(lambda url, **kw: 길.request("GET", url, **kw))
     G["_서버"].__globals__["requests"] = 길                 # runpy 가 준 G 는 복사본 — 함수가 보는 진짜 전역에 넣는다
+    G["_서버"].__globals__["_연결"] = 길                    # 10/15 (#83) 연결을 다시 쓰는 requests.Session — 그 자리도
     import source as _S
     from core import safefile
     safefile.write_json(os.path.join(d, "auth.json"), {"server": "http://bench/api", "token": tok, "user": {"name": "벤치"}})
