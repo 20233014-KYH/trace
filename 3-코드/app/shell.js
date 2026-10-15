@@ -102,7 +102,7 @@ window.TraceShell = (function () {
     let u = null;                                  // 10분 기억은 앱(updater.최신)이 한다 — 업데이트 뒤 새로 켠 앱은 새로 물음
     try { u = await call("GET", "/local/update"); } catch (e) { return; }
     const side = document.querySelector(".side");
-    if (!u || !u.newer || !side || side.querySelector(".upd")) return;
+    if (!u || !u.newer || u.dev || !side || side.querySelector(".upd")) return;   // 개발판은 git 으로 받음 — 묻지 않음 (이슈 #79)
     const box = el("div", "upd"), t = el("span", "t", `새 버전 v${u.latest}`);
     const b = el("button", "btn btn-default btn-sm", u.can_install ? "업데이트" : "내려받기"); b.type = "button";
     b.title = u.can_install ? "Trace 가 새 버전을 받아 바꾸고 다시 열어요" : "내려받기 화면에서 받아 주세요";

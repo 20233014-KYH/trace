@@ -407,7 +407,7 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
 
   // ── 새 버전 알림 (설치판 v0.1 · 서버가 GitHub 릴리스를 읽어 둠) — 못 물어도 조용히 넘어간다 ──
   call("GET", "/local/update").then(u => {
-    if (!u.newer) return;
+    if (!u.newer || u.dev) return;
     const b = $("update"); b.textContent = "";
     const a = el("a", null, "내려받기"); a.href = u.download; a.target = "_blank"; a.rel = "noopener";
     b.append(el("span", null, `새 버전 v${u.latest} 이 나왔습니다 (지금 v${u.current}).`), a);

@@ -44,7 +44,8 @@ def read():
                   "password": me.get("password", True), "google": bool(me.get("google"))}     # 로그인 방법 (10/15 · 옛 서버는 없음 → 비밀번호)
     return jsonify(prefs=prefs.load(S._기록["data_dir"]()), choices=prefs.CHOICES, checks=확인(),
                    account=계정 and {k: 계정[k] for k in ("name", "email", "password", "google")},
-                   data=_데이터((계정 or {}).get("works", {})), version=VERSION)
+                   data=_데이터((계정 or {}).get("works", {})), version=VERSION,
+                   dev=__import__("updater").개발판())        # 개발판 = 앱 안 업데이트 없음 (이슈 #79)
 
 
 @bp.post("/local/settings")
