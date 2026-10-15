@@ -56,9 +56,22 @@ def 내_파일(d):
     return (d.get("mac") if sys.platform == "darwin" else d.get("windows") if os.name == "nt" else None) or None
 
 
-def 앱_자리():
-    """지금 돌고 있는 설치판의 자리 — 맥 …/Trace.app · 윈도우 Trace.exe. 저장소에서 돌리면 None"""
+def 개발판():
+    """앱 안 업데이트를 하지 않는 Trace (이슈 #79) — 저장소에서 돌리거나, 저장소에서 묶은 packaging/dist 의 exe · app,
+    윈도우는 설치 프로그램(Inno)이 깐 것이 아닌 것(옆에 제거 프로그램 unins000.exe 가 없음).
+    개발판은 git(main)으로 새 코드가 들어오고 머지 전 수정이 들어 있을 때가 많다 — 설치 파일로 덮으면 꼬인다
+    (10/15: dist 0.1.4 에서 업데이트 → 0.1.10 이 설치 폴더에 따로 깔리고 다시 켜지는 건 옛 dist exe)"""
     if not settings.FROZEN:
+        return True
+    exe = os.path.realpath(sys.executable)
+    if f"{os.sep}packaging{os.sep}dist{os.sep}" in exe:
+        return True
+    return os.name == "nt" and not os.path.isfile(os.path.join(os.path.dirname(exe), "unins000.exe"))
+
+
+def 앱_자리():
+    """지금 돌고 있는 설치판의 자리 — 맥 …/Trace.app · 윈도우 Trace.exe. 저장소에서 돌리거나 개발판이면 None"""
+    if 개발판():
         return None
     exe = os.path.realpath(sys.executable)
     if sys.platform == "darwin":
@@ -213,16 +226,18 @@ if mv "{app}" "$OLD" && ditto "{새}" "{app}"; then rm -rf "$OLD" "{새}"; else 
 
 
 def _윈도우(exe, 곳):
-    """이 앱이 끝나면 설치 파일을 조용히 돌리고 다시 연다 (콘솔 없이 도는 cmd 라 timeout 대신 ping 으로 기다림)"""
+    """이 앱이 끝나면 설치 파일을 조용히 돌리고 다시 연다.
+    이슈 #79: DETACHED_PROCESS 와 CREATE_NO_WINDOW 를 같이 주면 뒤의 것이 무시돼 cmd 에 콘솔이 없고, 안의 tasklist · find · ping 이
+    각자 새 콘솔 창을 열었다. 게다가 find 가 파이프 입력을 못 받아 멈춰 설치로 못 넘어감 (10/15 find "14508" 창).
+    → CREATE_NO_WINDOW 만 (숨은 콘솔 하나를 안의 명령이 같이 씀) · 기다리기는 파이프 없이 Wait-Process"""
     app = 앱_자리()
     cmd = os.path.join(곳, "바꾸기.cmd")
     with open(cmd, "w", encoding="utf-8") as f:
         f.write(f'''@echo off
 chcp 65001 >nul
-:wait
-tasklist /FI "PID eq {os.getpid()}" | find "{os.getpid()}" >nul && (ping -n 2 127.0.0.1 >nul & goto wait)
+powershell -NoProfile -NonInteractive -Command "Wait-Process -Id {os.getpid()} -Timeout 120 -ErrorAction SilentlyContinue"
 "{exe}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS
 start "" "{app}"
 ''')
-    subprocess.Popen(["cmd", "/c", cmd], creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW,
+    subprocess.Popen(["cmd", "/c", cmd], creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

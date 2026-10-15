@@ -311,7 +311,9 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
     app() {
       const c = card("앱 정보");
       const 다시 = el("a", "btn btn-ghost btn-sm", "열기"); 다시.href = "/welcome";
-      c.append(kv("버전", `Trace ${d.version}`, null, "새 버전이 나오면 왼쪽 메뉴 아래에 [업데이트] — 눌러서 바로 바꿔요"),
+      c.append(kv("버전", `Trace ${d.version}${d.dev ? " (개발판)" : ""}`, null,
+                  d.dev ? "개발판은 앱 안에서 업데이트하지 않아요 — 새 코드는 git 으로 받아 다시 묶어요"
+                        : "새 버전이 나오면 왼쪽 메뉴 아래에 [업데이트] — 눌러서 바로 바꿔요"),
                kv("도움말", "처음 한 번 다시 보기 · 기록 준비 점검", 다시),
                kv("못 잡는 것", "휴대폰 · 다른 PC 에서 쓴 AI · 사진 · HWP", null, "출처 기록 없음은 \"직접 썼다\" 는 뜻이 아니에요"),
                kv("원문", "AI 질문 · 답과 과제 글은 이 PC 에만 · 내가 고른 것만 내역서 · 링크로 나가요"));
