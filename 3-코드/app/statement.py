@@ -142,7 +142,8 @@ def update():
     최신 = 업데이트.최신()
     v = 최신.get("version")
     newer = bool(v) and parse_version(v) > parse_version(VERSION)
-    return jsonify(current=VERSION, latest=v, newer=newer, can_install=newer and 업데이트.바꿀_수_있나(최신),
+    # dev = 개발판(저장소 · packaging/dist) — 앱 안 업데이트를 묻지 않는다 (이슈 #79 · 새 코드는 git 으로)
+    return jsonify(current=VERSION, latest=v, newer=newer, dev=업데이트.개발판(), can_install=newer and 업데이트.바꿀_수_있나(최신),
                    download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"),
                    summary=업데이트.요약(최신.get("notes")))
 
