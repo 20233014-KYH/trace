@@ -42,10 +42,10 @@ def main():
         ST._서버 = 서버
         ST.webbrowser.open = 열림.append
 
-        검사("서버가 구글을 켰으면 버튼 살림 (8초만 기다림)", c.get("/local/auth/providers", **HOST).json == {"google": True}
+        검사("서버가 구글을 켰으면 버튼 살림 (8초만 기다림 · 카카오는 안 켬)", c.get("/local/auth/providers", **HOST).json == {"google": True, "kakao": False}
              and 부름[-1][3] == 8)
         서버답["providers"] = (502, {"error": "server_unreachable"})
-        검사("서버가 없으면 준비 중 그대로", c.get("/local/auth/providers", **HOST).json == {"google": False})
+        검사("서버가 없으면 준비 중 그대로", c.get("/local/auth/providers", **HOST).json == {"google": False, "kakao": False})
 
         r = c.post("/local/auth/google/start", headers=H, **HOST)
         st = r.json["state"]
@@ -97,11 +97,33 @@ def main():
              and c.get(f"/local/auth/google/status?state={st4}", **HOST).json["error"].startswith("이 구글 계정은"))
         r = c.post("/local/account/google/unlink", json={}, headers=H, **HOST)
         검사("끊기 → 서버 /auth/google/unlink", r.status_code == 200 and 부름[-1][:2] == ("POST", "/auth/google/unlink"))
+
+        # ── 카카오 (10/15) — 같은 길 · 주소만 /kakao ──
+        서버답.update(kakao_claim=(200, {"token": "tok-k", "user": {"id": "u-k", "name": "카카오사용자"}}))
+        옛서버 = ST._서버
+        ST._서버 = lambda 방법, 경로, **kw: (부름.append((방법, 경로, kw.get("json"), kw.get("timeout"))) or
+                                          (서버답["kakao_claim"] if 경로 == "/auth/kakao/claim" else
+                                           (200, {"google": True, "kakao": True}) if 경로 == "/auth/providers" else 옛서버(방법, 경로, **kw)))
+        검사("서버가 카카오를 켰으면 카카오 버튼도", c.get("/local/auth/providers", **HOST).json == {"google": True, "kakao": True})
+        os.remove(os.path.join(data, "auth.json"))
+        sk = c.post("/local/auth/kakao/start", json={}, headers=H, **HOST).json["state"]
+        u = urlparse(열림[-1])
+        검사("카카오: 브라우저로 서버 /auth/kakao/start", u.path == "/api/auth/kakao/start" and parse_qs(u.query)["pc"] == [sk])
+        n = len(부름)
+        검사("카카오 state 를 구글 주소로 못 씀 (서버도 안 부름)",
+             c.get(f"/local/auth/google/done?ticket=k1&state={sk}", **HOST).status_code == 400 and len(부름) == n
+             and c.get(f"/local/auth/google/status?state={sk}", **HOST).status_code == 404)
+        r = c.get(f"/local/auth/kakao/done?ticket=k1&state={sk}", **HOST)
+        auth = json.load(open(os.path.join(data, "auth.json"), encoding="utf-8"))
+        검사("카카오: 돌아오면 /auth/kakao/claim → 로그인", r.status_code == 200 and 부름[-1][:2] == ("POST", "/auth/kakao/claim")
+             and auth["token"] == "tok-k" and c.get(f"/local/auth/kakao/status?state={sk}", **HOST).json["done"] is True)
+        검사("모르는 회사 주소는 404", c.post("/local/auth/naver/start", json={}, headers=H, **HOST).status_code == 404)
+        ST._서버 = 옛서버
         서버답["me"] = (200, {"id": "u-naver", "name": "네이버계정", "email": "yh@naver.com", "works": []})
         w = c.get("/local/works", **HOST).json
         검사("왼쪽 아래 프로필 칸: /local/works 에 이메일 (10/15)", w["user"] == {"id": "u-naver", "name": "네이버계정", "email": "yh@naver.com"})
         html = c.get("/settings?tab=account", **HOST).get_data(as_text=True)
-        검사("설정 화면에 잇기 · 끊기", "Google 계정 잇기" in html and "/local/account/google/unlink" in html)
+        검사("설정 화면에 잇기 · 끊기 (구글 · 카카오)", "계정 잇기" in html and "/unlink" in html and '"kakao", "카카오"' in html)
     finally:
         ST._서버, ST.webbrowser.open = 옛[0], 옛[1]
         ST.설정.clear()

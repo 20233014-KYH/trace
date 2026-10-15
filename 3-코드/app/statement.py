@@ -215,21 +215,25 @@ def login():
     return jsonify(user=답["user"])
 
 
-# ── 구글 로그인 (10/15) — 브라우저로 구글 → 서버 → 이 PC(127.0.0.1:PORT) 로 돌아온다. 흐름 · 까닭은 server/app.py "구글 로그인"
-#    로그인 화면은 /local/auth/google/status 를 1초마다 물어 끝나면 홈으로. 앱 창 안에서는 구글이 로그인을 막아서 브라우저로
-_구글_대기 = {}                                   # 이 앱이 시작한 것만 {state: {at, done, error}} — 다른 사이트가 이 주소를 불러도 state 를 모름
+# ── 구글 · 카카오 로그인 (10/15) — 브라우저로 그 회사 → 서버 → 이 PC(127.0.0.1:PORT) 로 돌아온다. 흐름 · 까닭은 server/app.py
+#    "구글 · 카카오 로그인". 로그인 화면은 /local/auth/<p>/status 를 1초마다 물어 끝나면 홈으로. 앱 창 안에서는 구글이 로그인을 막아서 브라우저로
+_구글_대기 = {}                                   # 이 앱이 시작한 것만 {state: {at, done, error, mode, p}} — 다른 사이트가 이 주소를 불러도 state 를 모름
+_회사 = {"google": "Google", "kakao": "카카오"}
+_회사로 = {"google": "Google 로", "kakao": "카카오로"}            # 조사 붙은 꼴
 
 
 @app.get("/local/auth/providers")
 def auth_providers():
-    """로그인 화면이 Google 버튼을 살릴지 — 서버가 구글 로그인을 켰을 때만 (안 켰거나 늦으면 "준비 중" 그대로)"""
+    """로그인 화면이 Google · 카카오 버튼을 살릴지 — 서버가 켰을 때만 (안 켰거나 늦으면 "준비 중" 그대로)"""
     코드, 답 = _서버("GET", "/auth/providers", timeout=8)
-    return jsonify(google=bool(코드 == 200 and 답.get("google")))
+    return jsonify(**{p: bool(코드 == 200 and 답.get(p)) for p in _회사})
 
 
-@app.post("/local/auth/google/start")
-def google_start():
-    """mode=login(로그인 화면) | link(설정 › 계정 › Google 계정 잇기 — 로그인한 사람만 · 10/15)"""
+@app.post("/local/auth/<p>/start")
+def oauth_start(p):
+    """mode=login(로그인 화면) | link(설정 › 계정 › Google · 카카오 계정 잇기 — 로그인한 사람만 · 10/15)"""
+    if p not in _회사:
+        return jsonify(error="not_found"), 404
     mode = (request.get_json(force=True, silent=True) or {}).get("mode") or "login"
     if mode not in ("login", "link"):
         return jsonify(error="bad_request", message="mode 는 login 또는 link"), 400
@@ -238,35 +242,36 @@ def google_start():
     for k in [k for k, v in _구글_대기.items() if time.time() - v["at"] > 600]:
         _구글_대기.pop(k, None)
     st = secrets.token_urlsafe(24)
-    _구글_대기[st] = {"at": time.time(), "done": False, "error": None, "mode": mode}
-    주소 = 설정["server"].rstrip("/") + "/auth/google/start?" + urlencode({"pc": st, "port": PORT, **({"mode": "link"} if mode == "link" else {})})
+    _구글_대기[st] = {"at": time.time(), "done": False, "error": None, "mode": mode, "p": p}
+    주소 = 설정["server"].rstrip("/") + f"/auth/{p}/start?" + urlencode({"pc": st, "port": PORT, **({"mode": "link"} if mode == "link" else {})})
     webbrowser.open(주소)
     return jsonify(state=st)
 
 
-@app.get("/local/auth/google/status")
-def google_status():
+@app.get("/local/auth/<p>/status")
+def oauth_status(p):
     w = _구글_대기.get(request.args.get("state", ""))
-    if not w:
+    if not w or w["p"] != p:
         return jsonify(error="not_found", message="다시 눌러 주세요"), 404
     return jsonify(done=w["done"], error=w["error"])
 
 
-@app.get("/local/auth/google/done")
-def google_done():
-    """서버가 브라우저를 여기로 돌려보낸다 — 한 번 쓰는 표를 토큰으로 바꿔 로그인. 이 앱이 시작한 state 일 때만"""
+@app.get("/local/auth/<p>/done")
+def oauth_done(p):
+    """서버가 브라우저를 여기로 돌려보낸다 — 한 번 쓰는 표를 토큰으로 바꿔 로그인(또는 잇기). 이 앱이 시작한 그 회사 state 일 때만"""
     w = _구글_대기.get(request.args.get("state", ""))
-    if not w or w["done"] or time.time() - w["at"] > 600:
-        return _브라우저_안내("다시 시도해 주세요", "Trace 앱 로그인 화면에서 [Google 로 계속하기] 를 다시 눌러 주세요.", 400)
+    이름 = _회사.get(p, "")
+    if not w or w["p"] != p or w["done"] or time.time() - w["at"] > 600:
+        return _브라우저_안내("다시 시도해 주세요", f"Trace 앱 로그인 화면에서 [{_회사로.get(p, '')} 계속하기] 를 다시 눌러 주세요.", 400)
     if w.get("mode") == "link":                       # 잇기 — 이 PC 의 토큰과 함께 서버에 붙여 달라고 (누구에게 붙일지는 토큰이 정함)
-        코드, 답 = _서버("POST", "/auth/google/link", json={"ticket": request.args.get("ticket", "")})
+        코드, 답 = _서버("POST", f"/auth/{p}/link", json={"ticket": request.args.get("ticket", "")})
         if 코드 != 200:
             w["error"] = 답.get("message") or "잇지 못했어요. 다시 눌러 주세요"
             return _브라우저_안내("잇지 못했어요", w["error"], 400)
         w["done"] = True
-        return _브라우저_안내("구글 계정을 이었어요", "Trace 앱으로 돌아가세요. 이제 Google 로도 이 계정에 로그인할 수 있어요.")
-    코드, 답 = _서버("POST", "/auth/google/claim", json={"ticket": request.args.get("ticket", ""),
-                                                       "device": f"내역서 화면 · {platform.node()}"})
+        return _브라우저_안내(f"{이름} 계정을 이었어요", f"Trace 앱으로 돌아가세요. 이제 {_회사로[p]}도 이 계정에 로그인할 수 있어요.")
+    코드, 답 = _서버("POST", f"/auth/{p}/claim", json={"ticket": request.args.get("ticket", ""),
+                                                     "device": f"내역서 화면 · {platform.node()}"})
     if 코드 != 200:
         w["error"] = 답.get("message") or "로그인하지 못했어요. 다시 눌러 주세요"
         return _브라우저_안내("로그인하지 못했어요", w["error"], 400)

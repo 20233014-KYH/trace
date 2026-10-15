@@ -172,14 +172,16 @@ TRACE_PORT=5050 python server/test_statements.py                       # 검사 
 지우면 내용은 없애고 **지운 사실과 시각만** 남긴다 — 이미 낸 링크는 "학생이 10/12 에 지운 기록입니다", 기록기가 더 보내면 410.
 잠깐 멈춤은 체인 `pause_start`·`pause_end` (알약 ⏸) — 요약의 기록 시간에서 빠진다. 검사: `server/test_delete_move.py` (19개)
 
-## 구글 로그인 (10/15)
+## 구글 · 카카오 로그인 (10/15)
 
 PC 앱 [Google 로 계속하기] → **브라우저**로 `/api/auth/google/start` → 구글 계정 고르기 → `/api/auth/google/callback` → 이 PC(`127.0.0.1:<앱 포트>/local/auth/google/done`) 로 한 번 쓰는 표(2분) → PC 앱이 `POST /api/auth/google/claim` 으로 토큰으로 바꿈. 앱 창 안에서는 구글이 로그인을 막아서(disallowed_useragent) 브라우저로 한다.
 - 같은 이메일로 먼저 가입한 계정이 있으면 그 계정에 붙는다 (구글이 이메일 주인임을 확인 · 비밀번호 로그인도 그대로). 구글로만 가입하면 비밀번호가 없다 (`password_hash = "!google"`)
 - 서버는 따로 기억하는 것이 없다 — state 는 서명한 쪽지(10분) · PKCE 검증값도 그 쪽지로 다시 만든다. 돌려보내는 곳은 127.0.0.1 뿐
 - **잇기** (설정 › 계정 › [Google 계정 잇기]): 이메일이 다른 계정(네이버 등)에 구글을 붙인다. 같은 길로 구글을 다녀오되(`mode=link`) callback 은 로그인하지 않고 잇기 표(구글 계정 번호)만 → PC 앱이 **자기 토큰과 함께** `POST /api/auth/google/link`. 누구에게 붙일지는 토큰이 정한다 (주소가 새도 남의 계정에 못 붙임). 그 구글이 이미 다른 계정에 붙어 있으면: 구글로만 만든 빈 계정(과제 없음)이면 거기서 떼어 옮기고(계정은 남김 · 그 계정 로그인 끊음), 아니면 409. **끊기**(`/api/auth/google/unlink`)는 비밀번호 있는 계정만
 - `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` 이 없으면 `/api/auth/providers` 가 google=false → PC 앱 버튼은 "준비 중" 그대로
-- 시험: `python 3-코드/server/test_google.py` (구글 흉내 · 31개) · `python 3-코드/app/test_google.py` (PC 앱 쪽 · 18개) · `python 3-코드/tests/test_google_e2e.py` (PC 앱 ↔ 서버 한 바퀴 · 5개)
+- **카카오**는 같은 길 · 주소만 `/api/auth/kakao/…`. 다른 점: 카카오는 이메일을 기본으로 안 준다(비즈 앱 · 동의 항목) → 이메일이 없거나 확인 안 됐으면 카카오 회원번호로 새 계정(`kakao-<번호>@kakao.trace` · `/me` 는 이메일 없음 · 비밀번호 `"!kakao"`). 확인된 이메일이면 같은 이메일 계정에 붙음. 기존 계정은 설정 › 계정 › [카카오 계정 잇기]. PKCE 대신 Client Secret + 서명한 state
+- 끊기는 끊어도 로그인할 길(비밀번호 · 다른 회사)이 남을 때만
+- 시험: `python 3-코드/server/test_google.py` (31) · `server/test_kakao.py` (19) · `app/test_google.py` (PC 앱 쪽 · 24) · `tests/test_google_e2e.py` (PC 앱 ↔ 서버 한 바퀴 · 구글 · 카카오 8)
 
 **설정 (저장소 주인 · 한 번)** — 비밀(클라이언트 보안 비밀번호)은 채팅 · 저장소에 쓰지 않는다
 1. [Google Cloud Console](https://console.cloud.google.com/) → 프로젝트 만들기 (예: Trace)
@@ -190,6 +192,15 @@ PC 앱 [Google 로 계속하기] → **브라우저**로 `/api/auth/google/start
    - (이 PC 의 시험 서버로도 해 볼 때) `http://127.0.0.1:5000/api/auth/google/callback`
 5. 만든 **클라이언트 ID** · **클라이언트 보안 비밀번호** → Render → trace-server → **Environment** 에 `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` (저장하면 다시 배포됨). 이 PC 시험 서버는 `server/.env`
 6. 확인: `https://trace-server-8aa0.onrender.com/api/auth/providers` 가 `{"google": true, …}`
+
+**카카오 설정 (저장소 주인 · 한 번)** — Client Secret 은 채팅 · 저장소에 쓰지 않는다
+1. [카카오 디벨로퍼스](https://developers.kakao.com/) → 내 애플리케이션 → 애플리케이션 추가 (앱 이름 Trace · 카테고리 교육)
+2. 앱 키의 **REST API 키** → `KAKAO_CLIENT_ID`
+3. 플랫폼 → **Web** 사이트 도메인 `https://trace-server-8aa0.onrender.com`
+4. 카카오 로그인 → **활성화 ON** · **Redirect URI** `https://trace-server-8aa0.onrender.com/api/auth/kakao/callback`
+5. 카카오 로그인 → 동의항목 → **닉네임** 필수 동의 (내역서 맨 위 이름). 이메일은 비즈 앱일 때만 — 안 켜도 됨 (기존 계정은 잇기로)
+6. 카카오 로그인 → 보안 → **Client Secret** 코드 생성 · 활성화 "사용함" → `KAKAO_CLIENT_SECRET`
+7. Render → Environment 에 두 개 더 (기존 줄은 그대로) → 확인: `/api/auth/providers` 가 `{"kakao": true, …}`
 
 ## 로그인이 안 될 때 (10/12)
 

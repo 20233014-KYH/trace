@@ -1,5 +1,5 @@
 """
-test_google_e2e.py — 구글 로그인 · 잇기를 PC 앱 ↔ 서버 한 바퀴로 (10/15) — 구글만 흉내, 나머지는 진짜 코드 (한 프로세스 · 임시 DB)
+test_google_e2e.py — 구글 · 카카오 로그인 · 잇기를 PC 앱 ↔ 서버 한 바퀴로 (10/15) — 구글 · 카카오만 흉내, 나머지는 진짜 코드 (한 프로세스 · 임시 DB)
 
   python 3-코드/tests/test_google_e2e.py
 
@@ -7,6 +7,7 @@ PC 앱 [Google 로 계속하기] → (브라우저) 서버 start → 구글 → 
 브라우저가 하는 일(주소 따라가기)만 이 시험이 대신한다.
   ① 네이버 이메일로 가입 · 로그인 → 설정 › 계정 [Google 계정 잇기] → 구글로 로그인하면 네이버 계정
   ② 처음 보는 구글 계정 → 새 계정
+  ③ 카카오(이메일 안 줌) → 새 계정 · 네이버 계정에 카카오 잇기 → 카카오로 로그인하면 네이버 계정
 """
 import json
 import os
@@ -19,15 +20,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 d = tempfile.mkdtemp(prefix="trace-google-e2e-")
 os.environ["TRACE_DB_URL"] = "sqlite:///" + os.path.join(d, "server.db")
-os.environ.update(GOOGLE_CLIENT_ID="cid.apps.googleusercontent.com", GOOGLE_CLIENT_SECRET="비밀-시험")
+os.environ.update(GOOGLE_CLIENT_ID="cid.apps.googleusercontent.com", GOOGLE_CLIENT_SECRET="비밀-시험",
+                  KAKAO_CLIENT_ID="rest-key", KAKAO_CLIENT_SECRET="카카오-비밀")
 sys.path[:0] = [os.path.join(ROOT, "server"), os.path.join(ROOT, "app"), ROOT]
 import app as 서버앱                               # noqa: E402  server/app.py
 import test_source as T                           # noqa: E402  app 시험 도구 (PC 앱 statement)
 ST = T.ST
 검사 = T.검사
 
-구글 = {}
+구글, 카카오 = {}, {}
 서버앱._구글_코드_바꾸기 = lambda code, v, r, s: dict(구글)       # 구글 토큰 주소만 흉내
+서버앱._카카오_코드_바꾸기 = lambda code, r, s: dict(카카오)      # 카카오 토큰 · 사용자 정보 주소만 흉내
 s = 서버앱.app.test_client()
 
 
@@ -51,11 +54,11 @@ def 서버로(방법, 경로, **kw):
 
 
 def 브라우저(c, H, 주소):
-    """PC 앱이 연 주소를 브라우저처럼 따라간다: 서버 start → (구글 흉내: code 붙여 callback) → PC 앱 done"""
+    """PC 앱이 연 주소를 브라우저처럼 따라간다: 서버 start → (구글 · 카카오 흉내: code 붙여 callback) → PC 앱 done"""
     u = urlparse(주소)
     r = s.get(u.path + "?" + u.query)                                   # 서버 start → 구글로 302
     state = dict(x.split("=", 1) for x in urlparse(r.headers["Location"]).query.split("&"))["state"]
-    r = s.get(f"/api/auth/google/callback?code=c&state={state}")       # 구글이 돌려보냄 → 서버 → PC 앱으로 302
+    r = s.get(u.path.replace("/start", "/callback") + f"?code=c&state={state}")   # 그 회사가 돌려보냄 → 서버 → PC 앱으로 302
     돌아감 = urlparse(r.headers.get("Location", ""))
     if 돌아감.netloc != f"127.0.0.1:{ST.PORT}":
         return r
@@ -74,7 +77,7 @@ def main():
         c = ST.app.test_client()
         H = {"base_url": f"http://127.0.0.1:{ST.PORT}"}
         L = {"X-Trace-Local": "1"}
-        검사("PC 로그인 화면 Google 버튼 살아남", c.get("/local/auth/providers", **H).json == {"google": True})
+        검사("PC 로그인 화면 Google · 카카오 버튼 살아남", c.get("/local/auth/providers", **H).json == {"google": True, "kakao": True})
 
         # ① 네이버 이메일 계정 → 잇기 → 구글로 로그인하면 그 계정
         r = c.post("/local/signup", json={"email": "yh@naver.com", "password": "네이버비번1234", "name": "네이버계정"}, headers=L, **H)
@@ -100,6 +103,25 @@ def main():
         브라우저(c, H, 열림[-1])
         a = c.get("/local/settings", **H).json["account"]
         검사("처음 보는 구글 계정 → 새 계정 (비밀번호 없음)", a["email"] == "new.student@gmail.com" and a["password"] is False and a["google"] is True)
+
+        # ③ 카카오 (이메일 안 줌) — 새 계정 → 로그아웃 → 네이버 계정에 카카오 잇기 → 카카오로 로그인하면 네이버 계정
+        c.post("/local/logout", json={}, headers=L, **H)
+        카카오.update(sub="k-1", email=None, email_verified=False, name="카톡닉")
+        c.post("/local/auth/kakao/start", json={}, headers=L, **H)
+        브라우저(c, H, 열림[-1])
+        a = c.get("/local/settings", **H).json["account"]
+        검사("카카오(이메일 없음) → 새 계정 · 이메일 없음 · 닉네임", a["email"] is None and a["kakao"] is True and a["name"] == "카톡닉")
+        c.post("/local/logout", json={}, headers=L, **H)
+        c.post("/local/login", json={"email": "yh@naver.com", "password": "네이버비번1234"}, headers=L, **H)
+        c.post("/local/auth/kakao/start", json={"mode": "link"}, headers=L, **H)
+        r = 브라우저(c, H, 열림[-1])
+        a = c.get("/local/settings", **H).json["account"]
+        검사("네이버 계정에 카카오 잇기 (구글도 그대로)", r.status_code == 200 and a["kakao"] is True and a["google"] is True and a["email"] == "yh@naver.com")
+        c.post("/local/logout", json={}, headers=L, **H)
+        c.post("/local/auth/kakao/start", json={}, headers=L, **H)
+        브라우저(c, H, 열림[-1])
+        auth = json.load(open(os.path.join(data, "auth.json"), encoding="utf-8"))
+        검사("카카오로 로그인 → 네이버 계정", auth["user"]["id"] == 네이버)
     finally:
         ST._서버, ST.webbrowser.open = 옛[0], 옛[1]
         ST.설정.clear()
