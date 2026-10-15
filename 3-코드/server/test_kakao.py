@@ -153,6 +153,27 @@ def main():
          보낸[1].full_url == 새.카카오_나 and 보낸[1].get_header("Authorization") == "Bearer kat-1"
          and c == {"sub": "4004", "email": "k@kakao.com", "email_verified": True, "name": "카카오닉"}, f"{c}")
 
+    # ⑦ 까닭이 보이게 (10/15 처음 진짜 카카오 시험에서 500 · 502 만 보였음) — 카카오 오류 코드 · 서버 마무리 오류
+    import io
+    import urllib.error
+
+    def 카카오_거절(code, 돌아올_곳, 설정):
+        raise urllib.error.HTTPError(A.카카오_토큰, 401, "Unauthorized", {}, io.BytesIO(
+            json.dumps({"error": "invalid_client", "error_description": "Bad client credentials", "error_code": "KOE010"}).encode()))
+    A._카카오_코드_바꾸기 = 카카오_거절
+    _, _, r2 = 한_바퀴(s)
+    글 = r2.get_data(as_text=True)
+    검사("카카오가 거절하면 그 까닭(오류 코드)이 화면에", r2.status_code == 502 and "KOE010" in 글 and "Bad client credentials" in 글)
+    A._카카오_코드_바꾸기 = lambda code, 돌아올_곳, 설정: dict(카카오가_줄_것)
+    옛_사용자 = A._외부_사용자
+    A._외부_사용자 = lambda d, p, c: (_ for _ in ()).throw(RuntimeError("DB 흉내 오류"))
+    try:
+        _, _, r2 = 한_바퀴(s)
+    finally:
+        A._외부_사용자 = 옛_사용자
+    검사("마무리에서 막히면 500 대신 안내 화면 (까닭 종류)", r2.status_code == 500 and "RuntimeError" in r2.get_data(as_text=True)
+         and "로그인을 마치지 못했어요" in r2.get_data(as_text=True))
+
     print(f"  {'─' * 70}\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 
