@@ -40,6 +40,24 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
 .upd{margin-top:auto;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-radius:10px;background:var(--soft);font-size:12.5px;line-height:1.35}
 .upd .t{flex:1;min-width:0;color:var(--ink, #18181b)}.upd .btn{flex:none}
 .upd + .me{margin-top:8px}
+/* 프로필 칸 (10/15) — 왼쪽 아래 이름을 누르면 · 크롬 프로필 메뉴처럼 */
+.me-btn{cursor:pointer;border-radius:10px;padding:8px 6px;transition:background .15s}
+.me-btn:hover,.me-btn[aria-expanded="true"]{background:var(--soft)}
+.me-btn:focus-visible{outline:2px solid #3e63dd;outline-offset:1px}
+.prof{position:fixed;z-index:60;width:264px;background:var(--card);border-radius:14px;padding:6px;font-size:13px;line-height:1.4;
+  box-shadow:0 0 0 1px rgba(24,24,27,.08),0 12px 32px rgba(24,24,27,.16);animation:prof-in .12s ease-out}
+@keyframes prof-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.prof .head{display:flex;flex-direction:column;align-items:center;gap:2px;padding:18px 12px 14px;margin-bottom:4px;background:var(--soft);border-radius:10px;text-align:center}
+.prof .av{border-radius:50%;background:#e4e4e7;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.prof .av.big{width:52px;height:52px;font-size:20px;margin-bottom:8px;background:var(--ink);color:#fff}
+.prof .head b{font-size:14px;font-weight:600}
+.prof .head span{color:var(--muted);font-size:12px;word-break:break-all}
+.prof .item{display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 10px;border:0;background:none;border-radius:8px;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.prof .item:hover,.prof .item:focus-visible{background:var(--soft);outline:none}
+.prof .item:disabled{opacity:.5;cursor:default}
+.prof .item svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;color:var(--ink2)}
+.prof .item small{margin-left:auto;color:var(--muted);font-size:12px}
+.prof hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
 .upd + .upd{margin-top:8px}
 .rail .upd{display:none}
 /* 바뀐 것 창 (업데이트 전 · 뒤) — work.css 없이도 보이게 버튼까지 여기서 */
@@ -57,7 +75,9 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
 .sheet .b.dark{background:var(--ink);border-color:var(--ink);color:#fff}.sheet .b:disabled{opacity:.5;cursor:default}
 .rail .side{width:56px}
 /* 접힘: 글자는 자리를 그대로 두고 흐리게만 → 위아래로도 안 움직임 */
-.rail .brand b,.rail .nav .t,.rail .nav .dot,.rail .side h4,.rail .me div{opacity:0;pointer-events:none}
+.rail .brand b,.rail .nav .t,.rail .nav .dot,.rail .side h4,.rail .me > div:not(.av){opacity:0;pointer-events:none}
+.rail .me-btn{padding:4px}                                   /* 접혀도 동그라미는 보이고 누르면 프로필 칸 (10/15) */
+.rail .side .hint{display:none}                               /* "과제가 없습니다" 가 접힌 칸에서 세로로 늘어서던 것 */
 .rail .tg{opacity:0}.rail .brand:hover .tg,.rail .tg:focus-visible{opacity:1}.rail .brand:hover .mark{opacity:0}
 @media (prefers-reduced-motion:reduce){.side,.side *{transition:none!important}}
 

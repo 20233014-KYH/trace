@@ -98,9 +98,11 @@ window.TraceShell = (function () {
 
   // ── 새 버전 (10/14 · app/updater.py) — 왼쪽 메뉴 아래에 "새 버전 · 업데이트". 누르면 앱이 직접 받아 바꾸고 다시 연다
   //    (맥은 내려받기 화면에서 받을 때마다 "열지 않음" 이 떠서). 서버에 묻는 건 앱이 10분에 한 번만 (app/updater.최신)
+  let 내버전 = "";                                  // 프로필 칸에 보임 (/local/update 의 current)
   async function 새버전() {
     let u = null;                                  // 10분 기억은 앱(updater.최신)이 한다 — 업데이트 뒤 새로 켠 앱은 새로 물음
     try { u = await call("GET", "/local/update"); } catch (e) { return; }
+    내버전 = u.current || "";
     const side = document.querySelector(".side");
     if (!u || !u.newer || u.dev || !side || side.querySelector(".upd")) return;   // 개발판은 git 으로 받음 — 묻지 않음 (이슈 #79)
     const box = el("div", "upd"), t = el("span", "t", `새 버전 v${u.latest}`);
@@ -176,16 +178,71 @@ window.TraceShell = (function () {
     let mine = null, user = null;
     try {
       const s = await call("GET", "/local/state");
-      if (s.logged_in) { mine = (await call("GET", "/local/works")).works; user = s.user; }
+      if (s.logged_in) { const r = await call("GET", "/local/works"); mine = r.works; user = r.user || s.user; }
     } catch (e) { mine = null; }
     return { works: mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions })), user: mine ? user : null };
   }
+  // ── 왼쪽 아래 내 이름 → 누르면 프로필 칸 (10/15) — 크롬 프로필 메뉴처럼 이름 · 이메일 · 계정 설정 · 앱 정보 · 로그아웃.
+  //    모든 화면이 이것 하나를 씀 (전엔 홈에만 로그아웃 아이콘이 있었음 · 한 번 누르면 바로 나가져서 잘못 누르기도 쉬웠음)
+  const 프로필_그림 = {
+    user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  };
+  function profile(me, u) {
+    me.textContent = "";
+    const t = el("div"); t.append(el("span", null, u.name || u.email || ""), el("small", null, u.name ? u.email || "" : ""));
+    me.append(el("div", "av", (u.name || u.email || "?").slice(0, 1)), t);
+    me.classList.add("me-btn"); me.tabIndex = 0; me.title = "내 계정";
+    me.setAttribute("role", "button"); me.setAttribute("aria-haspopup", "menu"); me.setAttribute("aria-expanded", "false");
+    let p = null;
+    const 닫기 = () => {
+      if (!p) return;
+      p.remove(); p = null; me.setAttribute("aria-expanded", "false");
+      document.removeEventListener("mousedown", 밖); document.removeEventListener("keydown", 키);
+    };
+    const 밖 = e => { if (p && !p.contains(e.target) && !me.contains(e.target)) 닫기(); };
+    const 키 = e => {
+      if (e.key === "Escape") { 닫기(); me.focus(); return; }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {          // 메뉴 안에서 위아래로
+        const its = [...p.querySelectorAll(".item")], i = its.indexOf(document.activeElement);
+        its[(i + (e.key === "ArrowDown" ? 1 : its.length - 1)) % its.length].focus(); e.preventDefault();
+      }
+    };
+    const 줄 = (그림, 글, on, 옆, cls) => {
+      const b = el("button", "item" + (cls ? " " + cls : "")); b.type = "button"; b.setAttribute("role", "menuitem");
+      b.append(icon(그림), el("span", null, 글)); if (옆) b.append(el("small", null, 옆));
+      b.onclick = on; return b;
+    };
+    const 열기 = () => {
+      if (p) { 닫기(); return; }
+      p = el("div", "prof"); p.setAttribute("role", "menu"); p.setAttribute("aria-label", "내 계정");
+      const head = el("div", "head");
+      head.append(el("div", "av big", (u.name || u.email || "?").slice(0, 1)), el("b", null, u.name || ""), el("span", null, u.email || ""));
+      const 나가기 = 줄(프로필_그림.out, "로그아웃", async () => {
+        나가기.disabled = true;
+        try { await call("POST", "/local/logout", null, {}); }
+        catch (e) { if (e.code === 500) { 나가기.disabled = false; return alert(e.message); } }
+        location.replace("/login");
+      }, null, "out");
+      p.append(head, 줄(프로필_그림.user, "계정 설정", () => location.href = "/settings?tab=account"),
+               줄(프로필_그림.info, "앱 정보", () => location.href = "/settings?tab=app", 내버전 ? "v" + 내버전 : null), el("hr"), 나가기);
+      document.body.append(p);
+      const r = me.getBoundingClientRect();                        // 이름 줄 바로 위 · 왼쪽 맞춤 (접힌 메뉴면 오른쪽으로 삐져나와도 됨)
+      p.style.left = Math.max(8, r.left) + "px";
+      p.style.bottom = (window.innerHeight - r.top + 6) + "px";
+      me.setAttribute("aria-expanded", "true");
+      document.addEventListener("mousedown", 밖); document.addEventListener("keydown", 키);
+      p.querySelector(".item").focus();
+    };
+    me.onclick = 열기;
+    me.onkeydown = e => { if (e.target === me && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); 열기(); } };
+  }
+
   function drawWorks(wid, d) {
     $("me").innerHTML = "";
     if (d.user) {
-      const av = el("div", "av", (d.user.name || "?").slice(0, 1));
-      const t = el("div"); t.append(el("span", null, d.user.name || ""), el("small", null, d.user.email || ""));
-      $("me").append(av, t);
+      profile($("me"), d.user);
     } else {
       const a = el("a", "nav", null); a.href = "/login"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
       $("me").append(a);
@@ -212,5 +269,5 @@ window.TraceShell = (function () {
     return d.works;
   }
 
-  return { call, el, hm, md, icon, svgFile, init, loadWorks };
+  return { call, el, hm, md, icon, svgFile, init, loadWorks, profile };
 })();

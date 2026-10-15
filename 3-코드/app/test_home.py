@@ -60,6 +60,10 @@ def main():
         r = c.get("/home", **HOST)
         검사("홈 화면 열림", r.status_code == 200 and "내 과제" in r.get_data(as_text=True))
         d = c.get("/local/home", **HOST).json
+        검사("프로필 칸: 서버에 없는 칸은 로그인 때 것 그대로", d["user"] == {"name": "시험 학생", "email": "s@example.test"})
+        응답["/me"] = (200, {"works": works, "name": "새 이름", "email": "new@example.test"})
+        검사("프로필 칸: 서버의 이름 · 이메일 (10/15)", c.get("/local/home", **HOST).json["user"] == {"name": "새 이름", "email": "new@example.test"})
+        응답["/me"] = (200, {"works": works})
         검사("내 과제 = 서버 목록 + 이 PC 기록 수", [w["id"] for w in d["works"]][:2] != [] and
              {w["id"]: w["pc_sessions"] for w in d["works"]}["W-없음"] == 0 and
              {w["id"]: w["pc_sessions"] for w in d["works"]}["W-match_view"] > 0)

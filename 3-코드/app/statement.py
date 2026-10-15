@@ -296,6 +296,7 @@ def works():
     pc = _과제별_세션()
     내것 = {w["id"] for w in 답.get("works", [])}
     return jsonify(
+        user={**(_auth().get("user") or {}), **{k: 답[k] for k in ("id", "name", "email") if 답.get(k)}},   # 프로필 칸 (10/15 · 로그인 때 받은 것엔 이메일이 없음)
         works=[{**w, "pc_sessions": len(pc.get(w["id"], ()))} for w in 답.get("works", [])],
         # 이 PC 에 기록은 있는데 내 과제 목록엔 없는 것 = 기록기가 로그인 없이 만든 과제 (주인 없음)
         orphans=[{"id": k, "pc_sessions": len(v)} for k, v in sorted(pc.items()) if k not in 내것])
