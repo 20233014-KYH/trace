@@ -36,6 +36,7 @@ a.s:hover{background:var(--soft)}a.s:hover b{text-decoration:underline;text-unde
 .row .ok svg{width:14px;height:14px}
 .row.go{cursor:pointer}.row.go:hover{background:#f6f6f7}
 .row .chev{color:#d4d4d8;display:flex}
+.row .rm{opacity:.0;transition:opacity .12s}.row:hover .rm,.row .rm:focus-visible,.row .rm[aria-expanded=true]{opacity:1}
 .recs .foot{margin-top:auto;padding-top:12px}
 .right{width:392px;flex:none;display:flex;flex-direction:column;gap:16px}
 .box{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
@@ -78,7 +79,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       <div></div>
       <div class="win" style="align-items:center">
         <span class="badge blue recbadge" id="recb" hidden></span>
-        <a class="iconbtn" id="b-set" title="과제 설정" aria-label="과제 설정" style="margin-left:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></a>
+        <button class="iconbtn" id="b-set" type="button" title="더 보기" aria-label="과제 메뉴" style="margin-left:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
         <span style="width:8px"></span>
         <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
         <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
@@ -124,7 +125,8 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   const ARROW = '<path d="m9 18 6-6-6-6"/>', OK = '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>';
   T.init({ back: ["/home", "홈으로"] });
   T.loadWorks(wid, { stay: true });
-  $("b-set").href = "/work/settings?work=" + encodeURIComponent(wid);
+  // ⋯ = 과제 설정 · 과제 삭제 (캔버스 Delete · 10/15) — 지우면 홈으로
+  $("b-set").onclick = () => W.workMenu($("b-set"), { id: wid, settings: "/work/settings?work=" + encodeURIComponent(wid), recording: !!(d && d.recording) });
   let d = null, tick = null;
 
   function toast(t, ok) { $("toast").textContent = ""; if (t) $("toast").append(el("div", "toast" + (ok ? "" : " err"), t)); }
@@ -208,7 +210,14 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       }
       if (!s.recording) {                                           // 누르면 기록 다시 보기 (캔버스 Record · 10/14)
         r.classList.add("go"); r.tabIndex = 0; r.title = "이 기록 자세히 보기";
-        const ch = el("span", "chev"); ch.append(T.icon(ARROW)); r.append(ch);
+        // ⋯ = 다른 과제로 옮기기 · 이 기록만 지우기 (10/15) — 줄에 마우스를 올리면 보임
+        const m = el("button", "iconbtn rm"); m.type = "button"; m.title = "이 기록 메뉴"; m.setAttribute("aria-label", "이 기록 메뉴");
+        m.append(T.icon(W.ICON.more));
+        const 끝 = s.end ? W.hm(s.end) : "";
+        m.onclick = e => { e.stopPropagation(); W.sessionMenu(m, { wid, sid: s.id, when: `${W.day(s.start)} ${W.hm(s.start)}${끝 ? "–" + 끝 : ""}`,
+                                                                 recording: !!d.recording, onDone: () => load() }); };
+        m.onkeydown = e => e.stopPropagation();
+        const ch = el("span", "chev"); ch.append(T.icon(ARROW)); r.append(m, ch);
         const go = () => location.href = `/record?work=${encodeURIComponent(wid)}&session=${encodeURIComponent(s.id)}`;
         r.onclick = go; r.onkeydown = e => { if (e.key === "Enter") go(); };
       }

@@ -95,8 +95,12 @@
   T.init({});
   let data = null, tick = null;
 
+  // 지난번 홈 · 카드 숫자를 먼저 그리고 새 자료가 오면 바꿔 그린다 (10/15) — 인터넷 서버를 기다리는 1~2초 동안 빈 화면이던 것
+  const 기억 = (k, v) => { try { if (v === undefined) return JSON.parse(sessionStorage.getItem(k) || "null"); sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
   async function load() {
-    try { data = await T.call("GET", "/local/home"); }
+    const 옛 = 기억("trace.home.v1");
+    if (옛 && !data) { data = 옛; side(); now(); alerts(); cards(); }
+    try { data = await T.call("GET", "/local/home"); 기억("trace.home.v1", data); }
     catch (e) {
       if (e.code === 401) { location.replace("/login"); return; }
       $("msg").textContent = ""; $("msg").append(el("div", "err", e.message)); return;
@@ -162,15 +166,18 @@
     data.works.forEach(w => {
       const rec = data.recording && data.recording.work_id === w.id;
       const c = el("div"); g.append(c);
-      const base = { title: w.title, href: "/work?work=" + enc(w.id), settings: "/work/settings?work=" + enc(w.id), due: w.due, last: w.last };
+      const base = { id: w.id, title: w.title, href: "/work?work=" + enc(w.id), settings: "/work/settings?work=" + enc(w.id), due: w.due, last: w.last,
+                     recording: !!data.recording, onDeleted: () => load() };     // ⋯ 과제 삭제 뒤 홈 다시 (10/15)
       if (!w.pc_sessions && !rec) {                                 // 이 PC 에 기록이 없는 과제 — 기록 시작
         W.card(c, { ...base, badge: ["기록 전", "outline"], stage: null, facts: { questions: 0, answers: 0, linked: 0 },
           button: ["기록 시작", "#", true], onButton: btn => W.startRecording(w.id, btn, (m, ok) => alerts([m, ok])) });
         return;
       }
-      const parts = W.card(c, { ...base, badge: rec ? ["기록 중", "blue"] : null, stage: rec ? "record" : null, wait: "세는 중…" });
-      T.call("GET", "/local/home/card?work_id=" + enc(w.id)).then(d => fill(c, base, w, d, rec)).catch(() => {
-        W.facts(parts.facts, null, "숫자를 세지 못했어요");
+      const 옛카드 = 기억("trace.card." + w.id);
+      const parts = 옛카드 ? null : W.card(c, { ...base, badge: rec ? ["기록 중", "blue"] : null, stage: rec ? "record" : null, wait: "세는 중…" });
+      if (옛카드) fill(c, base, w, 옛카드, rec);                       // 지난번 숫자 먼저
+      T.call("GET", "/local/home/card?work_id=" + enc(w.id)).then(d => { 기억("trace.card." + w.id, d); fill(c, base, w, d, rec); }).catch(() => {
+        if (parts) W.facts(parts.facts, null, "숫자를 세지 못했어요");
       });
     });
   }

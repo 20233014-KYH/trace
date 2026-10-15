@@ -39,3 +39,26 @@
 .wk .warn svg{width:14px;height:14px}
 .wk .ft{display:flex;justify-content:flex-end;margin-top:auto}
 .hint{padding:6px 12px;font-size:12.5px;color:var(--faint)}
+/* ⋯ 메뉴 · 과제 삭제 창 (캔버스 Delete · 10/15) */
+.menu{position:fixed;z-index:50;width:200px;padding:4px;border-radius:10px;background:#fff;box-shadow:0 0 0 1px rgba(24,24,27,.1),0 8px 24px rgba(24,24,27,.12);display:flex;flex-direction:column}
+.menu .mi{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:6px;font-size:14px;color:var(--ink);text-decoration:none;text-align:left;width:100%}
+.menu .mi:hover,.menu .mi:focus-visible{background:var(--soft);outline:none}
+.menu .mi svg{width:16px;height:16px;stroke-width:2}
+.menu .mi.red{color:#c62f34}
+.menu .mi[aria-disabled=true]{opacity:.45;cursor:default}.menu .mi[aria-disabled=true]:hover{background:none}
+.menu .sep{height:1px;background:var(--line);margin:4px -4px}
+.t-modal{position:fixed;inset:0;z-index:60;background:rgba(24,24,27,.32);display:flex;align-items:center;justify-content:center;padding:24px}
+.dlg{width:440px;max-width:100%;max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:14px;box-shadow:0 0 0 1px rgba(24,24,27,.1),0 16px 40px rgba(24,24,27,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dlg h3{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em;line-height:1.4;word-break:keep-all}
+.dlg .lst{display:grid;grid-template-columns:minmax(0,1fr) auto;row-gap:10px;column-gap:12px;font-size:13px;line-height:1.45;padding:12px 14px;border-radius:10px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
+.dlg .lst .k{color:#3f3f46}.dlg .lst .k small{display:block;font-size:12px;color:var(--muted)}
+.dlg .lst .v{text-align:right;white-space:nowrap;font-weight:500;color:#c62f34}.dlg .lst .v.keep{color:var(--muted)}
+.dlg .note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:#fffbeb;color:#92400e;font-size:12.5px;line-height:1.5}
+.dlg .note svg{width:14px;height:14px;margin-top:2px;flex:none}
+.dlg label{font-size:13px;font-weight:500}
+.dlg input{height:36px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:14px;margin-top:6px;width:100%}
+.dlg input:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba(62,99,221,.12)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px}
+.dlg .err{font-size:13px;color:#a4282d}
+.dlg .sel{height:36px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font:inherit;font-size:14px;margin-top:6px;width:100%;background:#fff;color:var(--ink)}
+.btn-red{background:#c62f34;color:#fff}.btn-red:hover{background:#b02a2f}.btn-red:disabled{opacity:.45}
