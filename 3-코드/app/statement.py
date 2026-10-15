@@ -70,10 +70,35 @@ def _auth():
     return a if isinstance(a, dict) and a.get("server") == 설정["server"] else {}
 
 
+# 인터넷 서버 연결은 다시 쓴다 (10/15) — 요청마다 새로 맺으면 HTTPS 인사(TLS)를 매번 해서 요청마다 수백 ms 가 더 걸렸다
+_연결 = requests.Session()
+_연결.mount("https://", requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=16))
+# 내 과제 목록(/me)은 15초 기억 — 홈 하나 열 때 왼쪽 목록 · 홈 카드가 따로 물어 1.5초씩 두 번 기다렸다. 바꾸는 요청을 보내면 버린다
+_me = {"key": None, "at": 0.0, "답": None}
+_me_잠금 = threading.Lock()
+ME_TTL = 15
+
+
 def _서버(방법, 경로, **kw):
     """학생 대신 인터넷 서버를 부른다. (코드, JSON)"""
-    머리 = kw.pop("headers", {})
+    import time
     t = _auth().get("token")
+    if 방법 != "GET":
+        _me["답"] = None                                 # 과제 만들기 · 고치기 · 지우기 · 옮기기 → 목록이 바뀜
+    elif 경로 == "/me":
+        with _me_잠금:
+            키 = (t, 설정["server"])
+            if _me["답"] is not None and _me["key"] == 키 and time.time() - _me["at"] < ME_TTL:
+                return 200, json.loads(_me["답"])
+            코드, 답 = _서버_부르기(방법, 경로, t, **kw)
+            if 코드 == 200:
+                _me.update(key=키, at=time.time(), 답=json.dumps(답))
+            return 코드, 답
+    return _서버_부르기(방법, 경로, t, **kw)
+
+
+def _서버_부르기(방법, 경로, t, **kw):
+    머리 = kw.pop("headers", {})
     if t:
         머리["Authorization"] = f"Bearer {t}"
     if kw.get("json") is not None:
@@ -83,7 +108,7 @@ def _서버(방법, 경로, **kw):
             kw["data"] = gzip.compress(글, 6)
             머리.update({"Content-Type": "application/json; charset=utf-8", "Content-Encoding": "gzip"})
     try:
-        r = requests.request(방법, 설정["server"].rstrip("/") + 경로, headers=머리, timeout=kw.pop("timeout", 90), **kw)
+        r = _연결.request(방법, 설정["server"].rstrip("/") + 경로, headers=머리, timeout=kw.pop("timeout", 90), **kw)
     except requests.RequestException as e:
         return 502, {"error": "server_unreachable", "message": f"서버에 연결하지 못했습니다 ({type(e).__name__}). 무료 서버는 처음 깨울 때 1분쯤 걸립니다."}
     try:
@@ -102,11 +127,14 @@ def _jsonl(pattern):
 
 
 def _과제별_세션():
-    """events-*.jsonl 의 session_start → {work_id: {세션 id, ...}}"""
+    """events-*.jsonl 의 session_start → {work_id: {세션 id, ...}}
+    다른 과제로 옮긴 기록은 data/moved.json {세션: 과제} 를 따른다 (10/15 · 기록 파일은 고치지 않음 — 줄마다 체인 해시가 있어서)"""
+    옮김 = safefile.read_json(os.path.join(설정["data_dir"], "moved.json"), {})
+    옮김 = 옮김 if isinstance(옮김, dict) else {}
     out = {}
     for e in _jsonl("events-*.jsonl"):
         if e.get("type") == "session_start" and e.get("work_id"):
-            out.setdefault(e["work_id"], set()).add(e["session_id"])
+            out.setdefault(옮김.get(e["session_id"], e["work_id"]), set()).add(e["session_id"])
     return out
 
 
@@ -128,10 +156,11 @@ def state():
 
 # ─────────────── 설치판 (v0.1 · 10/13) — 새 버전 알림 · 기록 시작 ───────────────
 def _기록_중():
-    """기록기가 켜져 있으면 확장 다리(5077)가 열려 있다"""
+    """기록기가 켜져 있으면 확장 다리(5077)가 열려 있다.
+    0.1초만 — 윈도우는 닫힌 주소에 연결하면 바로 실패하지 않고 다시 시도해서, 기다린 만큼 화면이 늦었다 (10/15). 이 PC 안이라 열려 있으면 즉시 붙음"""
     import socket
     with socket.socket() as s:
-        s.settimeout(0.2)
+        s.settimeout(0.1)
         return s.connect_ex(("127.0.0.1", 5077)) == 0
 
 
@@ -460,26 +489,33 @@ def share():
 import source as 출처                            # noqa: E402
 import confirm as 연결확인                        # noqa: E402
 from urllib.parse import quote                  # noqa: E402
-_내역서_있음 = set()                              # 한 번 확인되면 다시 묻지 않음
+_내역서_있음 = set()
+_내역서_없음 = {}                                  # work_id → "아직 없음" 을 확인한 시각 (1분 기억 · 만들면 지움)                              # 한 번 확인되면 다시 묻지 않음
 
 
 def _내역서_있나(wid):
     """왼쪽 과제를 누르면 그 과제가 어디까지 왔는지 보고 그 단계로 보낸다 — 그중 "내역서를 만들었나".
     로그인 안 했거나 서버가 늦으면 None (모름 → PC 기록만으로 판단). 화면 넘김이 늦지 않게 4초만 기다린다"""
+    import time
     if wid in _내역서_있음:
         return True
+    if time.time() - _내역서_없음.get(wid, 0) < 60:        # "아직 없음" 도 1분 기억 — 홈 카드마다 서버에 묻던 것 (10/15 · 카드 하나 3초)
+        return False
     t = _auth().get("token")
     if not t:
         return None
     try:
-        r = requests.get(설정["server"].rstrip("/") + f"/works/{quote(wid, safe='')}/statements/latest?brief=1",   # 있나만 (10/14)
+        r = _연결.get(설정["server"].rstrip("/") + f"/works/{quote(wid, safe='')}/statements/latest?brief=1",   # 있나만 (10/14)
                          headers={"Authorization": f"Bearer {t}"}, timeout=4)
     except requests.RequestException:
         return None
     if r.status_code == 200:
         _내역서_있음.add(wid)
         return True
-    return False if r.status_code == 404 else None
+    if r.status_code == 404:
+        _내역서_없음[wid] = time.time()
+        return False
+    return None
 
 
 import export as 내보내기                         # noqa: E402  캔버스 7 · app/export.py
@@ -487,7 +523,7 @@ import updater as 업데이트                        # noqa: E402  앱 안에�
 업데이트.기록_중 = _기록_중
 app.register_blueprint(업데이트.bp)
 출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나,
-          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=_내역서_있음.add,
+          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=lambda w: (_내역서_있음.add(w), _내역서_없음.pop(w, None)),
           source_data=lambda *a: _출처_보기(*a))      # 교수 링크 출처 보기 자료 (김용현 #44) — 내보내기도 같은 것을 씀
 app.register_blueprint(출처.bp)
 app.register_blueprint(연결확인.bp)

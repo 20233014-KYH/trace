@@ -10,6 +10,7 @@ work.py — 새 과제 · 과제 설정 · 과제 상세 (캔버스 "Trace 화�
   · 과목 · 마감 → 이 PC data/work-<과제>.json (서버엔 칸이 없고, 홈 카드 정렬·마감 알림에만 씀)
   · 기록 목록 = 이 PC 기록(events) · "서버 일치" = 서버가 그 기록을 봉인했나 (GET /works/<id>)
 """
+import glob
 import json
 import os
 import re
@@ -23,6 +24,7 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 import confirm as CF
+import export as EX
 from core import match as M, safefile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,6 +116,136 @@ def save():
     m.update(course=v["course"], due=v["due"])
     _meta_쓰기(wid, m)
     return jsonify(ok=True, go=f"/work?work={quote(wid, safe='')}")
+
+
+# ─────────────── 과제 삭제 · 기록 하나 지우기 · 옮기기 (캔버스 Delete · 10/15 박상진) ───────────────
+# 자주 쓰는 것 = 기록 하나 (잘못 붙인 기록 → 옮기기 · 시험 삼아 켠 기록 → 이 기록만 지우기). 내역서(PDF · 교수 링크)는 그대로 —
+#   이미 낸 내역서엔 서버가 "지운 기록 n개" 로 남긴다.
+# 과제 전체 지우기 = 한 번 확인 · 과제 · 기록 · 내역서(PDF · 교수 링크)까지 모두. 내역서가 없어지는 건 이때뿐.
+#   학생이 내려받아 저장한 PDF 파일은 Trace 가 어디 있는지 몰라 못 지운다 (화면이 알려 줌).
+# 기록 창이 켜져 있으면 못 지움 · 못 옮김 — 기록기가 같은 기록 파일에 쓰는 중이라 줄을 지우면 깨질 수 있다.
+_기록중_말 = "기록 중에는 지우거나 옮길 수 없어요. 기록 창에서 작업을 마친 뒤 해 주세요"
+
+
+def _지울_것(wid):
+    세션 = S._기록["sessions"]().get(wid, set())
+    made = EX._읽기(wid).get("made") or {}
+    return 세션, {"sessions": len(세션), "report_made": bool(made.get("statement_id")),
+                 "shared": bool(made.get("url")) and made.get("expires_at", "") > datetime.now().astimezone().isoformat()}
+
+
+def _이PC_기록_지우기(세션):
+    """이 PC 기록 파일에서 그 기록들의 줄을 지운다 → 지운 줄 수. 옮김 표에서도 뺀다"""
+    d = S._기록["data_dir"]()
+    줄 = 0
+    for 무늬 in ("events-*.jsonl", "context-*.jsonl", "ai-messages-*.jsonl"):
+        for p in glob.glob(os.path.join(d, 무늬)):
+            줄 += safefile.drop_lines(p, lambda r: r.get("session_id") in 세션)
+    _옮김_고치기(lambda m: [m.pop(s, None) for s in 세션])
+    return 줄
+
+
+def _옮김_고치기(fn):
+    p = os.path.join(S._기록["data_dir"](), "moved.json")
+    with safefile.lock(p):
+        m = safefile.read_json(p, {})
+        m = m if isinstance(m, dict) else {}
+        전 = dict(m)
+        fn(m)
+        if m != 전:
+            safefile.write_json(p, m, indent=1)
+
+
+@bp.get("/local/work/delete-info")
+def delete_info():
+    """과제 지우기 전에 {title, recording, recording_this, sessions, report_made, shared}"""
+    wid = request.args.get("work_id", "")
+    if not _WID.match(wid):
+        return jsonify(error="bad_request"), 400
+    코드, w = S._기록["server"]("GET", f"/works/{quote(wid, safe='')}")
+    if 코드 == 401:
+        return jsonify(error="login", message="다시 로그인해 주세요"), 401
+    rec = 설정["bridge"]()
+    _, 것 = _지울_것(wid)
+    있나 = S._기록.get("statement_exists")
+    if 것["sessions"] and not 것["report_made"] and 있나:          # 서버에 물음 (최대 4초) — 기록이 있을 때만
+        것["report_made"] = bool(있나(wid))
+    return jsonify(title=(w.get("title") if 코드 == 200 else None) or wid, recording=bool(rec),
+                   recording_this=bool(rec and rec.get("work_id") == wid), **것)
+
+
+@bp.post("/local/work/delete")
+def delete_work():
+    """{work_id} — 서버 먼저 지우고(실패하면 PC 는 그대로) 이 PC 의 기록 · 과제 파일을 지운다"""
+    b = request.get_json(force=True, silent=True) or {}
+    wid = b.get("work_id", "")
+    if not _WID.match(wid):
+        return jsonify(error="bad_request"), 400
+    if 설정["bridge"]():
+        return jsonify(error="recording", message=_기록중_말), 409
+    코드, 답 = S._기록["server"]("DELETE", f"/works/{quote(wid, safe='')}")
+    if 코드 == 401:
+        return jsonify(error="login", message="다시 로그인해 주세요"), 401
+    if 코드 not in (200, 404):                                     # 404 = 서버엔 없는 과제 (이 PC 기록만) → PC 만 지움
+        return jsonify(error="server", message=(답 or {}).get("message") or "서버에서 지우지 못했어요. 이 PC 기록은 그대로예요"), 502
+    세션, 것 = _지울_것(wid)
+    줄 = _이PC_기록_지우기(세션)
+    for p in (_경로(wid), CF._경로(wid), EX._경로(wid)):
+        safefile.remove(p)
+    찾은 = os.path.join(S._기록["data_dir"](), "docs-found.json")
+    목록 = safefile.read_json(찾은, {})
+    if isinstance(목록, dict) and 목록.pop(wid, None):
+        safefile.write_json(찾은, 목록, indent=1)
+    for 기억 in (S._파일, S._연_이름):
+        기억.pop(wid, None)
+    return jsonify(ok=True, sessions=len(세션), lines=줄, report_made=것["report_made"])
+
+
+def _내_기록(b):
+    """{work_id, session_id} 검사 → (wid, sid, 오류)"""
+    wid, sid = b.get("work_id", ""), b.get("session_id", "")
+    if not _WID.match(wid) or not _WID.match(sid):
+        return None, None, (jsonify(error="bad_request"), 400)
+    if sid not in S._기록["sessions"]().get(wid, set()):
+        return None, None, (jsonify(error="not_found", message="이 과제의 기록이 아니에요"), 404)
+    if 설정["bridge"]():
+        return None, None, (jsonify(error="recording", message=_기록중_말), 409)
+    return wid, sid, None
+
+
+@bp.post("/local/session/delete")
+def delete_session():
+    """{work_id, session_id} — 기록 하나만. 서버(내용 지움 · 지운 사실만) → 이 PC 줄. 내역서(PDF · 링크)는 그대로"""
+    wid, sid, 오류 = _내_기록(request.get_json(force=True, silent=True) or {})
+    if 오류:
+        return 오류
+    코드, 답 = S._기록["server"]("DELETE", f"/sessions/{quote(sid, safe='')}")
+    if 코드 == 401:
+        return jsonify(error="login", message="다시 로그인해 주세요"), 401
+    if 코드 not in (200, 404):
+        return jsonify(error="server", message=(답 or {}).get("message") or "서버에서 지우지 못했어요. 이 PC 기록은 그대로예요"), 502
+    return jsonify(ok=True, lines=_이PC_기록_지우기({sid}))
+
+
+@bp.post("/local/session/move")
+def move_session():
+    """{work_id, session_id, to} — 다른 과제로 옮기기. 서버(확인값 그대로 따라감) → 이 PC 옮김 표"""
+    b = request.get_json(force=True, silent=True) or {}
+    wid, sid, 오류 = _내_기록(b)
+    if 오류:
+        return 오류
+    to = b.get("to", "")
+    if not _WID.match(to) or to == wid:
+        return jsonify(error="bad_request", message="옮길 과제를 골라 주세요"), 400
+    코드, 답 = S._기록["server"]("PATCH", f"/sessions/{quote(sid, safe='')}", json={"work_id": to})
+    if 코드 == 401:
+        return jsonify(error="login", message="다시 로그인해 주세요"), 401
+    if 코드 == 400:
+        return jsonify(error="bad_request", message="내 과제로만 옮길 수 있어요"), 400
+    if 코드 not in (200, 404):                                     # 404 = 서버에 안 올라간 기록 → 이 PC 에서만
+        return jsonify(error="server", message=(답 or {}).get("message") or "서버에서 옮기지 못했어요"), 502
+    _옮김_고치기(lambda m: m.__setitem__(sid, to))
+    return jsonify(ok=True, to=to)
 
 
 @bp.post("/local/record/start")

@@ -74,3 +74,29 @@ def remove(path):
         except OSError:
             return False
         return not os.path.exists(path)
+
+
+def drop_lines(path, drop):
+    """jsonl 에서 drop(줄 dict) 이 참인 줄만 빼고 다시 쓴다 → 뺀 줄 수. 읽지 못하는 줄은 그대로 둔다 (과제 삭제 · 10/15)"""
+    with lock(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                줄들 = f.readlines()
+        except OSError:
+            return 0
+        남김, 뺌 = [], 0
+        for l in 줄들:
+            try:
+                if l.strip() and drop(json.loads(l)):
+                    뺌 += 1
+                    continue
+            except ValueError:
+                pass
+            남김.append(l)
+        if not 뺌:
+            return 0
+        tmp = f"{path}.{uuid.uuid4().hex[:8]}.tmp"
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            f.writelines(남김)
+        _다시(os.replace, tmp, path)
+        return 뺌

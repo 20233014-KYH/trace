@@ -23,6 +23,11 @@ ST = T.ST
 검사 = T.검사
 
 
+def CF_경로(wid):
+    import confirm as CF
+    return CF._경로(wid)
+
+
 def main():
     print("\n  홈 · 로그인 화면 검사 — 녹화 시험 자료 · 서버 흉내\n  " + "─" * 70)
     data = tempfile.mkdtemp(prefix="trace-home-")
@@ -124,6 +129,58 @@ def main():
         WK.설정["bridge"] = lambda: {"work_id": "W-다른것", "session_id": "x"}
         r = P("/local/record/start", {"work_id": 새})
         검사("이미 다른 기록이 켜져 있으면 기록 시작 안 함", r.status_code == 409 and "이미" in r.json["message"])
+        WK.설정["bridge"] = lambda: None
+
+        # ── 과제 삭제 · 기록 하나 지우기 · 옮기기 (캔버스 Delete · 10/15) ──
+        print("\n  ━━ 과제 삭제 · 기록 하나 지우기 · 옮기기")
+        보냄2 = []
+        def 서버2(방법, 경로, **kw):
+            if 방법 in ("DELETE", "PATCH"):
+                보냄2.append((방법, 경로, kw.get("json")))
+                return (502, {"message": "서버 꺼짐"}) if 경로.endswith("W-match_web") else (200, {"ok": True})
+            if 방법 == "GET" and 경로.startswith("/works/"):
+                w = 경로.split("/")[-1]
+                return 200, {"id": w, "title": {"W-match_view": "보고 고쳐 친 과제", "W-match_web": "웹 붙여넣기 과제"}.get(w, "새 시험 과제"), "sessions": []}
+            return 서버(방법, 경로, **kw)
+        ST.출처._기록["server"] = 서버2
+        G = lambda w: c.get(f"/local/work/delete-info?work_id={w}", **HOST).json
+        P2 = lambda 주소, body: c.post(주소, json=body, headers={"X-Trace-Local": "1"}, **HOST)
+        D = lambda body: P2("/local/work/delete", body)
+        줄 = lambda sid: [x for p in ("events-*.jsonl", "context-*.jsonl", "ai-messages-*.jsonl") for x in ST._jsonl(p) if x.get("session_id") == sid]
+        i = G(새)
+        검사("기록 없는 과제: 기록 0 · 한 번 확인으로 지움", i["sessions"] == 0 and not i["recording"]
+             and D({"work_id": 새}).status_code == 200 and 보냄2[-1][:2] == ("DELETE", f"/works/{새}") and not os.path.exists(WK._경로(새)))
+        WK.설정["bridge"] = lambda: {"work_id": "W-다른것", "session_id": "x"}
+        검사("기록 창이 켜져 있으면 못 지움 · 못 옮김 (다른 과제를 기록 중이어도)", G("W-match_view")["recording"]
+             and D({"work_id": "W-match_view"}).status_code == 409
+             and P2("/local/session/delete", {"work_id": "W-match_proc", "session_id": "S-match_proc"}).status_code == 409
+             and P2("/local/session/move", {"work_id": "W-match_proc", "session_id": "S-match_proc", "to": "W-match_mix"}).status_code == 409)
+        WK.설정["bridge"] = lambda: None
+        검사("다른 과제의 기록은 못 건드림 · 잘못된 id 거절",
+             P2("/local/session/delete", {"work_id": "W-match_view", "session_id": "S-match_proc"}).status_code == 404
+             and P2("/local/session/delete", {"work_id": "../x", "session_id": "S-match_proc"}).status_code == 400)
+        # 기록 하나만 지우기 — 내역서 파일(export-…) 은 그대로
+        내역서 = os.path.join(data, "export-W-match_proc.json"); open(내역서, "w", encoding="utf-8").write('{"made": {"statement_id": "st1"}}')
+        r = P2("/local/session/delete", {"work_id": "W-match_proc", "session_id": "S-match_proc"})
+        검사("이 기록만 지우기: 서버 · 이 PC 그 기록 줄만 · 내역서는 그대로", r.status_code == 200 and r.json["lines"] > 0 and not 줄("S-match_proc")
+             and 보냄2[-1][:2] == ("DELETE", "/sessions/S-match_proc") and os.path.exists(내역서), str(r.json))
+        # 옮기기 — 기록 파일은 그대로 (체인 해시) · moved.json 으로 과제가 바뀜
+        전 = len(줄("S-match_app"))
+        r = P2("/local/session/move", {"work_id": "W-match_app", "session_id": "S-match_app", "to": "W-match_mix"})
+        검사("다른 과제로 옮기기: 서버 PATCH · 이 PC 에선 옮긴 과제에 보임 · 기록 줄은 그대로", r.status_code == 200
+             and 보냄2[-1] == ("PATCH", "/sessions/S-match_app", {"work_id": "W-match_mix"})
+             and "S-match_app" in ST._과제별_세션()["W-match_mix"] and "W-match_app" not in ST._과제별_세션() and len(줄("S-match_app")) == 전)
+        검사("같은 과제로는 안 옮김", P2("/local/session/move", {"work_id": "W-match_mix", "session_id": "S-match_app", "to": "W-match_mix"}).status_code == 400)
+        r = D({"work_id": "W-match_web"})
+        검사("서버가 못 지우면 이 PC 기록도 그대로", r.status_code == 502 and "W-match_web" in ST._과제별_세션())
+        다른 = len(ST._과제별_세션().get("W-match_rec", ()))
+        r = D({"work_id": "W-match_view"})
+        검사("과제 지우기: 서버 · 이 PC 기록 줄 · 연결 확인 · 내보내기 파일 (이름 입력 없음)", r.status_code == 200 and r.json["lines"] > 0
+             and not 줄("S-match_view") and "W-match_view" not in ST._과제별_세션() and not os.path.exists(CF_경로("W-match_view")), str(r.json))
+        r = D({"work_id": "W-match_mix"})
+        검사("옮겨 온 기록도 그 과제와 함께 지워짐 · 옮김 표에서도 빠짐", r.status_code == 200 and not 줄("S-match_app")
+             and "S-match_app" not in (ST.safefile.read_json(os.path.join(data, "moved.json"), {}) or {}))
+        검사("다른 과제 기록은 그대로", len(ST._과제별_세션().get("W-match_rec", ())) == 다른 > 0)
         ST.출처._기록["server"] = lambda 방법, 경로, **kw: 응답.get(경로, (404, {}))
 
         응답["/me"] = (401, {"error": "unauthorized"})

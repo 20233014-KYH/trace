@@ -59,7 +59,15 @@ def login_page():
 
 
 def _기록기():
-    """켜져 있으면 {work_id, paused, elapsed_sec, ai_count} · 꺼져 있으면 None"""
+    """켜져 있으면 {work_id, paused, elapsed_sec, ai_count} · 꺼져 있으면 None
+    먼저 0.1초만 문을 두드려 본다 — 꺼져 있을 때 윈도우가 연결을 다시 시도하는 0.6초를 매번 기다렸다 (10/15 · 홈 · 3초마다 확인)"""
+    import socket
+    from urllib.parse import urlsplit
+    u = urlsplit(BRIDGE)
+    with socket.socket() as s:
+        s.settimeout(0.1)
+        if s.connect_ex((u.hostname, u.port)) != 0:
+            return None
     try:
         s = requests.get(BRIDGE, timeout=0.6).json()
     except (requests.RequestException, ValueError):
