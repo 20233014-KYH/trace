@@ -35,9 +35,6 @@
 .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 .empty .btn{margin-top:14px}
 .err{color:var(--copy-d);font-size:13px}
-.me .out{margin-left:auto;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
-.me .out:hover{background:var(--soft);color:var(--ink)}
-.rail .me .out{display:none}
 </style>
 </head>
 <body>
@@ -88,7 +85,6 @@
   const T = window.TraceShell, W = window.TraceWork, $ = id => document.getElementById(id), el = T.el;
   const ICON = {
     warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
-    out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   };
   const enc = encodeURIComponent;
 
@@ -108,7 +104,7 @@
     side(); now(); alerts(); cards();
   }
 
-  // ── 왼쪽: 과제 목록 · 내 이름 · 로그아웃 ──
+  // ── 왼쪽: 과제 목록 · 내 이름 (누르면 로그아웃이 든 프로필 칸) ──
   function side() {
     const box = $("works"); box.textContent = "";
     data.works.forEach(w => {
@@ -118,11 +114,7 @@
       box.append(a);
     });
     if (!data.works.length) box.append(el("div", "hint", "아직 과제가 없습니다"));
-    const u = data.user || {}, me = $("me"); me.textContent = "";
-    const t = el("div"); t.append(el("span", null, u.name || u.email || ""), el("small", null, u.name ? u.email || "" : ""));
-    const out = el("button", "out"); out.title = "로그아웃"; out.setAttribute("aria-label", "로그아웃"); out.append(T.icon(ICON.out));
-    out.onclick = async () => { try { await T.call("POST", "/local/logout", null, {}); } catch (e) { if (e.code === 500) return alert(e.message); } location.replace("/login"); };
-    me.append(el("div", "av", (u.name || u.email || "?").slice(0, 1)), t, out);
+    T.profile($("me"), data.user || {});           // 누르면 프로필 칸 — 계정 설정 · 앱 정보 · 로그아웃 (모든 화면 같게 · shell.js)
   }
 
   // ── 지금 상태 — 기록 중일 때만 ──

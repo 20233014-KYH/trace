@@ -38,7 +38,7 @@ def main():
         def 서버(방법, 경로, **kw):
             부름.append((방법, 경로, kw.get("json"), kw.get("timeout")))
             return {"/auth/providers": 서버답["providers"], "/auth/google/claim": 서버답["claim"], "/auth/google/link": 서버답["link"],
-                    "/auth/google/unlink": 서버답["unlink"]}.get(경로, (404, {}))
+                    "/auth/google/unlink": 서버답["unlink"], "/me": 서버답.get("me", (404, {}))}.get(경로, (404, {}))
         ST._서버 = 서버
         ST.webbrowser.open = 열림.append
 
@@ -97,6 +97,9 @@ def main():
              and c.get(f"/local/auth/google/status?state={st4}", **HOST).json["error"].startswith("이 구글 계정은"))
         r = c.post("/local/account/google/unlink", json={}, headers=H, **HOST)
         검사("끊기 → 서버 /auth/google/unlink", r.status_code == 200 and 부름[-1][:2] == ("POST", "/auth/google/unlink"))
+        서버답["me"] = (200, {"id": "u-naver", "name": "네이버계정", "email": "yh@naver.com", "works": []})
+        w = c.get("/local/works", **HOST).json
+        검사("왼쪽 아래 프로필 칸: /local/works 에 이메일 (10/15)", w["user"] == {"id": "u-naver", "name": "네이버계정", "email": "yh@naver.com"})
         html = c.get("/settings?tab=account", **HOST).get_data(as_text=True)
         검사("설정 화면에 잇기 · 끊기", "Google 계정 잇기" in html and "/local/account/google/unlink" in html)
     finally:

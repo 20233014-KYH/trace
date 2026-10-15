@@ -114,7 +114,8 @@ def home():
     out.sort(key=lambda w: (not (rec and rec["work_id"] == w["id"]),
                             0 if w["due"] and w["due"][:10] >= 오늘 else 1 if not w["due"] else 2,
                             w["due"] if w["due"] and w["due"][:10] >= 오늘 else ""))
-    return jsonify(user=a.get("user"), recording=rec, works=out,
+    나 = {**(a.get("user") or {}), **{k: 답[k] for k in ("name", "email") if 코드 == 200 and 답.get(k)}}   # 이메일은 프로필 칸에 (10/15)
+    return jsonify(user=나, recording=rec, works=out,
                    orphans=[{"id": k, "pc_sessions": len(v)} for k, v in sorted(pc.items()) if k not in 내것],
                    error=None if 코드 == 200 else (답.get("message") or "서버에서 과제 목록을 받지 못했습니다"))
 

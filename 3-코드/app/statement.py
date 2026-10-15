@@ -171,7 +171,8 @@ def update():
     최신 = 업데이트.최신()
     v = 최신.get("version")
     newer = bool(v) and parse_version(v) > parse_version(VERSION)
-    return jsonify(current=VERSION, latest=v, newer=newer, can_install=newer and 업데이트.바꿀_수_있나(최신),
+    # dev = 개발판(저장소 · packaging/dist) — 앱 안 업데이트를 묻지 않는다 (이슈 #79 · 새 코드는 git 으로)
+    return jsonify(current=VERSION, latest=v, newer=newer, dev=업데이트.개발판(), can_install=newer and 업데이트.바꿀_수_있나(최신),
                    download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"),
                    summary=업데이트.요약(최신.get("notes")))
 
@@ -324,6 +325,7 @@ def works():
     pc = _과제별_세션()
     내것 = {w["id"] for w in 답.get("works", [])}
     return jsonify(
+        user={**(_auth().get("user") or {}), **{k: 답[k] for k in ("id", "name", "email") if 답.get(k)}},   # 프로필 칸 (10/15 · 로그인 때 받은 것엔 이메일이 없음)
         works=[{**w, "pc_sessions": len(pc.get(w["id"], ()))} for w in 답.get("works", [])],
         # 이 PC 에 기록은 있는데 내 과제 목록엔 없는 것 = 기록기가 로그인 없이 만든 과제 (주인 없음)
         orphans=[{"id": k, "pc_sessions": len(v)} for k, v in sorted(pc.items()) if k not in 내것])
