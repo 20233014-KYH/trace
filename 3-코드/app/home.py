@@ -91,7 +91,13 @@ def home():
     a = S._기록["auth"]()
     if not a.get("token"):
         return jsonify(error="login", message="로그인이 필요합니다"), 401
-    코드, 답 = S._기록["server"]("GET", "/me")
+    if request.args.get("cached"):                  # 마지막으로 받은 목록으로 바로 (서버 안 물음 · 10/15) — 화면이 먼저 그리고 새로 받아 바꿈
+        답 = (S._기록.get("me_last") or (lambda t: None))(a.get("token"))
+        if 답 is None:
+            return jsonify(error="no_cache"), 404
+        코드 = 200
+    else:
+        코드, 답 = S._기록["server"]("GET", "/me")
     if 코드 == 401:
         return jsonify(error="login", message="다시 로그인해 주세요"), 401
     pc = S._기록["sessions"]()

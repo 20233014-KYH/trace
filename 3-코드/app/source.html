@@ -195,7 +195,7 @@
     </div>
   </main>
 </div>
-<input type="file" id="pick" accept=".docx" hidden>
+<input type="file" id="pick" accept=".docx,.pdf" hidden>
 
 <script src="/ui/shell.js"></script>
 <script src="/ui/win.js"></script>
@@ -205,6 +205,9 @@
   const KIND = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
                  web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
   const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "" };
+  const 앱이름 = { "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱", "chrome.exe": "Chrome", "msedge.exe": "Edge", "whale.exe": "웨일", "firefox.exe": "Firefox" };
+  const 받은곳 = p => p.domain || 앱이름[(p.app || "").toLowerCase()] || p.app || "";         // 받은 사이트 · 없으면 앱
+  const 짧게 = x =>x.kind === "noproc" && x.proc && x.proc.how === "download" ? "받은 파일" : SHORT[x.kind];   // 기록 중 받은 결과물 파일 (10/15)
   const GROUP = { copy: "AI 답과 같음", edited: "고침", viewed: "보고 씀", none: "출처 기록 없음" };
   const DOT = { copy: "var(--copy-d)", edited: "var(--edit-d)", viewed: "var(--edit-d)", none: "#d4d4d8" };
   const wid = new URLSearchParams(location.search).get("work") || "";
@@ -220,7 +223,7 @@
     const box = $("doc"); box.textContent = "";
     const e = el("div", "empty");
     e.append(el("h2", null, "과제 파일을 골라 주세요"),
-             el("div", null, "Word(.docx) 파일 문장마다 어디서 왔는지 이 PC 기록과 이어서 보여 줍니다. 파일은 이 PC 밖으로 나가지 않습니다."));
+             el("div", null, "Word(.docx) · PDF 파일 문장마다 어디서 왔는지 이 PC 기록과 이어서 보여 줍니다. 파일은 이 PC 밖으로 나가지 않습니다."));
     const d = el("div", "drop");
     d.append(el("div", null, "여기에 끌어다 놓거나"));
     const b = el("button", "btn", "파일 고르기"); b.onclick = () => $("pick").click(); d.append(b);
@@ -288,7 +291,7 @@
     });
     if (files.length) m.append(el("div", "sep"));
     const o = el("button", "other"); o.setAttribute("role", "menuitem");
-    o.append(icon('<path d="M12 5v14M5 12h14"/>'), el("span", "nm", "다른 Word 파일 고르기…"));
+    o.append(icon('<path d="M12 5v14M5 12h14"/>'), el("span", "nm", "다른 파일 고르기 (Word · PDF)…"));
     o.onclick = () => { close(); $("pick").click(); };
     if (files.some(d => !d.exists)) m.append(o, el("div", "hint", "위치가 기록되지 않았거나 옮긴 문서는 직접 골라 주세요."));
     else m.append(o);
@@ -331,6 +334,12 @@
     const box = $("doc"); box.textContent = "";
     box.append(fileRow());
     if (!D.in_records) box.append(fileWarn());
+    else if (D.same_download) {                          // 기록하는 동안 받은 파일과 바이트까지 똑같음 (10/15)
+      const g = D.same_download, w = el("div", "fwarn info"), t = el("div");
+      t.append(el("b", null, g.ai ? "AI 앱에서 받은 파일 그대로예요. " : "기록하는 동안 받은 파일 그대로예요. "),
+               `${[받은곳(g), g.ts && `${md(g.ts)} ${hm(g.ts)}`].filter(Boolean).join(" · ")}에 받은 파일${g.name ? "(" + g.name + ")" : ""}과 내용이 똑같아요.`);
+      w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/>'), t); box.append(w);
+    }
     else if (D.found_by_content) {                       // 기록엔 저장 전 이름("문서1")만 있어 내용으로 찾은 파일 (10/14)
       const w = el("div", "fwarn info"), t = el("div");
       t.append(el("b", null, "내용으로 찾은 파일이에요. "),
@@ -346,7 +355,7 @@
         s.dataset.k = k; s.tabIndex = -1;
         s.onclick = () => pick(k, false);
         para.append(s);
-        if (SHORT[x.kind]) para.append(el("span", "tag", SHORT[x.kind]));
+        if (짧게(x)) para.append(el("span", "tag", 짧게(x)));
         if (i < p.sents.length - 1) para.append(" ");
       });
       box.append(para);
@@ -442,9 +451,16 @@
     } else if (x.kind === "edited") {
       src.append(el("b", null, "붙여넣은 기록 있음"));
     } else if (x.kind === "noproc") {
-      src.append(el("b", null, x.proc && x.proc.how === "open" ? "문서를 처음 열었을 때 이미 있던 글" : "키 입력 없이 한꺼번에 들어온 글"),
-                 x.proc && x.proc.ts ? ` · ${md(x.proc.ts)} ${hm(x.proc.ts)}` : "");
-      det.append(el("div", "note", "이 PC 에서 타이핑·붙여넣기 기록 없이 문서에 나타난 글입니다. AI 라고 단정하지 않습니다 — 내역서에서 설명할 수 있어요."));
+      if (x.proc && x.proc.how === "download") {                  // 기록하는 동안 받은 결과물 파일 (10/15)
+        const 곳 = 받은곳(x.proc);
+        src.append(el("b", null, x.proc.ai ? "AI 앱에서 내려받은 파일" : "내려받은 파일"),
+                   ` · ${[곳, x.proc.ts && `${md(x.proc.ts)} ${hm(x.proc.ts)}`, x.proc.file].filter(Boolean).join(" · ")}`);
+        det.append(el("div", "note", "기록하는 동안 받은 파일 안의 글과 같습니다. 대화 글이 아니라 파일로만 받은 결과물도 이렇게 이어져요."));
+      } else {
+        src.append(el("b", null, x.proc && x.proc.how === "open" ? "문서를 처음 열었을 때 이미 있던 글" : "키 입력 없이 한꺼번에 들어온 글"),
+                   x.proc && x.proc.ts ? ` · ${md(x.proc.ts)} ${hm(x.proc.ts)}` : "");
+        det.append(el("div", "note", "이 PC 에서 타이핑·붙여넣기 기록 없이 문서에 나타난 글입니다. AI 라고 단정하지 않습니다 — 내역서에서 설명할 수 있어요."));
+      }
     } else {
       src.append("이어지는 AI 답이나 붙여넣기 기록이 없습니다.");
       det.append(el("div", "note", "직접 썼다는 뜻은 아닙니다. 휴대폰 등 다른 기기에서 본 AI 는 기록되지 않습니다."));
@@ -500,7 +516,7 @@
         const b = el("button"); const sq = el("i", "sq");
         sq.style.background = x.group === "viewed" ? "#fff" : x.group === "copy" ? "var(--copy)" : "var(--edit)";
         sq.style.boxShadow = "inset 0 0 0 1px " + (x.group === "copy" ? "#f3b4b6" : "#b9c9f4");
-        b.append(sq, el("span", "ul", `문단 ${x.p + 1} · ${SHORT[x.kind]}`), el("span", "ut", x.text));
+        b.append(sq, el("span", "ul", `문단 ${x.p + 1} · ${짧게(x)}`), el("span", "ut", x.text));
         b.onclick = () => { show("doc"); pick(k, true); };
         if (j >= FEW) b.hidden = true;
         u.append(b);

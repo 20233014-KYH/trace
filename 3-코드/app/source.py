@@ -28,6 +28,7 @@ from flask import Blueprint, abort, jsonify, request, send_from_directory
 
 from core import match as M, safefile
 from core.docx import read_docx
+from core.pdftext import is_pdf, read_doc   # 결과물이 PDF 여도 (10/15)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("source", __name__)
@@ -67,7 +68,7 @@ def source():
         _파일[wid] = (f.filename, f.read())
         _연_이름.pop(wid, None)
     if not (f and wid) and not 문서_준비(wid):
-        return jsonify(error="no_file", message="과제 파일(.docx)을 골라 주세요", files=_기록된_문서(wid)), 400
+        return jsonify(error="no_file", message="과제 파일(Word · PDF)을 골라 주세요", files=_기록된_문서(wid)), 400
     return _분석(wid)
 
 
@@ -193,10 +194,13 @@ def _열기(wid, name):
 def _분석(wid):
     name, raw = _파일[wid]
     try:
-        paras = read_docx(io.BytesIO(raw))
+        paras = read_doc(raw)                           # Word(.docx) 또는 PDF (10/15)
     except Exception:
         _파일.pop(wid, None)
-        return jsonify(error="bad_file", message="Word(.docx) 파일을 읽지 못했습니다"), 400
+        return jsonify(error="bad_file", message="Word(.docx) · PDF 파일을 읽지 못했습니다"), 400
+    if not paras and is_pdf(raw):
+        _파일.pop(wid, None)
+        return jsonify(error="bad_file", message="글자를 읽을 수 없는 PDF 예요 (스캔한 그림 등) — 원본 Word 파일을 골라 주세요"), 400
     rec = 과제_기록(wid)
     if not rec:
         return NO_RECORDS
@@ -205,8 +209,21 @@ def _분석(wid):
     # 화면엔 경로를 안 보낸다 (이름 · 그 자리에 있는지만) — 여는 건 이 PC 서버가 한다
     docs = [{"name": d["name"], "known": d["path"] is not None, "exists": d["exists"]} for d in _문서_목록(wid)]
     찾음 = _찾은_이름.get(wid) == name                    # 기록된 이름과 달라도 내용으로 찾은 그 파일
-    return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=찾음 or _같은_문서(name, 기록된), found_by_content=찾음,
-                   sessions=len(세션), **build(paras, msgs, events, context))
+    받은 = 받은_파일(raw, context)
+    return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=bool(찾음 or 받은 or _같은_문서(name, 기록된)),
+                   found_by_content=찾음, same_download=받은, sessions=len(세션), **build(paras, msgs, events, context))
+
+
+def 받은_파일(raw, context):
+    """고른 파일이 기록하는 동안 받은 파일과 **바이트까지 똑같으면** 그 받기 {name, app, domain, ts, ai} — 아니면 None (10/15)
+    받은 그대로 낸 결과물이면 문장 비교보다 이 한 줄이 가장 확실하다 (collector/downloads.py 가 지문을 남김)"""
+    h = "sha256:" + hashlib.sha256(raw).hexdigest()
+    for c in sorted(context, key=lambda c: c.get("ts", "")):
+        m = c.get("meta") or {}
+        if c.get("kind") == "download" and m.get("hash") == h:
+            return {"name": m.get("name", ""), "app": m.get("app", ""), "domain": m.get("domain", ""),
+                    "ts": c.get("ts", ""), "ai": m.get("category") == "ai"}
+    return None
 
 
 NO_RECORDS = ({"error": "no_records", "message": "이 PC 에 이 과제의 기록이 없습니다 (기록기를 켠 PC 에서 열어 주세요)"}, 404)
@@ -351,6 +368,8 @@ def _build(paras, msgs, events, context):
             if s["label"] == "noproc":
                 pr = s.get("proc") or {}
                 x["proc"] = {"how": pr.get("how", ""), "ts": pr.get("ts", "")}
+                if pr.get("how") == "download":                    # 받은 파일 — 이름 · 받은 곳 (10/15)
+                    x["proc"].update(file=pr.get("file", ""), app=pr.get("app", ""), domain=pr.get("domain", ""), ai=pr.get("category") == "ai")
             문장.append(x)
             ks.append(x["k"])
         문단.append({"head": pi in heads, "sents": ks})

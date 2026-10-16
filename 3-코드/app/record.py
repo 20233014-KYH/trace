@@ -20,7 +20,7 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 from core import match as M
-from core.docx import read_docx
+from core.pdftext import read_doc
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("record", __name__)
@@ -67,7 +67,7 @@ def detail():
     분석 = None
     if S.문서_준비(wid):
         try:
-            분석 = S.build(read_docx(io.BytesIO(S._파일[wid][1])), msgs, events, context)
+            분석 = S.build(read_doc(S._파일[wid][1]), msgs, events, context)
         except Exception:
             분석 = None
     턴 = {}                                            # 메시지 event_id → 출처 보기의 질문 한 턴
@@ -90,6 +90,19 @@ def detail():
             items.append({"kind": "doc", "ts": c["ts"], "title": "문서 열기", "text": f"{m.get('file', '')} · 열 때부터 있던 글 {n:,}자",
                           "tag": {"t": "쓴 과정 기록 없음", "c": "copy"} if n else None,
                           "more": {"file": m.get("file", ""), "chars": n, "excerpt": c.get("text", "")[:400]}})
+
+    # 기록하는 동안 받은 결과물 파일 (collector/downloads.py · 10/15)
+    for c in ctx:
+        if c.get("kind") == "download":
+            m = c.get("meta") or {}
+            곳 = m.get("domain") or _앱(m.get("app"))
+            n = m.get("size") or 0
+            items.append({"kind": "paste", "ts": c["ts"], "title": "파일 받기",
+                          "text": f"{m.get('name', '')} · {곳}" + (f" · {n // 1024:,}KB" if n >= 1024 else ""),
+                          "tag": {"t": "AI 에서 받음" if m.get("category") == "ai" else "받은 파일", "c": "copy"},
+                          "more": {"from": 곳, "to": m.get("name", ""), "copied_at": "", "len": len(c.get("text", "")),
+                                   "excerpt": (c.get("text") or "")[:600]}})
+            lanes["paste"].append(c["ts"])
 
     # AI 질문 · 답
     번호 = {}
@@ -206,7 +219,7 @@ def detail():
         work={"id": wid}, linked=분석 is not None,
         session={"id": sid, "start": 시작, "end": 끝, "n": 순서.index(sid) + 1, "total": len(순서),
                  "active_sec": max(0, _초(시작, 끝) - 멈춤초) if 시작 and 끝 else None, "pause_sec": 멈춤초},
-        stats={"questions": sum(1 for m in mine if m.get("role") == "question"), "pastes": len(lanes["paste"]),
+        stats={"questions": sum(1 for m in mine if m.get("role") == "question"), "pastes": sum(1 for e in evs if e.get("type") == "paste"),   # 받은 파일은 막대엔 있지만 붙여넣기 수엔 안 셈
                "typed": typed, "pause_sec": 멈춤초},
         lanes=lanes, items=items, source=f"/source?work={quote(wid, safe='')}")
 

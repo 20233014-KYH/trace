@@ -395,6 +395,7 @@ class Collector:
         self._keys = None
         self._last_keys_flush = time.time()
         self._files = None
+        self._downloads = None       # 기록하는 동안 받은 결과물 파일 (downloads.py · 10/15)
         self._bridge = None
         self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title, browser)
         self._office = None         # Learn 모드 · Word/PPT 맥락 (office.py)
@@ -446,6 +447,16 @@ class Collector:
                                     on_cut=lambda: self._on_edit("cut"),
                                     on_copy=self._on_copy_key)
             self._keys.start()
+        if self.capture.get("downloads", True):
+            try:
+                from downloads import DownloadWatcher, 다운로드_폴더
+                dirs = 다운로드_폴더()
+                if dirs:
+                    self._downloads = DownloadWatcher(dirs, self._on_download)
+                    self._downloads.start()
+                    print(f"  받은 파일 지켜봄 {dirs[0]}  (AI 앱 · 브라우저가 앞에 있을 때 · 글은 PC 에만)")
+            except Exception as e:                       # noqa: BLE001  watchdog 없음 등 — 없이 계속
+                print(f"  받은 파일 지켜보기 못 함 ({e})")
         if cfg.get("bridge", {}).get("enabled", True):
             import bridge
             try:
@@ -657,6 +668,20 @@ class Collector:
             for it in items:
                 f.write(json.dumps({"session_id": self.session_id, **it}, ensure_ascii=False) + "\n")
 
+    def _on_download(self, path, raw):
+        """다운로드 폴더에 새 결과물 파일 — 그 순간 앞에 있던 앱이 AI 앱 · 브라우저일 때만 PC context 에 (downloads.py)"""
+        from downloads import 글_뽑기, 지문
+        app, _, cat = self._cur if self._cur else ("", "", "other")
+        브라우저 = app.lower() in BROWSERS
+        if not (브라우저 or cat == "ai"):
+            return                                       # Word 등으로 내 글을 다운로드 폴더에 저장한 것 — 받은 파일이 아님
+        domain = self._tab[0] if 브라우저 and self._tab and self._tab_fits(app) else ""
+        category = (self._tab[1] if domain else "other") if 브라우저 else cat
+        self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "download", "kind": "download",
+                           "text": 글_뽑기(path, raw),
+                           "meta": {"name": os.path.basename(path), "size": len(raw), "hash": 지문(raw), "app": app,
+                                    "domain": domain, "category": category}}])
+
     def _on_doc_path(self, app, file, path):
         """문서 위치 → context 파일에만 (출처 보기가 문서를 바로 열려고). 글 내용이 아니라서 capture.office 와 상관없이 남긴다.
         서버·체인엔 안 감 (경로엔 윈도우 사용자 이름이 들어 있음). 멈춘 동안엔 _on_context 가 막는다"""
@@ -738,6 +763,8 @@ class Collector:
             self._keys.stop()
         if self._files:
             self._files.stop()
+        if self._downloads:
+            self._downloads.stop()
         if self._git:
             self._git.stop()
         if self._bridge:
