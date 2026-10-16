@@ -93,7 +93,9 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       <div class="card flow" id="flow"></div>
       <div class="cols">
         <section class="card recs">
-          <div style="display:flex;align-items:center"><span class="h-sec">기록</span><span class="desc" id="rsum" style="margin-left:8px"></span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="h-sec" style="flex:none">기록</span>
+            <span class="desc" id="rsum" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+            <a class="btn btn-outline btn-sm" id="more-rec" href="#" hidden style="flex:none;white-space:nowrap">기록 이어서 하기</a></div>
           <div id="rows" style="margin-top:6px"></div>
           <div class="desc foot">원문은 이 PC 에만 · 기록을 누르면 그때 한 일을 시간 순으로 다시 봐요</div>
         </section>
@@ -191,6 +193,9 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     const box = $("rows"); box.textContent = "";
     const ss = d.sessions, q = ss.reduce((a, s) => a + s.questions, 0), p = ss.reduce((a, s) => a + s.pastes, 0);
     $("rsum").textContent = ss.length ? `기록 ${ss.length}번 · 질문 ${q} · 붙여넣기 ${p}` : "";
+    // 기록이 있는 과제도 다시 기록할 수 있게 (10/15) — 과제는 며칠에 걸쳐 하는데, 첫 기록 뒤엔 [기록 시작] 이 없었다
+    const more = $("more-rec"); more.hidden = !ss.length || !!d.recording;
+    more.onclick = e => { e.preventDefault(); W.startRecording(wid, more, toast); };
     if (!ss.length) { box.append(el("div", "desc empty", "아직 기록이 없어요. [기록 시작] 을 누르면 기록 창이 켜지고 이 과제로 기록합니다.")); return; }
     ss.forEach(s => {
       const r = el("div", "row");

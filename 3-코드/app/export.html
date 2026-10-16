@@ -327,7 +327,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
       $("body").textContent = "";
       const x = el("div", "empty");
       if (e.data && e.data.error === "no_file") {
-        x.append(el("h3", null, "과제 파일을 먼저 열어 주세요"), el("div", null, "출처 보기에서 Word(.docx) 파일을 열면 여기서 내역서를 만들 수 있어요."));
+        x.append(el("h3", null, "과제 파일을 먼저 열어 주세요"), el("div", null, "출처 보기에서 과제 파일(Word · PDF)을 열면 여기서 내역서를 만들 수 있어요."));
         const a = el("a", "next", "출처 보기로"); a.href = "/source?work=" + encodeURIComponent(wid); x.append(a);
       } else x.append(el("h3", null, "불러오지 못했습니다"), el("div", "err", e.message));
       $("body").append(x); return;

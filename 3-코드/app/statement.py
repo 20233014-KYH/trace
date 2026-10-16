@@ -38,6 +38,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from core import match as M                    # noqa: E402  연결 제안 (박상진)
 from core.docx import doc_body, read_docx      # noqa: E402
+from core.pdftext import read_doc              # noqa: E402  결과물이 PDF 여도 (10/15)
 from core.texthash import sha256_text          # noqa: E402
 from core import settings                      # noqa: E402  기록기·알약과 같은 설정 파일 (10/13)
 from core import safefile                      # noqa: E402  여러 요청이 같은 파일을 읽고 써도 (10/14)
@@ -93,8 +94,32 @@ def _서버(방법, 경로, **kw):
             코드, 답 = _서버_부르기(방법, 경로, t, **kw)
             if 코드 == 200:
                 _me.update(key=키, at=time.time(), 답=json.dumps(답))
+                _me_남기기(t, 답)                          # 앱을 새로 켜도 홈이 바로 그려지게 PC 에도
             return 코드, 답
     return _서버_부르기(방법, 경로, t, **kw)
+
+
+def _me_파일():
+    return os.path.join(설정["data_dir"], "me-last.json")
+
+
+def _me_열쇠(t):
+    import hashlib
+    return hashlib.sha256(f"{t}|{설정['server']}".encode()).hexdigest()[:24]
+
+
+def _me_남기기(t, 답):
+    """토큰은 지문만 남긴다"""
+    try:
+        safefile.write_json(_me_파일(), {"key": _me_열쇠(t), "답": 답})
+    except OSError:
+        pass
+
+
+def _me_마지막(t):
+    """마지막으로 받은 내 과제 목록 (같은 계정 · 같은 서버일 때만) — 무료 서버가 자다 깨는 10~20초 동안 홈을 먼저 그린다 (10/15)"""
+    d = safefile.read_json(_me_파일(), {})
+    return d.get("답") if isinstance(d, dict) and t and d.get("key") == _me_열쇠(t) else None
 
 
 def _서버_부르기(방법, 경로, t, **kw):
@@ -451,7 +476,7 @@ def _출처_보기(분석, 고름, 가림, messages):
     학생의 고름을 입힌다: 아니다 → 출처 없음 · 잘 모르겠음/안 고름 → 보류 표시 · 가린 질문 → 빼고 "가림".
     질문·답(참고만 한 것 포함) 원문은 messages 에 더해 서버가 체인 해시로 맞춰 본다. 보고서 전문은 맞춰 볼 해시가 없다."""
     기록, events, context = 분석["records"]
-    b = 출처.build(read_docx(io.BytesIO(분석["docx"])), 기록, events, context)
+    b = 출처.build(read_doc(분석["docx"]), 기록, events, context)       # Word · PDF (10/15)
     # source.build 의 문장 순서 = link_document 의 (문단, 문장) 순서 = 이 화면의 키 "p.s"
     자리 = {k: f"{pi}.{si}" for pi, p in enumerate(b["paragraphs"]) for si, k in enumerate(p["sents"])}
     문장 = []
@@ -528,7 +553,7 @@ import updater as 업데이트                        # noqa: E402  앱 안에�
 업데이트.기록_중 = _기록_중
 app.register_blueprint(업데이트.bp)
 출처.init(_jsonl, _과제별_세션, lambda: 설정["data_dir"], _내역서_있나,
-          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), made=lambda w: (_내역서_있음.add(w), _내역서_없음.pop(w, None)),
+          server=lambda *a, **kw: _서버(*a, **kw), auth=lambda: _auth(), me_last=lambda t: _me_마지막(t), made=lambda w: (_내역서_있음.add(w), _내역서_없음.pop(w, None)),
           source_data=lambda *a: _출처_보기(*a))      # 교수 링크 출처 보기 자료 (김용현 #44) — 내보내기도 같은 것을 씀
 app.register_blueprint(출처.bp)
 app.register_blueprint(연결확인.bp)

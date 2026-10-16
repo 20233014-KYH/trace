@@ -302,7 +302,7 @@ def selftest():
         if 빠짐:
             raise FileNotFoundError(", ".join(빠짐))
     검사("원본 파일", 원본)
-    for m in ("flask", "requests", "pyperclip", "watchdog.observers", "reportlab.platypus", "webview"):
+    for m in ("flask", "requests", "pyperclip", "watchdog.observers", "reportlab.platypus", "webview", "pypdf"):
         검사(f"라이브러리 {m}", lambda m=m: importlib.import_module(m) and None)
     if os.name == "nt":
         for m in ("win32api", "win32gui", "win32process", "win32com.client", "pythoncom", "psutil", "comtypes.client",

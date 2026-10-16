@@ -28,6 +28,7 @@ from flask import Blueprint, jsonify, redirect, request, send_from_directory
 
 from core import match as M, safefile
 from core.docx import read_docx
+from core.pdftext import read_doc
 from core.texthash import sha256_text
 import source as S
 
@@ -72,7 +73,7 @@ def _물을_것(wid):
         return {"error": "no_file", "message": "출처 보기에서 과제 파일을 먼저 열어 주세요"}, 400
     name, raw = S._파일[wid]
     try:
-        paras = read_docx(io.BytesIO(raw))
+        paras = read_doc(raw)                           # Word(.docx) · PDF
     except Exception:
         return {"error": "bad_file", "message": "Word(.docx) 파일을 읽지 못했습니다"}, 400
     rec = S.과제_기록(wid)

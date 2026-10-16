@@ -99,6 +99,65 @@ def main():
         검사("탐색기 등 과제 프로그램 아닌 키 입력은 빼고 셈",
              d["stats"]["typed"] == sum(e.get("count", 0) for e in T.L("match_proc", "events") if e["type"] == "keys" and e.get("category") == "work"))
 
+        print("\n  ━━ 결과물이 PDF (10/15 · Word 로 쓰고 PDF 로 내보낸 것)")
+        import io as _io
+        from core.pdftext import read_doc
+        def 올려(name, raw):
+            return c.post("/local/source", data={"work_id": "W-match_view", "file": (_io.BytesIO(raw), name)}, headers=H,
+                          content_type="multipart/form-data", **HOST).json
+        워드 = 올려("report.docx", open(os.path.join(T.FX, "match_view", "report.docx"), "rb").read())
+        피디 = 올려("report.pdf", open(os.path.join(T.FX, "match_view", "report.pdf"), "rb").read())
+        검사("PDF 를 넣어도 문장 · 출처 표시가 Word 와 같음", [(x["text"], x["kind"]) for x in 워드["sentences"]] == [(x["text"], x["kind"]) for x in 피디["sentences"]]
+             and 워드["counts"] == 피디["counts"], f"문장 {len(피디['sentences'])} · {피디['counts']}")
+        검사("이름만 다르고 같은 원본(report.pdf ↔ 기록의 Word)이면 '기록에 없는 문서' 경고 안 함 (이름 줄기)", 피디["in_records"] is not None)
+        r = c.post("/local/source", data={"work_id": "W-match_view", "file": (_io.BytesIO(b"%PDF-1.4\n%%EOF"), "빈.pdf")}, headers=H,
+                   content_type="multipart/form-data", **HOST)
+        검사("글자 없는 · 깨진 PDF 는 알려 줌", r.status_code == 400 and r.json["error"] == "bad_file", r.json.get("message", ""))
+        검사("PDF 줄바꿈: 한글 글자 중간에서 넘어간 줄은 붙이고 표의 칸은 따로", all("  " not in t for _, t in read_doc(open(os.path.join(T.FX, "match_view", "report.pdf"), "rb").read())))
+
+        print("\n  ━━ AI 가 파일로만 준 결과물 (기록하는 동안 받은 파일 · 10/15)")
+        보고서 = open(os.path.join(T.FX, "match_web", "report.docx"), "rb").read()
+        글 = "\n".join(t for _, t in read_doc(보고서))
+        with open(os.path.join(data, "events-2026-10-05.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "evt_dl0", "session_id": "S-dl", "ts": "2026-10-05T20:00:00+09:00", "type": "session_start", "work_id": "W-dl"}) + "\n")
+            f.write(json.dumps({"id": "evt_dl9", "session_id": "S-dl", "ts": "2026-10-05T20:30:00+09:00", "type": "session_end"}) + "\n")
+        with open(os.path.join(data, "context-2026-10-05.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"session_id": "S-dl", "id": "dl1", "ts": "2026-10-05T20:12:00+09:00", "source": "download", "kind": "download", "text": 글,
+                                "meta": {"name": "도시열섬_보고서.pdf", "size": len(보고서), "hash": "sha256:x", "app": "claude.exe", "domain": "", "category": "ai"}},
+                               ensure_ascii=False) + "\n")
+        r = c.post("/local/source", data={"work_id": "W-dl", "file": (_io.BytesIO(보고서), "report.docx")}, headers=H,
+                   content_type="multipart/form-data", **HOST).json
+        받은 = [x for x in r["sentences"] if x["kind"] == "noproc" and (x.get("proc") or {}).get("how") == "download"]
+        검사("대화엔 없고 파일로만 받은 결과물 → '받은 파일' (빨강) · 받은 곳 · 파일 이름", len(받은) >= len(r["sentences"]) * 0.8
+             and 받은[0]["proc"]["app"] == "claude.exe" and 받은[0]["proc"]["file"] == "도시열섬_보고서.pdf" and 받은[0]["proc"]["ai"] is True,
+             f"{len(받은)}/{len(r['sentences'])} 문장")
+        검사("지문이 다르면(받은 뒤 고친 파일) '받은 파일 그대로' 라고 하지 않음", r["same_download"] is None)
+        import hashlib as _h
+        with open(os.path.join(data, "context-2026-10-05.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"session_id": "S-dl", "id": "dl2", "ts": "2026-10-05T20:14:00+09:00", "source": "download", "kind": "download", "text": 글,
+                                "meta": {"name": "도시열섬_보고서 (1).docx", "size": len(보고서), "hash": "sha256:" + _h.sha256(보고서).hexdigest(),
+                                         "app": "chrome.exe", "domain": "claude.ai", "category": "ai"}}, ensure_ascii=False) + "\n")
+        r = c.post("/local/source", data={"work_id": "W-dl", "file": (_io.BytesIO(보고서), "제출본.docx")}, headers=H,
+                   content_type="multipart/form-data", **HOST).json
+        검사("받은 파일과 바이트까지 같으면 '받은 파일 그대로' (이름이 달라도) · 기록에 없는 문서 경고 안 함",
+             (r["same_download"] or {}).get("name") == "도시열섬_보고서 (1).docx" and r["same_download"]["domain"] == "claude.ai" and r["in_records"] is True,
+             str(r["same_download"]))
+        from core import match as _M
+        본문 = "1. 서론\n대학 도서관은 학생들이 가장 많이 찾는 공간이다.\n유형\t대표 사례\n대화 소음\t전화 통화와 잡담이 이어진다."
+        줄 = [r2["label"] for row in _M.link_document(["1. 서론", "대학 도서관은 학생들이 가장 많이 찾는 공간이다.", "유형", "대표 사례",
+                                                       "대화 소음 전화 통화와 잡담이 이어진다."], [],
+                                                      proc={"typed": [], "noproc": [{"text": 본문, "how": "download", "ts": "", "file": "x.pdf"}]})
+              for r2 in row]
+        검사("받은 파일 사이의 제목 · 번호 · 표 머리글 조각('1.' '서론' '유형')도 받은 파일로 (그 파일 안에 한 줄 · 한 문장으로 있을 때만)",
+             줄 == ["noproc"] * 6, str(줄))
+        줄 = [r2["label"] for row in _M.link_document(["어린 시절", "대학 도서관은 학생들이 가장 많이 찾는 공간이다."], [],
+                                                      proc={"typed": [], "noproc": [{"text": 본문, "how": "download", "ts": "", "file": "x.pdf"}]})
+              for r2 in row]
+        검사("받은 파일에 없는 짧은 제목은 그대로 '출처 기록 없음'", 줄 == ["none", "noproc"], str(줄))
+        d = G("W-dl", "S-dl").json
+        검사("기록 다시 보기에 '파일 받기' 줄 · 붙여넣기 수엔 안 셈", any(x["title"] == "파일 받기" and x["tag"]["t"] == "AI 에서 받음" for x in d["items"])
+             and d["stats"]["pastes"] == 0)
+
         print("\n  ━━ 기록된 위치가 없는 문서 — 내용으로 찾기 (10/14)")
         r = c.post("/local/source", data={"work_id": f"W-{T.NO_PATH}"}, headers=H, **HOST)
         검사("Word 글 기록이 없는 옛 기록은 찾지 않고 고르라고 함 (실제 PC 도 안 뒤짐)", r.status_code == 400 and r.json["error"] == "no_file")

@@ -33,6 +33,7 @@ from flask import Blueprint, Response, jsonify, request, send_from_directory
 
 from core import match as M
 from core.docx import read_docx
+from core.pdftext import read_doc
 from core.summary import work_summary
 from core import prefs, safefile
 from core.texthash import sha256_text
@@ -231,7 +232,7 @@ def _모으기(wid):
     if _분석.get(wid, (None,))[0] == 표:
         return _분석[wid][1]
     try:
-        paras = read_docx(io.BytesIO(raw))
+        paras = read_doc(raw)                           # Word(.docx) · PDF
     except Exception:
         return {"error": "bad_file", "message": "Word(.docx) 파일을 읽지 못했습니다"}, 400
     rec = S.과제_기록(wid)

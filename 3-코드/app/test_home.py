@@ -64,6 +64,20 @@ def main():
         prefs.save(data, {"onboarded": True})
         r = c.get("/home", **HOST)
         검사("홈 화면 열림", r.status_code == 200 and "내 과제" in r.get_data(as_text=True))
+        # 앱을 새로 켰을 때 — PC 에 남겨 둔 마지막 과제 목록으로 홈을 먼저 (무료 서버가 자다 깨는 10~20초 · 10/15)
+        검사("남겨 둔 목록이 없으면 ?cached=1 은 404 (화면은 서버 답을 기다림)", c.get("/local/home?cached=1", **HOST).status_code == 404)
+        ST._me_남기기("t", {"works": works[:2]})
+        부름 = []
+        옛서버 = ST.출처._기록["server"]
+        ST.출처._기록["server"] = lambda 방법, 경로, **kw: (부름.append(경로), 옛서버(방법, 경로, **kw))[1]
+        cd = c.get("/local/home?cached=1", **HOST)
+        검사("남겨 둔 목록이 있으면 서버를 안 묻고 바로 · 토큰은 지문만 저장", cd.status_code == 200 and len(cd.json["works"]) == 2 and not 부름
+             and '"t"' not in open(ST._me_파일(), encoding="utf-8").read())
+        ST.출처._기록["server"] = 옛서버
+        옛auth = ST.출처._기록["auth"]
+        ST.출처._기록["auth"] = lambda: {"token": "다른-계정"}
+        검사("다른 계정이면 남겨 둔 목록을 안 씀", c.get("/local/home?cached=1", **HOST).status_code == 404)
+        ST.출처._기록["auth"] = 옛auth
         d = c.get("/local/home", **HOST).json
         검사("프로필 칸: 서버에 없는 칸은 로그인 때 것 그대로", d["user"] == {"name": "시험 학생", "email": "s@example.test"})
         응답["/me"] = (200, {"works": works, "name": "새 이름", "email": "new@example.test"})

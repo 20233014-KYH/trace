@@ -94,13 +94,20 @@
   // 지난번 홈 · 카드 숫자를 먼저 그리고 새 자료가 오면 바꿔 그린다 (10/15) — 인터넷 서버를 기다리는 1~2초 동안 빈 화면이던 것
   const 기억 = (k, v) => { try { if (v === undefined) return JSON.parse(sessionStorage.getItem(k) || "null"); sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
   async function load() {
-    const 옛 = 기억("trace.home.v1");
+    let 옛 = 기억("trace.home.v1");
+    // 앱을 새로 켜면 위 기억이 없다 → PC 에 남겨 둔 마지막 과제 목록으로 먼저 (무료 서버가 자다 깨는 10~20초 · 10/15)
+    if (!옛 && !data) { try { 옛 = await T.call("GET", "/local/home?cached=1"); } catch (e) { 옛 = null; } }
     if (옛 && !data) { data = 옛; side(); now(); alerts(); cards(); }
+    const 깨움 = setTimeout(() => {                                 // 3초 넘게 걸리면 이유를 알려 줌
+      $("msg").textContent = ""; $("msg").append(el("div", "hint", "인터넷 서버를 깨우는 중이에요 — 무료 서버는 한동안 쉬면 처음 부를 때 10~20초 걸려요"));
+    }, 3000);
     try { data = await T.call("GET", "/local/home"); 기억("trace.home.v1", data); }
     catch (e) {
+      clearTimeout(깨움);
       if (e.code === 401) { location.replace("/login"); return; }
       $("msg").textContent = ""; $("msg").append(el("div", "err", e.message)); return;
     }
+    clearTimeout(깨움); $("msg").textContent = "";
     side(); now(); alerts(); cards();
   }
 

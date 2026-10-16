@@ -367,6 +367,10 @@ def process_evidence(events, context):
         meta = c.get("meta", {})
         if c.get("kind") == "doc_open" and c.get("text", "").strip():
             noproc.append({"text": c["text"], "how": "open", "ts": c["ts"], "file": meta.get("file", "")})
+        elif c.get("kind") == "download" and c.get("text", "").strip():
+            # 기록하는 동안 AI 앱 · 브라우저에서 받은 결과물 파일의 글 (collector/downloads.py · 10/15) — 결과물 문장이 여기서 왔으면 빨강
+            noproc.append({"text": c["text"], "how": "download", "ts": c["ts"], "file": meta.get("name", ""),
+                           "app": meta.get("app", ""), "domain": meta.get("domain", ""), "category": meta.get("category", "")})
         elif c.get("kind") == "diff" and c.get("text", "").strip() and (c["ts"], meta.get("where")) not in pastes and id(c) not in 붙인:
             n, got = len(c["text"].strip()), 0
             need = max(2, int(n * TYPED_KEYS))
@@ -546,11 +550,23 @@ def _link_short_lines(out, cands):
     이어졌고 **그 붙여넣은 원문 안에 이 줄이 그대로 있으면** 같은 붙여넣기로 잇는다 (이슈 #26-3).
     붙여넣은 글 안에서만 찾으니 우연히 겹칠 위험이 없다 — 직접 친 짧은 제목("어린 시절")은 붙여넣은 글에 없으니 그대로 둔다."""
     flat = [r for row in out for r in row]
+    조각 = {}                                        # 과정 없이 나타난 글(받은 파일 등) → 그 글의 줄 · 줄 안 문장 (norm)
     for k, r in enumerate(flat):
         n = norm(r["text"])
         if r["label"] != "none" or not n or len(n) >= MIN_CHARS:
             continue
         for nb in (_near(flat, k, -1), _near(flat, k, 1)):
+            # 받은 파일 · 열었을 때 있던 글(noproc) 사이의 제목 · 번호 · 표 머리글 — 그 글 안에 이 줄이 한 줄 · 한 문장으로 있으면 같은 글 (10/15
+            # 실제 시험: Claude 가 준 PDF 를 그대로 냈는데 "1." "서론" "유형" 같은 조각만 출처 기록 없음 13개로 남음)
+            pr = nb.get("proc") if nb and nb["label"] == "noproc" else None
+            if pr:
+                t = pr.get("text", "")
+                if t not in 조각:
+                    조각[t] = {norm(x) for line in re.split(r"[\n\t]", t) for x in (line, *split_sentences(line))}
+                if n in 조각[t]:
+                    r.update(label="noproc", full=False, answer=None, sents=None, ai_text=r["text"], proc=pr)
+                    break
+                continue
             p = nb.get("paste") if nb else None
             # 붙여넣은 원문의 **한 줄 전체**와 같을 때만 — 글 안 어딘가에 들어 있기만 하면(부분 문자열) 직접 친 소제목
             # "현재" 가 붙여넣은 "현재 하린은 23살." 에 걸렸다 (10/7 첫 연결 보고서에서 찾음)

@@ -6,6 +6,7 @@ watchdog
 pynput
 pywebview
 reportlab
+pypdf      # 결과물 PDF 읽기 (core/pdftext.py)
 pywin32 ; sys_platform == "win32"
 psutil  ; sys_platform == "win32"
 comtypes ; sys_platform == "win32"
