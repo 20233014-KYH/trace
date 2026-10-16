@@ -18,3 +18,7 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      - key: KAKAO_CLIENT_ID      # 카카오 로그인 (10/15) — REST API 키 · 없으면 카카오 버튼 "준비 중"
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false

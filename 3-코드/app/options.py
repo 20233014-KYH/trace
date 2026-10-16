@@ -41,9 +41,10 @@ def read():
         코드, me = S._기록["server"]("GET", "/me")
         if 코드 == 200:
             계정 = {"name": me.get("name"), "email": me.get("email"), "works": {w["id"]: w["title"] for w in me.get("works", [])},
-                  "password": me.get("password", True), "google": bool(me.get("google"))}     # 로그인 방법 (10/15 · 옛 서버는 없음 → 비밀번호)
+                  "password": me.get("password", True), "google": bool(me.get("google")),     # 로그인 방법 (10/15 · 옛 서버는 없음 → 비밀번호)
+                  "kakao": bool(me.get("kakao"))}
     return jsonify(prefs=prefs.load(S._기록["data_dir"]()), choices=prefs.CHOICES, checks=확인(),
-                   account=계정 and {k: 계정[k] for k in ("name", "email", "password", "google")},
+                   account=계정 and {k: 계정[k] for k in ("name", "email", "password", "google", "kakao")},
                    data=_데이터((계정 or {}).get("works", {})), version=VERSION,
                    dev=__import__("updater").개발판())        # 개발판 = 앱 안 업데이트 없음 (이슈 #79)
 
@@ -149,10 +150,12 @@ _권한_화면 = {"ax": "x-apple.systempreferences:com.apple.preference.security
            "keys": "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"}
 
 
-@bp.post("/local/account/google/unlink")
-def google_unlink():
-    """설정 › 계정 › Google [끊기] (10/15) — 비밀번호가 있는 계정만 (서버가 막음)"""
-    코드, 답 = S._기록["server"]("POST", "/auth/google/unlink", json={})
+@bp.post("/local/account/<p>/unlink")
+def oauth_unlink(p):
+    """설정 › 계정 › Google · 카카오 [끊기] (10/15) — 끊어도 로그인할 길이 남을 때만 (서버가 막음)"""
+    if p not in ("google", "kakao"):
+        return jsonify(error="not_found"), 404
+    코드, 답 = S._기록["server"]("POST", f"/auth/{p}/unlink", json={})
     return jsonify(답), 코드
 
 

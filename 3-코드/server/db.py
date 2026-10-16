@@ -61,6 +61,14 @@ engine = create_engine(DB_URL, future=True, **풀,
                        pool_pre_ping=인터넷DB,          # 인터넷 DB 는 쉬는 동안 연결이 끊길 수 있다 → 쓰기 전에 확인
                        connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {})
 Session = sessionmaker(bind=engine, future=True)
+
+if DB_URL.startswith("sqlite"):
+    # SQLite 는 기본으로 외래 키(다른 표를 가리키는 칸)를 안 막는다 → 인터넷 DB(PostgreSQL)에서만 터지는 순서 실수를 시험에서 못 봤다 (10/15)
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _외래키_켜기(연결, _):
+        연결.execute("PRAGMA foreign_keys=ON")
 Base = declarative_base()
 
 
@@ -72,6 +80,7 @@ class User(Base):
     name = Column(String(100))
     created_at = Column(DateTime)
     google_sub = Column(String(64))                        # 구글 계정 번호 (10/15 구글 로그인) — 같은 이메일로 가입했으면 같은 계정에 붙음
+    kakao_sub = Column(String(64))                         # 카카오 회원번호 (10/15 카카오 로그인) — 이메일은 안 줄 수 있음 (kakao-<번호>@kakao.trace)
 
 
 class LoginTicket(Base):
@@ -82,7 +91,9 @@ class LoginTicket(Base):
     user_id = Column(String(64), ForeignKey("users.id"))   # 로그인 표: 로그인할 사람 · 잇기 표: 비어 있음 (잇는 사람은 PC 앱의 토큰으로)
     created_at = Column(DateTime)
     kind = Column(String(8))                               # login | link (10/15 · 비어 있으면 login)
-    google_sub = Column(String(64))                        # 잇기 표: 이을 구글 계정 번호
+    google_sub = Column(String(64))                        # (처음 잇기 표 · 이제는 sub)
+    provider = Column(String(16))                          # google | kakao (비어 있으면 google)
+    sub = Column(String(64))                               # 잇기 표: 이을 그 회사 계정 번호
 
 
 class Token(Base):
@@ -312,7 +323,10 @@ def _칸_추가():
                        ("messages", "masked", "JSON"),              # 10/12 일부 가림 (가린 종류)
                        ("users", "google_sub", "VARCHAR(64)"),      # 10/15 구글 로그인
                        ("login_tickets", "kind", "VARCHAR(8)"),     # 10/15 구글 계정 잇기
-                       ("login_tickets", "google_sub", "VARCHAR(64)")):
+                       ("login_tickets", "google_sub", "VARCHAR(64)"),
+                       ("users", "kakao_sub", "VARCHAR(64)"),       # 10/15 카카오 로그인
+                       ("login_tickets", "provider", "VARCHAR(16)"),
+                       ("login_tickets", "sub", "VARCHAR(64)")):
         있는칸 = {c["name"] for c in inspect(engine).get_columns(표)}
         if 칸 not in 있는칸:
             with engine.begin() as 연결:
