@@ -4,7 +4,7 @@ test_home.py — 홈 · 로그인 화면(app/home.py)을 녹화 시험 자료로
   python app/test_home.py
 
 확인하는 것:
-  · / 는 로그인했으면 홈, 아니면 로그인 화면 · 홈 화면도 로그인 안 했으면 로그인으로 · 옛 화면은 /make
+  · / 는 로그인했으면 홈, 아니면 로그인 화면 · 홈 화면도 로그인 안 했으면 로그인으로 · 옛 화면 /make 는 지움 (10/17)
   · 홈 목록 = 서버 내 과제 + 이 PC 기록 수 · 주인 없는 기록은 알림으로 · 서버가 401 이면 로그인으로
   · 과제 카드 = 지금 단계 · 숫자(질문 · 결과물에 들어간 답 · 이어진 문장) · 다음 화면 주소
   · 기록기가 꺼져 있으면 지금 상태 없음 · 점수·퍼센트 없음
@@ -46,7 +46,8 @@ def main():
         검사("홈도 로그인 안 했으면 로그인으로", loc(c.get("/home", **HOST)).endswith("/login"))
         r = c.get("/login", **HOST)
         검사("로그인 화면 열림 (이메일 · 가입 · 어느 서버)", r.status_code == 200 and all(t in r.get_data(as_text=True) for t in ("이메일", "가입하기", "/local/state")))
-        검사("옛 내역서 만들기 화면은 /make", c.get("/make", **HOST).status_code == 200)
+        검사("옛 내역서 만들기 화면(/make) · 과제 없이 기록 켜던 /local/record 는 없음 (10/17)", c.get("/make", **HOST).status_code == 404
+             and c.post("/local/record", headers={"X-Trace-Local": "1"}, **HOST).status_code in (404, 405))
         검사("/local/home 은 401", c.get("/local/home", **HOST).status_code == 401)
 
         # ── 로그인함 (서버 흉내) ──

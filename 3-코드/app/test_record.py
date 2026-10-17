@@ -142,6 +142,16 @@ def main():
         검사("받은 파일과 바이트까지 같으면 '받은 파일 그대로' (이름이 달라도) · 기록에 없는 문서 경고 안 함",
              (r["same_download"] or {}).get("name") == "도시열섬_보고서 (1).docx" and r["same_download"]["domain"] == "claude.ai" and r["in_records"] is True,
              str(r["same_download"]))
+        with open(os.path.join(data, "context-2026-10-05.jsonl"), "a", encoding="utf-8") as f:     # 같은 파일을 먼저 한 번 더 받음 — 받은 곳 모름
+            f.write(json.dumps({"session_id": "S-dl", "id": "dl0", "ts": "2026-10-05T20:05:00+09:00", "source": "download", "kind": "download", "text": 글,
+                                "meta": {"name": "도시열섬_보고서.docx", "size": len(보고서), "hash": "sha256:" + _h.sha256(보고서).hexdigest(),
+                                         "app": "chrome.exe", "domain": "", "category": "other"}}, ensure_ascii=False) + "\n")
+        r = c.post("/local/source", data={"work_id": "W-dl", "file": (_io.BytesIO(보고서), "제출본.docx")}, headers=H,
+                   content_type="multipart/form-data", **HOST).json
+        곳 = {(x["proc"].get("file"), x["proc"].get("ai")) for x in r["sentences"] if (x.get("proc") or {}).get("how") == "download"}
+        검사("같은 파일을 여러 번 받았으면 받은 곳이 확실한 것으로 (안내 claude.ai · 문장은 받은 곳 모르는 먼저 받은 것에 안 이어짐)",
+             r["same_download"]["domain"] == "claude.ai" and ("도시열섬_보고서.docx", False) not in 곳 and all(ai for _, ai in 곳),
+             f"{r['same_download']['domain']} · {곳}")
         from core import match as _M
         본문 = "1. 서론\n대학 도서관은 학생들이 가장 많이 찾는 공간이다.\n유형\t대표 사례\n대화 소음\t전화 통화와 잡담이 이어진다."
         줄 = [r2["label"] for row in _M.link_document(["1. 서론", "대학 도서관은 학생들이 가장 많이 찾는 공간이다.", "유형", "대표 사례",

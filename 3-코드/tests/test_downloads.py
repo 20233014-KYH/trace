@@ -68,9 +68,17 @@ import collector as C                           # noqa: E402
 class 가짜:
     _tab = ("chatgpt.com", "ai", "", "chrome")
     _tab_fits = C.Collector._tab_fits
+    _받은_곳 = C.Collector._받은_곳
+    DL_WAIT = 0.3
+
+    class sink:
+        paused = False
+
+    class clf:
+        by_domain = staticmethod(lambda d: "ai" if d in ("claude.ai", "chatgpt.com") else "web")
 
     def __init__(self, cur):
-        self._cur, self.남김 = cur, []
+        self._cur, self.남김, self._dl_src = cur, [], {}
 
     def _on_context(self, items):
         self.남김 += items
@@ -87,5 +95,26 @@ for cur, 남김, 이름 in ((("claude.exe", "Claude", "ai"), True, "Claude 앱�
          str(f.남김[0]["meta"] if f.남김 else ""))
 f = 가짜(("chrome.exe", "ChatGPT", "ai")); C.Collector._on_download(f, "보고서.txt", raw)
 검사("브라우저면 그때 탭 사이트를 받은 곳으로", f.남김[0]["meta"]["domain"] == "chatgpt.com" and f.남김[0]["meta"]["category"] == "ai")
+
+print("\n  ━━ 확장이 알려 준 받은 사이트 (확장 0.3.9 · 10/17)")
+알림 = [{"kind": "download_src", "text": "", "meta": {"name": "보고서 (2).txt", "site": "claude.ai", "browser": "chrome"}}]
+f = 가짜(("chrome.exe", "새 탭", "other")); f._tab = ("", "other", "", "chrome")
+C.Collector._on_context(f, 알림)
+검사("받기 알림은 파일에 안 남기고 기억만", f._dl_src.get("보고서 (2).txt", ("",))[0] == "claude.ai")
+C.Collector._on_download(f, os.path.join("x", "보고서 (2).txt"), raw)
+m = f.남김[0]["meta"] if f.남김 else {}
+검사("앞 탭이 새 탭이어도 확장이 알려 준 사이트로 (전엔 빈칸)", m.get("domain") == "claude.ai" and m.get("category") == "ai", str(m))
+f = 가짜(("WINWORD.EXE", "보고서 - Word", "work"))
+C.Collector._on_context(f, 알림)
+C.Collector._on_download(f, "보고서 (2).txt", raw)
+m = f.남김[0]["meta"] if f.남김 else {}
+검사("받기가 끝날 때 Word 로 옮겼어도 브라우저에서 받은 파일로 남김", m.get("domain") == "claude.ai" and m.get("app") == "chrome.exe", str(m))
+f = 가짜(("WINWORD.EXE", "보고서 - Word", "work"))
+C.Collector._on_context(f, [{**알림[0], "meta": {**알림[0]["meta"], "name": "다른 파일.txt"}}])
+C.Collector._on_download(f, "보고서 (2).txt", raw)
+검사("이름이 다른 받기 알림은 안 씀 (Word 로 저장한 내 글은 그대로 안 남김)", not f.남김)
+f = 가짜(("chrome.exe", "ChatGPT", "ai")); f.sink = type("s", (), {"paused": True})
+C.Collector._on_context(f, 알림)
+검사("멈춘 동안의 받기 알림은 버림", not f._dl_src)
 print(f"\n  {'✓ 통과' if ok else '✗ 실패'}")
 sys.exit(0 if ok else 1)

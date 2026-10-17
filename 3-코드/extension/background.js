@@ -83,6 +83,22 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   }
 });
 
+// 받기가 끝난 파일 → 어느 사이트에서 받았나 (10/17 · 0.3.9). 수집기는 다운로드 폴더에 생긴 결과물 파일을 이 이름으로 찾아
+// 받은 곳을 정확히 적는다 (전엔 그 순간 앞 창 · 탭으로 짐작해서 새 탭이 앞이면 "Chrome" 으로만 남았다).
+// 보내는 것 = 파일 이름 · 사이트(도메인)만 — 주소 전체 · 폴더 위치는 안 보낸다. 기록 중일 때만 (다리가 꺼져 있으면 버림)
+chrome.downloads?.onChanged?.addListener(async (d) => {
+  if (d.state?.current !== "complete") return;
+  const [it] = await chrome.downloads.search({ id: d.id }).catch(() => []);
+  if (!it || !it.filename) return;
+  const name = it.filename.split(/[\\/]/).pop();
+  // 시작한 페이지(referrer) → 없으면 받은 주소. blob:https://claude.ai/… 는 앞의 blob: 을 떼고 본다
+  const site = domainOf(it.referrer || "") || domainOf((it.finalUrl || it.url || "").replace(/^blob:/, ""));
+  if (!(await refreshStatus()).recording) return;
+  fetch(BRIDGE + "/context", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items: [{ kind: "download_src", text: "", meta: { name, site, browser: BROWSER } }] }) })
+    .then((r) => console.log("[Trace] 받은 파일 →", site, r.status)).catch(() => {});
+});
+
 chrome.alarms?.create?.("status", { periodInMinutes: 0.5 });
 chrome.alarms?.onAlarm?.addListener(() => refreshStatus());
 refreshStatus();
