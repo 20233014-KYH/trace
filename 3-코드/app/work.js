@@ -208,5 +208,5 @@ window.TraceWork = (function () {
     sel.focus();
   }
 
-  return { card, due, day, steps, facts, clock, dur, hm, startRecording, watchRecording, workMenu, deleteWork, sessionMenu, ICON };
+  return { card, due, day, steps, facts, clock, dur, hm, startRecording, watchRecording, workMenu, deleteWork, sessionMenu, dialog, ICON };
 })();

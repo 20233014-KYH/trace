@@ -261,8 +261,8 @@ label.inline{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:
       works.forEach(w => { const o = el("option", null, `${w.title}${w.pc_sessions ? ` · 이 PC 기록 ${w.pc_sessions}번` : " · 이 PC 기록 없음"}`); o.value = w.id; sel.append(o); });
       msg("m-work", works.length ? "" : "내 과제가 없습니다.", works.length ? "" : "err");
       if (d.orphans.length) {
-        $("orphans").textContent = `이 PC 에 로그인 없이 만든 기록이 있습니다 (${d.orphans.map(o => o.id).join(", ")}). ` +
-          "주인이 없는 과제라 내역서를 만들 수 없습니다 — 기록기에 로그인을 붙인 뒤 기록한 과제만 쓸 수 있습니다.";
+        $("orphans").textContent = `이 PC 에 이 계정의 과제가 아닌 기록이 있습니다 (${d.orphans.map(o => o.id).join(", ")}). ` +
+          "다른 계정으로 기록했거나 로그인 없이 만든 기록이에요 — 그 계정으로 로그인하면 쓸 수 있습니다.";
         show("orphans");
       }
       // 출처 보기·연결 확인에서 "다음: 내역서" 로 오면 /?work=<과제> — 그 과제를 바로 고른다 (10/12 박상진)

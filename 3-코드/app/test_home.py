@@ -195,6 +195,29 @@ def main():
         검사("옮겨 온 기록도 그 과제와 함께 지워짐 · 옮김 표에서도 빠짐", r.status_code == 200 and not 줄("S-match_app")
              and "S-match_app" not in (ST.safefile.read_json(os.path.join(data, "moved.json"), {}) or {}))
         검사("다른 과제 기록은 그대로", len(ST._과제별_세션().get("W-match_rec", ())) == 다른 > 0)
+
+        # ── 계정 지우기 (설정 › 내 데이터 · 10/15) — 서버 먼저 · 서버가 지운 과제들의 이 PC 기록만 · 로그아웃 ──
+        print("\n  ━━ 계정 지우기")
+        보냄3 = []
+        def 서버3(방법, 경로, **kw):
+            if 경로 == "/me/delete":
+                보냄3.append(kw.get("json"))
+                return (200, {"ok": True, "works": ["W-match_rec", "../밖"], "sessions": 1}) if (kw.get("json") or {}).get("password") == "맞는비번1234" \
+                    else (403, {"error": "wrong_password", "message": "비밀번호가 맞지 않아요"})
+            return 서버2(방법, 경로, **kw)
+        ST.출처._기록["server"] = 서버3
+        인증 = os.path.join(data, "auth.json"); open(인증, "w", encoding="utf-8").write('{"token": "t"}')
+        A = lambda body: P2("/local/account/delete", body)
+        WK.설정["bridge"] = lambda: {"work_id": "W-match_rec", "session_id": "x"}
+        검사("기록 중에는 계정을 못 지움 (서버도 안 부름)", A({"password": "맞는비번1234"}).status_code == 409 and not 보냄3)
+        WK.설정["bridge"] = lambda: None
+        r = A({"password": "틀림"})
+        검사("비밀번호가 틀리면 400 (로그인 화면으로 안 튐) · 이 PC 그대로", r.status_code == 400 and "맞지 않아요" in r.json["message"]
+             and "W-match_rec" in ST._과제별_세션() and os.path.exists(인증))
+        r = A({"password": "맞는비번1234", "그밖": "x"})
+        검사("계정 지우기: 서버가 지운 과제의 이 PC 기록만 · 로그아웃 · 이상한 id 무시", r.status_code == 200 and r.json["works"] == 1
+             and "W-match_rec" not in ST._과제별_세션() and not os.path.exists(인증) and 보냄3[-1] == {"password": "맞는비번1234"}, str(r.json))
+        검사("다른 계정 · 서버가 안 지운 과제의 이 PC 기록은 그대로", "W-match_web" in ST._과제별_세션())
         ST.출처._기록["server"] = lambda 방법, 경로, **kw: 응답.get(경로, (404, {}))
 
         응답["/me"] = (401, {"error": "unauthorized"})

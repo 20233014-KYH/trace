@@ -88,6 +88,7 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
 </div>
 
 <script src="/ui/shell.js"></script>
+<script src="/ui/work.js"></script>
 <script src="/ui/win.js"></script>
 <script>
 (function () {
@@ -305,10 +306,42 @@ select.in{height:32px;padding:0 8px;border-radius:8px;border:0;box-shadow:inset 
       d.data.works.forEach(w => c.append(kv(w.title, `${mb(w.bytes)} · 기록 ${w.sessions}번`, null, null, true)));
       if (d.data.other) c.append(el("div", "desc", `내 과제 목록에 없는 기록 ${d.data.other}개 (로그인 없이 만든 것)도 이 폴더에 있어요`));
       c.append(el("div", "desc", "과제 하나를 지우려면 그 과제의 ⋯ → 과제 삭제 (준비 중)"));
-      const c2 = card("계정 지우기", "", el("span", "anno", "준비 중 · 서버 기능 필요"));
-      const del = btn("계정 지우기", "btn-outline red"); del.disabled = true; del.prepend(T.icon(IC.trash));
+      const c2 = card("계정 지우기");
+      const del = btn("계정 지우기", "btn-outline red", () => 계정_지우기()); del.prepend(T.icon(IC.trash));
+      if (!d.account) { del.disabled = true; del.title = "로그인하면 지울 수 있어요"; }
       c2.append(row("", "과제 · 기록 · 링크를 모두 지워요. 이 PC 원문도 지워져요. 지운 사실과 시각만 남아요 (과제 삭제와 같은 규칙)", del));
       c2.querySelector(".row b").remove();
+      // 계정 지우기 (10/15) — 무엇이 지워지는지 보여 주고, 비밀번호(없으면 "계정 삭제" 그대로)를 받아야 지움 (work.py /local/account/delete)
+      function 계정_지우기() {
+        const W = window.TraceWork, { dlg, close, err } = W.dialog();
+        const 기록수 = d.data.works.reduce((a, w) => a + w.sessions, 0), 비번있음 = d.account.password !== false;
+        dlg.append(el("h3", null, "계정을 지울까요?"));
+        const lst = el("div", "lst");
+        const 줄 = (k, sub, v, keep) => { const kk = el("div", "k", k); if (sub) kk.append(el("small", null, sub)); lst.append(kk, el("div", "v" + (keep ? " keep" : ""), v)); };
+        줄("과제 · 기록", `내 과제 모두 · 이 PC 의 기록 ${기록수}번 · 서버의 확인값까지`, "지워져요");
+        줄("내역서 · 교수 링크", "교수가 열면 \"학생이 지운 기록입니다\" 라고만 보여요", "지워져요");
+        줄("계정", d.account.email || d.account.name || "", "지워져요");
+        줄("다른 계정 · 로그인 없이 만든 기록", "이 PC 에 그대로 남아요", "그대로", true);
+        줄("같은 이메일로 다시 가입", "", "할 수 있어요", true);
+        const 메모 = el("div", "note"); 메모.append(T.icon(W.ICON.warn), el("span", null, "되돌릴 수 없어요. 내려받아 둔 PDF 파일은 Trace 가 지울 수 없으니 직접 지워 주세요."));
+        const lab = el("label", null, 비번있음 ? "비밀번호" : "확인을 위해 '계정 삭제' 를 그대로 써 주세요");
+        const i = el("input"); i.type = 비번있음 ? "password" : "text"; i.autocomplete = 비번있음 ? "current-password" : "off";
+        if (!비번있음) i.placeholder = "계정 삭제";
+        lab.append(i);
+        const acts = el("div", "acts"), no = el("button", "btn btn-outline", "취소"), yes = el("button", "btn btn-red", "계정 지우기");
+        no.type = yes.type = "button"; no.onclick = close; yes.disabled = true;
+        i.oninput = () => { yes.disabled = 비번있음 ? !i.value : i.value.trim() !== "계정 삭제"; };
+        i.onkeydown = e => { if (e.key === "Enter" && !yes.disabled) yes.click(); };
+        yes.onclick = async () => {
+          yes.disabled = no.disabled = true; err.hidden = true;
+          try {
+            await T.call("POST", "/local/account/delete", null, 비번있음 ? { password: i.value } : { confirm: i.value.trim() });
+            try { sessionStorage.clear(); } catch (e) {}
+            location.replace("/login");
+          } catch (e) { err.textContent = e.message; err.hidden = false; no.disabled = false; yes.disabled = !i.value; }
+        };
+        acts.append(no, yes); dlg.append(lst, 메모, lab, err, acts); i.focus();
+      }
       return [c, c2];
     },
     app() {
