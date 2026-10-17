@@ -363,10 +363,23 @@ def process_evidence(events, context):
     keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_EXE.values()),
                   key=lambda k: k[0])
     typed, noproc = [], []
+    # 같은 파일을 여러 번 받았으면 하나만 — 받은 곳이 확실한 것(AI 사이트 · 사이트 이름 있음) → 그중 먼저 받은 것 (10/17 · 글이 같아
+    # 어느 것에 이어질지는 순서로 정해지는데, 받은 곳을 모르는 앞 기록에 이어져 "Chrome" 으로만 보였다)
+    받기 = {}
+    for c in context:
+        h = (c.get("meta") or {}).get("hash")
+        if c.get("kind") == "download" and h:
+            m = c["meta"]
+            k = (m.get("category") != "ai", not m.get("domain"), c.get("ts", ""))
+            if h not in 받기 or k < 받기[h][0]:
+                받기[h] = (k, id(c))
+    고른_받기 = {i for _, i in 받기.values()}
     for c in sorted(context, key=lambda c: c.get("ts", "")):
         meta = c.get("meta", {})
         if c.get("kind") == "doc_open" and c.get("text", "").strip():
             noproc.append({"text": c["text"], "how": "open", "ts": c["ts"], "file": meta.get("file", "")})
+        elif c.get("kind") == "download" and meta.get("hash") in 받기 and id(c) not in 고른_받기:
+            continue
         elif c.get("kind") == "download" and c.get("text", "").strip():
             # 기록하는 동안 AI 앱 · 브라우저에서 받은 결과물 파일의 글 (collector/downloads.py · 10/15) — 결과물 문장이 여기서 왔으면 빨강
             noproc.append({"text": c["text"], "how": "download", "ts": c["ts"], "file": meta.get("name", ""),

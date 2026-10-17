@@ -396,6 +396,7 @@ class Collector:
         self._last_keys_flush = time.time()
         self._files = None
         self._downloads = None       # 기록하는 동안 받은 결과물 파일 (downloads.py · 10/15)
+        self._dl_src = {}            # 확장이 알려준 받기 — 파일 이름(소문자) → (사이트, 브라우저, 시각) (10/17)
         self._bridge = None
         self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title, browser)
         self._office = None         # Learn 모드 · Word/PPT 맥락 (office.py)
@@ -655,6 +656,12 @@ class Collector:
           서버 /context 로는 보내지 않는다 (예전 Learn 은 보냈음). 제출 때 학생이 고른 것만 나간다"""
         if self.sink.paused:
             return
+        # 확장이 알려준 받기(어느 사이트에서 받은 파일인가) — 파일에 쓰지 않고 다운로드 폴더에 그 파일이 생기면 쓴다 (_on_download)
+        for it in items:
+            m = it.get("meta") or {}
+            if it.get("kind") == "download_src" and m.get("name"):
+                self._dl_src[os.path.basename(str(m["name"])).lower()] = (str(m.get("site") or "").lower(), m.get("browser"), time.time())
+        items = [it for it in items if it.get("kind") != "download_src"]
         ai = [it for it in items if it.get("kind") in self.AI_KINDS]
         for it in ai:
             self._on_ai_msg(it)
@@ -668,15 +675,37 @@ class Collector:
             for it in items:
                 f.write(json.dumps({"session_id": self.session_id, **it}, ensure_ascii=False) + "\n")
 
+    DL_WAIT = 3.0                   # 확장의 '다 받음' 을 기다리는 초 (데스크톱 AI 앱이 앞이면 안 기다림)
+
+    def _받은_곳(self, name, 기다림=3.0):
+        """확장이 알려준 이 파일의 받은 사이트 (사이트, 브라우저) — 없으면 None. 확장의 '다 받음' 이 조금 늦게 올 수 있어 잠깐 기다린다"""
+        끝 = time.time() + 기다림
+        while True:
+            s = self._dl_src.pop(name.lower(), None)
+            if s and time.time() - s[2] < 300:
+                return s[0], s[1]
+            if time.time() >= 끝:
+                return None
+            time.sleep(0.2)
+
     def _on_download(self, path, raw):
-        """다운로드 폴더에 새 결과물 파일 — 그 순간 앞에 있던 앱이 AI 앱 · 브라우저일 때만 PC context 에 (downloads.py)"""
+        """다운로드 폴더에 새 결과물 파일 → PC context 에 (downloads.py)
+        · 확장이 그 파일을 브라우저가 받았다고 알려 줬으면 → 그 사이트 (10/17 · 그 순간 앞 창이 무엇이든 정확)
+        · 아니면 그 순간 앞에 있던 앱이 AI 앱 · 브라우저일 때만 (Word 로 내 글을 다운로드 폴더에 저장한 것은 받은 파일이 아님)"""
         from downloads import 글_뽑기, 지문
         app, _, cat = self._cur if self._cur else ("", "", "other")
         브라우저 = app.lower() in BROWSERS
-        if not (브라우저 or cat == "ai"):
+        src = self._받은_곳(os.path.basename(path), 기다림=self.DL_WAIT if (브라우저 or not self._cur or cat != "ai") else 0)
+        if src:
+            domain, b = src
+            category = self.clf.by_domain(domain) if domain else "other"
+            if not 브라우저:                              # 받기가 끝날 때 다른 창으로 옮겼어도 받은 브라우저로
+                app = min(BROWSER_APPS.get(b) or {"browser"})
+        elif not (브라우저 or cat == "ai"):
             return                                       # Word 등으로 내 글을 다운로드 폴더에 저장한 것 — 받은 파일이 아님
-        domain = self._tab[0] if 브라우저 and self._tab and self._tab_fits(app) else ""
-        category = (self._tab[1] if domain else "other") if 브라우저 else cat
+        else:
+            domain = self._tab[0] if 브라우저 and self._tab and self._tab_fits(app) else ""
+            category = (self._tab[1] if domain else "other") if 브라우저 else cat
         self._on_context([{"id": str(uuid.uuid4()), "ts": now_iso(), "source": "download", "kind": "download",
                            "text": 글_뽑기(path, raw),
                            "meta": {"name": os.path.basename(path), "size": len(raw), "hash": 지문(raw), "app": app,

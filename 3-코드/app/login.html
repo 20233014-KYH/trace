@@ -153,7 +153,7 @@ a,.link{color:var(--ink);text-underline-offset:4px}
     msg("");
   }
   $("b-swap").onclick = () => mode(!signup);
-  const 다음 = () => location.replace(new URLSearchParams(location.search).get("next") === "make" ? "/make" : "/home");
+  const 다음 = () => location.replace("/home");
 
   // Google · 카카오 (10/15) — 브라우저에서 그 회사 계정으로 로그인하면 서버를 거쳐 이 PC 로 돌아온다 (statement.py /local/auth/<p>/*).
   // 앱 창 안에서는 구글이 로그인을 막아서 브라우저로. 여기선 끝났는지 1초마다 묻다가 끝나면 홈으로. 다시 누르면 새로 시작

@@ -218,12 +218,14 @@ def 받은_파일(raw, context):
     """고른 파일이 기록하는 동안 받은 파일과 **바이트까지 똑같으면** 그 받기 {name, app, domain, ts, ai} — 아니면 None (10/15)
     받은 그대로 낸 결과물이면 문장 비교보다 이 한 줄이 가장 확실하다 (collector/downloads.py 가 지문을 남김)"""
     h = "sha256:" + hashlib.sha256(raw).hexdigest()
-    for c in sorted(context, key=lambda c: c.get("ts", "")):
-        m = c.get("meta") or {}
-        if c.get("kind") == "download" and m.get("hash") == h:
-            return {"name": m.get("name", ""), "app": m.get("app", ""), "domain": m.get("domain", ""),
-                    "ts": c.get("ts", ""), "ai": m.get("category") == "ai"}
-    return None
+    같은 = [c for c in context if c.get("kind") == "download" and (c.get("meta") or {}).get("hash") == h]
+    if not 같은:
+        return None
+    # 같은 파일을 여러 번 받았으면 받은 곳이 확실한 것(AI 사이트 · 사이트 이름 있음) → 그중 먼저 받은 것 (10/17)
+    c = min(같은, key=lambda c: (c["meta"].get("category") != "ai", not c["meta"].get("domain"), c.get("ts", "")))
+    m = c["meta"]
+    return {"name": m.get("name", ""), "app": m.get("app", ""), "domain": m.get("domain", ""),
+            "ts": c.get("ts", ""), "ai": m.get("category") == "ai"}
 
 
 NO_RECORDS = ({"error": "no_records", "message": "이 PC 에 이 과제의 기록이 없습니다 (기록기를 켠 PC 에서 열어 주세요)"}, 404)

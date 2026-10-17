@@ -295,7 +295,7 @@ def selftest():
     검사("버전", lambda: VERSION)
 
     def 원본():
-        빠짐 = [p for p in ("app/statement.html", "app/pill.html", "app/shell.css", "app/home.html", "app/login.html",
+        빠짐 = [p for p in ("app/pill.html", "app/shell.css", "app/home.html", "app/login.html",
                           "app/settings.html", "app/review.html", "app/record.html", "app/work.css", "app/work.js", "app/trace.ico", "collector/config.json",
                           "collector/domains.json", "server/demo_share.json")
               if not os.path.exists(os.path.join(ROOT, p))]
@@ -325,7 +325,7 @@ def selftest():
         c = g["app"].test_client()
         h = {"Host": f"127.0.0.1:{HOME_PORT}"}
         assert c.get("/", headers=h).status_code == 302                     # 로그인 → 홈 (10/13 · #54)
-        for 주소, 글 in (("/login", "로그인"), ("/make", "내역서")):
+        for 주소, 글 in (("/login", "로그인"), ("/source", "출처 보기")):
             r = c.get(주소, headers=h)
             assert r.status_code == 200 and 글 in r.get_data(as_text=True), (주소, r.status_code)
         return f"{len(g['app'].url_map._rules)}개 경로"                 # noqa: SLF001

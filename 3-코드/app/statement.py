@@ -13,7 +13,9 @@ statement.py — 학생 PC 의 "내역서 만들기" 화면 (docs/api.md 10절 �
   ③ 과제 파일(.docx) 고르기 → 이 PC 의 AI 답·붙여넣기 기록과 문장마다 연결 제안
   ④ 제안마다 맞다 / 아니다 · 질문 가리기 · 한 줄 설명 → 서버에 내역서 만들기 → 교수에게 보낼 링크
 
-화면은 같은 폴더의 statement.html 한 장. 이 서버는 127.0.0.1 에서만 듣는다.
+옛 화면(statement.html · /make)은 10/17 지움 — 화면은 홈 · 출처 보기 · 연결 확인 · 내보내기(blueprint)가 맡는다.
+  아래 /local/analyze · statement · share 는 서버 계약 시험(test_statement) · 출처 보기 일치 시험(test_source)이 쓴다.
+이 서버는 127.0.0.1 에서만 듣는다.
 """
 import argparse
 import glob
@@ -31,7 +33,7 @@ import webbrowser
 from urllib.parse import urlencode
 
 import requests
-from flask import Flask, abort, jsonify, request, send_from_directory
+from flask import Flask, abort, jsonify, request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -163,13 +165,6 @@ def _과제별_세션():
     return out
 
 
-# ─────────────── 화면 ───────────────
-@app.get("/make")
-def page():
-    """옛 내역서 만들기 한 장 — 캔버스에 없는 화면. / 는 홈(app/home.py)이 받고, 이 화면은 정리될 때까지 /make 로 남긴다 (10/13)"""
-    return send_from_directory(HERE, "statement.html")
-
-
 @app.get("/local/state")
 def state():
     a = _auth()
@@ -179,7 +174,8 @@ def state():
                    version=VERSION, recording=_기록_중())
 
 
-# ─────────────── 설치판 (v0.1 · 10/13) — 새 버전 알림 · 기록 시작 ───────────────
+# ─────────────── 설치판 (v0.1 · 10/13) — 새 버전 알림 ───────────────
+# 기록 시작은 /local/record/start 하나 (app/work.py · 10/17 — 옛 화면의 /local/record 는 과제 없이 켜서 지움)
 def _기록_중():
     """기록기가 켜져 있으면 확장 다리(5077)가 열려 있다.
     0.1초만 — 윈도우는 닫힌 주소에 연결하면 바로 실패하지 않고 다시 시도해서, 기다린 만큼 화면이 늦었다 (10/15). 이 PC 안이라 열려 있으면 즉시 붙음"""
@@ -200,20 +196,6 @@ def update():
     return jsonify(current=VERSION, latest=v, newer=newer, dev=업데이트.개발판(), can_install=newer and 업데이트.바꿀_수_있나(최신),
                    download=settings.INTERNET.removesuffix("/api") + "/download", notes=최신.get("notes"),
                    summary=업데이트.요약(최신.get("notes")))
-
-
-@app.post("/local/record")
-def start_record():
-    """알약 + 기록기를 따로 띄운다 (설치판은 Trace.exe record · 저장소는 python app/pill.py)"""
-    import subprocess
-    if _기록_중():
-        return jsonify(ok=True, already=True)
-    명령 = [sys.executable, "record"] if settings.FROZEN else [sys.executable, os.path.join(HERE, "pill.py")]
-    if 설정.get("config_arg"):
-        명령 += ["--config", 설정["config_arg"]]
-    subprocess.Popen(명령, cwd=ROOT, close_fds=True,
-                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0) if settings.FROZEN else 0)
-    return jsonify(ok=True, already=False)
 
 
 def _서버_이름():

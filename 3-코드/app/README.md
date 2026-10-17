@@ -1,6 +1,6 @@
 # 홈 · 로그인 · 새 과제 · 과제 상세 · 설정 (학생 PC · 캔버스 홈 A · 로그인 · 1-1 · 2 · 10/13 · 박상진)
 
-앱을 켜면 `/` → 로그인했으면 **홈**(`/home`), 아니면 **로그인**(`/login`). 옛 내역서 만들기 한 장은 `/make` 로 옮겨 두었다 (캔버스에 없는 화면 · 정리 전까지).
+앱을 켜면 `/` → 로그인했으면 **홈**(`/home`), 아니면 **로그인**(`/login`). 옛 내역서 만들기 한 장(`/make` · statement.html)은 10/17 지웠다. 기록 시작은 `POST /local/record/start` 하나.
 
 ```bash
 python app/statement.py                 # http://127.0.0.1:5079/ → 로그인 → 홈
@@ -60,7 +60,6 @@ python app/statement.py --config 내설정.json     # 기록기 설정(server ·
 | 파일 | |
 |---|---|
 | `statement.py` | 127.0.0.1:5079 의 작은 서버. 다른 사이트가 부르지 못하게 Host 확인 + 바꾸는 요청엔 `X-Trace-Local` 머리 |
-| `statement.html` | 화면 한 장 (디자인 기준 v2) |
 | `test_statement.py` | 처음부터 끝까지 검사 13개 — match_rec(실제 녹화 시험)로 학생 PC 를 흉내 |
 
 ---
