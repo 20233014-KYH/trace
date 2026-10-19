@@ -241,6 +241,13 @@ python server/app.py                   # 첫 줄 "저장: postgresql+psycopg://p
 
 `pip install "psycopg[binary]"` 가 필요하다 (`requirements.txt` 에 있음).
 
+## 서버 깨워 두기 (10/19)
+
+Render 무료는 15분 동안 요청이 없으면 잠들고, 깨우는 첫 요청이 40초~1분 걸린다 (그동안 앱에 "서버에 연결하지 못했습니다").
+- `.github/workflows/keepalive.yml` 이 10분마다 `/api/health` 를 부르게 해 뒀지만 **GitHub 예약 실행은 크게 늦는다** (10/14~19 실제로 2~5시간에 한 번). 깨는 동안 502 가 나와도 5분까지 기다리고, 그래도 안 되면만 실패(메일)
+- **늘 깨워 두려면** 바깥 감시 서비스를 건다 — [UptimeRobot](https://uptimerobot.com) 무료: Add New Monitor → HTTP(s) → `https://trace-server-8aa0.onrender.com/api/health` → 5분마다. 서버가 죽으면 메일도 온다
+- Render 무료 750시간/월 = 서비스 **하나**를 한 달 내내 켜 두는 만큼 (31일 = 744시간). 같은 계정에 무료 서비스를 하나 더 켜 두면 모자란다
+
 ## 배포 (Render · 10/7)
 
 **쓰는 법(기록기 연결)은 [`../서버_이용가이드.md`](../서버_이용가이드.md).** 주소: `https://trace-server-8aa0.onrender.com/api`
