@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" width="1600" height="760" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52514e"/></marker></defs>
+<rect width="1600" height="760" fill="#ffffff"/>
+<text x="40" y="52" font-size="30" fill="#0b0b0b" font-weight="700" text-anchor="start">User Flow — 교수는 계정도 설치도 없다</text>
+<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">파란 칸 = 학생 · 주황 칸 = 교수 · 점선 = 새로 만들 것 (v2.1 점검)</text>
+<rect x="40" y="120" width="1520" height="190" rx="14" fill="#f4f3ef" stroke="#f4f3ef" stroke-width="1.5"/>
+<text x="64" y="158" font-size="22" fill="#eb6834" font-weight="700" text-anchor="start">교수</text>
+<rect x="40" y="330" width="1520" height="380" rx="14" fill="#f4f3ef" stroke="#f4f3ef" stroke-width="1.5"/>
+<text x="64" y="368" font-size="22" fill="#2a78d6" font-weight="700" text-anchor="start">학생</text>
+<rect x="140" y="170" width="210" height="92" rx="10" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
+<text x="156" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">①  과제 공지</text>
+<text x="156" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI 허용 · Trace 내역서 첨부</text>
+<text x="156" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">복붙 감점 (Trace 밖 · LMS)</text>
+<rect x="1080" y="170" width="210" height="92" rx="10" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
+<text x="1096" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑦  한 줄 요약 보기</text>
+<text x="1096" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">그대로 3 · 고침 11 · 기록 없음 0</text>
+<text x="1096" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">모아 보기: 그대로 많은 순</text>
+<rect x="1330" y="170" width="210" height="92" rx="10" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
+<text x="1346" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑧  궁금한 학생만</text>
+<text x="1346" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI 답과 문장 나란히</text>
+<text x="1346" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">물어볼 곳 → 면담</text>
+<rect x="140" y="400" width="210" height="92" rx="10" fill="#e8f1fc" stroke="#2a78d6" stroke-width="2"/>
+<text x="156" y="432" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">②  기록 시작</text>
+<text x="156" y="458" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">교수 링크 · 동의 화면</text>
+<text x="156" y="478" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">무엇이 기록되고 안 되는지</text>
+<rect x="390" y="400" width="210" height="92" rx="10" fill="#e8f1fc" stroke="#2a78d6" stroke-width="2"/>
+<text x="406" y="432" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">③  평소처럼 작업</text>
+<text x="406" y="458" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI 대화 · 복사 · Word 문서</text>
+<text x="406" y="478" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">언제든 멈춤 · 다시 시작</text>
+<rect x="640" y="400" width="210" height="92" rx="10" fill="#e8f1fc" stroke="#2a78d6" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="656" y="432" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">④  제출 전 점검</text>
+<text x="656" y="458" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">걸린 문장 · 원문 나란히</text>
+<text x="656" y="478" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">기준 표시 · 참고문헌 확인</text>
+<rect x="890" y="400" width="210" height="92" rx="10" fill="#e8f1fc" stroke="#2a78d6" stroke-width="2"/>
+<text x="906" y="432" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑥  확인 · 가리기 · 제출</text>
+<text x="906" y="458" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">이어진 곳 맞다/아니다</text>
+<text x="906" y="478" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">내역서 1장 + 링크 첨부</text>
+<rect x="640" y="560" width="210" height="120" rx="10" fill="#ffffff" stroke="#2a78d6" stroke-width="2" stroke-dasharray="6 5"/>
+<text x="656" y="590" font-size="17" fill="#0b0b0b" font-weight="700" text-anchor="start">⑤  고쳐 쓰기 (학생이 직접)</text>
+<text x="656" y="618" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">[인용 달기] 출처 표시</text>
+<text x="656" y="638" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">[다시 쓰기] 내 말로</text>
+<text x="656" y="658" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI가 대신 고치지 않음</text>
+<path d="M245,262 L245,400" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="350" y1="446" x2="388" y2="446" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="600" y1="446" x2="638" y2="446" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="745" y1="492" x2="745" y2="558" stroke="#52514e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M850,620 L870,620 L870,470 L888,470" fill="none" stroke="#52514e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<line x1="850" y1="430" x2="888" y2="430" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<text x="870" y="390" font-size="13" fill="#8a8984" font-weight="400" text-anchor="middle">걸린 것 없음</text>
+<path d="M1100,400 L1100,330 L1185,330 L1185,264" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<line x1="1290" y1="216" x2="1328" y2="216" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
+<text x="1110" y="352" font-size="13" fill="#8a8984" font-weight="400" text-anchor="start">내역서 링크</text>
+<text x="140" y="728" font-size="15" fill="#52514e" font-weight="400" text-anchor="start">교수는 Trace 웹에서 [모아 보기 만들기]도 할 수 있다 (선택 · 비밀 링크, 로그인 없음). 판정 · 점수는 어디에도 없다.</text>
+</svg>
