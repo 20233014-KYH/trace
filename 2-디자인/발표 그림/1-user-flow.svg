@@ -12,11 +12,11 @@
 <text x="156" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI 허용 · Trace 내역서 첨부</text>
 <text x="156" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">복붙 감점 (Trace 밖 · LMS)</text>
 <rect x="1080" y="170" width="210" height="92" rx="10" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
-<text x="1096" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑦  한 줄 요약 보기</text>
+<text x="1096" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑦  내역서 화면</text>
 <text x="1096" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">그대로 3 · 고침 11 · 다듬음 2</text>
-<text x="1096" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">모아 보기: 그대로 많은 순</text>
+<text x="1096" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">내역서 맨 위 한 줄</text>
 <rect x="1330" y="170" width="210" height="92" rx="10" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
-<text x="1346" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑧  궁금한 학생만</text>
+<text x="1346" y="202" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">⑧  내역서 상세</text>
 <text x="1346" y="228" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">AI 답과 문장 나란히</text>
 <text x="1346" y="248" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">물어볼 곳 → 면담</text>
 <rect x="140" y="400" width="210" height="92" rx="10" fill="#e8f1fc" stroke="#2a78d6" stroke-width="2"/>
@@ -50,5 +50,5 @@
 <path d="M1100,400 L1100,330 L1185,330 L1185,264" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
 <line x1="1290" y1="216" x2="1328" y2="216" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
 <text x="1110" y="352" font-size="13" fill="#8a8984" font-weight="400" text-anchor="start">내역서 링크</text>
-<text x="140" y="728" font-size="15" fill="#52514e" font-weight="400" text-anchor="start">교수는 Trace 웹에서 [모아 보기 만들기]도 할 수 있다 (선택 · 비밀 링크). 다듬을 곳 목록은 학생만 보고, 교수에겐 &quot;다듬음 N&quot;만 간다. 표절률 · 점수 없음.</text>
+<text x="140" y="728" font-size="15" fill="#52514e" font-weight="400" text-anchor="start">교수는 학생이 준 내역서 링크 · QR만 연다 (로그인 없음). 다듬을 곳 목록은 학생만 보고, 교수에겐 &quot;다듬음 N&quot;만 간다. 표절률 · 점수 없음.</text>
 </svg>

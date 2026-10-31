@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1000" width="1640" height="1000" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif">
 <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52514e"/></marker></defs>
 <rect width="1640" height="1000" fill="#ffffff"/>
-<text x="40" y="52" font-size="30" fill="#0b0b0b" font-weight="700" text-anchor="start">ERD — 지금 테이블에 3가지만 더한다</text>
-<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">회색 = 지금 있음 · 파란 칸 = 새로 더함 · 1 ── N = 하나가 여러 개를 가짐</text>
+<text x="40" y="52" font-size="30" fill="#0b0b0b" font-weight="700" text-anchor="start">ERD — 지금 테이블에 2가지만 더한다</text>
+<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">회색 = 지금 있음 · 파란 칸 = 새로 더함 · 점선 = 다음 단계 · 1 ── N = 하나가 여러 개를 가짐</text>
 <rect x="40" y="130" width="270" height="156" rx="8" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5"/>
 <rect x="40" y="130" width="270" height="40" rx="8" fill="#f4f3ef"/>
 <rect x="40" y="162" width="270" height="8" fill="#f4f3ef"/>
@@ -17,15 +17,13 @@
 <text x="54" y="357" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">tokens · devices · login_tickets</text>
 <text x="54" y="390" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">user_id</text>
 <text x="54" y="416" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">로그인 토큰 · 기기 · 로그인 표</text>
-<rect x="370" y="130" width="270" height="156" rx="8" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
-<rect x="370" y="130" width="270" height="40" rx="8" fill="#e8f1fc"/>
-<rect x="370" y="162" width="270" height="8" fill="#e8f1fc"/>
-<text x="384" y="157" font-size="18" fill="#2a78d6" font-weight="700" text-anchor="start">assignments 모아 보기</text>
-<text x="626" y="157" font-size="14" fill="#2a78d6" font-weight="700" text-anchor="end">새로</text>
-<text x="384" y="190" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">id · title · memo</text>
-<text x="384" y="216" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">submit_token 학생용</text>
-<text x="384" y="242" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">view_token_hash 교수용</text>
-<text x="384" y="268" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">org (비워 둠) · created_at</text>
+<rect x="370" y="130" width="270" height="156" rx="8" fill="#ffffff" stroke="#8a8984" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="384" y="157" font-size="18" fill="#8a8984" font-weight="700" text-anchor="start">assignments 모아 보기</text>
+<text x="626" y="157" font-size="14" fill="#8a8984" font-weight="700" text-anchor="end">다음 단계</text>
+<text x="384" y="190" font-size="14" fill="#8a8984" font-weight="400" text-anchor="start">id · title · memo</text>
+<text x="384" y="216" font-size="14" fill="#8a8984" font-weight="400" text-anchor="start">submit_token 학생용</text>
+<text x="384" y="242" font-size="14" fill="#8a8984" font-weight="400" text-anchor="start">view_token_hash 교수용</text>
+<text x="384" y="268" font-size="14" fill="#8a8984" font-weight="400" text-anchor="start">org (비워 둠) · created_at</text>
 <rect x="370" y="400" width="270" height="156" rx="8" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5"/>
 <rect x="370" y="400" width="270" height="40" rx="8" fill="#f4f3ef"/>
 <rect x="370" y="432" width="270" height="8" fill="#f4f3ef"/>
@@ -33,8 +31,7 @@
 <text x="384" y="460" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">id · user_id</text>
 <text x="384" y="486" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">title · ai_scope</text>
 <text x="384" y="512" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">deleted_at</text>
-<rect x="376" y="521" width="258" height="24" rx="4" fill="#e8f1fc"/>
-<text x="384" y="538" font-size="14" fill="#2a78d6" font-weight="700" text-anchor="start">assignment_id  (새로)</text>
+<text x="384" y="538" font-size="14" fill="#8a8984" font-weight="400" text-anchor="start">assignment_id  (다음 단계)</text>
 <rect x="700" y="130" width="270" height="156" rx="8" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5"/>
 <rect x="700" y="130" width="270" height="40" rx="8" fill="#f4f3ef"/>
 <rect x="700" y="162" width="270" height="8" fill="#f4f3ef"/>
@@ -107,9 +104,9 @@
 <path d="M310,228.0 L340.0,228.0 L340.0,458.0 L370,458.0" fill="none" stroke="#52514e" stroke-width="1.8"/>
 <text x="316" y="222.0" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">1</text>
 <text x="354" y="452.0" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">N</text>
-<path d="M505.0,286 L505.0,343.0 L505.0,343.0 L505.0,400" fill="none" stroke="#2a78d6" stroke-width="1.8"/>
-<text x="511.0" y="304" font-size="14" fill="#2a78d6" font-weight="700" text-anchor="start">1</text>
-<text x="511.0" y="394" font-size="14" fill="#2a78d6" font-weight="700" text-anchor="start">N</text>
+<path d="M505.0,286 L505.0,343.0 L505.0,343.0 L505.0,400" fill="none" stroke="#8a8984" stroke-width="1.8"/>
+<text x="511.0" y="304" font-size="14" fill="#8a8984" font-weight="700" text-anchor="start">1</text>
+<text x="511.0" y="394" font-size="14" fill="#8a8984" font-weight="700" text-anchor="start">N</text>
 <path d="M640,448.0 L670.0,448.0 L670.0,208.0 L700,208.0" fill="none" stroke="#52514e" stroke-width="1.8"/>
 <text x="646" y="442.0" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">1</text>
 <text x="684" y="202.0" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">N</text>
@@ -136,8 +133,8 @@
 <path d="M835.0,652 L835.0,730 L1610,730 L1610,652.0 L1580,652.0" fill="none" stroke="#52514e" stroke-width="1.8"/>
 <text x="1584" y="646.0" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">N</text>
 <text x="841.0" y="672" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">1</text>
-<text x="40" y="860" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">더하는 것 3가지</text>
-<text x="40" y="886" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· assignments: 모아 보기. 교수 계정 대신 비밀 토큰이 열쇠</text>
-<text x="40" y="912" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· works.assignment_id · statements.retain_until (보관 기간)</text>
-<text x="40" y="938" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: 교수에게 가는 &quot;다듬음 N&quot;을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
+<text x="40" y="860" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">더하는 것 2가지</text>
+<text x="40" y="886" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· statements.retain_until: 보관 기간</text>
+<text x="40" y="912" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: 교수에게 가는 &quot;다듬음 N&quot;을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
+<text x="40" y="938" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· (다음 단계) assignments · works.assignment_id: 30명 모아 보기</text>
 </svg>

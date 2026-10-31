@@ -62,8 +62,8 @@ def user_flow():
 
     # 교수
     b += step(140, 170, "①", "과제 공지", ["AI 허용 · Trace 내역서 첨부", "복붙 감점 (Trace 밖 · LMS)"], ORANGE, ORANGE_BG)
-    b += step(1080, 170, "⑦", "한 줄 요약 보기", ["그대로 3 · 고침 11 · 다듬음 2", "모아 보기: 그대로 많은 순"], ORANGE, ORANGE_BG)
-    b += step(1330, 170, "⑧", "궁금한 학생만", ["AI 답과 문장 나란히", "물어볼 곳 → 면담"], ORANGE, ORANGE_BG)
+    b += step(1080, 170, "⑦", "내역서 화면", ["그대로 3 · 고침 11 · 다듬음 2", "내역서 맨 위 한 줄"], ORANGE, ORANGE_BG)
+    b += step(1330, 170, "⑧", "내역서 상세", ["AI 답과 문장 나란히", "물어볼 곳 → 면담"], ORANGE, ORANGE_BG)
     # 학생
     y1 = 400
     b += step(140, y1, "②", "기록 시작", ["교수 링크 · 동의 화면", "무엇이 기록되고 안 되는지"], BLUE, BLUE_BG)
@@ -86,7 +86,7 @@ def user_flow():
     b += arrow(1290, 216, 1328, 216)                  # ⑦→⑧
     b += text(1110, 352, "내역서 링크", 13, MUTED)
     # 비고
-    b += text(140, 728, "교수는 Trace 웹에서 [모아 보기 만들기]도 할 수 있다 (선택 · 비밀 링크). 다듬을 곳 목록은 학생만 보고, 교수에겐 \"다듬음 N\"만 간다. 표절률 · 점수 없음.", 15, INK2)
+    b += text(140, 728, "교수는 학생이 준 내역서 링크 · QR만 연다 (로그인 없음). 다듬을 곳 목록은 학생만 보고, 교수에겐 \"다듬음 N\"만 간다. 표절률 · 점수 없음.", 15, INK2)
     return svg(W, H, b)
 
 
@@ -125,7 +125,7 @@ def architecture():
     b += box(820, 300, 360, 250, SURF, INK2, sw=2, r=16)
     b += text(844, 340, "서버", 24, INK, 700)
     b += text(910, 340, "Flask · Render (싱가포르)", 16, INK2)
-    b += lines(844, 378, ["· 로그인 (구글 · 카카오)", "· 해시 다시 계산 → 조작 확인", "· 내역서 PDF (reportlab)", "· 교수 확인 링크 (읽기 전용)", "· 모아 보기 (만들 것)"], 17, INK, 30)
+    b += lines(844, 378, ["· 로그인 (구글 · 카카오)", "· 해시 다시 계산 → 조작 확인", "· 내역서 PDF (reportlab)", "· 교수 확인 링크 (읽기 전용)"], 17, INK, 30)
 
     # DB
     b += box(820, 640, 360, 130, SURF, INK2, sw=2, r=16)
@@ -160,14 +160,22 @@ def architecture():
 # ───────────────────────── 3. ERD ─────────────────────────
 def erd():
     W, H = 1640, 1000
-    b = text(40, 52, "ERD — 지금 테이블에 3가지만 더한다", 30, weight=700)
-    b += text(40, 84, "회색 = 지금 있음 · 파란 칸 = 새로 더함 · 1 ── N = 하나가 여러 개를 가짐", 17, INK2)
+    b = text(40, 52, "ERD — 지금 테이블에 2가지만 더한다", 30, weight=700)
+    b += text(40, 84, "회색 = 지금 있음 · 파란 칸 = 새로 더함 · 점선 = 다음 단계 · 1 ── N = 하나가 여러 개를 가짐", 17, INK2)
     HD, RH, BW = 40, 26, 270
     pos = {}
 
-    def table(key, x, y, name, rows, new=False, new_rows=()):
-        h = HD + RH * (len(rows) + len(new_rows)) + 12
+    def table(key, x, y, name, rows, new=False, new_rows=(), nxt=False, next_rows=()):
+        h = HD + RH * (len(rows) + len(new_rows) + len(next_rows)) + 12
         c = BLUE if new else INK2
+        if nxt:
+            s = box(x, y, BW, h, SURF, MUTED, True, sw=1.5, r=8)
+            s += text(x + 14, y + 27, name, 18, MUTED, 700)
+            s += text(x + BW - 14, y + 27, "다음 단계", 14, MUTED, 700, "end")
+            for i, r in enumerate(rows):
+                s += text(x + 14, y + HD + 20 + i * RH, r, 14, MUTED)
+            pos[key] = (x, y, BW, h)
+            return s
         s = box(x, y, BW, h, SURF, BLUE if new else LINE, sw=2 if new else 1.5, r=8)
         s += f'<rect x="{x}" y="{y}" width="{BW}" height="{HD}" rx="8" fill="{BLUE_BG if new else PANEL}"/>\n'
         s += f'<rect x="{x}" y="{y+HD-8}" width="{BW}" height="8" fill="{BLUE_BG if new else PANEL}"/>\n'
@@ -180,13 +188,16 @@ def erd():
             yy = y + HD + 20 + (len(rows) + j) * RH
             s += f'<rect x="{x+6}" y="{yy-17}" width="{BW-12}" height="{RH-2}" rx="4" fill="{BLUE_BG}"/>\n'
             s += text(x + 14, yy, r + "  (새로)", 14, BLUE, 700)
+        for j, r in enumerate(next_rows):
+            yy = y + HD + 20 + (len(rows) + len(new_rows) + j) * RH
+            s += text(x + 14, yy, r + "  (다음 단계)", 14, MUTED)
         pos[key] = (x, y, BW, h)
         return s
 
     b += table("users", 40, 130, "users 학생", ["id", "email · name", "google_sub · kakao_sub", "deleted_at"])
     b += table("auth", 40, 330, "tokens · devices · login_tickets", ["user_id", "로그인 토큰 · 기기 · 로그인 표"])
-    b += table("assign", 370, 130, "assignments 모아 보기", ["id · title · memo", "submit_token 학생용", "view_token_hash 교수용", "org (비워 둠) · created_at"], new=True)
-    b += table("works", 370, 400, "works 과제", ["id · user_id", "title · ai_scope", "deleted_at"], new_rows=["assignment_id"])
+    b += table("assign", 370, 130, "assignments 모아 보기", ["id · title · memo", "submit_token 학생용", "view_token_hash 교수용", "org (비워 둠) · created_at"], nxt=True)
+    b += table("works", 370, 400, "works 과제", ["id · user_id", "title · ai_scope", "deleted_at"], next_rows=["assignment_id"])
     b += table("sessions", 700, 130, "sessions 기록 한 번", ["id · work_id", "root · head (체인 끝)", "chain_len · integrity_ok", "sealed_at · verified"])
     b += table("events", 1030, 130, "events 기록 이벤트", ["session_id · id · seq", "type · ts", "payload (원문 대신 해시)", "server_h"])
     b += table("bc", 1310, 130, "batches · contexts", ["session_id", "받은 묶음 · 작업 맥락"])
@@ -214,7 +225,7 @@ def erd():
 
     b += rel("users", "auth", "b", "t")
     b += rel("users", "works", "r", "l", 20, -20)
-    b += rel("assign", "works", "b", "t", 0, 0, BLUE)
+    b += rel("assign", "works", "b", "t", 0, 0, MUTED)
     b += rel("works", "sessions", "r", "l", -30, 0)
     b += rel("sessions", "events", "r", "l")
     b += rel("works", "st", "r", "l", 20, 0)
@@ -232,7 +243,7 @@ def erd():
         b += f'<path d="M{tx+tw/2},{ty+th} L{tx+tw/2},730 L{1610},730 L{1610},{ky+kh/2} L{kx+kw},{ky+kh/2}" fill="none" stroke="{INK2}" stroke-width="1.8"/>\n'
         b += text(kx + kw + 4, ky + kh / 2 - 6, "N", 14, INK2, 700)
     b += text(tx + tw / 2 + 6, ty + th + 20, "1", 14, INK2, 700)
-    b += lines(40, 860, ["더하는 것 3가지", "· assignments: 모아 보기. 교수 계정 대신 비밀 토큰이 열쇠", "· works.assignment_id · statements.retain_until (보관 기간)", "· checks: 교수에게 가는 \"다듬음 N\"을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)"], 16, INK2, 26)
+    b += lines(40, 860, ["더하는 것 2가지", "· statements.retain_until: 보관 기간", "· checks: 교수에게 가는 \"다듬음 N\"을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)", "· (다음 단계) assignments · works.assignment_id: 30명 모아 보기"], 16, INK2, 26)
     return svg(W, H, b)
 
 

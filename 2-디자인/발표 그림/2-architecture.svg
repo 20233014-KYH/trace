@@ -46,7 +46,6 @@
 <text x="844" y="408" font-size="17" fill="#0b0b0b" font-weight="400" text-anchor="start">· 해시 다시 계산 → 조작 확인</text>
 <text x="844" y="438" font-size="17" fill="#0b0b0b" font-weight="400" text-anchor="start">· 내역서 PDF (reportlab)</text>
 <text x="844" y="468" font-size="17" fill="#0b0b0b" font-weight="400" text-anchor="start">· 교수 확인 링크 (읽기 전용)</text>
-<text x="844" y="498" font-size="17" fill="#0b0b0b" font-weight="400" text-anchor="start">· 모아 보기 (만들 것)</text>
 <rect x="820" y="640" width="360" height="130" rx="16" fill="#ffffff" stroke="#52514e" stroke-width="2"/>
 <text x="844" y="680" font-size="24" fill="#0b0b0b" font-weight="700" text-anchor="start">DB</text>
 <text x="892" y="680" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">Supabase (PostgreSQL)</text>
