@@ -96,11 +96,11 @@
 <rect x="1030" y="770" width="270" height="130" rx="8" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
 <rect x="1030" y="770" width="270" height="40" rx="8" fill="#e8f1fc"/>
 <rect x="1030" y="802" width="270" height="8" fill="#e8f1fc"/>
-<text x="1044" y="797" font-size="18" fill="#2a78d6" font-weight="700" text-anchor="start">checks 점검 · 고쳐 쓰기</text>
+<text x="1044" y="797" font-size="18" fill="#2a78d6" font-weight="700" text-anchor="start">checks 제출 전 다듬기</text>
 <text x="1286" y="797" font-size="14" fill="#2a78d6" font-weight="700" text-anchor="end">새로</text>
 <text x="1044" y="830" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">statement_id · 문장 위치</text>
-<text x="1044" y="856" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">rule 기준 · value 잰 값</text>
-<text x="1044" y="882" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">action 인용/다시 씀/그대로</text>
+<text x="1044" y="856" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">kind AI 답 그대로 / 출처 없는 웹 글</text>
+<text x="1044" y="882" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">action 직접 다듬음/인용/그대로</text>
 <path d="M175.0,286 L175.0,308.0 L175.0,308.0 L175.0,330" fill="none" stroke="#52514e" stroke-width="1.8"/>
 <text x="181.0" y="304" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">1</text>
 <text x="181.0" y="324" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">N</text>
@@ -139,5 +139,5 @@
 <text x="40" y="860" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">더하는 것 3가지</text>
 <text x="40" y="886" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· assignments: 모아 보기. 교수 계정 대신 비밀 토큰이 열쇠</text>
 <text x="40" y="912" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· works.assignment_id · statements.retain_until (보관 기간)</text>
-<text x="40" y="938" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: &quot;점검 후 고침 N곳&quot;을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
+<text x="40" y="938" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: 교수에게 가는 &quot;다듬음 N&quot;을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
 </svg>

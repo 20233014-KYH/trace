@@ -2,7 +2,7 @@
 <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52514e"/></marker></defs>
 <rect width="1600" height="860" fill="#ffffff"/>
 <text x="40" y="52" font-size="30" fill="#0b0b0b" font-weight="700" text-anchor="start">시스템 구조 · 데이터 흐름 — 원문은 학생 PC에 남는다</text>
-<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">실선 = 지금 돌아감 (v0.1.13) · 점선 = 새로 만들 것 (v2.1)</text>
+<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">실선 = 지금 돌아감 (v0.1.13) · 점선 = 새로 더할 것 (v2.2)</text>
 <rect x="40" y="120" width="640" height="690" rx="16" fill="#f4f3ef" stroke="#2a78d6" stroke-width="2"/>
 <text x="64" y="160" font-size="24" fill="#2a78d6" font-weight="700" text-anchor="start">학생 PC</text>
 <text x="170" y="160" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">Python · 윈도우 / 맥</text>
@@ -26,12 +26,12 @@
 <text x="392" y="521" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">문장 ↔ AI 답 (core/match.py)</text>
 <text x="392" y="541" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">그대로 · 고침 · 기록 없음</text>
 <rect x="376" y="600" width="280" height="112" rx="10" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5" stroke-dasharray="6 5"/>
-<text x="392" y="630" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">점검 엔진</text>
-<text x="392" y="656" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">연속 일치 · 바꿔 쓰기 유형</text>
-<text x="392" y="676" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">인용 표시 · kiwi (PC 안)</text>
+<text x="392" y="630" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">제출 전 다듬기</text>
+<text x="392" y="656" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">다듬을 곳 · 웹 글 출처 표시 확인</text>
+<text x="392" y="676" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">다듬음 N 세기</text>
 <rect x="64" y="600" width="280" height="112" rx="10" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5"/>
 <text x="80" y="630" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">앱 화면 (pywebview)</text>
-<text x="80" y="656" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">기록 · 점검 · 고쳐 쓰기</text>
+<text x="80" y="656" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">기록 · 출처 보기 · 다듬기</text>
 <text x="80" y="676" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">확인 · 가리기 · 제출</text>
 <line x1="204" y1="297" x2="204" y2="333" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
 <line x1="516" y1="297" x2="516" y2="333" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
@@ -51,7 +51,7 @@
 <text x="844" y="680" font-size="24" fill="#0b0b0b" font-weight="700" text-anchor="start">DB</text>
 <text x="892" y="680" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">Supabase (PostgreSQL)</text>
 <text x="844" y="714" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">기록 이벤트(해시) · 내역서 · 링크</text>
-<text x="844" y="738" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">점검 처리 결과 (원문 없음)</text>
+<text x="844" y="738" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">다듬기 처리 결과 (원문 없음)</text>
 <line x1="1000" y1="550" x2="1000" y2="638" stroke="#52514e" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)"/>
 <rect x="1320" y="300" width="240" height="140" rx="16" fill="#fdeee7" stroke="#eb6834" stroke-width="2"/>
 <text x="1344" y="340" font-size="24" fill="#eb6834" font-weight="700" text-anchor="start">교수</text>
@@ -63,11 +63,6 @@
 <text x="1344" y="158" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">구글 · 카카오</text>
 <text x="1344" y="186" font-size="15" fill="#52514e" font-weight="400" text-anchor="start">로그인만</text>
 <path d="M1180,330 L1250,330 L1250,175 L1318,175" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
-<rect x="820" y="120" width="360" height="110" rx="16" fill="#ffffff" stroke="#d9d8d3" stroke-width="1.5" stroke-dasharray="6 5"/>
-<text x="844" y="158" font-size="18" fill="#0b0b0b" font-weight="700" text-anchor="start">Crossref API</text>
-<text x="844" y="186" font-size="15" fill="#52514e" font-weight="400" text-anchor="start">참고문헌이 실제로 있는지</text>
-<line x1="680" y1="175" x2="818" y2="175" stroke="#52514e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
-<text x="694" y="163" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">참고문헌 목록만</text>
 <line x1="680" y1="380" x2="818" y2="380" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
 <text x="694" y="368" font-size="14" fill="#52514e" font-weight="400" text-anchor="start">기록 중: 해시만</text>
 <line x1="680" y1="470" x2="818" y2="470" stroke="#52514e" stroke-width="2" marker-end="url(#arr)"/>
