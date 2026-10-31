@@ -32,7 +32,8 @@ window.TraceWork = (function () {
     STEPS.forEach(([k, name], j) => {
       if (j) box.append(el("em"));
       const done = made || (i >= 0 && j < i);
-      const s = el("span", done ? "done" : j === i ? "cur" : ""); s.append(el("i"), document.createTextNode(name)); box.append(s);
+      // 단계에 번호 (10/31 · 캔버스 홈 v2.2 ②) — 처음 쓰는 학생이 "지금 몇 번째인지" 바로 알게
+      const s = el("span", done ? "done" : j === i ? "cur" : ""); s.append(el("i", null, String(j + 1)), document.createTextNode(name)); box.append(s);
     });
   }
 
@@ -48,11 +49,12 @@ window.TraceWork = (function () {
 
   // o = {id?, title, href?, settings?, due?, last?, badge:[글, 색], stage, made, facts, wait, warn?, button:[글, 주소, 진하게] | null, onButton?}
   function card(c, o) {
-    c.textContent = ""; c.className = "card wk" + (o.old ? " old" : "");
+    c.textContent = ""; c.className = "card wk" + (o.next ? " home" : "") + (o.old ? " old" : "");
     const h = el("div", "h");
     const tt = el(o.href ? "a" : "div", "tt", o.title); if (o.href) tt.href = o.href;
-    const b = el("span", "badge " + (o.badge ? o.badge[1] : "outline"), o.badge ? o.badge[0] : "…");
-    h.append(tt, b);
+    // badge: false = 배지 없음 (홈 — 단계 줄 · 다음 할 일과 같은 말이면 뺌 · 10/31)
+    const b = o.badge === false ? null : el("span", "badge " + (o.badge ? o.badge[1] : "outline"), o.badge ? o.badge[0] : "…");
+    h.append(tt); if (b) h.append(b);
     if (o.settings) {                                               // ⋯ = 과제 설정 · 과제 삭제 (캔버스 Delete · 10/15)
       const m = el("button", "iconbtn"); m.type = "button"; m.title = "더 보기"; m.setAttribute("aria-label", "과제 메뉴"); m.append(T.icon(ICON.more));
       m.onclick = e => { e.preventDefault(); workMenu(m, { id: o.id, settings: o.settings, recording: o.recording, onDeleted: o.onDeleted }); };
@@ -63,11 +65,17 @@ window.TraceWork = (function () {
     meta.append(T.icon(ICON.cal), el("span", null, dd ? dd.text : o.last ? `${day(o.last)} 마지막 기록` : "마감 없음"));
     const st = el("div", "st"); steps(st, o.stage, o.made);
     const fb = el("div", "facts"); facts(fb, o.facts, o.wait);
-    c.append(h, meta, st, fb);
+    c.append(h, meta, st);                                           // 마감 줄은 늘 둠 — 빼면 카드마다 단계 줄 높이가 달라짐 (10/31)
+    if (!o.next) c.append(fb);                                       // 홈은 숫자 대신 "다음 할 일" 한 줄 (10/31)
     if (o.warn) { const w = el("div", "warn"); w.append(T.icon(ICON.bell), el("span", null, o.warn)); c.append(w); }
-    const ft = el("div", "ft");
+    const ft = el("div", o.next ? "nx" + (o.next.done ? " done" : "") : "ft");
+    if (o.next) {
+      const n = el("div", "todo");
+      n.append(el("span", "k", o.next.done ? "다 했어요" : "다음 할 일"), el("b", null, o.next.text));
+      ft.append(n);
+    }
     if (o.button) {
-      const a = el("a", "btn btn-sm " + (o.button[2] ? "btn-default" : "btn-outline"), o.button[0]); a.href = o.button[1];
+      const a = el("a", "btn " + (o.next ? "" : "btn-sm ") + (o.button[2] ? "btn-default" : "btn-outline"), o.button[0]); a.href = o.button[1];
       if (o.onButton) a.onclick = e => { e.preventDefault(); o.onButton(a); };
       ft.append(a);
     }
@@ -169,6 +177,33 @@ window.TraceWork = (function () {
                () => T.call("POST", "/local/work/delete", null, { work_id: wid }), onDone || (() => { location.href = "/home"; }));
   }
 
+  // ── 과제 여러 개 한 번에 삭제 (홈 › 선택 · 10/31) — 확인 한 번, 하나씩 차례로 지움. 몇 개 실패해도 지운 건 지운 대로 ──
+  async function deleteWorks(works, onDone) {                         // works = [{id, title}]
+    const ids = works.map(w => w.id);
+    let 정보;
+    try { 정보 = await Promise.all(ids.map(w => T.call("GET", "/local/work/delete-info?work_id=" + encodeURIComponent(w)))); }
+    catch (e) { alert(e.message); return; }
+    if (정보.some(i => i.recording)) return busy("기록 창에서 작업을 마친 뒤 지워 주세요.");
+    const 목록 = el("div", "lst");
+    정보.forEach((i, n) => {
+      목록.append(el("div", "k", works[n].title || i.title), el("div", "v" + (i.sessions ? "" : " keep"), i.sessions ? `기록 ${i.sessions}번${i.report_made ? " · 내역서" : ""}` : "기록 없음"));
+    });
+    let 메모 = null;
+    if (정보.some(i => i.report_made)) {
+      메모 = el("div", "note"); 메모.append(T.icon(ICON.warn), el("span", null, "내역서가 있는 과제는 교수가 QR 을 열면 \"학생이 지운 기록입니다\" 라고만 보여요. 내려받아 둔 PDF 파일은 직접 지워 주세요."));
+    }
+    const 못함 = [];
+    confirmBox(`과제 ${ids.length}개를 지울까요?`, ["과제와 기록, 내역서(PDF · 교수 링크)까지 모두 지워져요. 되돌릴 수 없어요.", 목록, 메모], `${ids.length}개 삭제`,
+      async () => {
+        못함.length = 0;
+        for (const [n, w] of ids.entries()) {
+          try { await T.call("POST", "/local/work/delete", null, { work_id: w }); }
+          catch (e) { 못함.push(`"${works[n].title || 정보[n].title}" — ${e.message}`); }
+        }
+        if (못함.length === ids.length) throw new Error(못함[0]);
+      }, () => onDone(못함));
+  }
+
   // ── 기록 하나 — ⋯ 다른 과제로 옮기기 · 이 기록만 지우기 (내역서는 그대로 · 10/15) ──
   function sessionMenu(anchor, o) {                                 // o = {wid, sid, when, recording, onDone}
     document.querySelectorAll(".menu").forEach(x => x.remove());
@@ -208,5 +243,5 @@ window.TraceWork = (function () {
     sel.focus();
   }
 
-  return { card, due, day, steps, facts, clock, dur, hm, startRecording, watchRecording, workMenu, deleteWork, sessionMenu, dialog, ICON };
+  return { card, due, day, steps, facts, clock, dur, hm, startRecording, watchRecording, workMenu, deleteWork, deleteWorks, sessionMenu, dialog, ICON };
 })();

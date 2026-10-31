@@ -144,6 +144,26 @@ def main():
         WK.설정["bridge"] = lambda: {"work_id": "W-다른것", "session_id": "x"}
         r = P("/local/record/start", {"work_id": 새})
         검사("이미 다른 기록이 켜져 있으면 기록 시작 안 함", r.status_code == 409 and "이미" in r.json["message"])
+        # ── 제출 전 다듬기 [다듬기] (10/31) — 기록 이어서 켜기 + 결과물 Word 열기 ──
+        r = P("/local/refine", {"work_id": 새})
+        검사("다듬기: 다른 과제를 기록 중이면 막음", r.status_code == 409 and "다른 과제" in r.json["message"])
+        켠, 연 = [], []
+        WK.설정.update(start=lambda w: 켠.append(w) or {"ok": True}, open_file=lambda p: 연.append(p) or True)
+        WK.설정["bridge"] = lambda: None
+        ST.출처._파일["W-match_view"] = ("고른 파일.docx", b"")
+        r = P("/local/refine", {"work_id": "W-match_view"})
+        검사("다듬기: 기록이 꺼져 있으면 이 과제 기록을 켬 · 자리 모르는 파일은 직접 열라고",
+             r.status_code == 200 and 켠 == ["W-match_view"] and r.json["started"] and not r.json["opened"] and not 연 and "열어 고쳐" in r.json["message"])
+        WK.설정["bridge"] = lambda: {"work_id": "W-match_view", "session_id": "x"}
+        자리 = os.path.join(data, "보고서.docx"); open(자리, "wb").close()
+        ST.출처._파일["W-match_view"] = ("보고서.docx", b"")
+        ST.safefile.write_json(os.path.join(data, "docs-found.json"), {"W-match_view": 자리})
+        r = P("/local/refine", {"work_id": "W-match_view"})
+        검사("다듬기: 이미 이 과제 기록 중이면 그대로 두고 · 아는 자리의 파일을 Word 로 엶",
+             r.status_code == 200 and 켠 == ["W-match_view"] and not r.json["started"] and r.json["opened"] and 연 == [자리])
+        ST.출처._파일.pop("W-match_view", None); os.remove(os.path.join(data, "docs-found.json")); os.remove(자리)
+        for k in ("start", "open_file"):
+            WK.설정.pop(k)
         WK.설정["bridge"] = lambda: None
 
         # ── 과제 삭제 · 기록 하나 지우기 · 옮기기 (캔버스 Delete · 10/15) ──
