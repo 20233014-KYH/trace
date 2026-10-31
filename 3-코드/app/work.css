@@ -28,10 +28,20 @@
 .wk .meta.soon{color:#c62f34;font-weight:600}
 .st{display:flex;align-items:center;gap:6px}
 .st span{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--faint);white-space:nowrap}
-.st i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block;flex:none}
-.st .done{color:#52525b}.st .done i{background:var(--ink)}
-.st .cur{color:var(--ink);font-weight:600}.st .cur i{background:#fff;box-shadow:inset 0 0 0 2px var(--ink)}
-.st em{width:12px;height:1px;background:#d4d4d8;flex:none}
+.st i{width:16px;height:16px;border-radius:50%;background:var(--soft);color:var(--faint);display:flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-size:10px;font-weight:700}
+.st .done{color:#52525b}.st .done i{background:var(--ink);color:#fff}
+.st .cur{color:var(--ink);font-weight:600}.st .cur i{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.st em{width:10px;height:1px;background:#d4d4d8;flex:none}
+/* 홈 카드: 다음 할 일 한 줄 + 버튼 하나 (10/31 · 캔버스 홈 v2.2 ②) */
+/* 10/31 정리: 회색 칸 하나 안에 글 + 버튼 (따로 놓으면 높이가 안 맞아 어수선) · 여백 넉넉히 */
+.wk.home{padding:20px 22px;gap:14px}
+.wk.home .st{padding-top:2px}
+.wk .nx{display:flex;align-items:center;gap:16px;margin-top:auto;padding:14px 14px 14px 18px;border-radius:12px;background:var(--soft)}
+.wk .nx.done{background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.wk .todo{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left}
+.wk .todo .k{font-size:12px;font-weight:500;color:var(--muted)}
+.wk .todo b{font-size:14px;font-weight:600;color:var(--ink);line-height:1.5;word-break:keep-all}
+.wk .nx.done .todo b{font-weight:500;color:#52525b}
 .facts{display:flex;gap:14px;font-size:12.5px;color:#52525b;min-height:20px}
 .facts b{color:var(--ink);font-variant-numeric:tabular-nums;margin-right:3px}
 .facts .wait{color:var(--faint)}

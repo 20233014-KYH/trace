@@ -319,6 +319,48 @@ def _기록_시작(wid):
     return {"ok": True, "message": "기록 창이 켜졌어요. 화면 오른쪽 아래를 보세요"}
 
 
+# ─────────────── 제출 전 다듬기 — 출처 보기의 [다듬기] · [인용 달기] (10/31 · 캔버스 S-2 · 기획 v2.2) ───────────────
+@bp.post("/local/refine")
+def refine():
+    """{work_id} → 이 과제 기록을 이어서 켜고(이미 이 과제를 기록 중이면 그대로) 출처 보기에서 연 결과물 Word 파일을 연다.
+    다듬는 과정도 기록에 남게 — 기록 없이 고친 글은 "기록 밖에서 바뀐 글" 로 보인다. 다른 과제를 기록 중이면 409.
+    파일 자리를 모르면(파일 고르는 창으로 고른 파일 · 화면엔 경로가 안 옴) 기록만 켜고 "파일을 열어 고쳐 주세요" """
+    wid = (request.get_json(force=True, silent=True) or {}).get("work_id") or ""
+    if not _WID.match(wid):
+        return jsonify(error="bad_request", message="과제가 올바르지 않습니다"), 400
+    지금 = 설정["bridge"]()
+    if 지금 and 지금.get("work_id") != wid:
+        return jsonify(error="recording", message="다른 과제를 기록하는 중이에요. 기록 창에서 작업을 마친 뒤 다듬어 주세요"), 409
+    켬 = False
+    if not 지금:
+        r = 설정.get("start", _기록_시작)(wid)
+        if not r.get("ok"):
+            return jsonify(error="start", message=r["message"]), 409
+        켬 = True
+    p = _결과물_자리(wid)
+    열림 = bool(p) and 설정.get("open_file", _파일_열기)(p)
+    말 = ("기록을 켜고 Word 를 열었어요" if 켬 else "Word 를 열었어요") if 열림 else \
+         ("기록을 켰어요. 결과물 파일을 열어 고쳐 주세요" if 켬 else "결과물 파일을 열어 고쳐 주세요")
+    return jsonify(ok=True, started=켬, opened=열림, message=말 + " — 고친 뒤 저장하고 여기로 돌아오면 다시 읽어요")
+
+
+def _결과물_자리(wid):
+    """출처 보기에서 지금 연 결과물 파일의 PC 자리 — 기록된 자리에서 열었거나 내용으로 찾은 파일만 앎 (없으면 None)"""
+    이름 = (S._파일.get(wid) or (S._연_이름.get(wid),))[0]          # 지금 화면에 연 파일 이름
+    찾은 = S._찾은_목록().get(wid)
+    if 찾은 and os.path.basename(찾은) == 이름 and os.path.isfile(찾은):
+        return 찾은
+    return next((d["path"] for d in S._문서_목록(wid) if d["name"] == 이름 and d["exists"]), None)
+
+
+def _파일_열기(p):
+    try:
+        os.startfile(p)                                          # noqa: S606  윈도에서 그 파일의 기본 프로그램(Word)으로
+        return True
+    except (AttributeError, OSError):                            # 윈도가 아니거나 못 엶 → 기록만 켜고 직접 열라고
+        return False
+
+
 # ─────────────── 과제 상세 ───────────────
 @bp.get("/local/work")
 def detail():

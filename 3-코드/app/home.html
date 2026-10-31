@@ -30,11 +30,40 @@
 /* 내 과제 */
 .hd{display:flex;align-items:center;margin-top:4px}
 .hd b{font-size:14px;font-weight:600}.hd .desc{margin-left:8px}
+.hd .acts{margin-left:auto;display:flex;align-items:center;gap:6px}
+.hd.picking{position:sticky;top:-24px;z-index:5;margin:-4px -8px -8px;padding:8px;background:var(--bg)}  /* 바깥 -여백 = 안 여백 → 글자 자리 그대로 */
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+/* 여러 개 골라 지우기 (10/31) — 고르는 동안 카드 위를 덮는 단추가 누름을 받음 (링크 · ⋯ 대신) */
+.pk{position:relative;display:flex}.pk > .card{flex:1;min-width:0}
+.pick{display:none;position:absolute;inset:0;border-radius:14px;cursor:pointer}
+.grid.picking .pick{display:block}
+.grid.picking .wk .h .iconbtn{visibility:hidden}
+.pick .ck{position:absolute;top:20px;right:20px;width:20px;height:20px;border-radius:6px;background:#fff;box-shadow:inset 0 0 0 1.5px #a1a1aa;display:flex;align-items:center;justify-content:center;color:#fff}
+.pick .ck svg{width:14px;height:14px;stroke-width:3;visibility:hidden}
+.pick:hover .ck{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.pk.on .pick{box-shadow:0 0 0 2px var(--ink)}
+.pk.on .ck{background:var(--ink);box-shadow:none}.pk.on .ck svg{visibility:visible}
 .empty{margin:48px auto;text-align:center;color:var(--muted);font-size:14px;max-width:420px}
 .empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 .empty .btn{margin-top:14px}
 .err{color:var(--copy-d);font-size:13px}
+/* Trace 는 이렇게 써요 — 처음 쓰는 학생에게만 (내역서를 처음 만들 때까지 · ✕ 로 닫기 · 10/31 캔버스 홈 v2.2 ②) */
+.howto{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.howto .hh{display:flex;align-items:center;gap:8px}
+.howto .hh .iconbtn{margin-left:auto}
+.howto ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.howto li{display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:10px;row-gap:2px;align-items:start}
+.howto .n{width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;grid-row:span 2}
+.howto li b{font-size:14px;font-weight:600;line-height:24px}
+.howto li span{font-size:12.5px;color:var(--muted);line-height:1.5}
+/* 과제가 하나도 없을 때 — 첫 과제 만들기로 (캔버스 홈 v2.2 ② 맨 처음) */
+.first{width:100%;max-width:760px;margin:20px auto 0;display:flex;flex-direction:column;gap:18px}
+.first h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.first .stp{display:grid;grid-template-columns:28px minmax(0,1fr) auto;column-gap:14px;align-items:center;padding:14px 18px}
+.first .stp + .stp{border-top:1px solid var(--soft)}
+.first .stp .n{width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.first .stp.now{background:var(--bg)}.first .stp.now .n{background:var(--ink);color:#fff}
+.first .stp b{display:block;font-size:14.5px;font-weight:600;color:#52525b}.first .stp.now b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -70,7 +99,17 @@
     <div class="body" id="body">
       <div id="now"></div>
       <div id="alerts"></div>
-      <div class="hd"><b>내 과제</b><span class="desc">마감 순</span></div>
+      <section class="card howto" id="howto" hidden>
+        <div class="hh"><b class="h-sec">Trace 는 이렇게 써요</b><span class="desc">과제마다 이 순서로 한 번씩</span>
+          <button class="iconbtn" id="b-howto" type="button" title="안내 닫기" aria-label="안내 닫기"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+        <ol>
+          <li><span class="n">1</span><b>과제 만들기</b><span>과제 이름만 넣으면 돼요</span></li>
+          <li><span class="n">2</span><b>기록 켜고 과제하기</b><span>평소처럼 AI 와 Word 로 쓰면 저절로 기록돼요</span></li>
+          <li><span class="n">3</span><b>출처 보기 · 연결 확인</b><span>내 글 어디가 AI 답에서 왔는지 보고 확인해요</span></li>
+          <li><span class="n">4</span><b>내역서 내기</b><span>PDF 나 링크를 과제와 함께 내요</span></li>
+        </ol>
+      </section>
+      <div class="hd" id="hd"><b>내 과제</b><span class="desc" id="hd-d">마감 순</span><div class="acts" id="hd-a"></div></div>
       <div class="grid" id="grid"></div>
       <div id="msg"></div>
     </div>
@@ -90,6 +129,11 @@
 
   T.init({});
   let data = null, tick = null;
+
+  // 쓰는 법 안내 — Trace 를 켤 때마다 보이고, ✕ 로 닫으면 이번에 켠 동안만 안 보임 (10/31 · 발표 때도 보이게)
+  const 안내끔 = () => { try { return sessionStorage.getItem("trace.howto.closed") === "1"; } catch (e) { return false; } };
+  function 안내닫기() { try { sessionStorage.setItem("trace.howto.closed", "1"); } catch (e) { /* 기억 못 해도 지금 화면에선 닫힘 */ } $("howto").hidden = true; }
+  $("b-howto").onclick = 안내닫기;
 
   // 지난번 홈 · 카드 숫자를 먼저 그리고 새 자료가 오면 바꿔 그린다 (10/15) — 인터넷 서버를 기다리는 1~2초 동안 빈 화면이던 것
   const 기억 = (k, v) => { try { if (v === undefined) return JSON.parse(sessionStorage.getItem(k) || "null"); sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
@@ -143,38 +187,85 @@
   // ── 문제 알림 — 있을 때만 ──
   function alerts(extra) {
     const box = $("alerts"); box.textContent = "";
-    const add = (title, desc, info) => {
+    const add = (title, desc, info, 닫기) => {
       const a = el("div", "alert" + (info ? " info" : "")); a.setAttribute("role", "status");
       const t = el("div"); t.append(el("b", null, title)); if (desc) t.append(el("div", "desc", desc));
-      a.append(T.icon(ICON.warn), t, el("span")); box.append(a);
+      let x = el("span");
+      if (닫기) {
+        x = el("button", "iconbtn", null); x.type = "button"; x.title = x.ariaLabel = "알림 닫기";
+        x.append(T.icon('<path d="M18 6 6 18M6 6l12 12"/>')); x.onclick = () => { 닫기(); a.remove(); };
+      }
+      a.append(T.icon(ICON.warn), t, x); box.append(a);
     };
     if (extra) add(extra[0], "", extra[1]);
     if (data.error) add("서버에서 과제 목록을 받지 못했어요", data.error);
     // 이 PC 기록 중 지금 계정의 과제가 아닌 것 — 로그인 없이 만들었거나 다른 계정으로 기록한 것 (10/15 카카오로 빈 계정에 들어가 "로그인 없이" 로 잘못 보임)
-    if (data.orphans.length) add(`이 계정의 과제가 아닌 기록이 ${data.orphans.length}개 있어요`,
-      "다른 계정으로 기록했거나 로그인 없이 만든 기록이에요. 그 계정으로 로그인하면 보여요 — 다른 계정이 따로 생겼다면 설정 › 계정 에서 Google · 카카오 계정을 이어 주세요.");
+    // ✕ 로 닫으면 이 PC 에 기억 — 새 기록이 더 생길 때만 다시 (10/31 · 늘 떠 있으면 처음 쓰는 학생이 잘못된 줄 앎)
+    const 남은 = data.orphans.map(o => o.id), 본 = 기억장("trace.orphans.seen") || [];
+    if (남은.some(id => !본.includes(id))) add(`이 계정의 과제가 아닌 기록이 ${남은.length}개 있어요`,
+      "다른 계정으로 기록했거나 로그인 없이 만든 기록이에요. 그 계정으로 로그인하면 보여요 — 다른 계정이 따로 생겼다면 설정 › 계정 에서 Google · 카카오 계정을 이어 주세요.",
+      true, () => 기억장("trace.orphans.seen", 남은));
   }
+  const 기억장 = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null"); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
+
+  // ── 여러 개 골라 지우기 (10/31) — [선택] → 카드를 눌러 고름 → [n개 삭제]. 기록 중에는 못 지우니 [선택] 도 막음 ──
+  let 고름 = null;                                                  // 고르는 중이면 Set(과제 id)
+  function 고르기(on) {
+    고름 = on ? new Set() : null;
+    $("grid").classList.toggle("picking", !!on);
+    document.querySelectorAll(".pk.on").forEach(x => x.classList.remove("on"));
+    머리();
+  }
+  function 머리() {
+    const a = $("hd-a"); a.textContent = "";
+    $("hd").classList.toggle("picking", !!고름);
+    const btn = (글, cls, fn) => { const b = el("button", "btn btn-sm " + cls, 글); b.type = "button"; b.onclick = fn; a.append(b); return b; };
+    if (!고름) {
+      $("hd-d").textContent = "마감 순";
+      const b = btn("선택", "btn-ghost", () => 고르기(true));
+      if (data.recording) { b.disabled = true; b.title = "기록 중에는 과제를 지울 수 없어요"; }
+      return;
+    }
+    const n = 고름.size, 다 = n === data.works.length;
+    $("hd-d").textContent = n ? `${n}개 골랐어요` : "지울 과제를 눌러 골라요";
+    btn(다 ? "모두 풀기" : "모두 고르기", "btn-ghost", () => {
+      document.querySelectorAll(".pk").forEach(x => { x.classList.toggle("on", !다); 다 ? 고름.delete(x.dataset.id) : 고름.add(x.dataset.id); });
+      머리();
+    });
+    btn("취소", "btn-outline", () => 고르기(false));
+    const d = btn(n ? `${n}개 삭제` : "삭제", "btn-red", () => W.deleteWorks(data.works.filter(w => 고름.has(w.id)), 못함 => {
+      고르기(false); load();
+      if (못함.length) alerts([`${못함.length}개는 지우지 못했어요 — ${못함.join(" · ")}`]);
+    }));
+    d.disabled = !n;
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && 고름 && !document.querySelector(".t-modal")) 고르기(false); });
 
   // ── 과제 카드 ──
   function cards() {
     const g = $("grid"); g.textContent = ""; $("msg").textContent = "";
-    if (!data.works.length) {
-      const e = el("div", "empty"), a = el("a", "btn btn-default", "새 과제 만들기"); a.href = "/new";
-      e.append(el("b", null, "아직 과제가 없어요"), document.createTextNode("과제를 만들고 기록을 시작하면 여기에 카드가 생깁니다."), document.createElement("br"), a);
-      $("msg").append(e); return;
-    }
+    $("hd").hidden = !data.works.length;
+    $("howto").hidden = !data.works.length || 안내끔();
+    if (고름) 고름.forEach(id => { if (!data.works.some(w => w.id === id)) 고름.delete(id); });
+    머리();
+    if (!data.works.length) { 처음(); return; }
     data.works.forEach(w => {
       const rec = data.recording && data.recording.work_id === w.id;
-      const c = el("div"); g.append(c);
+      const pk = el("div", "pk" + (고름 && 고름.has(w.id) ? " on" : "")); pk.dataset.id = w.id;
+      const c = el("div"), p = el("button", "pick"); p.type = "button"; p.setAttribute("aria-label", w.title + " 고르기");
+      const ck = el("span", "ck"); ck.append(T.icon('<path d="M20 6 9 17l-5-5"/>')); p.append(ck);
+      p.onclick = () => { const on = pk.classList.toggle("on"); on ? 고름.add(w.id) : 고름.delete(w.id); 머리(); };
+      pk.append(c, p); g.append(pk);
       const base = { id: w.id, title: w.title, href: "/work?work=" + enc(w.id), settings: "/work/settings?work=" + enc(w.id), due: w.due, last: w.last,
                      recording: !!data.recording, onDeleted: () => load() };     // ⋯ 과제 삭제 뒤 홈 다시 (10/15)
       if (!w.pc_sessions && !rec) {                                 // 이 PC 에 기록이 없는 과제 — 기록 시작
-        W.card(c, { ...base, badge: ["기록 전", "outline"], stage: null, facts: { questions: 0, answers: 0, linked: 0 },
+        W.card(c, { ...base, badge: false, stage: "record", facts: { questions: 0, answers: 0, linked: 0 },
+          next: { text: "기록을 켜고 평소처럼 과제를 해요" },
           button: ["기록 시작", "#", true], onButton: btn => W.startRecording(w.id, btn, (m, ok) => alerts([m, ok])) });
         return;
       }
       const 옛카드 = 기억("trace.card." + w.id);
-      const parts = 옛카드 ? null : W.card(c, { ...base, badge: rec ? ["기록 중", "blue"] : null, stage: rec ? "record" : null, wait: "세는 중…" });
+      const parts = 옛카드 ? null : W.card(c, { ...base, badge: rec ? ["기록 중", "blue"] : false, stage: rec ? "record" : null, wait: "세는 중…" });
       if (옛카드) fill(c, base, w, 옛카드, rec);                       // 지난번 숫자 먼저
       T.call("GET", "/local/home/card?work_id=" + enc(w.id)).then(d => { 기억("trace.card." + w.id, d); fill(c, base, w, d, rec); }).catch(() => {
         if (parts) W.facts(parts.facts, null, "숫자를 세지 못했어요");
@@ -182,19 +273,47 @@
     });
   }
 
-  function fill(c, base, w, d, rec) {                              // 배지 · 버튼 = 이 과제가 지금 할 일
-    let b, btn;
-    if (rec) { b = ["기록 중", "blue"]; btn = ["열기", base.href, false]; }
-    else if (d.report_made && d.shared) { b = ["공유 중", "green"]; btn = ["링크 보기", d.go, false]; }
-    else if (d.report_made) { b = ["내역서 만듦", "gray"]; btn = ["PDF 열기", d.go, false]; }
-    else if (d.stage === "report") { b = ["내역서 만들기 전", "outline"]; btn = ["내역서 만들기", d.go, true]; }
-    else if (d.stage === "confirm") { b = ["연결 확인 전", "outline"]; btn = ["연결 확인하기", d.go, true]; }
-    else { b = ["출처 보기 전", "outline"]; btn = ["출처 보기", d.go, true]; }
+  function fill(c, base, w, d, rec) {                              // 배지 · 다음 할 일 한 줄 · 버튼 하나 = 이 과제가 지금 할 일 (10/31 캔버스 홈 v2.2 ②)
+    // 배지는 단계 줄로 알 수 없는 것만 — 기록 중 · 공유 중 (10/31)
+    let b = false, btn, next;
+    const f = d.facts || {};
+    if (rec) { b = ["기록 중", "blue"]; btn = ["과제 보기", base.href, false]; next = { text: "과제를 다 했으면 기록 창에서 마치기를 눌러요" }; }
+    else if (d.report_made && d.shared) {
+      b = ["공유 중", "green"]; btn = ["링크 보기", d.go, false];
+      next = { done: true, text: d.expires_at ? `교수님 링크가 ${W.day(d.expires_at)} 까지 열려 있어요` : "교수님께 링크로 보냈어요" };
+    }
+    else if (d.report_made) { btn = ["PDF 열기", d.go, false]; next = { done: true, text: "내역서를 만들었어요 · 필요하면 다시 열 수 있어요" }; }
+    else if (d.stage === "report") { btn = ["내역서 만들기", d.go, true]; next = { text: "내역서를 만들어 과제와 함께 내요" }; }
+    else if (d.stage === "confirm") { btn = ["연결 확인하기", d.go, true]; next = { text: "AI 답을 보고 쓴 문장인지 하나씩 골라요" }; }
+    else {
+      btn = ["출처 보기", d.go, true];
+      next = { text: f.answers ? `결과물에 들어간 AI 답 ${f.answers}개 — 어디에 들어갔는지 봐요` : "내 글 어디가 AI 답에서 왔는지 봐요" };
+    }
     const dd = W.due(w.due);
     const warn = dd && dd.days >= 0 && dd.days <= 1 && !d.report_made ? `${dd.days ? "내일" : "오늘"} 마감 — 아직 내역서를 만들지 않았어요` : null;
-    W.card(c, { ...base, badge: b, stage: rec ? "record" : d.stage, made: d.report_made, facts: d.facts,
-      wait: d.facts && d.facts.answers == null ? "과제 파일을 열면 연결 수가 보여요" : null, warn, button: btn,
-      old: d.report_made && dd && dd.days < 0 });
+    W.card(c, { ...base, badge: b, stage: rec ? "record" : d.stage, made: d.report_made, facts: d.facts, next,
+      warn, button: btn, old: d.report_made && dd && dd.days < 0 });
+  }
+
+  // ── 과제가 하나도 없을 때 — 쓰는 법 4단계 · 지금 할 1단계에만 버튼 ──
+  function 처음() {
+    const box = el("div", "first");
+    const h = el("div"); h.append(el("h1", null, "첫 과제를 만들어 볼까요?"),
+      el("div", "desc", "과제를 하는 동안 AI 를 어떻게 썼는지 Trace 가 기록하고, 마지막에 내역서 한 장으로 만들어 줘요. 점수나 판정은 없어요."));
+    const c = el("section", "card"); c.style.overflow = "hidden";
+    [["과제 만들기", "과제 이름만 넣으면 돼요. 과목 · 마감은 나중에 넣어도 돼요."],
+     ["기록 켜고 과제하기", "화면 구석에 작은 기록 창이 떠요. 평소처럼 AI 와 Word 로 쓰면 돼요."],
+     ["출처 보기 · 연결 확인", "내 글 어디가 AI 답에서 왔는지 보고 확인해요."],
+     ["내역서 내기", "PDF 나 링크를 과제와 함께 내요. 교수님은 그 한 장만 봐요."]].forEach(([t, s], i) => {
+      const r = el("div", "stp" + (i ? "" : " now")), tx = el("div");
+      tx.append(el("b", null, t), el("span", "desc", s));
+      r.append(el("span", "n", String(i + 1)), tx);
+      if (!i) { const a = el("a", "btn btn-default", "첫 과제 만들기"); a.href = "/new"; r.append(a); } else r.append(el("span"));
+      c.append(r);
+    });
+    const ready = el("a", "btn btn-ghost", "기록 준비 점검 다시 보기"); ready.href = "/welcome"; ready.style.alignSelf = "flex-start";
+    box.append(h, c, ready);
+    $("msg").append(box);
   }
 
   load();
