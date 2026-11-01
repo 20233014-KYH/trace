@@ -169,4 +169,65 @@ const card = (slide, x, y, w, h, fill, name) =>
   s.addNotes("AI 답과 학생 글의 원문은 기록하는 순간 학생 PC에만 저장됩니다. 서버에는 해시만 가고, 제출할 때 학생이 고른 원문이 오면 서버가 해시로 다시 계산해 바뀐 게 없는지 확인합니다. 교수는 계정 없이 링크로 읽기만 합니다. (약 25초)\n\n질문 대비: 해시 = 글의 지문, 원문 없이도 나중에 온 글이 기록 때와 같은지 확인. 서버가 해외(싱가포르) → 실제 수업 전 국외 이전 동의 문구.");
 }
 
+// ───────── 10장 ─────────
+{
+  const s = pres.addSlide({ masterName: "TITLE_ONLY" });
+  s.addText("지금 테이블에 2가지만 더한다", { placeholder: "title" });
+  const NEW = ACCENT;
+  const box = (x, y, w, h, name, ko, sub, opt = {}) => {
+    const dash = opt.next;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.06,
+      fill: { color: opt.isNew ? ACCENT_BG : "FFFFFF" },
+      line: { color: opt.isNew ? NEW : (dash ? MUTED : LINE), width: opt.isNew ? 1.5 : 1, dashType: dash ? "dash" : "solid" } });
+    T(s, [{ text: name + "  ", options: { bold: true, color: dash ? MUTED : (opt.isNew ? NEW : INK) } }, { text: ko, options: { color: dash ? MUTED : INK } }],
+      { x: x + 0.12, y: y + 0.06, w: w - 0.2, h: 0.28, fontSize: 12 });
+    if (sub) T(s, sub, { x: x + 0.12, y: y + 0.34, w: w - 0.2, h: h - 0.4, fontSize: 10, color: MUTED, valign: "top" });
+  };
+  const line = (x, y, w, h, arrow, opt = {}) => s.addShape(pres.shapes.LINE, { x, y, w, h,
+    line: Object.assign({ color: opt.color || INK, width: 1.25, dashType: opt.dash ? "dash" : "solid" }, arrow ? { endArrowType: "triangle" } : {}) });
+  const lab = (x, y, t, c) => T(s, t, { x, y, w: 0.5, h: 0.2, fontSize: 10, bold: true, color: c || MUTED });
+
+  // 줄기: 학생 → 과제 → 기록 한 번 → 기록 이벤트
+  box(0.5, 1.15, 1.95, 0.85, "users", "학생", "이메일 · 구글/카카오 계정 번호");
+  box(2.8, 1.15, 1.95, 0.85, "works", "과제", "제목 · 허용 범위 메모");
+  box(5.1, 1.15, 1.95, 0.85, "sessions", "기록 한 번", "해시 사슬 처음 · 끝 · 봉인");
+  box(7.4, 1.15, 2.1, 0.85, "events", "기록 이벤트", "종류 · 시각 · 원문 대신 해시");
+  [[2.45, 2.8], [4.75, 5.1], [7.05, 7.4]].forEach(([a, b]) => { line(a, 1.42, b - a, 0, true); lab(a + 0.02, 1.16, "1 : N"); });
+
+  // 다음 단계: 모아 보기
+  box(0.5, 2.55, 1.95, 0.85, "assignments", "", "30명 모아 보기 · 다음 단계", { next: true });
+  line(2.45, 2.97, 0.17, 0, false, { dash: true, color: MUTED });
+  line(2.62, 1.8, 0, 1.17, false, { dash: true, color: MUTED });
+  line(2.62, 1.8, 0.18, 0, true, { dash: true, color: MUTED });
+
+  // 과제 → 내역서
+  line(3.775, 2.0, 0, 0.55, true); lab(3.85, 2.15, "1 : N");
+  box(2.8, 2.55, 2.35, 1.6, "statements", "내역서", "요약 숫자 · 학생 설명 두 개\n원문이 기록과 맞는지");
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 2.92, y: 3.6, w: 2.11, h: 0.42, rectRadius: 0.05, fill: { color: ACCENT_BG }, line: { color: NEW, width: 1 } });
+  T(s, [{ text: "retain_until  ", options: { bold: true } }, { text: "보관 기간 · 새로" }], { x: 3.02, y: 3.6, w: 2.0, h: 0.42, fontSize: 11, color: NEW, valign: "middle" });
+
+  // 내역서 → 딸린 표 5개
+  const kids = [
+    ["messages", "보여 준 원문", "학생이 고른 질문 · 답만 · 해시로 확인"],
+    ["links", "출처 결정", "이 문장 ← 이 AI 답 (맞다 / 아니다)"],
+    ["redactions", "가린 것", "어느 기록인지만 · 내용은 안 옴"],
+    ["shares", "교수 링크", "토큰 · 만료 · 학생이 끊을 수 있음"],
+    ["checks", "제출 전 다듬기 · 새로", "처리 → \"다듬음 N\" · 원문 없음"],
+  ];
+  const kx = 5.65, kw = 3.85, kh = 0.4, kg = 0.08, ky0 = 2.4;
+  line(5.15, 3.35, 0.3, 0, false); lab(5.17, 3.1, "1 : N");
+  line(5.45, ky0 + kh / 2, 0, (kids.length - 1) * (kh + kg), false);
+  kids.forEach(([n, ko, sub], i) => {
+    const y = ky0 + i * (kh + kg), isNew = n === "checks";
+    line(5.45, y + kh / 2, kx - 5.45, 0, true, { color: isNew ? NEW : INK });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: kx, y, w: kw, h: kh, rectRadius: 0.05, fill: { color: isNew ? ACCENT_BG : "FFFFFF" }, line: { color: isNew ? NEW : LINE, width: isNew ? 1.5 : 1 } });
+    T(s, [{ text: n + "  ", options: { bold: true, color: isNew ? NEW : INK } }, { text: ko + "   ", options: { color: isNew ? NEW : INK } }, { text: sub, options: { color: MUTED, fontSize: 9.5 } }],
+      { x: kx + 0.12, y, w: kw - 0.2, h: kh, fontSize: 11, valign: "middle" });
+  });
+
+  T(s, [{ text: "파랑 = 새로 더함 · 점선 = 다음 단계", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
+    { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
+  s.addNotes("학생 아래 과제, 과제 아래 기록이 쌓이는데, 기록 이벤트에는 원문 대신 해시만 있습니다. 학생이 내역서를 만들면 그때 고른 원문, 출처 결정, 가린 것, 교수 링크가 내역서에 붙습니다. 여기에 다듬기 결과를 세는 checks와 보관 기간 두 가지만 더하면 됩니다. 30명 모아 보기는 다음 단계입니다. (약 25초)\n\n질문 대비: 토큰을 JWT 말고 DB에 둔 이유 = 학생 기록이라 '이 기기 연결 끊기'가 돼야 함 (server/db.py). 교수가 원문을 어떻게 보나 = 학생이 고른 질문·답만 messages에 오고 서버가 해시로 확인. 가린 건 = 어느 기록인지만 남고 내용은 안 옴.");
+}
+
 pres.writeFile({ fileName: out }).then(f => console.log("wrote", f));
