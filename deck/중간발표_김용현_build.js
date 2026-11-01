@@ -24,6 +24,21 @@ const T = (slide, text, o) => slide.addText(text, Object.assign({ isTextBox: tru
 const card = (slide, x, y, w, h, fill, name) =>
   slide.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: fill }, line: { color: fill }, objectName: name });
 
+// ───────── 1장 표지 ─────────
+{
+  const s = pres.addSlide();
+  s.background = { color: INK };
+  T(s, "Trace", { x: 0.6, y: 1.35, w: 6, h: 0.9, fontSize: 54, bold: true, color: "FFFFFF", objectName: "cover-title" });
+  T(s, "AI 사용 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 7, h: 0.5, fontSize: 24, color: "FFFFFF" });
+  T(s, "AI 답과 참고한 글을 어떻게 썼는지 기록하고,\n제출 전에 그대로 가져온 곳을 학생이 다듬게 한 뒤,\n교수에게 한 장으로 공개합니다.",
+    { x: 0.6, y: 2.95, w: 6.6, h: 0.95, fontSize: 13, color: "C9C8C3" });
+  T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 6.5, h: 0.3, fontSize: 12, color: "C9C8C3" });
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.75, y: 3.2, w: 1.6, h: 1.6, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" }, objectName: "qr-slot" });
+  T(s, "피그마 QR\n(링크 받으면\n바꾸기)", { x: 7.75, y: 3.2, w: 1.6, h: 1.6, fontSize: 11, color: MUTED, align: "center", valign: "middle" });
+  T(s, "프로토타입", { x: 7.75, y: 4.85, w: 1.6, h: 0.25, fontSize: 10, color: "C9C8C3", align: "center" });
+  s.addNotes("AI를 허용하는 수업에서, 대화 내역 제출을 대신하는 Trace입니다. (약 10초)");
+}
+
 // ───────── 2장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
@@ -228,6 +243,50 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, [{ text: "파랑 = 새로 더함 · 점선 = 다음 단계", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
     { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes("학생 아래 과제, 과제 아래 기록이 쌓이는데, 기록 이벤트에는 원문 대신 해시만 있습니다. 학생이 내역서를 만들면 그때 고른 원문, 출처 결정, 가린 것, 교수 링크가 내역서에 붙습니다. 여기에 다듬기 결과를 세는 checks와 보관 기간 두 가지만 더하면 됩니다. 30명 모아 보기는 다음 단계입니다. (약 25초)\n\n질문 대비: 토큰을 JWT 말고 DB에 둔 이유 = 학생 기록이라 '이 기기 연결 끊기'가 돼야 함 (server/db.py). 교수가 원문을 어떻게 보나 = 학생이 고른 질문·답만 messages에 오고 서버가 해시로 확인. 가린 건 = 어느 기록인지만 남고 내용은 안 옴.");
+}
+
+// ───────── 11장 ─────────
+{
+  const s = pres.addSlide({ masterName: "TITLE_ONLY" });
+  s.addText("이미 돌아가는 것 위에 더한다", { placeholder: "title" });
+  // 일정
+  const steps = [["지금 · 11/1", "v0.1.14\n다듬기까지 돌아감"], ["발표 뒤 2주", "다듬음 N · 내역서 한 줄\n실제 수업 전 필수 3개"], ["12주", "실제 학생 · 교수\n사용 테스트"], ["13주", "테스트 결과로\n고치기"], ["14주", "최종 발표"]];
+  const sw = 1.7, sg = 0.125;
+  s.addShape(pres.shapes.LINE, { x: 0.6, y: 1.32, w: 8.8, h: 0, line: { color: LINE, width: 2 } });
+  steps.forEach(([a, b], i) => {
+    const x = 0.5 + i * (sw + sg), now = i === 0;
+    s.addShape(pres.shapes.OVAL, { x: x + 0.02, y: 1.22, w: 0.2, h: 0.2, fill: { color: now ? ACCENT : "FFFFFF" }, line: { color: now ? ACCENT : MUTED, width: 1.5 } });
+    T(s, a, { x, y: 1.5, w: sw, h: 0.26, fontSize: 12, bold: true, color: now ? ACCENT : INK });
+    T(s, b, { x, y: 1.78, w: sw, h: 0.48, fontSize: 10, color: MUTED, valign: "top" });
+  });
+  // 지금 돌아가는 것 + 역할
+  card(s, 0.5, 2.5, 3.55, 2.3, SOFT, "now");
+  T(s, "지금 돌아가는 것", { x: 0.7, y: 2.6, w: 3.2, h: 0.3, fontSize: 14, bold: true });
+  T(s, [
+    { text: "✓ 윈도우 · 맥 기록기 · 크롬 확장", options: { breakLine: true } },
+    { text: "✓ 출처 잇기 · 해시 사슬 · 서버", options: { breakLine: true } },
+    { text: "✓ 내역서 PDF · 교수 링크 · 로그인", options: { breakLine: true } },
+    { text: "✓ 제출 전 다듬기 (11/1)", options: { bold: true, color: ACCENT } },
+  ], { x: 0.7, y: 2.95, w: 3.25, h: 1.1, fontSize: 12, paraSpaceAfter: 3, valign: "top" });
+  T(s, [
+    { text: "김용현  ", options: { bold: true } }, { text: "서버 · 교수 화면 · 다듬기", options: { color: MUTED, breakLine: true } },
+    { text: "박상진  ", options: { bold: true } }, { text: "기록기 · 확장 · 작성 모양", options: { color: MUTED } },
+  ], { x: 0.7, y: 4.15, w: 3.25, h: 0.55, fontSize: 11, valign: "top" });
+  // 예상 문제 → 해결
+  T(s, "예상 문제 → 해결", { x: 4.3, y: 2.55, w: 5.2, h: 0.3, fontSize: 14, bold: true });
+  const probs = [
+    ["말을 다 바꿔 쓴 문장은 출처를 못 잇는다", "\"출처 기록 없음\"으로 둠 · 단정 안 함"],
+    ["작성 모양 연구는 영어 · 실험실 결과", "한글로 직접 쓰기 vs 옮겨 치기를 시험"],
+    ["설치 오류 · 서버 주인 확인 · 해외 서버", "실제 수업 전 필수 3개로 고침"],
+    ["\"감시받는 느낌\" (설문 15명)", "동의 화면 · 원문은 PC에 · 언제든 멈춤"],
+  ];
+  probs.forEach(([p, f], i) => {
+    const y = 2.92 + i * 0.47;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 4.3, y, w: 5.2, h: 0.4, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
+    T(s, p, { x: 4.42, y, w: 2.75, h: 0.4, fontSize: 10.5, bold: true, valign: "middle" });
+    T(s, "→ " + f, { x: 7.2, y, w: 2.25, h: 0.4, fontSize: 10, color: ACCENT, valign: "middle" });
+  });
+  s.addNotes("기록, 출처 잇기, 내역서까지 이미 동작하고, 이번 주에 제출 전 다듬기도 들어갔습니다. 발표 뒤 2주는 다듬은 수 세기와 실제 수업 전에 꼭 고칠 세 가지, 12주에는 실제 학생과 교수에게 써 보게 합니다. 가장 큰 한계는 말을 다 바꿔 쓴 문장인데, 이건 '직접 썼다'고 단정하지 않고 '출처 기록 없음'으로 둡니다. (약 30초)");
 }
 
 pres.writeFile({ fileName: out }).then(f => console.log("wrote", f));
