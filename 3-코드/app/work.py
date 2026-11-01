@@ -16,6 +16,8 @@ import os
 import re
 import subprocess
 import sys
+import threading
+import time
 import uuid
 from datetime import datetime
 from urllib.parse import quote
@@ -325,9 +327,11 @@ def refine():
     """{work_id} → 이 과제 기록을 이어서 켜고(이미 이 과제를 기록 중이면 그대로) 출처 보기에서 연 결과물 Word 파일을 연다.
     다듬는 과정도 기록에 남게 — 기록 없이 고친 글은 "기록 밖에서 바뀐 글" 로 보인다. 다른 과제를 기록 중이면 409.
     파일 자리를 모르면(파일 고르는 창으로 고른 파일 · 화면엔 경로가 안 옴) 기록만 켜고 "파일을 열어 고쳐 주세요" """
-    wid = (request.get_json(force=True, silent=True) or {}).get("work_id") or ""
+    body = request.get_json(force=True, silent=True) or {}
+    wid = body.get("work_id") or ""
     if not _WID.match(wid):
         return jsonify(error="bad_request", message="과제가 올바르지 않습니다"), 400
+    글 = str(body.get("text") or "").strip()[:2000]           # 다듬을 문장 — Word 에서 찾아 선택 (11/1)
     지금 = 설정["bridge"]()
     if 지금 and 지금.get("work_id") != wid:
         return jsonify(error="recording", message="다른 과제를 기록하는 중이에요. 기록 창에서 작업을 마친 뒤 다듬어 주세요"), 409
@@ -339,6 +343,8 @@ def refine():
         켬 = True
     p = _결과물_자리(wid)
     열림 = bool(p) and 설정.get("open_file", _파일_열기)(p)
+    if 열림 and 글:                                               # Word 가 문서를 다 열 때까지 기다려야 해서 따로 — 응답은 바로
+        threading.Thread(target=설정.get("select_text", _문장_고르기), args=(p, 글), daemon=True).start()
     말 = ("기록을 켜고 Word 를 열었어요" if 켬 else "Word 를 열었어요") if 열림 else \
          ("기록을 켰어요. 결과물 파일을 열어 고쳐 주세요" if 켬 else "결과물 파일을 열어 고쳐 주세요")
     return jsonify(ok=True, started=켬, opened=열림, message=말 + " — 고친 뒤 저장하고 여기로 돌아오면 다시 읽어요")
@@ -351,6 +357,47 @@ def _결과물_자리(wid):
     if 찾은 and os.path.basename(찾은) == 이름 and os.path.isfile(찾은):
         return 찾은
     return next((d["path"] for d in S._문서_목록(wid) if d["name"] == 이름 and d["exists"]), None)
+
+
+def _문장_고르기(p, 글, 기다림=20):
+    """[다듬기] 로 연 Word 문서에서 그 문장을 찾아 선택하고 그 자리로 스크롤 (11/1).
+    Word 가 문서를 열 때까지 기다림 · 못 찾거나(그새 고침) Word 가 아니면 조용히 넘어감 — 파일은 이미 열려 있다"""
+    try:
+        import pythoncom
+        import win32com.client
+    except ImportError:
+        return False
+    pythoncom.CoInitialize()
+    try:
+        이름, 끝 = os.path.basename(p).lower(), time.time() + 기다림
+        doc = None
+        while doc is None and time.time() < 끝:
+            try:                                                 # 막 켠 Word 는 몇 초 뒤에야 잡힘 · 문서도 열리는 중
+                word = win32com.client.GetActiveObject("Word.Application")
+                doc = next((d for d in word.Documents if str(d.Name).lower() == 이름), None)   # OneDrive 면 FullName 이 주소라 이름으로
+            except Exception:
+                pass
+            if doc is None:
+                time.sleep(0.5)
+        if doc is None:
+            return False
+        for n in (250, 80, 30):                                  # Word 찾기는 255자까지 · 띄어쓰기가 조금 달라도 앞부분으로
+            rng = doc.Content
+            f = rng.Find
+            f.ClearFormatting()
+            # FindText, MatchCase, MatchWholeWord, MatchWildcards, MatchSoundsLike, MatchAllWordForms, Forward, Wrap=멈춤(0)
+            if f.Execute(글[:n].replace("^", "^^"), True, False, False, False, False, True, 0):
+                if len(글) > n:
+                    rng.MoveEnd(1, len(글) - n)                    # 1 = 글자 단위 — 문장 끝까지 넓힘
+                doc.Activate()
+                rng.Select()
+                word.ActiveWindow.ScrollIntoView(rng, True)
+                return True
+        return False
+    except Exception:                                            # 모달 창 · 문서 닫힘 등
+        return False
+    finally:
+        pythoncom.CoUninitialize()
 
 
 def _파일_열기(p):

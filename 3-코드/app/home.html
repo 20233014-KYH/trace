@@ -284,7 +284,7 @@
     }
     else if (d.report_made) { btn = ["PDF 열기", d.go, false]; next = { done: true, text: "내역서를 만들었어요 · 필요하면 다시 열 수 있어요" }; }
     else if (d.stage === "report") { btn = ["내역서 만들기", d.go, true]; next = { text: "내역서를 만들어 과제와 함께 내요" }; }
-    else if (d.stage === "confirm") { btn = ["연결 확인하기", d.go, true]; next = { text: "AI 답을 보고 쓴 문장인지 하나씩 골라요" }; }
+    else if (d.stage === "confirm") { btn = ["연결 확인하기", d.go, true]; next = { text: "AI 답을 참고한 문장인지 하나씩 골라요" }; }
     else {
       btn = ["출처 보기", d.go, true];
       next = { text: f.answers ? `결과물에 들어간 AI 답 ${f.answers}개 — 어디에 들어갔는지 봐요` : "내 글 어디가 AI 답에서 왔는지 봐요" };
