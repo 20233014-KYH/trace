@@ -13,22 +13,17 @@
 .head{display:flex;align-items:flex-end;gap:16px}
 .head h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .head .sub{font-size:13px;color:var(--muted)}
-.stats{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13px;color:var(--ink2);white-space:nowrap}
-.stats b{font-weight:700;color:var(--ink);margin-right:3px;font-variant-numeric:tabular-nums}
+.head .okb{margin-left:auto}
+/* 사실 숫자 4칸 — 늘 4칸 (기록 밖에서 바뀐 글 0곳도 보임 · 10/31 상진) · 교수님 내역서에도 나오는 사실 그대로 · 점수 없음 */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;flex:none}
+.tile{padding:12px 16px;display:flex;flex-direction:column;gap:1px}
+.tile b{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;font-variant-numeric:tabular-nums}
+.tile b small{font-size:14px;font-weight:600;color:var(--muted);margin-left:2px}
+.tile span{font-size:12.5px;color:var(--muted)}
 .okb{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:12.5px;font-weight:600}
 .okb.wait{background:var(--soft);color:var(--muted);border-color:var(--line)}
 .okb svg{width:14px;height:14px}
-/* 시간 막대 */
-.lanes{padding:14px 20px 10px;flex:none}
-.lane{display:flex;align-items:center;height:23px}
-.lane .ln{width:88px;flex:none;font-size:12px;color:var(--muted)}
-.lane .tr{position:relative;flex:1;height:100%}
-.tr .dot{position:absolute;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--ink)}
-.tr .tick{position:absolute;top:5px;bottom:5px;width:3px;margin-left:-1px;border-radius:2px;background:var(--copy-d)}
-.tr .bar{position:absolute;top:7px;bottom:7px;min-width:4px;border-radius:3px;background:#d4d4d8}
-.tr .pz{position:absolute;top:-70px;bottom:0;border-radius:6px;border:1px solid #d4d4d8;background:repeating-linear-gradient(135deg,#f4f4f5 0 6px,#e9e9ec 6px 7px);display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--muted)}
-.axis{display:flex;margin-left:88px;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;justify-content:space-between;padding-top:4px}
-/* 아래 두 칸 */
+/* 아래 두 칸 (시간 막대는 10/31 뺌 — 어수선 · 멈춤은 목록 줄로) */
 .cols{flex:1;min-height:0;display:flex;gap:16px}
 .list{flex:1;min-width:0;display:flex;flex-direction:column;padding:14px 16px 10px}
 .lh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
@@ -48,6 +43,7 @@
 .tag.copy{background:var(--copy);color:#a4282d}.tag.edited{background:var(--edit);color:#2f50c4}
 .tag.viewed{color:#2f50c4;background:#fff;box-shadow:inset 0 0 0 1px #c6d4f7;text-decoration:underline dashed;text-underline-offset:3px}
 .tag.ref{background:var(--soft);color:var(--ink2)}.tag.plain{color:var(--muted);font-weight:500;padding:0}
+.tag.noproc{background:var(--soft) repeating-linear-gradient(135deg,rgba(0,0,0,.06) 0 3px,transparent 3px 7px);color:var(--ink2)}   /* 쓴 과정 기록 없음 — 직접 타이핑 · 출처 기록 없음과 다르게 */
 .det{width:360px;flex:none;display:flex;flex-direction:column;padding:16px 18px;min-height:0}
 .det .in{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .det .dh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
@@ -93,7 +89,7 @@
       </div>
       <div></div>
       <div class="win" style="align-items:center">
-        <a class="btn btn-outline btn-sm" id="b-src">출처 보기</a>
+        <a class="btn btn-default btn-sm" id="b-src">출처 보기로<svg viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6-6-6"/></svg></a>
         <span style="width:10px"></span>
         <button data-w="min" title="최소화" aria-label="최소화"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
         <button data-w="max" title="최대화" aria-label="최대화"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
@@ -104,10 +100,10 @@
     <div class="body" id="body">
       <div class="head">
         <div><h1 id="h">불러오는 중…</h1><div class="sub" id="sub"></div></div>
-        <div class="stats" id="stats"></div>
+        <span id="okb" class="okb" hidden></span>
       </div>
       <div id="toast"></div>
-      <section class="card lanes" id="tl"></section>
+      <div class="tiles" id="tiles"></div>
       <div class="cols">
         <section class="card list">
           <div class="lh">
@@ -155,11 +151,11 @@
     const s = D.session;
     const 날 = W.day(s.start), 제목 = `${날} ${hm(s.start)} – ${hm(s.end)}`;
     $("h").textContent = 제목; $("c-rec").textContent = `${날} 기록`; document.title = `${날} 기록 · Trace`;
-    $("sub").textContent = `기록 ${dur(s.active_sec)} · ${s.total}번 중 ${s.n}번째 기록` + (D.linked ? "" : " · 과제 파일을 열면 결과물과 이어진 것도 보여요");
+    $("sub").textContent = `기록 ${dur(s.active_sec)} · ${s.total}번 중 ${s.n}번째 기록` + (s.pause_sec >= 60 ? ` · 중간에 ${dur(s.pause_sec)} 멈춤` : "")
+      + (D.linked ? "" : " · 과제 파일을 열면 결과물과 이어진 것도 보여요");
     $("lhint").hidden = !D.linked;
     $("b-src").href = D.source;
-    stats(null);
-    timeline(); rows();
+    tiles(); rows();
     const 첫 = D.items.find(x => x.kind === "a" && x.tag && x.tag.c !== "ref") || D.items.find(x => x.kind === "q");
     if (첫) choose(첫.id);
     // 과제 이름 · 서버 일치는 서버를 물어야 해서 뒤에서 (1~2초)
@@ -170,31 +166,27 @@
     }).catch(() => {});
   }
 
-  function stats(sealed, serverOk) {
-    const t = D.stats, box = $("stats"); box.textContent = "";
-    const kv = (n, label) => { const s = el("span"); s.append(el("b", null, n), document.createTextNode(label)); return s; };
-    box.append(kv(String(t.questions), "AI 질문"), kv(String(t.pastes), "붙여넣기"), kv(`+${t.typed.toLocaleString()}자`, "키보드로 친 글자"));
-    if (t.pause_sec >= 60) box.append(kv(dur(t.pause_sec), "멈춤"));
+  function stats(sealed, serverOk) {                              // 서버 일치 — 서버를 물어야 해서 뒤에서
+    const b = $("okb"); b.textContent = ""; b.hidden = sealed === undefined;
     if (sealed === undefined) return;
-    const b = el("span", "okb" + (sealed ? "" : " wait"));
+    b.className = "okb" + (sealed ? "" : " wait");
     if (sealed) { b.append(T.icon('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'), document.createTextNode("서버 기록과 일치합니다")); }
     else b.textContent = sealed === false ? "서버 확인 전" : serverOk ? "서버에 없음" : "서버 연결 안 됨";
-    box.append(b);
   }
 
-  // ── 시간 막대: AI 질문·답 점 · 붙여넣기 빨간 눈금 · Word 글 회색 막대 · 멈춤 빗금 ──
-  function timeline() {
-    const box = $("tl"); box.textContent = "";
-    const t0 = Date.parse(D.session.start), t1 = Math.max(Date.parse(D.session.end), t0 + 60e3), span = t1 - t0;
-    const x = iso => Math.min(100, Math.max(0, (Date.parse(iso) - t0) / span * 100));
-    const lane = (name, fill) => { const l = el("div", "lane"), tr = el("div", "tr"); l.append(el("span", "ln", name), tr); fill(tr); box.append(l); return tr; };
-    const ai = lane("AI 질문·답", tr => D.lanes.ai.forEach(ts => { const d = el("i", "dot"); d.style.left = x(ts) + "%"; tr.append(d); }));
-    lane("붙여넣기", tr => D.lanes.paste.forEach(ts => { const d = el("i", "tick"); d.style.left = x(ts) + "%"; tr.append(d); }));
-    const wd = lane("Word 글", tr => D.lanes.word.forEach(([a, b]) => { const d = el("i", "bar"); d.style.left = x(a) + "%"; d.style.width = Math.max(.4, x(b) - x(a)) + "%"; tr.append(d); }));
-    D.lanes.pause.forEach(([a, b]) => { const p = el("div", "pz", "멈춤"); p.style.left = x(a) + "%"; p.style.width = Math.max(1, x(b) - x(a)) + "%"; p.style.top = "-46px"; wd.append(p); });
-    const ax = el("div", "axis"); const n = 5;
-    for (let i = 0; i <= n; i++) ax.append(el("span", null, new Date(t0 + span * i / n).toTimeString().slice(0, 5)));
-    box.append(ax);
+  // ── 사실 숫자 4칸 (10/31 · 캔버스 기록 다시 보기 v2.2) ──
+  function tiles() {
+    const t = D.stats, box = $("tiles"); box.textContent = "";
+    const tile = (n, unit, label) => {
+      const c = el("div", "card tile"), b = el("b", null, n);
+      if (unit) b.append(el("small", null, unit));
+      c.append(b, el("span", null, label)); box.append(c);
+    };
+    const 나눔 = [t.pastes_ai && `AI ${t.pastes_ai}`, t.pastes_other && `다른 곳 ${t.pastes_other}`].filter(Boolean).join(" · ");
+    tile(String(t.questions), "", "AI 에게 한 질문");
+    tile(String(t.pastes), "", "붙여넣기" + (나눔 ? " · " + 나눔 : ""));
+    tile(t.typed.toLocaleString(), "자", "키보드로 친 글자");
+    tile(String((t.outside || {}).spots || 0), "곳", "기록 밖에서 바뀐 글");
   }
 
   function rows() {
@@ -251,9 +243,12 @@
       if (m.excerpt) { const f = el("div"); f.append(el("label", null, "붙여넣은 글"), el("div", "ex", m.excerpt)); box.append(f); }
       else box.append(el("div", "m", "붙여넣은 글은 AI 답 · 과제 문서에 들어간 것만 이 PC 에 남겨요"));
     } else if (x.kind === "doc") {
-      box.append(el("div", "m", `${m.file} · 열 때부터 있던 글 ${m.chars.toLocaleString()}자`));
-      box.append(el("div", "m", "이 PC 에서 치거나 붙여넣은 기록 없이 문서에 있던 글이에요. AI 가 만든 파일이나 다른 기기에서 쓴 파일일 수 있어요 — 내역서 학생 설명에서 밝혀 주세요."));
-      if (m.excerpt) { const f = el("div"); f.append(el("label", null, "열 때 첫 부분"), el("div", "ex", m.excerpt)); box.append(f); }
+      if (!m.spots) box.append(el("div", "m", `${m.file} · 지난 기록 뒤로 바뀐 글이 없어요`));
+      else {
+        box.append(el("div", "m", `${m.file} · ${m.spots}곳 · ${m.chars.toLocaleString()}자 · ${m.first ? "기록을 켜기 전에 있던 글" : "지난 기록 뒤에 기록 없이 바뀐 글"}`));
+        box.append(el("div", "m", "이 PC 에서 치거나 붙여넣은 기록 없이 문서에 생긴 글이에요. AI 가 만든 파일이나 다른 기기 · 기록을 끈 동안 쓴 글일 수 있어요 — 내역서 학생 설명에서 밝혀 주세요."));
+        if (m.excerpt) { const f = el("div"); f.append(el("label", null, "바뀐 글 첫 부분"), el("div", "ex", m.excerpt)); box.append(f); }
+      }
     } else if (x.kind === "word") {
       const 때 = `${hm(m.from)}${m.to !== m.from ? "–" + hm(m.to) : ""}`;
       box.append(el("div", "m", m.added != null ? `${m.app} · ${때} · ${m.where ? m.where + " · " : ""}+${m.added.toLocaleString()}자${m.removed ? " −" + m.removed.toLocaleString() + "자" : ""}`

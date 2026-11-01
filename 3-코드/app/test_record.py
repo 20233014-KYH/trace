@@ -164,6 +164,25 @@ def main():
                                                       proc={"typed": [], "noproc": [{"text": 본문, "how": "download", "ts": "", "file": "x.pdf"}]})
               for r2 in row]
         검사("받은 파일에 없는 짧은 제목은 그대로 '출처 기록 없음'", 줄 == ["none", "noproc"], str(줄))
+        print("\n  ━━ 기록 밖에서 바뀐 글 (10/31 · 기록 다시 보기 v2.2 숫자 4칸)")
+        첫글 = "해시 테이블은 키를 해시 함수로 바꿔 배열 자리에 넣는 자료구조다.\n충돌은 체이닝이나 개방 주소법으로 푼다."
+        새문단 = "적재율이 0.7 을 넘으면 배열을 두 배로 늘려 다시 넣는다."
+        with open(os.path.join(data, "events-2026-10-05.jsonl"), "a", encoding="utf-8") as f:
+            for sid, a, b in (("S-out1", "21:00", "21:30"), ("S-out2", "22:00", "22:30")):
+                f.write(json.dumps({"id": f"evt_{sid}0", "session_id": sid, "ts": f"2026-10-05T{a}:00+09:00", "type": "session_start", "work_id": "W-out"}) + "\n")
+                f.write(json.dumps({"id": f"evt_{sid}9", "session_id": sid, "ts": f"2026-10-05T{b}:00+09:00", "type": "session_end"}) + "\n")
+        with open(os.path.join(data, "context-2026-10-05.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"session_id": "S-out1", "id": "o1", "ts": "2026-10-05T21:00:05+09:00", "source": "office", "kind": "doc_open",
+                                "text": 첫글, "meta": {"app": "Word", "file": "해시.docx", "chars": len(첫글)}}, ensure_ascii=False) + "\n")
+            # 두 번째 기록: 지난번 글 그대로 + 기록 밖에서 생긴 문단 하나 (첫 문단은 한 단어만 다르게 — 조각 90% 이상이면 지난 글로 봄)
+            f.write(json.dumps({"session_id": "S-out2", "id": "o2", "ts": "2026-10-05T22:00:05+09:00", "source": "office", "kind": "doc_open",
+                                "text": 첫글.replace("자료구조다", "자료 구조다") + "\n" + 새문단, "meta": {"app": "Word", "file": "해시.docx"}}, ensure_ascii=False) + "\n")
+        d1, d2 = G("W-out", "S-out1").json, G("W-out", "S-out2").json
+        검사("첫 기록: 기록을 켜기 전에 있던 글 = 기록 밖 (문단 2곳)", d1["stats"]["outside"]["spots"] == 2
+             and any(x["kind"] == "doc" and x["more"]["first"] for x in d1["items"]), str(d1["stats"]["outside"]))
+        검사("다음 기록: 지난 기록에 있던 문단은 빼고 새로 생긴 문단만 (1곳)", d2["stats"]["outside"] == {"spots": 1, "chars": len(새문단)}
+             and any(x["title"] == "기록 밖에서 바뀐 글" and x["tag"]["c"] == "noproc" for x in d2["items"]), str(d2["stats"]["outside"]))
+        검사("숫자 4칸 자료: 붙여넣기를 AI · 다른 곳으로 나눔 · 0곳도 숫자로", all(k in d1["stats"] for k in ("pastes_ai", "pastes_other", "outside")))
         d = G("W-dl", "S-dl").json
         검사("기록 다시 보기에 '파일 받기' 줄 · 붙여넣기 수엔 안 셈", any(x["title"] == "파일 받기" and x["tag"]["t"] == "AI 에서 받음" for x in d["items"])
              and d["stats"]["pastes"] == 0)

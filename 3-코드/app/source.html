@@ -98,6 +98,22 @@
 .det .src{font-size:13px;color:var(--ink2);margin-top:2px}.det .src b{font-weight:600;color:var(--ink)}
 .det .note{font-size:12.5px;color:var(--muted)}
 .det .placeholder{color:var(--faint);font-size:13.5px;margin:auto;text-align:center}
+/* 제출 전 다듬기 (10/31 · 캔버스 S-2) — [전체 | 다듬을 곳] 에서 다듬을 곳을 고르면 다른 색은 옅어지고 다듬을 곳만 남음
+   다듬을 곳 = 제목이 아닌 6어절 이상 문장 중 ① AI 답과 일치 ② 출처 표시 없이 붙여 넣은 다른 곳 글 · 빨간 경고 · 점수 없음 */
+.doc-in.fixing .s:not(.fix){background:none;text-decoration-color:transparent}
+.doc-in.fixing .tag{opacity:.4}
+.doc-in.fixing .s.kept:not(.on){background:none}
+.fx{margin-top:16px;padding-top:16px;border-top:1px solid var(--soft);display:flex;flex-direction:column;gap:10px}
+.fx-h{display:flex;align-items:center;gap:8px;font-size:13.5px}.fx-h b{font-weight:700}
+.fx-h span{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.fx p{margin:0;font-size:13.5px;line-height:1.6;color:var(--ink2)}
+.fx .acts{display:flex;gap:8px}
+.fx .acts .btn{height:32px;padding:0 12px;font-weight:500;font-size:14px;border-radius:10px}
+.fx .acts .btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}.fx .acts .btn.dark:hover{background:#27272a}
+.fx .acts .btn:disabled{opacity:.5;cursor:default}
+.fx .hint{margin:0;font-size:12.5px;color:var(--faint);line-height:1.5}
+.fx .say{font-size:12.5px;color:var(--ink2)}.fx .say.err{color:var(--copy-d)}
+.fx .undo{font-size:12.5px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
 .uses{display:flex;flex-direction:column}
 .uses button{display:grid;grid-template-columns:10px auto minmax(0,1fr);gap:8px;align-items:center;text-align:left;font-size:13px;padding:6px 0;border-top:1px solid var(--soft)}
 .uses button:hover .ut{text-decoration:underline}
@@ -171,6 +187,7 @@
       <div class="lg" id="lg-doc"></div>
       <div class="lg" id="lg-ai" hidden></div>
       <div class="right" id="r-doc">
+        <div class="filt" id="fx-f" hidden><button class="on" data-x="all">전체</button><button data-x="fix">다듬을 곳 <b id="fx-n">0</b></button></div>
         <button class="ib box" id="b-up" title="앞 출처 (↑)" aria-label="앞 출처"><svg viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
         <button class="ib box" id="b-down" title="다음 출처 (↓)" aria-label="다음 출처"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
         <span class="pos" id="pos">–</span>
@@ -312,13 +329,10 @@
   function render() {
     const c = D.counts;
     $("lg-doc").innerHTML = "";
-    // 빨강 = 글이 그대로 들어온 것 (결정 C). 이름은 어떻게 들어왔는지가 아니라 무엇과 같은지로 — 보면서 똑같이 쳐도 "AI 답과 같음" (10/12)
-    const n = k => D.sentences.filter(x => k.includes(x.kind)).length;
-    const other = n(["web", "noproc"]);
-    [["AI 답과 같음", "var(--copy-d)", n(["exact", "similar"]), true], ["다른 곳에서 옴", "var(--copy-d)", other, other > 0],
-     [GROUP.edited, "var(--edit-d)", c.edited, true], [GROUP.viewed, null, c.viewed, true], [GROUP.none, "#e4e4e7", c.none, true]]
-      .forEach(([t, col, k, show]) => {
-        if (!show) return;
+    // 빨강 = 글이 그대로 들어온 것 (결정 C) → 범례도 "그대로" 하나 (10/31 · AI 답 · 다른 곳 · 과정 없음은 문장을 누르면 오른쪽에)
+    // 출처 기록 없음 = 색 없는 글이라 범례에서 뺌 — 범례 숫자 5개 → 3개
+    [["그대로", "var(--copy-d)", c.copy], [GROUP.edited, "var(--edit-d)", c.edited], [GROUP.viewed, null, c.viewed]]
+      .forEach(([t, col, k]) => {
         const sp = el("span");
         if (col) { const i = el("i", "sw"); i.style.background = col; sp.append(i, t); }
         else sp.append(el("span", "u", t));
@@ -347,11 +361,12 @@
       w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/>'), t); box.append(w);
     }
     if (D.title) box.append(el("h1", null, D.title));
+    후보 = 다듬을_곳();
     D.paragraphs.forEach(p => {
       const para = el("p", "para" + (p.head ? " head" : ""));
       p.sents.forEach((k, i) => {
         const x = D.sentences[k];
-        const s = el("span", "s " + x.group, x.text);
+        const s = el("span", "s " + x.group + (후보.has(k) ? " fix" : ""), x.text);
         s.dataset.k = k; s.tabIndex = -1;
         s.onclick = () => pick(k, false);
         para.append(s);
@@ -361,11 +376,89 @@
       box.append(para);
     });
     qlist();
-    nav = D.sentences.filter(x => x.group !== "none").map(x => x.k);
+    보기(남은().length ? 범위 : "all");
+  }
+  let nav = [];
+
+  // ── 제출 전 다듬기 (10/31 · 캔버스 S-2) ──
+  // 다듬을 곳 = 제목이 아닌 6어절 이상 문장 중 ① AI 답과 일치 ② 다른 곳에서 붙여 넣었는데 같은 문단에 출처 표시가 없음
+  // (6어절 = 연구윤리 지침의 "6어절 이상 연속 일치" 와 같은 숫자 · 제목 · 용어 · 짧은 줄은 그대로 써도 됨)
+  let 후보 = new Set(), 범위 = "all", 다듬는중 = false;
+  const 어절 = t => t.trim().split(/\s+/).filter(Boolean).length;
+  const 인용표시 = /\[\d+\]|\(\s*출처|출처\s*[:：]|https?:\/\/|www\.|["“”「」『』]/;
+  function 다듬을_곳() {
+    const out = new Set();
+    D.paragraphs.forEach(p => {
+      if (p.head) return;
+      const 문단 = p.sents.map(k => D.sentences[k].text).join(" ");
+      p.sents.forEach(k => {
+        const x = D.sentences[k];
+        if (어절(x.text) < 6) return;
+        if (x.kind === "exact" || (x.kind === "web" && !인용표시.test(문단))) out.add(k);
+      });
+    });
+    return out;
+  }
+  // [그대로 둠] — 이 PC 에만 기억 (문장 글로) · 다듬을 곳 수에서 빠짐 · [되돌리기] 로 다시
+  const 둠키 = () => "trace.keep." + wid;
+  const 둠 = () => { try { return new Set(JSON.parse(localStorage.getItem(둠키()) || "[]")); } catch (e) { return new Set(); } };
+  function 둠바꿈(text, on) {
+    const s = 둠(); on ? s.add(text) : s.delete(text);
+    try { localStorage.setItem(둠키(), JSON.stringify([...s])); } catch (e) { /* 기억 못 해도 이 화면에선 바뀜 */ }
+  }
+  const 남은 = () => { const s = 둠(); return [...후보].filter(k => !s.has(D.sentences[k].text)).sort((a, b) => a - b); };
+
+  function 둔표시() {                                      // 그대로 둔 문장은 다듬을 곳 보기에서 옅게
+    const s = 둠(); document.querySelectorAll(".s.fix").forEach(e => e.classList.toggle("kept", s.has(D.sentences[e.dataset.k].text)));
+  }
+  function 보기(x) {                                       // [전체 | 다듬을 곳] — 지금 어느 쪽인지 늘 보이고, 돌아갈 [전체] 도 늘 옆에
+    범위 = x; 둔표시();
+    const n = 남은().length;
+    $("fx-f").hidden = !후보.size; $("fx-n").textContent = String(n);
+    $("fx-f").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.x === x));
+    $("doc").classList.toggle("fixing", x === "fix");
+    nav = x === "fix" ? 남은() : D.sentences.filter(s => s.group !== "none").map(s => s.k);
     cur = -1; $("pos").textContent = nav.length ? `– / ${nav.length}` : "0";
     if (nav.length) pick(nav[0], true); else detail(null);
   }
-  let nav = [];
+  $("fx-f").onclick = e => { const b = e.target.closest("button"); if (b && D) 보기(b.dataset.x); };
+
+  function 다듬기칸(x) {
+    const box = el("div", "fx"), 남 = 남은(), i = 남.indexOf(x.k), 둔 = i < 0;
+    const h = el("div", "fx-h"); h.append(el("b", null, "내기 전에"), el("span", null, 둔 ? "" : `다듬을 곳 ${i + 1} / ${남.length}`));
+    box.append(h);
+    if (둔) {
+      box.append(el("p", null, "그대로 두기로 했어요. 내역서에 그대로 공개돼요."));
+      const u = el("button", "undo", "되돌리기"); u.type = "button";
+      u.onclick = () => { 둠바꿈(x.text, false); 새로(x.k); };
+      box.append(u); return box;
+    }
+    const ai = x.kind === "exact";
+    box.append(el("p", null, ai ? "AI 답을 그대로 붙인 문장이에요. 그대로 내도 괜찮아요 — 내역서에 그대로 공개돼요."
+                                : "다른 곳에서 붙여 넣은 글인데 출처 표시가 없어요. 따옴표나 출처를 달면 돼요."));
+    const acts = el("div", "acts"), say = el("div", "say"); say.hidden = true;
+    const 고치기 = (글, dark) => { const b = el("button", "btn" + (dark ? " dark" : ""), 글); b.type = "button"; b.onclick = () => 다듬기(b, say); return b; };
+    if (ai) {
+      const keep = el("button", "btn", "그대로 둠"); keep.type = "button";
+      keep.onclick = () => { 둠바꿈(x.text, true); 새로(x.k); };
+      acts.append(고치기("다듬기", true), keep);
+    } else acts.append(고치기("인용 달기", true), 고치기("다듬기", false));
+    box.append(acts, el("p", "hint", "누르면 이 과제 기록이 켜지고 Word 가 열려요" + (ai ? " · AI 가 대신 고쳐 주지 않아요" : "")), say);
+    return box;
+  }
+  function 새로(k) {                                        // 그대로 둠 · 되돌리기 뒤 — 수 · 이동 목록만 다시
+    const n = 남은().length; $("fx-n").textContent = String(n); 둔표시();
+    if (범위 === "fix") { if (!n) return 보기("all"); nav = 남은(); }
+    pick(k, false);
+  }
+  async function 다듬기(btn, say) {
+    btn.disabled = true; say.hidden = false; say.className = "say"; say.textContent = "여는 중…";
+    try { const r = await call("POST", "/local/refine", null, { work_id: wid }); say.textContent = r.message; 다듬는중 = true; }
+    catch (e) { say.className = "say err"; say.textContent = e.message; }
+    btn.disabled = false;
+  }
+  // Word 에서 고치고 돌아오면 저장된 최신 내용으로 다시 읽음 (지금 보던 범위 그대로)
+  window.addEventListener("focus", () => { if (다듬는중) { 다듬는중 = false; load(); } });
 
   function pick(k, scroll) {
     document.querySelectorAll(".s.on").forEach(e => e.classList.remove("on"));
@@ -465,6 +558,7 @@
       src.append("이어지는 AI 답이나 붙여넣기 기록이 없습니다.");
       det.append(el("div", "note", "직접 썼다는 뜻은 아닙니다. 휴대폰 등 다른 기기에서 본 AI 는 기록되지 않습니다."));
     }
+    if (후보.has(x.k)) det.append(다듬기칸(x));
   }
 
   // AI 답 기준 — 질문 목록

@@ -82,14 +82,23 @@ def detail():
     문서들 = [c["meta"]["file"] for c in ctx if c.get("kind") in ("doc_path", "doc_open") and (c.get("meta") or {}).get("file")]
     items.append({"kind": "start", "ts": 시작, "title": "기록 시작", "text": 문서들[0] if 문서들 else "", "tag": None})
 
-    # 문서를 처음 볼 때 이미 있던 글 (AI 가 만든 Word · 다른 기기에서 만든 파일) — 출처 보기의 "쓴 과정 기록 없음"
+    # 문서를 처음 볼 때 이미 있던 글 중 **이 과제의 앞선 기록에 없던 글** = 기록 밖에서 바뀐 글 (10/31 · 캔버스 기록 다시 보기 v2.2)
+    # 첫 기록이면 기록을 켜기 전에 있던 글 전부 · 다음 기록부터는 지난 기록 뒤에 기록 없이 바뀐 문단만 (지난번에 쓴 글은 빼고)
+    앞선글 = _앞선_기록_글(sid, 세션, events, context)
+    밖 = {"spots": 0, "chars": 0}
     for c in ctx:
         if c.get("kind") == "doc_open":
             m = c.get("meta") or {}
-            n = m.get("chars") or len(c.get("text", ""))
-            items.append({"kind": "doc", "ts": c["ts"], "title": "문서 열기", "text": f"{m.get('file', '')} · 열 때부터 있던 글 {n:,}자",
-                          "tag": {"t": "쓴 과정 기록 없음", "c": "copy"} if n else None,
-                          "more": {"file": m.get("file", ""), "chars": n, "excerpt": c.get("text", "")[:400]}})
+            새 = [p for p in re.split(r"\n+", c.get("text", "")) if len(M.norm(p)) >= M.MIN_CHARS and not _앞에_있나(p, 앞선글)]
+            n = sum(len(p) for p in 새)
+            밖["spots"] += len(새); 밖["chars"] += n
+            첫기록 = not 앞선글
+            items.append({"kind": "doc", "ts": c["ts"], "title": "기록 밖에서 바뀐 글" if 새 else "문서 열기",
+                          "text": f"{m.get('file', '')} · " + (f"{len(새)}곳 · {n:,}자 · " + ("기록을 켜기 전에 있던 글" if 첫기록 else "지난 기록 뒤에 바뀜")
+                                                             if 새 else "지난 기록 그대로"),
+                          "tag": {"t": "쓴 과정 기록 없음", "c": "noproc"} if 새 else None,
+                          "more": {"file": m.get("file", ""), "chars": n, "spots": len(새), "first": 첫기록,
+                                   "excerpt": "\n".join(새)[:400]}})
 
     # 기록하는 동안 받은 결과물 파일 (collector/downloads.py · 10/15)
     for c in ctx:
@@ -219,9 +228,34 @@ def detail():
         work={"id": wid}, linked=분석 is not None,
         session={"id": sid, "start": 시작, "end": 끝, "n": 순서.index(sid) + 1, "total": len(순서),
                  "active_sec": max(0, _초(시작, 끝) - 멈춤초) if 시작 and 끝 else None, "pause_sec": 멈춤초},
-        stats={"questions": sum(1 for m in mine if m.get("role") == "question"), "pastes": sum(1 for e in evs if e.get("type") == "paste"),   # 받은 파일은 막대엔 있지만 붙여넣기 수엔 안 셈
-               "typed": typed, "pause_sec": 멈춤초},
+        stats={"questions": sum(1 for m in mine if m.get("role") == "question"), "pastes": sum(1 for e in evs if e.get("type") == "paste"),   # 받은 파일은 목록엔 있지만 붙여넣기 수엔 안 셈
+               "pastes_ai": len(ai붙), "pastes_other": len(다른붙),
+               "typed": typed, "pause_sec": 멈춤초, "outside": 밖},
         lanes=lanes, items=items, source=f"/source?work={quote(wid, safe='')}")
+
+
+def _앞선_기록_글(sid, 세션, events, context):
+    """이 과제에서 이 기록보다 먼저 시작한 기록들이 남긴 문서 글 (열 때 있던 글 · 문서 변화 · 붙여넣은 글) → 비교용 한 덩어리 (norm)
+    이 기록의 "열 때 있던 글" 중 여기에 없는 문단 = 기록 밖에서 바뀐 글"""
+    시작 = {e["session_id"]: e.get("ts", "") for e in events if e.get("type") == "session_start" and e.get("session_id") in 세션}
+    내시작 = 시작.get(sid, "")
+    앞 = {s for s, t in 시작.items() if s != sid and t < 내시작}
+    if not 앞:
+        return None
+    글 = "\n".join(M.norm(c.get("text", "")) for c in context
+                   if c.get("session_id") in 앞 and c.get("kind") in ("doc_open", "diff", "paste_at"))   # collector/office.py 가 남기는 문서 글
+    return (글, M._bigrams(글))
+
+
+def _앞에_있나(p, 앞선글):
+    """이 문단이 앞선 기록에 있었나 — 그대로 들어 있거나, 글자 조각 90% 이상이 있으면 (지난 기록에서 문단 일부만 고쳐 diff 가 조각만 남은 경우)"""
+    if not 앞선글:
+        return False
+    n = M.norm(p)
+    if n in 앞선글[0]:
+        return True
+    b = M._bigrams(n)
+    return bool(b) and len(b & 앞선글[1]) / len(b) >= 0.9
 
 
 def _턴_자세히(q, m, 문장, mine):
