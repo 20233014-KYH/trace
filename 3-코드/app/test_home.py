@@ -168,6 +168,12 @@ def main():
              r.status_code == 200 and 켠 == ["W-match_view"] and not r.json["started"] and r.json["opened"] and 연 == [자리]
              and 고름 == [(자리, "해시 충돌이란 서로 다른 키가 같은 값을 가지는 경우다.")], str(고름))
         검사("다듬기: Word 가 없으면 문장 고르기는 조용히 넘어감", WK._문장_고르기(자리, "없는 문장", 기다림=0) is False)
+        부른, 원래 = [], (WK.sys.platform, WK.subprocess.run)    # 맥은 startfile 이 없어서 open 으로 (11/1)
+        WK.sys.platform, WK.subprocess.run = "darwin", lambda a, **k: 부른.append(a) or type("R", (), {"returncode": 0})()
+        try:
+            검사("다듬기: 맥에서는 open 으로 결과물 파일을 엶", WK._파일_열기(자리) is True and 부른 == [["open", 자리]], str(부른))
+        finally:
+            WK.sys.platform, WK.subprocess.run = 원래
         ST.출처._파일.pop("W-match_view", None); os.remove(os.path.join(data, "docs-found.json")); os.remove(자리)
         for k in ("start", "open_file", "select_text"):
             WK.설정.pop(k)
