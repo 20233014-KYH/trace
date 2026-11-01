@@ -401,6 +401,11 @@ def _문장_고르기(p, 글, 기다림=20):
 
 
 def _파일_열기(p):
+    if sys.platform == "darwin":                                 # 맥: 그 파일의 기본 프로그램(Word)으로 (11/1 · startfile 은 윈도만)
+        try:
+            return subprocess.run(["open", p], capture_output=True, timeout=15).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            return False
     try:
         os.startfile(p)                                          # noqa: S606  윈도에서 그 파일의 기본 프로그램(Word)으로
         return True
