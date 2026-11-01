@@ -42,12 +42,13 @@ DOT_LINE, SEP = C("#d4d4d8"), "#d4d4d8"
 OK_TXT, OK_DOT, BAD = "#15803d", "#16a34a", "#d44c47"
 RED_BG, BLUE_BG, NONE_TXT = "#fdecec", "#eaf0fd", "#f7f7f7"
 NONE_BG = C("#f0f0f0")                      # 보드 rgba(24,24,27,.06) 를 흰 바탕 위 색으로
-DASH = C("#3e63dd")                         # 보고 씀 = 파랑 점선 밑줄 (이 색의 밑줄만 점선으로 그린다)
+DASH = C("#3e63dd")                         # 참고함 = 파랑 점선 밑줄 (이 색의 밑줄만 점선으로 그린다)
 
 TOOL = {"chatgpt": "ChatGPT", "claude": "Claude", "gemini": "Gemini", "perplexity": "Perplexity", "wrtn": "뤼튼"}
 # 결과물 문장 묶음 — 이름 (1차 확정 10/12) · 보드의 견본 모양
-RESULT = [("ai", "AI 답과 같음", "red"), ("other", "다른 곳에서 옴", "red"), ("edited", "붙여넣고 고침", "blue"),
-          ("viewed", "보고 씀", "dash"), ("none", "출처 기록 없음", "none")]
+# 빨강은 하나 — 다른 곳(웹 · 파일 · 과정 없음)은 새 색 없이 "AI 답과 일치 및 유사 12 · 다른 곳 3" 처럼 숫자만 따로 (11/1)
+RESULT = [("ai", "AI 답과 일치 및 유사", "red"), ("edited", "붙여넣고 고침", "blue"),
+          ("viewed", "참고함", "dash"), ("none", "출처 기록 없음", "none")]
 KIND_LOOK = {"exact": "red", "similar": "red", "edited": "blue", "viewed": "dash"}
 USAGE = [("learn", "이해·자료 찾기"), ("fix", "고치기·검토"), ("write", "작성")]
 옛쓰임 = {"understand": "learn", "find": "learn", "review": "fix", "polish": "fix"}     # 10/12 전 내역서는 다섯 칸 → 셋으로
@@ -62,7 +63,7 @@ QR = 56 * X
 FOOT_H = 14 * X + QR                        # QR 칸 (border-top + padding-top 14px + QR 56px)
 
 
-# reportlab 밑줄은 실선뿐 → 보고 씀 파랑(#3e63dd) 밑줄만 점선으로 (보드: underline dashed · 1.5px · offset 4px)
+# reportlab 밑줄은 실선뿐 → 참고함 파랑(#3e63dd) 밑줄만 점선으로 (보드: underline dashed · 1.5px · offset 4px)
 _원래선 = _rl_para._do_line
 
 
@@ -290,7 +291,7 @@ class 흐름(Flowable):
 
 
 class 견본(Flowable):
-    """결과물에 들어간 것 — 보드 .cnt: 11px 견본(둥글기 3) + "이름 수" · 간격 6px 14px · 보고 씀은 '밑줄' 글자에 파랑 점선"""
+    """결과물에 들어간 것 — 보드 .cnt: 11px 견본(둥글기 3) + "이름 수" · 간격 6px 14px · 참고함은 '밑줄' 글자에 파랑 점선"""
     def __init__(self, items):
         super().__init__()
         self.items = items                     # [(look, "이름 수")]
@@ -414,7 +415,7 @@ def render(d, url):
 
     # ── ① 어떻게 썼나 ──
     답들 = {(l.get("answer") or {}).get("text") for l in links if l.get("answer") and l.get("kind") != "viewed"}
-    쓰임 = len(답들)                                   # 글이 들어간 답 — "보고 씀"은 글이 들어간 게 아니다 (보드 A: 0)
+    쓰임 = len(답들)                                   # 글이 들어간 답 — "참고함"은 글이 들어간 게 아니다 (보드 A: 0)
     질문수, 답수 = ai.get("questions", 0), ai.get("answers", 0)
     도구별 = " · ".join(f"{TOOL.get(str(t).lower(), t)} {n}" for t, n in (ai.get("tools") or {}).items())
     body = []
@@ -469,8 +470,8 @@ def render(d, url):
     if not rc:                                        # 예전 내역서 — 학생이 확인한 연결로만
         k = [l.get("kind") for l in links]
         rc = {"ai": k.count("exact") + k.count("similar"), "edited": k.count("edited"), "viewed": k.count("viewed")}
-    칸들 = [(look, f"{name} {rc[key]}") for key, name, look in RESULT
-            if rc.get(key) is not None and not (key == "other" and not rc[key])]
+    칸들 = [(look, f"{name} {rc[key]}" + (f" · 다른 곳 {rc['other']}" if key == "ai" and rc.get("other") else ""))
+            for key, name, look in RESULT if rc.get(key) is not None]
     body = [견본(칸들)]
     후보 = [l for l in links if len((l.get("result") or {}).get("text") or "") >= 20 and not _사적.search(l["result"]["text"])]
     고른 = sorted(sorted(후보, key=lambda l: -len(l["result"]["text"]))[:MAX_EX], key=후보.index)
@@ -486,7 +487,7 @@ def render(d, url):
         번호 = next((i + 1 for i, f in enumerate(flow) if q and f.get("text") == q), None)
         a = l.get("answer") or {}
         출처 = f"질문 {번호} 의 답" if 번호 else f"{TOOL.get(str(a.get('tool', '')).lower(), a.get('tool') or 'AI')} 답"
-        how = {"viewed": "을 보고 씀", "edited": "을 붙여넣고 고침"}.get(l.get("kind"), "과 같음")
+        how = {"viewed": "을 참고함", "edited": "을 붙여넣고 고침"}.get(l.get("kind"), "과 같음")
         body += [Spacer(1, 8 * X), P(칠(l, 110) + f" <font color='#71717a'>— {E(출처)}{how} (학생 확인)</font>", "ex")]
     elif 고른:                                        # 여러 문장 — 이어 쓰고 문단 범위 (보드 B)
         문단 = sorted({(l["result"].get("location") or {}).get("paragraph") for l in 고른} - {None})

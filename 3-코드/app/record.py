@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("record", __name__)
 _ID = re.compile(r"^[\w\-.]{1,80}$")
 KEYS_GAP = 180          # 키 입력이 이만큼(초) 끊기면 Word 글 줄을 새로 (같은 앱일 때만 이어 붙임)
-GROUP_NAME = {"copy": "AI 답과 같음", "edited": "고침", "viewed": "보고 씀"}   # 출처 보기 범례와 같은 말
+GROUP_NAME = {"copy": "AI 답과 같음", "edited": "고침", "viewed": "참고함"}   # 출처 보기 범례와 같은 말
 APP_NAME = {"winword.exe": "Word", "code.exe": "VS Code", "hwp.exe": "한글", "powerpnt.exe": "PowerPoint",
             "excel.exe": "Excel", "notepad.exe": "메모장", "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱"}
 
