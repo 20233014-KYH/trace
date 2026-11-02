@@ -162,8 +162,8 @@ class MacDesktopAIWatcher(DesktopAIWatcher):
                     if role:
                         글칸 = []
                         for s in nd.kids[i + 1:]:
-                            if s.role == "AXHeading":
-                                break
+                            if s.role == "AXHeading" and (Q_HEAD.match(_모은글(s).strip()) or A_HEAD.match(_모은글(s).strip())):
+                                break                   # 다음 질문 · 답 제목에서 멈춤 — 답 안의 제목("1. 개요")은 글로 읽음 (11/2)
                             if s.sub == "AXApplicationStatus" or "sr-only" in s.cls or s.role in SKIP_ROLES \
                                     or (s.role == "AXStaticText" and TIME_TEXT.match(s.name() or "")):
                                 continue

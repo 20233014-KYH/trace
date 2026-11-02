@@ -26,6 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("record", __name__)
 _ID = re.compile(r"^[\w\-.]{1,80}$")
 KEYS_GAP = 180          # 키 입력이 이만큼(초) 끊기면 Word 글 줄을 새로 (같은 앱일 때만 이어 붙임)
+AI_TAB_SEC = 30         # 브라우저에 붙여넣은 뒤 이 안에 AI 사이트 탭이 열리면 "AI 에 넣음" (구글 AI 모드 · 11/2)
 GROUP_NAME = {"copy": "AI 답과 같음", "edited": "고침", "viewed": "참고함"}   # 출처 보기 범례와 같은 말
 APP_NAME = {"winword.exe": "Word", "code.exe": "VS Code", "hwp.exe": "한글", "powerpnt.exe": "PowerPoint",
             "excel.exe": "Excel", "notepad.exe": "메모장", "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱"}
@@ -163,6 +164,11 @@ def detail():
         else:
             ai앱 = (e.get("category") == "ai") or 어디로.endswith("앱") or "chatgpt" in (e.get("target_title") or "").lower() \
                 or "claude" in (e.get("target_title") or "").lower() or "gemini" in (e.get("target_title") or "").lower()
+            # 브라우저 새 탭 · 주소창에 붙여넣고 바로 AI 사이트로 간 것 (구글 AI 모드 · Gemini · 11/2) — 붙일 때 탭 제목이 비어 있어 못 가렸다
+            ai탭 = None if ai앱 or e.get("app", "").lower() not in M.BROWSERS else next(
+                (t for t in evs if t.get("type") == "tab" and t.get("category") == "ai" and 0 <= _초(e["ts"], t["ts"]) <= AI_TAB_SEC), None)
+            if ai탭:
+                ai앱, 어디로 = True, f"{어디로} · {ai탭.get('domain') or 'AI 사이트'}"
             items.append({"kind": "paste", "ts": e["ts"], "title": "복사 → 붙여넣기",
                           "text": f"{n:,}자 → {어디로}", "tag": {"t": "AI 에 넣음", "c": "ref"} if ai앱 else None,
                           "more": {"from": "", "to": 어디로, "copied_at": "", "len": n, "excerpt": ""}})

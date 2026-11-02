@@ -124,6 +124,20 @@ def 데스크톱():
     검사("14 맥 ChatGPT 앱: 답 제목 뒤 빈 상태 칸을 건너 문단을 모두 읽음 · 시각 · 버튼 뺌",
          읽음 == [("question", "해시 테이블이 뭐야?"), ("answer", "키를 해시 함수로 바꿔 저장하는 자료구조야.\n충돌은 처리해야 해.")], 읽음)
     검사("15 맥 ChatGPT 앱 번들 id (com.openai.codex) 도 ChatGPT 앱으로", D.BUNDLES.get("com.openai.codex") == "chatgpt")
+    # 11/2 실제: 보고서 답에 제목("해시 체인 보고서" · "1. 개요")이 있으면 거기서 멈춰 답이 통째로 빠졌다
+    줄 = F("AXGroup", kids=[
+        F("AXHeading", text="내가 한 말:", kids=[F("AXStaticText", text="내가 한 말:")]),
+        F("AXGroup", kids=[F("AXStaticText", text="보고서 써 줘")]),
+        F("AXHeading", text="ChatGPT 답변:", kids=[F("AXStaticText", text="ChatGPT 답변:")]),
+        F("AXGroup", "sr-only", sub="AXApplicationStatus"),
+        F("AXHeading", kids=[F("AXStaticText", text="해시 체인 보고서")]),
+        F("AXHeading", kids=[F("AXStaticText", text="1. 개요")]),
+        F("AXGroup", "_Paragraph_xjxw3_2", kids=[F("AXStaticText", text="해시 체인은 해시를 잇는 구조다.")]),
+        F("AXHeading", text="내가 한 말:", kids=[F("AXStaticText", text="내가 한 말:")]),
+        F("AXGroup", kids=[F("AXStaticText", text="고마워")])])
+    읽음 = [w._글(*m) for m in w._찾기(나무(F("AXWindow", kids=[줄])))]
+    검사("16 맥 ChatGPT 앱: 답 안의 제목은 글로 읽고, 다음 질문 제목에서 멈춤",
+         읽음 == [("question", "보고서 써 줘"), ("answer", "해시 체인 보고서\n1. 개요\n해시 체인은 해시를 잇는 구조다."), ("question", "고마워")], 읽음)
 
 
 if __name__ == "__main__":

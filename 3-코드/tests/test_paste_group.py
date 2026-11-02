@@ -84,6 +84,12 @@ def main():
           라벨[0] == 라벨[2] == "exact" and all(l in ("exact", "edited") for l in 라벨[:4]), 라벨)
     check("① 구글 답 문단 = 다른 곳 (Claude 답과 비슷해도)", 라벨[4:7] == ["web"] * 3, 라벨)
     check("직접 쓴 글 = 출처 기록 없음", 라벨[7] == "none", 라벨)
+    # ③ 맥: 키 입력 이벤트의 app 이 "Microsoft Word" (윈도우는 WINWORD.EXE) — 11/2 맥에서 직접 친 글이 전부 "키 입력 없음" 으로 보였다
+    친글 = "해시 체인이란 데이터를 반복해서 해시하는 구조다."
+    for app, 이름 in (("Microsoft Word", "맥"), ("WINWORD.EXE", "윈도우")):
+        p = M.process_evidence([{"ts": T("40:07"), "type": "keys", "count": 60, "app": app, "category": "work"}],
+                               [{"ts": T("40:11"), "source": "office", "kind": "diff", "text": 친글, "meta": {"app": "Word", "file": F, "where": "문단 4"}}])
+        check(f"③ {이름} Word 에서 친 글 = 타이핑 (쓴 과정 기록 없음 아님)", p["typed"] == [친글] and p["noproc"] == [], p)
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 
