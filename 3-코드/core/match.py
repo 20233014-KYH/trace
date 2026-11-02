@@ -347,6 +347,8 @@ def pasted_from_other(events, context):
 
 
 OFFICE_EXE = {"Word": "WINWORD.EXE", "PowerPoint": "POWERPNT.EXE"}
+# 키 입력 이벤트의 app — 윈도우는 exe 이름, 맥은 앱 이름 (11/2: 맥에서 직접 친 글이 전부 "키 입력 없음"으로 빨갛게 보였다)
+OFFICE_KEY_APPS = set(OFFICE_EXE.values()) | {"MICROSOFT WORD", "MICROSOFT POWERPOINT"}
 TYPED_KEYS = 0.3       # 새로 생긴 글자 1자당 이만큼 이상 키를 눌렀으면 "타이핑" (한글은 1자에 2~3번 · 영어는 1번 · 넉넉히)
 KEYS_WINDOW = (-15, 12)  # 글 변화(diff) 시각 기준으로 이 구간(초)의 그 앱 키 입력을 본다 (Word 는 2초마다 · 키는 10초마다 모아 냄)
 
@@ -360,7 +362,7 @@ def process_evidence(events, context):
     붙여넣기 글 변화(doc_paste_at 과 같은 시각·자리)는 여기서 빼고 pasted_from_ai / pasted_from_other 가 다룬다."""
     pastes = {(d["ts"], d.get("where")) for d in events if d.get("type") == "doc_paste_at"}
     붙인 = {id(d) for _, _, ds in paste_groups(events, context) for d in ds}      # 여러 문단 붙여넣기의 나머지 문단까지 (10/14)
-    keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_EXE.values()),
+    keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_KEY_APPS),
                   key=lambda k: k[0])
     typed, noproc = [], []
     # 같은 파일을 여러 번 받았으면 하나만 — 받은 곳이 확실한 것(AI 사이트 · 사이트 이름 있음) → 그중 먼저 받은 것 (10/17 · 글이 같아
