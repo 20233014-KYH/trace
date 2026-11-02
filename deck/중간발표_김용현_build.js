@@ -305,44 +305,83 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("개발 계획: 이미 돌아가는 것 위에 더한다", { placeholder: "title" });
-  // 일정
-  const steps = [["지금 · v0.1.17", "윈도우 · 맥\n다듬기까지 돌아감"], ["발표 뒤 2주", "다듬음 N · 내역서 한 줄\n실제 수업 전 필수 3개"], ["12주", "실제 학생 · 교수\n사용 테스트"], ["13주", "테스트 결과로\n고치기"], ["14주", "최종 발표"]];
-  const sw = 1.7, sg = 0.125;
-  s.addShape(pres.shapes.LINE, { x: 0.6, y: 1.32, w: 8.8, h: 0, line: { color: LINE, width: 2 } });
-  steps.forEach(([a, b], i) => {
+  const YH = ACCENT, SJ = "2E7D5B", BOTH = MUTED;
+  const head = (x, y, t) => T(s, t, { x, y, w: 4, h: 0.28, fontSize: 13, bold: true });
+  const dot = (x, y, c) => s.addShape(pres.shapes.OVAL, { x, y, w: 0.1, h: 0.1, fill: { color: c }, line: { color: c } });
+
+  // ① 구현 일정 — 칸마다 할 일 · 점 색 = 맡은 사람
+  head(0.5, 0.92, "구현 일정");
+  T(s, [{ text: "●", options: { color: YH } }, { text: " 김용현   ", options: { color: MUTED } }, { text: "●", options: { color: SJ } }, { text: " 박상진   ", options: { color: MUTED } }, { text: "●", options: { color: BOTH } }, { text: " 함께", options: { color: MUTED } }],
+    { x: 6.9, y: 0.94, w: 2.6, h: 0.24, fontSize: 9.5, align: "right" });
+  const steps = [
+    ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "다듬기까지 돌아감"]]],
+    ["발표 뒤 2주", [[YH, "\"다듬음 N\" · 내역서 한 줄"], [YH, "실사용 전 필수 3개"], [SJ, "기록 밖 변경 · 작성 모양"]]],
+    ["12 ~ 13주", [[BOTH, "테스트에서 나온 오류 고치기"], [BOTH, "출처 연결 시간 순서"]]],
+    ["14주", [[BOTH, "최종 버전 배포"]]],
+  ];
+  const sw = 2.2, sg = 0.067;
+  s.addShape(pres.shapes.LINE, { x: 0.6, y: 1.42, w: 8.8, h: 0, line: { color: LINE, width: 2 } });
+  steps.forEach(([a, items], i) => {
     const x = 0.5 + i * (sw + sg), now = i === 0;
-    s.addShape(pres.shapes.OVAL, { x: x + 0.02, y: 1.22, w: 0.2, h: 0.2, fill: { color: now ? ACCENT : "FFFFFF" }, line: { color: now ? ACCENT : MUTED, width: 1.5 } });
-    T(s, a, { x, y: 1.5, w: sw, h: 0.26, fontSize: 12, bold: true, color: now ? ACCENT : INK });
-    T(s, b, { x, y: 1.78, w: sw, h: 0.48, fontSize: 10, color: MUTED, valign: "top" });
+    s.addShape(pres.shapes.OVAL, { x: x + 0.02, y: 1.32, w: 0.2, h: 0.2, fill: { color: now ? ACCENT : "FFFFFF" }, line: { color: now ? ACCENT : MUTED, width: 1.5 } });
+    T(s, a, { x, y: 1.58, w: sw, h: 0.26, fontSize: 12, bold: true, color: now ? ACCENT : INK });
+    items.forEach(([c, t], k) => {
+      const y = 1.88 + k * 0.2;
+      if (!now) dot(x + 0.02, y + 0.06, c);
+      T(s, t, { x: now ? x : x + 0.17, y, w: sw - 0.17, h: 0.2, fontSize: 9.5, color: now ? MUTED : INK, valign: "middle" });
+    });
   });
-  // 지금 돌아가는 것 + 역할
-  card(s, 0.5, 2.5, 3.55, 2.3, SOFT, "now");
-  T(s, "지금 돌아가는 것", { x: 0.7, y: 2.6, w: 3.2, h: 0.3, fontSize: 14, bold: true });
-  T(s, [
-    { text: "✓ 윈도우 · 맥 기록기 · 크롬 확장", options: { breakLine: true } },
-    { text: "✓ 출처 잇기 · 해시 사슬 · 서버", options: { breakLine: true } },
-    { text: "✓ 내역서 PDF · 교수 링크 · 로그인", options: { breakLine: true } },
-    { text: "✓ 제출 전 다듬기 (11/1)", options: { bold: true, color: ACCENT } },
-  ], { x: 0.7, y: 2.95, w: 3.25, h: 1.1, fontSize: 12, paraSpaceAfter: 3, valign: "top" });
-  T(s, [
-    { text: "김용현  ", options: { bold: true } }, { text: "서버 · 교수 화면 · 다듬기", options: { color: MUTED, breakLine: true } },
-    { text: "박상진  ", options: { bold: true } }, { text: "기록기 · 확장 · 작성 모양", options: { color: MUTED } },
-  ], { x: 0.7, y: 4.15, w: 3.25, h: 0.55, fontSize: 11, valign: "top" });
-  // 예상 문제 → 해결
-  T(s, "예상 문제 → 해결", { x: 4.3, y: 2.55, w: 5.2, h: 0.3, fontSize: 14, bold: true });
+
+  // ② 역할 분담 (R&R) — 두 사람 나란히
+  head(0.5, 2.55, "역할 분담 (R&R)");
+  const people = [
+    ["김용현", YH, "서버 · 교수 화면 · 다듬기",
+      ["Flask 서버 · 구글/카카오 로그인", "해시 확인 · 내역서 PDF · 교수 링크", "제출 전 다듬기 · 맥 버전"],
+      ["\"다듬음 N\" · 내역서 한 줄", "실사용 전 필수 3개", "교수 인터뷰"]],
+    ["박상진", SJ, "기록기 · 확장 · 작성 모양",
+      ["윈도우 기록기 (Word · AI 앱)", "크롬 확장 (ChatGPT · Claude · Gemini)", "새 화면 디자인 반영"],
+      ["기록 밖 변경", "작성 모양 (직접 쓰기 vs 옮겨 치기)", "학생 인터뷰"]],
+  ];
+  people.forEach(([name, c, role, done, todo], i) => {
+    const x = 0.5 + i * 2.62, y = 2.9, w = 2.5;
+    card(s, x, y, w, 2.5, SOFT, "rr-" + name);
+    s.addShape(pres.shapes.RECTANGLE, { x, y: y + 0.12, w: 0.06, h: 0.55, fill: { color: c }, line: { color: c } });
+    T(s, name, { x: x + 0.18, y: y + 0.1, w: w - 0.3, h: 0.3, fontSize: 14, bold: true });
+    T(s, role, { x: x + 0.18, y: y + 0.4, w: w - 0.3, h: 0.24, fontSize: 10.5, bold: true, color: c });
+    const list = (y0, label, arr, mark) => {
+      T(s, label, { x: x + 0.18, y: y0, w: w - 0.3, h: 0.2, fontSize: 9, bold: true, color: MUTED });
+      T(s, arr.map((t, k) => ({ text: mark + " " + t, options: k < arr.length - 1 ? { breakLine: true } : {} })),
+        { x: x + 0.18, y: y0 + 0.21, w: w - 0.26, h: 0.62, fontSize: 9.5, paraSpaceAfter: 2, valign: "top" });
+    };
+    list(y + 0.78, "한 것", done, "✓");
+    list(y + 1.62, "할 것", todo, "→");
+  });
+
+  // ③ 예상 기술 문제 → 해결
+  head(5.85, 2.55, "예상 기술 문제 → 해결");
   const probs = [
-    ["말을 다 바꿔 쓴 문장은 출처를 못 잇는다", "\"출처 기록 없음\"으로 둠 · 단정 안 함"],
-    ["작성 모양 연구는 영어 · 실험실 결과", "한글로 직접 쓰기 vs 옮겨 치기를 시험"],
-    ["설치 오류 · 서버 주인 확인 · 해외 서버", "실제 수업 전 필수 3개로 고침"],
-    ["\"감시받는 느낌\" (설문 44%)", "동의 화면 · 원문은 PC에 · 언제든 멈춤"],
+    ["말을 다 바꿔 쓴 문장은 출처를 못 잇는다", "\"출처 기록 없음\"으로 두고 단정하지 않음"],
+    ["AI 앱 화면 구조가 바뀌면 못 읽는다", "버전마다 자동 시험 · 앱 안 업데이트로 바로 고침"],
+    ["윈도우에서 설치 후 안 열리는 PC가 있다", "실사용 전 필수 3개로 먼저 고침"],
+    ["작성 모양 연구는 영어 · 실험실 결과", "한글로 직접 쓰기 vs 옮겨 치기를 직접 시험"],
   ];
   probs.forEach(([p, f], i) => {
-    const y = 2.92 + i * 0.47;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 4.3, y, w: 5.2, h: 0.4, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
-    T(s, p, { x: 4.42, y, w: 2.75, h: 0.4, fontSize: 10.5, bold: true, valign: "middle" });
-    T(s, "→ " + f, { x: 7.2, y, w: 2.25, h: 0.4, fontSize: 10, color: ACCENT, valign: "middle" });
+    const y = 2.9 + i * 0.63;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.85, y, w: 3.65, h: 0.55, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
+    T(s, p, { x: 5.97, y: y + 0.05, w: 3.45, h: 0.24, fontSize: 10.5, bold: true, valign: "middle" });
+    T(s, "→ " + f, { x: 5.97, y: y + 0.28, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
   });
-  s.addNotes("기록, 출처 잇기, 내역서까지 이미 동작하고, 이번 주에 제출 전 다듬기도 들어갔습니다. 발표 뒤 2주는 다듬은 수 세기와 실제 수업 전에 꼭 고칠 세 가지, 12주에는 실제 학생과 교수에게 써 보게 합니다. 가장 큰 한계는 말을 다 바꿔 쓴 문장인데, 이건 '직접 썼다'고 단정하지 않고 '출처 기록 없음'으로 둡니다. (약 30초)");
+  s.addNotes([
+    "구현 일정입니다. 지금 v0.1.17로 윈도우와 맥 모두 다듬기까지 돌아갑니다. 발표 뒤 2주 동안 저는 교수 화면의 '다듬음 N'과 내역서 한 줄, 그리고 실제 수업 전에 꼭 고칠 세 가지를 하고, 상진이는 기록이 꺼진 동안 바뀐 문단을 찾는 기록 밖 변경과 작성 모양을 만듭니다. 12 ~ 13주에는 테스트에서 나온 오류를 고치고, 14주에 최종 버전을 냅니다.",
+    "역할은 제가 서버 · 교수 화면 · 다듬기, 상진이가 기록기 · 확장 · 작성 모양입니다. 인터뷰도 나눠서 저는 교수, 상진이는 학생을 맡습니다.",
+    "예상 기술 문제 중 가장 큰 건 말을 다 바꿔 쓴 문장입니다. 출처를 못 잇는데, 이건 '직접 썼다'고 단정하지 않고 '출처 기록 없음'으로 둡니다. 또 AI 앱 화면 구조가 바뀌면 못 읽는데, 실제로 이번 주에 한 번 겪어서 버전마다 자동 시험을 돌리고 앱 안 업데이트로 바로 고쳤습니다. (약 45초)",
+    "",
+    "질문 대비",
+    "· 실사용 전 필수 3개? → ① 윈도우 설치 후 안 열림 ② 서버 기록 읽기 주소 3개에 주인 확인 ③ 국외(싱가포르) 서버 이전 동의 문구.",
+    "· 기록 밖 변경? → 기록이 꺼진 동안 문서가 바뀌었으면 그 문단을 따로 표시 (저장 파일 비교).",
+    "· 작성 모양? → \"4분 동안 2초 넘게 멈춘 적 없음 · 고침 0회 · 한 번에 1,100자\" 같은 사실만. 판정하지 않음.",
+    "· 출처 연결 시간 순서? → 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 — 붙여넣은 시각보다 뒤에 나온 답에는 잇지 않게.",
+  ].join("\n"));
 }
 
 // ───────── 맨 뒤 · 자료 출처 ─────────
