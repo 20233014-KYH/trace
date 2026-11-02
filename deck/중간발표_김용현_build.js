@@ -35,9 +35,6 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, "AI 답과 참고한 글을 어떻게 썼는지 기록하고,\n제출 전에 그대로 가져온 곳을 학생이 다듬게 한 뒤,\n교수에게 한 장으로 공개합니다.",
     { x: 0.6, y: 2.95, w: 6.6, h: 0.95, fontSize: 13, color: "C9C8C3" });
   T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 6.5, h: 0.3, fontSize: 12, color: "C9C8C3" });
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 7.75, y: 3.2, w: 1.6, h: 1.6, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" }, objectName: "qr-slot" });
-  T(s, "피그마 QR\n(링크 받으면\n바꾸기)", { x: 7.75, y: 3.2, w: 1.6, h: 1.6, fontSize: 11, color: MUTED, align: "center", valign: "middle" });
-  T(s, "프로토타입", { x: 7.75, y: 4.85, w: 1.6, h: 0.25, fontSize: 10, color: "C9C8C3", align: "center" });
   s.addNotes("AI를 허용하는 수업에서, 대화 내역 제출을 대신하는 Trace입니다. (약 10초)");
 }
 
@@ -130,7 +127,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   const flow = [
     ["기록", "평소처럼 AI와 과제\n원문은 학생 PC에만"],
     ["출처 보기", "문장마다 어느 AI 답 ·\n웹 글에서 왔는지"],
-    ["제출 전 다듬기", "AI 답 그대로인 문장을\n학생이 직접 고치거나 인용"],
+    ["제출 전 다듬기", "AI 답과 똑같은 문장 ·\n표절 의심(출처 없는 웹 글)을\n학생이 직접 고침"],
     ["공개", "교수에게\n내역서 링크 한 장"],
   ];
   flow.forEach(([h, d], i) => {
@@ -139,7 +136,7 @@ const card = (slide, x, y, w, h, fill, name) =>
     s.addShape(pres.shapes.OVAL, { x: x + 0.14, y: 1.17, w: 0.28, h: 0.28, fill: { color: ACCENT }, line: { color: ACCENT } });
     T(s, String(i + 1), { x: x + 0.14, y: 1.17, w: 0.28, h: 0.28, fontSize: 11, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
     T(s, h, { x: x + 0.5, y: 1.17, w: w - 0.55, h: 0.28, fontSize: 13, bold: true, color: hl ? ACCENT : INK, valign: "middle" });
-    T(s, d, { x: x + 0.14, y: 1.55, w: w - 0.2, h: 0.6, fontSize: 10, color: MUTED, valign: "top" });
+    T(s, d, { x: x + 0.14, y: 1.52, w: w - 0.2, h: 0.68, fontSize: 10, color: MUTED, valign: "top" });
     if (i < 3) s.addShape(pres.shapes.LINE, { x: x + w + 0.03, y: 1.65, w: 0.22, h: 0, line: { color: INK, width: 1.5, endArrowType: "triangle" } });
   });
   // 누가 쓰나
@@ -147,12 +144,11 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, "누가 쓰나", { x: 0.68, y: 2.65, w: 2.5, h: 0.28, fontSize: 13, bold: true });
   T(s, [
     { text: "교수 · 첫 고객", options: { bold: true, color: ACCENT, breakLine: true } },
-    { text: "AI 허용 과제에 사용 내역을 요구\n계정 · 설치 없이 링크만 연다", options: { color: INK, breakLine: true } },
+    { text: "AI 허용 과제에 사용 내역을 요구\n설치 없이 내역서 링크 · QR만 연다", options: { color: INK, breakLine: true } },
     { text: " ", options: { fontSize: 5, breakLine: true } },
     { text: "학생 · 쓰는 사람", options: { bold: true, color: ACCENT, breakLine: true } },
     { text: "평소처럼 과제를 하고\n제출 전에 직접 고친다", options: { color: INK } },
   ], { x: 0.68, y: 3.0, w: 2.55, h: 1.9, fontSize: 10.5, valign: "top", paraSpaceAfter: 2 });
-  T(s, "다음 단계: 대학원 논문", { x: 0.68, y: 4.95, w: 2.5, h: 0.24, fontSize: 9.5, color: MUTED });
   // 기존 방법과 차이
   T(s, "기존 방법과 무엇이 다른가", { x: 3.6, y: 2.6, w: 5.9, h: 0.28, fontSize: 13, bold: true });
   const cw = [1.55, 2.5, 1.85];
@@ -172,59 +168,53 @@ const card = (slide, x, y, w, h, fill, name) =>
   });
   s.addNotes([
     "Trace는 AI 사용을 잡아내는 도구가 아니라, 학생이 제출 전에 스스로 고치게 하고 그 과정을 공개하는 도구입니다.",
-    "흐름은 네 단계입니다. 평소처럼 AI와 과제를 하면 기록되고, 출처 보기에서 문장마다 어느 AI 답에서 왔는지 보고, 제출 전에 AI 답 그대로인 문장을 직접 고치거나 인용을 단 뒤, 교수에게 내역서 링크 한 장으로 공개합니다.",
+    "흐름은 네 단계입니다. 평소처럼 AI와 과제를 하면 기록되고, 출처 보기에서 문장마다 어느 AI 답에서 왔는지 보고, 제출 전에 AI 답과 똑같은 문장이나 출처 없이 붙인 웹 글, 곧 표절 의심 문장을 직접 고치거나 인용을 단 뒤, 교수에게 내역서 링크 한 장으로 공개합니다.",
     "캡처 제출은 교수가 손으로 대조해야 하고, 카피킬러 같은 검사기는 학생이 실제로 쓴 AI 답을 모른 채 확률로 추정합니다. Trace는 학생이 실제로 본 AI 답과 문장을 직접 비교하고, 확률이 아니라 사실만 보여 줍니다. (약 25초)",
   ].join("\n"));
 }
 
-// ───────── 5장 핵심 기능 · 범위 ─────────
+// ───────── 5장 핵심 기능 · 개발 범위 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("핵심 기능: 있던 출처 보기에 '제출 전 다듬기'를 더했다", { placeholder: "title" });
-  const col = (x, w, head, c, bg) => {
-    card(s, x, 1.05, w, 4.3, bg, "scope-" + head);
-    T(s, head, { x: x + 0.18, y: 1.15, w: w - 0.3, h: 0.32, fontSize: 15, bold: true, color: c });
-  };
-  const items = (x, y, w, arr, fs = 10.5) => arr.forEach(([b, m], i) => {
-    T(s, [{ text: b, options: { bold: true, breakLine: !!m } }].concat(m ? [{ text: m, options: { color: MUTED, fontSize: fs - 1 } }] : []),
-      { x, y: y + i * 0.5, w, h: 0.46, fontSize: fs, valign: "top" });
+  s.addText("핵심 기능과 개발 범위", { placeholder: "title" });
+  const feats = [
+    ["기록", "AI 대화 · 복사/붙여넣기 · Word 글 변화 · 키 횟수", "원문은 학생 PC에만, 서버엔 해시만"],
+    ["출처 보기", "보고서 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
+    ["제출 전 다듬기", "AI 답과 똑같은 문장 · 출처 없는 웹 글만 모아 보기", "[다듬기] [인용 달기] [그대로 둠] — 고치는 건 학생"],
+    ["내역서 · 교수 링크", "학생이 고른 것만 PDF 한 장 + 링크 · QR", "기록과 일치 확인 · 고친 문장 수는 발표 뒤"],
+  ];
+  feats.forEach(([h, a, b], i) => {
+    const x = 0.5 + (i % 2) * 4.55, y = 1.0 + Math.floor(i / 2) * 1.38, w = 4.45;
+    card(s, x, y, w, 1.26, SOFT, "feat-" + i);
+    s.addShape(pres.shapes.OVAL, { x: x + 0.16, y: y + 0.14, w: 0.3, h: 0.3, fill: { color: ACCENT }, line: { color: ACCENT } });
+    T(s, String(i + 1), { x: x + 0.16, y: y + 0.14, w: 0.3, h: 0.3, fontSize: 12, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
+    T(s, h, { x: x + 0.56, y: y + 0.13, w: w - 0.7, h: 0.32, fontSize: 14, bold: true, valign: "middle" });
+    T(s, [{ text: a, options: { breakLine: true } }, { text: b, options: { color: MUTED } }], { x: x + 0.56, y: y + 0.5, w: w - 0.7, h: 0.66, fontSize: 10.5, valign: "top", paraSpaceAfter: 3 });
   });
-  // 한다
-  col(0.5, 4.3, "한다", ACCENT, SOFT);
-  T(s, "지금 있음 · v0.1.17", { x: 0.68, y: 1.52, w: 3.9, h: 0.22, fontSize: 9.5, bold: true, color: MUTED });
-  items(0.68, 1.78, 3.95, [
-    ["기록", "AI 대화 · 복사/붙여넣기 · Word 글"],
-    ["출처 보기", "문장마다 AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
-    ["내역서 PDF · 교수 링크", "학생이 고른 것만 공개"],
-  ]);
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.62, y: 3.32, w: 4.06, h: 1.92, rectRadius: 0.06, fill: { color: ACCENT_BG }, line: { color: ACCENT, width: 1.25 } });
-  T(s, "새로 더함 · 제출 전 다듬기", { x: 0.78, y: 3.4, w: 3.8, h: 0.24, fontSize: 10.5, bold: true, color: ACCENT });
-  items(0.78, 3.7, 3.8, [
-    ["다듬을 곳만 모아 보기  ✓", "AI 답 그대로인 문장 · 출처 표시 없는 웹 글"],
-    ["[다듬기] · [인용 달기] · [그대로 둠]  ✓", "고치는 건 학생 — AI가 대신 고치지 않음"],
-    ["교수 내역서에 '제출 전 고친 문장 수'", "발표 뒤 2주"],
-  ]);
-  // 다음 단계
-  col(4.95, 2.2, "다음 단계", INK, SOFT);
-  items(5.13, 1.6, 1.95, [
-    ["논문용 점검", "표절 지침 유형 · 참고문헌 확인"],
-    ["뜻으로 비교", "통째로 바꿔 쓴 문장 찾기"],
-  ], 10.5);
-  // 안 한다
-  col(7.3, 2.2, "안 한다", MUTED, SOFT);
-  items(7.48, 1.6, 1.95, [
-    ["표절률 · AI 확률 판정", ""],
-    ["AI가 대신 고쳐 주기", ""],
-    ["30명 모아 보기", ""],
-    ["AI 금지 과제", "대상이 아님"],
-  ], 10.5);
+  // 개발 범위
+  card(s, 0.5, 3.85, 9.0, 1.5, ACCENT_BG, "scope");
+  T(s, "개발 범위", { x: 0.68, y: 3.93, w: 3, h: 0.3, fontSize: 13, bold: true, color: ACCENT });
+  const scope = [
+    ["대상", "AI를 허용한 학부 과제"],
+    ["운영체제", "윈도우 · 맥 (Apple 칩)"],
+    ["AI", "ChatGPT · Claude · Gemini 웹\nChatGPT · Claude 데스크톱 앱"],
+    ["결과물", "Word · PDF 보고서"],
+    ["보여 주는 것", "기록된 사실만\n점수 · 확률 판정 없음"],
+  ];
+  const sw5 = [1.55, 1.6, 2.3, 1.45, 1.75];
+  let sx = 0.68;
+  scope.forEach(([k, v], i) => {
+    T(s, k, { x: sx, y: 4.3, w: sw5[i] - 0.1, h: 0.22, fontSize: 9.5, bold: true, color: MUTED });
+    T(s, v, { x: sx, y: 4.53, w: sw5[i] - 0.1, h: 0.7, fontSize: 10.5, valign: "top" });
+    sx += sw5[i];
+  });
   s.addNotes([
-    "새 엔진을 만들지 않고, 이미 돌아가는 출처 보기에 '제출 전 다듬기'를 더했습니다.",
-    "학생이 보고서를 열면 AI 답 그대로인 문장과 출처 표시 없이 붙인 웹 글만 모아 보여 주고, 학생이 다듬기, 인용 달기, 그대로 두기 중에 고릅니다. 고치는 건 학생이고, AI가 대신 고쳐 주지 않습니다. 교수 내역서에는 제출 전에 몇 문장을 고쳤는지만 갑니다.",
-    "논문용 점검과 뜻 비교는 다음 단계이고, 표절률이나 AI 확률 판정은 하지 않습니다. (약 25초)",
+    "핵심 기능은 네 가지입니다. 기록, 문장마다 어디서 왔는지 보여 주는 출처 보기, AI 답과 똑같은 문장이나 출처 없는 웹 글을 학생이 제출 전에 직접 고치는 다듬기, 그리고 학생이 고른 것만 교수에게 보내는 내역서와 링크입니다.",
+    "범위는 AI를 허용한 학부 과제, 윈도우와 맥, ChatGPT · Claude · Gemini, Word와 PDF 보고서입니다. 점수나 확률로 판정하지 않고 기록된 사실만 보여 줍니다. (약 25초)",
     "",
     "질문 대비",
-    "· 웹 글은 왜 '출처 표시'만 보나? → 교육부 연구윤리 지침의 표절 정의가 '출처 표시 없이 활용'이라서. 출처를 달면 표절이 아님.",
+    "· 왜 표절률 · AI 확률을 안 내나? → 기획서 원칙 1. 과제 교수의 규칙은 '대화 내역 제출 · 복붙 감점'이지 표절률이 아님. 확률은 직접 쓴 학생도 걸림 → 사실(어디서 왔나)만.",
+    "· 웹 글은 왜 출처 표시만 보나? → 교육부 연구윤리 지침의 표절 정의가 '출처 표시 없이 활용'. 출처를 달면 표절이 아님.",
   ].join("\n"));
 }
 
@@ -252,72 +242,51 @@ const card = (slide, x, y, w, h, fill, name) =>
   ].join("\n"));
 }
 
-// ───────── 6장 (이어서) 와이어프레임 ─────────
-{
+// ───────── 6장 (이어서) 와이어프레임 ①② ─────────
+[
+  ["와이어프레임 ① 로그인 · 홈", [
+    ["wf-login.png", 1.596, "로그인", "구글 · 카카오 · 이메일. 첫 화면부터 '원문은 내 PC에만 · 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게"],
+    ["wf-home.png", 1.596, "홈", "과제를 마감 순으로. 카드마다 4단계(기록 → 출처 보기 → 연결 확인 → 내역서) 진행. 기록 중이면 맨 위에 멈춤 · 마치기"]]],
+  ["와이어프레임 ② 출처 보기 · 교수 링크", [
+    ["wf-source.png", 1.596, "출처 보기", "보고서 문장마다 어디서 왔는지 색으로. 문장을 누르면 오른쪽에 AI 답 원문과 복사 → 붙여넣기 시각"],
+    ["wf-statement.png", 1.415, "교수 링크 (내역서)", "학생이 고른 것만. 서버 기록과 맞으면 '서버 기록과 일치'. 숫자와 사실만"]]],
+].forEach(([title, two], si) => {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("와이어프레임: 지금 앱의 주요 화면", { placeholder: "title" });
-  const wf = [
-    ["wf-login.png", 1.596, "로그인", "구글 · 카카오 · 이메일\n첫 화면에 안내:\n원문은 내 PC에만\n점수 · 판정 없음"],
-    ["wf-home.png", 1.596, "홈", "과제를 마감 순으로\n카드마다 4단계 진행\n기록 중이면 맨 위에\n멈춤 · 마치기"],
-    ["wf-source.png", 1.596, "출처 보기", "문장마다 어디서\n왔는지 색으로\n누르면 AI 답 원문과\n붙여넣은 시각"],
-    ["wf-statement.png", 1.415, "교수 링크 (내역서)", "학생이 고른 것만\n'서버 기록과 일치' 표시\n점수 · 판정 없음"],
-  ];
-  wf.forEach(([f, r, h, d], i) => {
-    const cx = 0.5 + (i % 2) * 4.6, cy = 1.0 + Math.floor(i / 2) * 2.2, bw = 2.75, bh = 1.95;
+  s.addText(title, { placeholder: "title" });
+  two.forEach(([f, r, h, d], i) => {
+    const cx = 0.5 + i * 4.6, cy = 1.0, bw = 4.4, bh = 2.9;
     s.addShape(pres.shapes.RECTANGLE, { x: cx, y: cy, w: bw, h: bh, fill: { color: SOFT }, line: { color: LINE, width: 0.75 } });
     const iw = Math.min(bw, bh * r), ih = iw / r;
     s.addImage({ path: IMG + f, x: cx + (bw - iw) / 2, y: cy + (bh - ih) / 2, w: iw, h: ih });
-    T(s, h, { x: cx + 2.9, y: cy + 0.1, w: 1.55, h: 0.3, fontSize: 13, bold: true });
-    T(s, d, { x: cx + 2.9, y: cy + 0.45, w: 1.6, h: 1.2, fontSize: 9.5, color: MUTED, valign: "top", paraSpaceAfter: 2 });
+    T(s, h, { x: cx, y: 4.05, w: bw, h: 0.3, fontSize: 14, bold: true });
+    T(s, d, { x: cx, y: 4.4, w: bw, h: 0.75, fontSize: 10.5, color: MUTED, valign: "top" });
   });
-  T(s, "10/19 · 앱 v0.1.13 기준  →  새로 더한 다듬기 · 교수 화면은 피그마 프로토타입 (다음 장)", { x: 0.5, y: 5.25, w: 9, h: 0.22, fontSize: 9.5, color: ACCENT });
-  s.addNotes("와이어프레임은 지금 앱의 주요 화면 네 개입니다. 로그인 첫 화면부터 '원문은 내 PC에만, 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게 했습니다. 새로 더한 다듬기와 교수 화면은 다음 장 피그마 프로토타입에서 보여 드립니다. (약 15초)");
-}
-
-// 피그마 캡처 자리 — 상진이 캡처를 주면 그림으로 바꾼다
-const shot = (s, x, y, w, h, id, name) => {
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.06, fill: { color: SOFT }, line: { color: MUTED, width: 1, dashType: "dash" }, objectName: "figma-" + id });
-  T(s, [{ text: id, options: { bold: true, color: ACCENT, breakLine: true } }, { text: name, options: { breakLine: true } }, { text: "피그마 캡처 자리", options: { color: MUTED, fontSize: 9 } }],
-    { x, y, w, h, fontSize: 11, align: "center", valign: "middle" });
-};
-const points = (s, x, y, w, arr, fs = 10) => arr.forEach(([b, m], i) => {
-  s.addShape(pres.shapes.OVAL, { x, y: y + i * 0.42 + 0.02, w: 0.24, h: 0.24, fill: { color: ACCENT }, line: { color: ACCENT } });
-  T(s, String(i + 1), { x, y: y + i * 0.42 + 0.02, w: 0.24, h: 0.24, fontSize: 9.5, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
-  T(s, [{ text: b + "  ", options: { bold: true } }, { text: m, options: { color: MUTED } }], { x: x + 0.32, y: y + i * 0.42, w: w - 0.32, h: 0.28, fontSize: fs, valign: "middle" });
+  T(s, "10/19 · 앱 v0.1.13 기준 와이어프레임", { x: 0.5, y: 5.25, w: 9, h: 0.22, fontSize: 9.5, color: MUTED });
+  s.addNotes(si === 0
+    ? "와이어프레임입니다. 로그인 첫 화면부터 '원문은 내 PC에만, 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게 했고, 홈에서는 과제마다 어디까지 했는지 4단계로 보입니다. (약 10초)"
+    : "출처 보기에서는 문장마다 어디서 왔는지 색으로 보이고, 누르면 그 AI 답 원문이 나옵니다. 교수 링크는 학생이 고른 것만, 서버 기록과 맞는지 함께 보여 줍니다. (약 10초)");
 });
 
-// ───────── 7장 프로토타입 ① 학생 ─────────
+// ───────── 프로토타입 — 피그마 링크 · 직접 써 보고 고친 것 ─────────
+const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 링크)
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("프로토타입 ① 학생: 출처를 보고, 제출 전에 직접 고친다", { placeholder: "title" });
-  shot(s, 0.5, 1.0, 5.75, 3.0, "S-2", "출처 보기 · 제출 전 다듬기");
-  points(s, 0.5, 4.15, 5.75, [
-    ["다듬을 곳만 모아 보기", "AI 답 그대로 · 출처 표시 없는 웹 글"],
-    ["이유 한 줄 + 원문 나란히", "\"AI 답 그대로예요\" · \"출처 표시가 없어요\""],
-    ["[다듬기] [인용 달기] [그대로 둠]", "고치는 건 학생 — AI가 대신 안 고침"],
-  ]);
-  shot(s, 6.5, 1.0, 3.0, 1.75, "S-1", "홈 · 기록 중 작은 창");
-  T(s, "기록 중임이 늘 보이고, 언제든 멈춤", { x: 6.5, y: 2.8, w: 3.0, h: 0.24, fontSize: 9.5, color: MUTED, align: "center" });
-  shot(s, 6.5, 3.2, 3.0, 1.75, "S-4", "제출 전 가리기");
-  T(s, "보내기 전에 대화를 골라 가림", { x: 6.5, y: 5.0, w: 3.0, h: 0.24, fontSize: 9.5, color: MUTED, align: "center" });
-  s.addNotes([
-    "학생 화면입니다. 핵심은 출처 보기의 제출 전 다듬기입니다. 표절률 대신 어디를 어떻게 고치면 되는지를 보여 줍니다.",
-    "AI 답 그대로인 문장과 출처 표시 없는 웹 글만 모아 보여 주고, 문장마다 이유 한 줄과 AI 답 원문을 나란히 둡니다. 학생은 다듬기, 인용 달기, 그대로 두기 중에 고르고, 고치는 건 학생이 직접 합니다.",
-    "오른쪽은 기록 중임을 늘 보여 주는 작은 창과, 교수에게 보내기 전에 대화를 골라 가리는 화면입니다. (약 35초 · 피그마 시연은 표지 QR)",
-  ].join("\n"));
-}
-
-// ───────── 8장 프로토타입 ② 교수 · 직접 써 보고 고친 것 ─────────
-{
-  const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("프로토타입 ② 교수 · 직접 써 보고 고친 것", { placeholder: "title" });
-  shot(s, 0.5, 1.0, 2.2, 2.75, "P-1", "내역서 화면");
-  shot(s, 2.85, 1.0, 2.2, 2.75, "P-2", "내역서 상세");
-  points(s, 0.5, 3.95, 4.55, [
-    ["맨 위 한 줄", "AI 답 그대로 3 · 제출 전 고침 2"],
-    ["AI 답과 문장 나란히", "궁금한 곳만 열어 봄"],
-    ["점수 · 등급 없음", "기록된 사실만"],
-  ]);
+  s.addText("UI/UX 프로토타입", { placeholder: "title" });
+  card(s, 0.5, 1.0, 4.6, 4.35, ACCENT_BG, "figma");
+  T(s, "피그마 프로토타입", { x: 0.7, y: 1.12, w: 4.2, h: 0.32, fontSize: 15, bold: true, color: ACCENT });
+  T(s, FIGMA_URL ? [{ text: FIGMA_URL, options: { hyperlink: { url: FIGMA_URL, tooltip: "피그마 프로토타입 열기" } } }] : "피그마 링크 자리 (박상진에게 받으면 넣기)",
+    { x: 0.7, y: 1.5, w: 4.2, h: 0.5, fontSize: 11, color: FIGMA_URL ? ACCENT : "C0502A", valign: "top" });
+  T(s, "화면 7개", { x: 0.7, y: 2.15, w: 4.2, h: 0.26, fontSize: 11.5, bold: true });
+  T(s, [
+    { text: "학생", options: { bold: true, color: ACCENT, breakLine: true } },
+    { text: "S-0 동의 · S-1 홈 + 기록 중 작은 창", options: { breakLine: true } },
+    { text: "S-2 출처 보기 · 제출 전 다듬기", options: { breakLine: true } },
+    { text: "S-3 연결 확인 · S-4 제출 전 가리기", options: { breakLine: true } },
+    { text: " ", options: { fontSize: 5, breakLine: true } },
+    { text: "교수", options: { bold: true, color: "C0502A", breakLine: true } },
+    { text: "P-1 내역서 화면 · P-2 내역서 상세" },
+  ], { x: 0.7, y: 2.45, w: 4.2, h: 1.9, fontSize: 10.5, valign: "top", paraSpaceAfter: 2 });
+  T(s, "보는 법: 위 링크를 열고 ▶ (프레젠테이션)", { x: 0.7, y: 4.9, w: 4.2, h: 0.3, fontSize: 9.5, color: MUTED });
   // 직접 써 보고 고친 것
   card(s, 5.35, 1.0, 4.15, 4.35, SOFT, "selftest");
   T(s, "직접 과제 하나를 써 보고 고친 것", { x: 5.53, y: 1.1, w: 3.9, h: 0.28, fontSize: 13, bold: true });
@@ -337,8 +306,8 @@ const points = (s, x, y, w, arr, fs = 10) => arr.forEach(([b, m], i) => {
   });
   T(s, "팀 안에서 해 본 것 → 실제 학생 · 교수 테스트는 12주", { x: 5.53, y: 4.82, w: 3.9, h: 0.4, fontSize: 9.5, color: MUTED, valign: "middle" });
   s.addNotes([
-    "교수 화면입니다. 내역서 맨 위 한 줄에서 AI 답 그대로 쓴 곳과 제출 전에 고친 곳 수를 바로 보고, 궁금한 곳만 열면 AI 답과 학생 문장이 나란히 나옵니다. 점수나 등급은 없습니다.",
-    "오른쪽은 저희가 직접 과제 하나를 써 보며 찾은 문제입니다. ChatGPT 앱의 긴 답이 빠지고, 맥에서 직접 친 글이 '기록 없음'으로 뜨고, 그대로 붙인 글이 엉뚱한 답에 이어지는 문제를 찾아 v0.1.16과 v0.1.17에서 고쳤습니다. 실제 학생과 교수 테스트는 12주에 합니다. (약 35초)",
+    "프로토타입은 피그마 링크로 보실 수 있습니다. 학생 화면 다섯 개와 교수 화면 두 개이고, 핵심은 출처 보기의 제출 전 다듬기와 교수 내역서 화면입니다.",
+    "오른쪽은 저희가 직접 과제 하나를 써 보며 찾은 문제입니다. ChatGPT 앱의 긴 답이 빠지고, 맥에서 직접 친 글이 '기록 없음'으로 뜨고, 그대로 붙인 글이 엉뚱한 답에 이어지는 문제를 찾아 v0.1.16과 v0.1.17에서 고쳤습니다. (약 30초)",
   ].join("\n"));
 }
 
