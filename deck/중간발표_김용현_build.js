@@ -34,7 +34,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   // 로고 (앱 아이콘 = 상진 10/13) + 이름
   s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 1.5, w: 0.92, h: 0.92 });
   T(s, "Trace", { x: 1.68, y: 1.46, w: 4, h: 0.95, fontSize: 54, bold: true, color: "FFFFFF", valign: "middle", objectName: "cover-title" });
-  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.68, w: 4.7, h: 0.5, fontSize: 22, color: "FFFFFF" });
+  T(s, "AI 사용 내역 공개,\n손 대신 기록으로", { x: 0.6, y: 2.68, w: 4.7, h: 0.9, fontSize: 24, color: "FFFFFF", valign: "top", paraSpaceAfter: 2 });
   T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 5.4, h: 0.3, fontSize: 12, color: "C9C8C3" });
 
   // 그래픽: 왼쪽 출처(AI 답 · 웹 글) → 오른쪽 보고서 문장마다 색 — "문장마다 어디서 왔는지"
