@@ -170,15 +170,6 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, "교수", { x: 8.2, y: 1.2, w: 1.2, h: 0.3, fontSize: 14, bold: true, color: ACCENT });
   chip(8.2, 1.58, "FE", FE);
   T(s, "브라우저로\n링크만 · 계정 없음", { x: 8.2, y: 1.88, w: 1.25, h: 0.5, fontSize: 10, color: INK });
-  // 왜 웹이 아니라 앱?
-  card(s, 7.6, 2.75, 1.9, 1.8, ACCENT_BG, "why-app");
-  T(s, "왜 웹이 아니라 앱?", { x: 7.72, y: 2.83, w: 1.75, h: 0.28, fontSize: 11.5, bold: true, color: ACCENT });
-  T(s, [
-    { text: "① 브라우저 밖까지 본다", options: { bold: true, breakLine: true } },
-    { text: "Word · ChatGPT 앱 ·\n앱 사이 붙여넣기", options: { color: MUTED, breakLine: true } },
-    { text: "② 원문을 PC에만 둔다", options: { bold: true, breakLine: true } },
-    { text: "서버로는 해시만", options: { color: MUTED } },
-  ], { x: 7.72, y: 3.15, w: 1.72, h: 1.35, fontSize: 10, paraSpaceAfter: 4, valign: "top" });
   // 화살표 + 번호
   const arrow = (x, y, w, h, opt = {}) => s.addShape(pres.shapes.LINE, Object.assign({ x, y, w, h, line: { color: INK, width: 1.5, endArrowType: "triangle" } }, opt));
   const num = (x, y, n) => {
@@ -189,27 +180,42 @@ const card = (slide, x, y, w, h, fill, name) =>
   arrow(4.25, 2.7, 0.7, 0); num(4.46, 2.42, "2");
   arrow(7.4, 1.8, 0.65, 0); num(7.58, 1.52, "3");
   s.addShape(pres.shapes.LINE, { x: 6.175, y: 3.2, w: 0, h: 0.35, line: { color: INK, width: 1.5, beginArrowType: "triangle", endArrowType: "triangle" } });
-  // 흐름 설명
-  const flows = [["1", "기록 중", "서버엔 해시만"], ["2", "제출 때", "학생이 고른 원문만 · 서버가 해시로 조작 확인"], ["3", "교수", "비밀 링크로 읽기만"]];
-  const fw = [2.2, 4.3, 2.3]; let fx = 0.5;
-  flows.forEach(([n, a, b], i) => {
-    num(fx, 4.78, n);
-    T(s, [{ text: a + "  ", options: { bold: true } }, { text: b, options: { color: MUTED } }], { x: fx + 0.36, y: 4.75, w: fw[i] - 0.4, h: 0.34, fontSize: 11, valign: "middle" });
-    fx += fw[i] + 0.1;
+  // 데이터 흐름 (오른쪽 아래)
+  card(s, 7.6, 2.75, 1.9, 1.8, ACCENT_BG, "flow");
+  T(s, "데이터 흐름", { x: 7.72, y: 2.83, w: 1.75, h: 0.28, fontSize: 11.5, bold: true, color: ACCENT });
+  [["1", "기록 중", "서버엔 해시만"], ["2", "제출 때", "고른 원문만 · 해시로 확인"], ["3", "교수", "링크로 읽기만"]].forEach(([n, a, b], i) => {
+    const y = 3.18 + i * 0.44;
+    num(7.72, y, n);
+    T(s, [{ text: a, options: { bold: true, breakLine: true } }, { text: b, options: { color: MUTED, fontSize: 9 } }], { x: 8.06, y: y - 0.04, w: 1.42, h: 0.42, fontSize: 10, valign: "top" });
   });
+  // 기술 스택 — 공통 / 윈도우 / 맥
+  const stack = [
+    ["공통", "Python 3.11 · pywebview (화면) · PyInstaller · 크롬 확장 Manifest V3 · Flask · SQLAlchemy · Supabase PostgreSQL · GitHub Actions"],
+    ["윈도우", "Word 읽기 = pywin32 (COM)   ·   ChatGPT · Claude 앱 읽기 = UI Automation   ·   설치 = Inno Setup → exe"],
+    ["맥", "Word 읽기 = AppleScript   ·   ChatGPT · Claude 앱 읽기 = 손쉬운 사용 API (pyobjc)   ·   설치 = 서명된 dmg"],
+  ];
+  T(s, "기술 스택", { x: 0.5, y: 4.66, w: 1.2, h: 0.24, fontSize: 10, bold: true, color: ACCENT });
+  stack.forEach(([k, v], i) => {
+    const y = 4.66 + i * 0.25;
+    T(s, k, { x: 1.35, y, w: 0.6, h: 0.24, fontSize: 9.5, bold: true, valign: "middle" });
+    T(s, v, { x: 1.95, y, w: 7.55, h: 0.24, fontSize: 9.5, color: MUTED, valign: "middle" });
+  });
+  s.addShape(pres.shapes.LINE, { x: 0.5, y: 4.62, w: 9.0, h: 0, line: { color: LINE, width: 0.75 } });
   s.addNotes([
     "Trace는 학생 PC, 서버, 교수 세 부분으로 나뉩니다.",
-    "먼저, Trace는 웹사이트가 아니라 학생 PC에 까는 앱입니다. 윈도우는 exe, 맥은 dmg로 설치합니다. 이유는 오른쪽 아래 두 가지입니다. 첫째, 웹은 브라우저 안만 볼 수 있습니다. 그런데 학생은 Word로 쓰고, ChatGPT를 데스크톱 앱으로도 쓰고, 그 사이를 복사와 붙여넣기로 오갑니다. 이건 PC에 깔린 앱만 볼 수 있습니다. 둘째, 원문을 서버가 아니라 PC에 두려면 프로그램이 PC에서 돌아야 합니다. 그래서 기록기, 출처 잇기, 화면을 Python 프로그램 하나로 묶었고, 화면은 그 안에 HTML 창(pywebview)으로 띄웠습니다. 크롬 확장은 웹 AI 대화를 읽어서 이 앱에 넘겨주는 역할만 합니다.",
+    "먼저 기술 스택입니다. Trace는 웹사이트가 아니라 학생 PC에 설치하는 데스크톱 앱입니다. Word와 ChatGPT 데스크톱 앱처럼 브라우저 밖까지 읽어야 하고, 원문을 PC에만 두기 위해서입니다. 공통 부분은 Python 3.11로 기록기와 화면을 한 프로그램으로 묶었고, 화면은 pywebview, 묶기는 PyInstaller로 합니다. 웹 AI 대화는 크롬 확장이 읽어 이 앱으로 넘깁니다.",
+    "운영체제마다 읽는 방법이 달라서 따로 구현했습니다. 윈도우는 Word를 COM으로, AI 데스크톱 앱을 UI Automation으로 읽고, Inno Setup으로 exe를 만듭니다. 맥은 Word를 AppleScript로, AI 앱을 macOS 손쉬운 사용 API로 읽고, 서명된 dmg로 냅니다. 서명을 매번 같은 인증서로 해야 업데이트해도 맥 권한이 풀리지 않습니다. 버전 태그 하나를 올리면 GitHub Actions가 exe와 dmg를 함께 만들어 올립니다.",
     "왼쪽 학생 PC부터 보겠습니다. 맨 위 앱 화면에서 학생이 기록을 켜고 끄고, 출처를 보고, 다듬고, 제출합니다. 그 아래 기록기와 크롬 확장이 ChatGPT · Claude · Gemini 대화, 복사와 붙여넣기, Word 문서가 바뀐 내용, 그리고 키를 몇 번 눌렀는지를 모읍니다. 어떤 키를 눌렀는지는 남기지 않고 횟수만 셉니다. 셋째 줄 출처 잇기가 보고서 문장마다 어느 AI 답에서 왔는지 이어 주고, 제출 전 다듬기도 여기서 돌아갑니다. 이 원문은 모두 맨 아래, 학생 PC에만 저장됩니다. 이메일 · 전화번호 · 주민번호 같은 건 저장하기 전에 가립니다.",
     "① 기록하는 동안 서버로는 원문 대신 해시만 갑니다. 해시는 글의 지문 같은 64자리 값이라, 해시만 보고 원래 글을 알 수는 없습니다. 그리고 기록 하나하나의 해시를 앞 기록의 해시와 사슬처럼 이어서, 중간에 하나라도 빼거나 바꾸면 끝값이 달라집니다.",
     "② 학생이 내역서를 만들 때, 그때 처음으로 학생이 고른 질문과 답의 원문이 서버에 옵니다. 서버는 그 글의 해시를 다시 계산해서 기록할 때 받아 둔 해시와 비교합니다. 같으면 '기록과 일치', 다르면 나중에 고친 글이라고 숨기지 않고 표시합니다. 서버는 Flask로 만들어 Render에 올렸고, 데이터베이스인 Supabase에는 해시와 내역서, 링크만 있습니다.",
     "③ 교수는 계정 없이 학생이 보낸 링크로 내역서를 읽기만 하고, 학생은 그 링크를 언제든 끊을 수 있습니다.",
-    "정리하면, 학생 글 전체는 서버에 없고, 학생이 고른 것만 기록과 같은지 확인된 채로 교수에게 갑니다. (약 75초)",
+    "정리하면, 학생 글 전체는 서버에 없고, 학생이 고른 것만 기록과 같은지 확인된 채로 교수에게 갑니다. (약 90초)",
     "",
     "질문 대비",
     "· 키로거 아닌가요? → 어떤 키인지는 저장 안 함. 앱별로 10초마다 '친 횟수 · 지운 횟수'만.",
     "· 학생이 PC 원문을 고쳐서 내면? → 기록 때 해시가 이미 서버에 있어서 '기록과 다름'으로 표시됨.",
     "· 기록을 꺼 두고 쓰면? → 그 부분은 '출처 기록 없음'. 직접 썼다고도, 베꼈다고도 단정하지 않음.",
+    "· 윈도우 · 맥 기능 차이? → v0.1.17에서 다듬기 문장 고르기 · ChatGPT 앱 읽기까지 맞춤. 남은 차이: 맥은 Apple 칩만 (인텔 맥 미지원).",
     "· 그럼 웹으로는 못 하나? → 웹 AI 대화만 볼 거면 확장으로 됨. 하지만 Word에서 친 글 · 데스크톱 AI 앱 · 앱 사이 붙여넣기는 못 봄 → 출처를 이을 수 없음.",
     "· 설치가 번거롭지 않나? → exe/dmg 하나 · 자동 업데이트(서버 /api/app/latest). 설치 오류는 '실제 수업 전 필수 3개'에 들어 있음.",
     "· 서버가 해외(싱가포르)인데? → 실제 수업 전에 국외 이전 동의 문구를 동의 화면에 넣음 (실제 수업 전 필수 3개 중 하나).",
