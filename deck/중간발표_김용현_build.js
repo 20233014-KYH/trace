@@ -228,6 +228,51 @@ const card = (slide, x, y, w, h, fill, name) =>
   ].join("\n"));
 }
 
+// ───────── 5장 (이어서) 다듬기 기준과 근거 — 교수님 피드백: 검증된 기준 · 자료를 코드로 ─────────
+{
+  const s = pres.addSlide({ masterName: "TITLE_ONLY" });
+  s.addText("제출 전 다듬기: 검증된 기준을 코드로", { placeholder: "title" });
+  const cw = [2.05, 2.95, 2.95, 1.05], x0 = 0.5;
+  const rows = [
+    ["무엇을", "근거", "Trace에서", "상태"],
+    ["출처 없이 붙인 글 짚기", "교육부 연구윤리 지침 표절 정의\n'적절한 출처 표시 없이 활용'", "웹 글에 따옴표 · [1] · 주소 · '출처:'가\n없으면 다듬을 곳으로", "✓ 지금"],
+    ["짧은 말은 넘기기", "카피킬러 기본 기준 6어절\n(지침 원문엔 숫자 없음)", "6어절 이상 문장만 다듬을 곳으로", "✓ 지금"],
+    ["그대로 쓸 땐 인용", "직접 인용 = 큰따옴표 + 출처\n(대학 연구윤리 안내)", "[인용 달기] — 따옴표 · 출처 다는 법 안내", "발표 뒤"],
+    ["내 말로 고쳐 쓰는 법", "바꿔 쓰기 절차 — 이해 → 원문 덮고 쓰기\n→ 원문과 대조 (Purdue OWL)", "[다듬기] — 세 단계를 옆에 띄움", "발표 뒤"],
+    ["단어만 바꾼 문장 알리기", "바꿔 쓰기 유형 (Barrón-Cedeño 외 2013)\n한국어 형태소 분석 Kiwi (2024)", "\"단어만 바뀜 — 문장 구조는 AI 답 그대로\"", "발표 뒤"],
+    ["가짜 참고문헌 확인", "AI 인용 중 가짜 GPT-3.5 55% · GPT-4 18%\n(Walters · Wilder 2023)", "Crossref API에 참고문헌 목록만 조회\n(학생 글은 안 나감)", "발표 뒤"],
+  ];
+  rows.forEach((r, i) => {
+    const head = i === 0, y = head ? 0.98 : 1.3 + (i - 1) * 0.5, h = head ? 0.28 : 0.46;
+    if (!head) s.addShape(pres.shapes.RECTANGLE, { x: x0, y, w: 9.0, h, fill: { color: i % 2 ? SOFT : "FFFFFF" }, line: { color: i % 2 ? SOFT : "FFFFFF" } });
+    let x = x0 + 0.1;
+    r.forEach((t, k) => {
+      const now = k === 3 && t.startsWith("✓");
+      T(s, t, { x, y, w: cw[k] - 0.12, h, fontSize: head ? 10 : (k === 0 ? 10.5 : 9.5), bold: head || k === 0 || now,
+        color: head ? MUTED : (k === 3 ? (now ? ACCENT : MUTED) : (k === 1 ? MUTED : INK)), valign: "middle" });
+      x += cw[k];
+    });
+  });
+  // 왜 교육적인가
+  card(s, 0.5, 4.38, 9.0, 0.98, ACCENT_BG, "why-edu");
+  T(s, "왜 교육적인가", { x: 0.68, y: 4.45, w: 2, h: 0.26, fontSize: 12, bold: true, color: ACCENT });
+  T(s, [
+    { text: "규칙을 알려 주기만 해도 표절이 3분의 2 줄었다 ", options: { bold: true } }, { text: "— 겁을 줘서가 아니라 알게 돼서 (Dee · Jacob 2012, 대학생 1,200편 무작위 실험)", options: { color: MUTED, breakLine: true } },
+    { text: "피드백과 스스로 점검하기가 글의 질을 높인다 ", options: { bold: true } }, { text: "(Graham 외 2011, 초·중·고 메타분석)  →  Trace는 점수 대신 이유와 고치는 법을 준다", options: { color: MUTED } },
+  ], { x: 0.68, y: 4.72, w: 8.7, h: 0.58, fontSize: 9.5, valign: "top", paraSpaceAfter: 3 });
+  s.addNotes([
+    "교수님 피드백대로, 다듬기의 기준은 저희가 정한 게 아니라 검증된 기준과 연구에서 가져와 코드로 옮겼습니다.",
+    "지금 들어간 건 두 가지입니다. 교육부 지침의 표절 정의대로 출처 없이 붙인 글을 짚고, 카피킬러 기본값인 6어절보다 짧은 말은 넘깁니다. 발표 뒤에는 인용 다는 법과 바꿔 쓰기 절차를 버튼 옆에 띄우고, 단어만 바꾼 문장을 알리고, AI가 지어낸 참고문헌을 Crossref API로 확인합니다.",
+    "교육적 근거도 있습니다. 규칙을 알려 주기만 해도 표절이 3분의 2 줄었고, 그 이유는 겁이 아니라 알게 돼서였습니다. 그래서 Trace는 점수 대신 이유와 고치는 법을 줍니다. (약 30초)",
+    "",
+    "질문 대비",
+    "· 그래서 글 실력이 느나? → Trace로는 아직 확인 못 함. 근거는 비슷한 개입(규칙 안내 · 피드백)의 연구 결과까지 (Graham 보고서는 초·중·고 대상). 12주 테스트에서 학생이 실제로 고친 문장 수로 봄.",
+    "· 6어절이 법적 기준인가? → 아님. 지침 원문엔 숫자가 없고, 6어절은 카피킬러 기본값 (미국 일부는 6단어, 서울대 2008 지침은 '두 문장'). 그래서 '기준 이름과 출처'를 같이 보여 줌.",
+    "· 단어만 바꾼 걸 어떻게 아나? → 출처 잇기가 이미 그 AI 답을 찾은 문장만 형태소로 다시 비교 (어순 · 조사만 다르면 '단어만 바뀜'). 판정이 아니라 안내.",
+    "· Crossref에 뭐가 나가나? → 참고문헌 목록 줄만. 학생 본문은 안 나감 (원칙: 학생 글을 밖으로 보내지 않음).",
+  ].join("\n"));
+}
+
 // ───────── 6장 사용자 경험 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
@@ -272,9 +317,9 @@ const card = (slide, x, y, w, h, fill, name) =>
     T(s, d, { x: cx, y: 4.4, w: bw, h: 0.75, fontSize: 10.5, color: MUTED, valign: "top" });
   });
   T(s, "10/19 · 앱 v0.1.13 기준 와이어프레임", { x: 0.5, y: 5.25, w: 9, h: 0.22, fontSize: 9.5, color: MUTED });
-  s.addNotes(si === 0
-    ? "와이어프레임입니다. 로그인 첫 화면부터 '원문은 내 PC에만, 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게 했고, 홈에서는 과제마다 어디까지 했는지 4단계로 보입니다. (약 10초)"
-    : "출처 보기에서는 문장마다 어디서 왔는지 색으로 보이고, 누르면 그 AI 답 원문이 나옵니다. 교수 링크는 학생이 고른 것만, 서버 기록과 맞는지 함께 보여 줍니다. (약 10초)");
+  s.addNotes("(말 없이 넘김 — 화면만 보여 줌. 시간이 남으면: " + (si === 0
+    ? "로그인 첫 화면부터 '원문은 내 PC에만, 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게 했습니다.)"
+    : "출처 보기는 문장마다 어디서 왔는지 색으로, 교수 링크는 학생이 고른 것만 보여 줍니다.)"));
 });
 
 // ───────── 프로토타입 — 피그마 링크 · 직접 써 보고 고친 것 ─────────
@@ -414,9 +459,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     cx += w + 0.1;
   });
   s.addNotes([
-    "Trace는 웹사이트가 아니라 학생 PC에 까는 데스크톱 앱입니다. 왼쪽 아래 '앱 구현'처럼, Python 프로그램 하나에 기록기와 화면을 묶었고, 화면은 앱 안에 HTML 창으로 띄웁니다. 윈도우는 exe, 맥은 dmg로 한 번 설치하면, 그 뒤 새 버전은 앱 안에서 바로 받습니다. 앱으로 만든 이유는 Word나 ChatGPT 앱처럼 브라우저 밖까지 읽어야 해서인데, 이건 운영체제마다 방법이 달라 윈도우는 COM과 UI Automation, 맥은 AppleScript와 손쉬운 사용 API로 따로 구현했습니다.",
-    "학생 PC에서는 기록기와 크롬 확장이 AI 대화, 복사와 붙여넣기, Word 글 변화, 키 누른 횟수를 모으고, 출처 잇기가 보고서 문장을 AI 답과 이어 줍니다. 이 원문은 PC에만 저장됩니다.",
-    "① 기록하는 동안 서버엔 글의 지문인 해시만 갑니다. ② 제출할 때 학생이 고른 원문만 오고, 서버가 해시를 다시 계산해 기록 때와 같은지 확인합니다. ③ 교수는 계정 없이 링크로 읽기만 합니다. (약 60초)",
+    "Trace는 학생 PC에 까는 데스크톱 앱입니다. 브라우저 밖의 Word와 ChatGPT 앱까지 읽어야 해서, 아래처럼 윈도우와 맥을 따로 구현했습니다.",
+    "① 기록하는 동안 원문은 PC에만 두고, 서버엔 글의 지문인 해시만 보냅니다. ② 제출할 때 학생이 고른 원문만 오고, 서버가 해시로 기록 때와 같은지 확인합니다. ③ 교수는 계정 없이 링크로 읽기만 합니다. (약 35초)",
     "",
     "질문 대비",
     "· 해시가 뭔가? → 글의 지문 같은 64자리 값. 해시만 보고 원래 글은 알 수 없음. 기록마다 앞 해시와 사슬처럼 이어서, 하나라도 빼거나 바꾸면 끝값이 달라짐.",
@@ -430,8 +474,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     "· 기록을 꺼 두고 쓰면? → 그 부분은 '출처 기록 없음'. 직접 썼다고도, 베꼈다고도 단정하지 않음.",
     "· 윈도우 · 맥 기능 차이? → v0.1.17에서 다듬기 문장 고르기 · ChatGPT 앱 읽기까지 맞춤. 남은 차이: 맥은 Apple 칩만 (인텔 맥 미지원).",
     "· 그럼 웹으로는 못 하나? → 웹 AI 대화만 볼 거면 확장으로 됨. 하지만 Word에서 친 글 · 데스크톱 AI 앱 · 앱 사이 붙여넣기는 못 봄 → 출처를 이을 수 없음.",
-    "· 설치가 번거롭지 않나? → exe/dmg 하나 · 자동 업데이트(서버 /api/app/latest). 설치 오류는 실제 수업 전에 먼저 고침 (11장).",
-    "· 서버가 해외(싱가포르)인데? → 실제 수업 전에 국외 이전 동의 문구를 동의 화면에 넣음 (실제 수업 전 보완 · 11장).",
+    "· 설치가 번거롭지 않나? → exe/dmg 하나 · 자동 업데이트(서버 /api/app/latest). 설치 오류는 실제 수업 전에 먼저 고침 (13장).",
+    "· 서버가 해외(싱가포르)인데? → 실제 수업 전에 국외 이전 동의 문구를 동의 화면에 넣음 (실제 수업 전 보완 · 13장).",
   ].join("\n"));
 }
 
@@ -488,11 +532,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   T(s, [{ text: "파랑 = 새로 더함", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
     { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes([
-    "DB는 Supabase의 PostgreSQL이고, 크게 두 줄기입니다.",
-    "윗줄은 기록 줄기입니다. users, 학생 한 명이 works, 과제를 여러 개 갖고, 과제 하나에 sessions, 기록을 켠 한 번 한 번이 쌓이고, 그 안에 events, 기록 이벤트가 쌓입니다. 그래서 모두 1 대 N입니다. 이벤트에는 언제, 무슨 종류인지와 해시만 있고 글은 없습니다. sessions에는 해시 사슬의 처음과 끝, 그리고 기록을 끝낼 때 봉인한 시각이 남아서, 나중에 이벤트가 빠지거나 바뀌었는지 확인할 수 있습니다.",
-    "아랫줄은 제출 줄기입니다. 과제 하나로 statements, 내역서를 만듭니다. 내역서에는 요약 숫자와 학생이 직접 쓰는 설명 두 개, 'AI를 어디에 썼나', '어떻게 확인했나'가 들어갑니다.",
-    "내역서 하나에 표 다섯 개가 붙습니다. messages는 학생이 고른 질문과 답 원문인데, 서버에 원문이 있는 곳은 여기 하나뿐이고 해시로 확인된 것만 들어옵니다. links는 '이 문장은 이 AI 답에서 왔다, 아니다'라는 학생의 결정, redactions는 학생이 가린 기록인데 어느 기록인지만 남고 내용은 안 옵니다. shares는 교수 링크로, 만료일이 있고 학생이 끊을 수 있습니다.",
-    "지금 테이블에 새로 더하는 건 파랑 두 가지뿐입니다. checks는 제출 전 다듬기 결과를 세는 표로, 학생이 몇 문장을 직접 고쳤는지, 숫자만 남겨서 교수 내역서에 '제출 전에 몇 문장 고침'으로 보입니다. 원문은 남기지 않습니다. retain_until은 내역서를 언제까지 둘지, 예를 들어 성적 이의 신청 기간까지로 정하는 칸입니다. (약 50초)",
+    "DB는 두 줄기입니다. 위는 기록 — 학생, 과제, 기록 한 번, 기록 이벤트 순으로 쌓이고, 이벤트엔 글 대신 해시만 있습니다.",
+    "아래는 제출 — 과제마다 내역서가 있고, 학생이 고른 원문, 출처 결정, 가린 것, 교수 링크가 붙습니다. 새로 더하는 건 파랑 두 개, 학생이 제출 전에 고친 문장 수를 세는 checks와 보관 기간입니다. (약 30초)",
     "",
     "질문 대비",
     "· 로그인 토큰을 왜 JWT 말고 DB(tokens)에 두나? → 학생 기록이라 '이 기기 연결 끊기'가 바로 돼야 함 (server/db.py).",
@@ -515,8 +556,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     { x: 6.9, y: 0.94, w: 2.6, h: 0.24, fontSize: 9.5, align: "right" });
   const steps = [
     ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "제출 전 다듬기까지 동작"]]],
-    ["발표 뒤 2주", [[YH, "내역서에 고친 문장 수 표시"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "기록 꺼진 동안 바뀐 글 표시"], [SJ, "타이핑 패턴 보기"]]],
-    ["12 ~ 13주", [[BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
+    ["발표 뒤 2주", [[YH, "다듬기 안내 · 고친 문장 수"], [YH, "참고문헌 확인 (Crossref)"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
+    ["12 ~ 13주", [[YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
     ["14주", [[BOTH, "최종 버전 배포"]]],
   ];
   const sw = 2.2, sg = 0.067;
@@ -536,10 +577,10 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   head(0.5, 2.7, "역할 분담 (R&R)");
   const people = [
     ["김용현", YH, "서버 · 교수용 내역서 · 다듬기",
-      ["Flask 서버 · 구글/카카오 로그인", "조작 확인 · 내역서 PDF · 교수 링크", "제출 전 다듬기 · 맥 버전"],
-      ["내역서에 고친 문장 수 표시", "수업 전 보완 (설치 · 보안 · 동의)"]],
+      ["Flask 서버 · 구글/카카오 로그인", "조작 확인 · 내역서 PDF · 교수 링크", "맥 버전 (다듬기 · ChatGPT 앱) · 배포"],
+      ["다듬기 안내 · 참고문헌 확인 (Crossref)", "내역서에 고친 문장 수 표시", "수업 전 보완 (설치 · 보안 · 동의)"]],
     ["박상진", SJ, "화면 · 기록기 · 확장",
-      ["윈도우 기록기 (Word · AI 앱)", "크롬 확장 (ChatGPT · Claude · Gemini)", "화면 디자인 반영"],
+      ["윈도우 기록기 (Word · AI 앱)", "크롬 확장 (ChatGPT · Claude · Gemini)", "화면 디자인 · 제출 전 다듬기"],
       ["기록 꺼진 동안 바뀐 글 표시", "타이핑 패턴 (직접 쓰기 vs 옮겨 치기)"]],
   ];
   people.forEach(([name, c, role, done, todo], i) => {
@@ -571,9 +612,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     T(s, "→ " + f, { x: 5.97, y: y + 0.36, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
   });
   s.addNotes([
-    "구현 일정입니다. 지금 v0.1.17로 윈도우와 맥 모두 제출 전 다듬기까지 동작합니다. 발표 뒤 2주 동안 저는 학생이 제출 전에 몇 문장을 고쳤는지 교수 내역서에 보이게 하고, 실제 수업에 쓰기 전에 설치 오류와 보안을 보완합니다. 상진이는 기록을 꺼 둔 동안 바뀐 글을 따로 표시하고, 직접 쓴 글과 옮겨 친 글의 타이핑 패턴을 보이게 합니다. 12 ~ 13주에는 테스트에서 나온 오류를 고치고, 14주에 최종 버전을 냅니다.",
-    "역할은 제가 서버와 교수용 내역서, 다듬기를, 상진이가 화면과 기록기, 크롬 확장을 맡습니다.",
-    "예상 기술 문제 중 가장 큰 건, AI 답을 완전히 다른 말로 바꿔 쓰면 어느 답에서 왔는지 못 찾는다는 겁니다. 몇 단어 고친 정도는 지금도 찾아내지만, 완전히 바꾼 문장은 베꼈다고 단정하지 않고 '출처 기록 없음'으로 둡니다. 또 ChatGPT 앱이 업데이트되면 대화를 못 읽을 수 있는데, 실제로 이번 주에 한 번 겪어서, 새 버전마다 자동 시험을 돌리고 앱 안 업데이트로 바로 고쳤습니다. (약 45초)",
+    "구현 일정입니다. 지금 v0.1.17로 윈도우 · 맥 모두 다듬기까지 동작합니다. 발표 뒤 2주에 저는 다듬기 안내, Crossref 참고문헌 확인, 고친 문장 수, 수업 전 보완을 하고, 상진이는 기록이 꺼진 동안 바뀐 글과 타이핑 패턴을 만듭니다. 12 ~ 13주엔 단어만 바꾼 문장 알림과 테스트, 14주에 최종 버전입니다.",
+    "가장 큰 기술 문제는 AI 답을 완전히 다른 말로 바꾸면 못 찾는다는 건데, 이건 베꼈다고 단정하지 않고 '출처 기록 없음'으로 둡니다. (약 35초)",
     "",
     "질문 대비",
     "· 바꿔 쓴 문장은 왜 지금 못 잡나? → 글자 조각이 AI 답과 꽤 겹치면 '고쳐 씀 · 보고 씀'으로 이미 이음. 글자가 거의 안 겹치면 뜻 비교(임베딩) 모델이 필요한데, 설치 파일이 커지고 엉뚱한 답에 잇는 오류가 늘어서 정확도를 확인한 뒤 넣음. 과제에선 완전히 자기 말로 쓰는 게 교수가 바라는 쪽이기도 함.",
@@ -585,11 +625,9 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   ].join("\n"));
 }
 
-// ───────── 맨 뒤 · 자료 출처 ─────────
+// ───────── 맨 뒤 · 자료 출처 (두 장) ─────────
 {
-  const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("자료 출처", { placeholder: "title" });
-  // 보이는 글자 = 그대로 복사해도 열리는 주소 · 눌러도 열림 (11/2 · 모두 200 확인)
+  // 보이는 글자 = 그대로 복사해도 열리는 주소 · 눌러도 열림 (11/3 · 모두 열림 확인 · carnegie 는 브라우저로)
   const 출처 = [
     ["2장", "대교협 총장 설문 — 머니투데이, 「'AI로 과제 뚝딱'…골머리 앓는 대학들, 'AI 가이드라인' 속속 도입」 (2026.2.26)", "https://www.mt.co.kr/policy/2026/02/26/2026022610083850284"],
     ["2장", "명지대학교 생성형 AI 활용 가이드라인 (2026.8 제정)", "https://mju.ac.kr/mjukr/12491/subview.do"],
@@ -597,17 +635,30 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     ["2장", "교육부 · 대교협 대학 AI 활용 윤리 가이드라인 — 교수신문, 「AI 윤리 '신호등' 세 개 섰다」 (2026.10.27)", "https://www.kyosu.net/news/articleView.html?idxno=211514"],
     ["2장", "연세대 중간고사 AI 집단 부정행위 — 뉴시스 (2025.11.10)", "https://mobile.newsis.com/view/NISX20251110_0003396613"],
     ["3장", "Trace 학생 설문 (2026.10.10 · 팀 자체 조사 · 응답 34명) — 폴더 안 「7-학생 설문 결과 34명」", "https://github.com/20233014-KYH/trace/tree/main/1-기획"],
-    ["5장", "교육부 「연구윤리 확보를 위한 지침」 표절 정의 (출처 표시 없이 활용) — 명지대 연구윤리 안내", "https://www.mju.ac.kr/research/12477/subview.do"],
-    ["9 ~ 11장", "Trace 코드 · DB 구조 · 릴리스 v0.1.17 (2026.11.2)", "https://github.com/20233014-KYH/trace"],
-    ["11장", "Crossley 외, 직접 쓴 글과 옮겨 친 글의 키 입력 구분 (EDM 2024)", "https://www.educationaldatamining.org/EDM2024/proceedings/2024.EDM-short-papers.47/2024.EDM-short-papers.47.pdf"],
+    ["6장", "교육부 「연구윤리 확보를 위한 지침」 표절 정의 (출처 표시 없이 활용) — 명지대 연구윤리 안내", "https://www.mju.ac.kr/research/12477/subview.do"],
+    ["6장", "카피킬러캠퍼스 사용자 매뉴얼 (기본 기준 6어절)", "https://lib.jnue.kr/lib/download/CopyKillerCampus_User_Manual.pdf"],
+    ["6장", "연세대 연구윤리 FAQ (직접 인용은 큰따옴표로 표시)", "https://arch.yonsei.ac.kr/notice/download/7222/붙임4-1. 연구윤리FAQ_국문 (2).pdf?download=1"],
+    ["6장", "Purdue OWL, Paraphrasing (바꿔 쓰기 절차)", "https://owl.purdue.edu/owl/research_and_citation/using_research/quoting_paraphrasing_and_summarizing/paraphrasing.html"],
+    ["6장", "Barrón-Cedeño 외, 「Plagiarism Meets Paraphrasing」 (Computational Linguistics 2013)", "https://aclanthology.org/J13-4005/"],
+    ["6장", "이민철, 「Kiwi: 통계적 언어 모델과 Skip-Bigram을 이용한 한국어 형태소 분석기 구현」 (한국디지털인문학회 2024)", "https://accesson.kr/kjdh/v.1/1/109/43508?lang=ko"],
+    ["6장", "Walters · Wilder, 「Fabrication and errors in the bibliographic citations generated by ChatGPT」 (Scientific Reports 2023)", "https://doi.org/10.1038/s41598-023-41032-5"],
+    ["6장", "Crossref REST API 문서 (query.bibliographic 로 참고문헌 찾기)", "https://www.crossref.org/documentation/retrieve-metadata/rest-api/"],
+    ["6장", "Dee · Jacob, 「Rational Ignorance in Education: A Field Experiment in Student Plagiarism」 (J. Human Resources 2012)", "https://www.nber.org/papers/w15672"],
+    ["6장", "Graham · Harris · Hebert, 「Informing Writing: The Benefits of Formative Assessment」 (Carnegie 2011)", "https://carnegie.org/publication/informing-writing-the-benefits-of-formative-assessment/"],
+    ["11 ~ 13장", "Trace 코드 · DB 구조 · 릴리스 v0.1.17 (2026.11.2)", "https://github.com/20233014-KYH/trace"],
+    ["13장", "Crossley 외, 직접 쓴 글과 옮겨 친 글의 키 입력 구분 (EDM 2024)", "https://www.educationaldatamining.org/EDM2024/proceedings/2024.EDM-short-papers.47/2024.EDM-short-papers.47.pdf"],
   ];
-  출처.forEach(([장, 무엇, 주소], i) => {
-    const y = 1.05 + i * 0.47;
-    T(s, 장, { x: 0.5, y, w: 0.85, h: 0.22, fontSize: 10, bold: true, color: ACCENT });
-    T(s, 무엇, { x: 1.4, y, w: 8.1, h: 0.22, fontSize: 10.5 });
-    T(s, [{ text: 주소, options: { hyperlink: { url: encodeURI(주소), tooltip: 주소 } } }], { x: 1.4, y: y + 0.21, w: 8.1, h: 0.2, fontSize: 10, color: MUTED });
+  [출처.slice(0, 9), 출처.slice(9)].forEach((쪽, pi) => {
+    const s = pres.addSlide({ masterName: "TITLE_ONLY" });
+    s.addText(`자료 출처 (${pi + 1}/2)`, { placeholder: "title" });
+    쪽.forEach(([장, 무엇, 주소], i) => {
+      const y = 1.0 + i * 0.47;
+      T(s, 장, { x: 0.5, y, w: 0.85, h: 0.22, fontSize: 10, bold: true, color: ACCENT });
+      T(s, 무엇, { x: 1.4, y, w: 8.1, h: 0.22, fontSize: 10.5 });
+      T(s, [{ text: 주소, options: { hyperlink: { url: encodeURI(주소), tooltip: 주소 } } }], { x: 1.4, y: y + 0.21, w: 8.1, h: 0.2, fontSize: 9, color: MUTED });
+    });
+    s.addNotes("(발표하지 않는 장)");
   });
-  s.addNotes("(발표하지 않는 장)");
 }
 
 pres.writeFile({ fileName: out }).then(f => console.log("wrote", f));
