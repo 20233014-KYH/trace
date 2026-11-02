@@ -482,7 +482,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
 // ───────── 10장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("DB 설계: 지금 테이블에 2가지만 더한다", { placeholder: "title" });
+  s.addText("DB 설계: 기록 줄기와 제출 줄기", { placeholder: "title" });
   const NEW = ACCENT;
   const box = (x, y, w, h, name, ko, sub, opt = {}) => {
     const dash = opt.next;
@@ -508,7 +508,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   line(3.775, 2.0, 0, 0.55, true); lab(3.85, 2.15, "1 : N");
   box(2.8, 2.55, 2.35, 1.6, "statements", "내역서", "요약 숫자 · 학생 설명 두 개\n원문이 기록과 맞는지");
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 2.92, y: 3.6, w: 2.11, h: 0.42, rectRadius: 0.05, fill: { color: ACCENT_BG }, line: { color: NEW, width: 1 } });
-  T(s, [{ text: "retain_until  ", options: { bold: true } }, { text: "보관 기간 · 새로" }], { x: 3.02, y: 3.6, w: 2.0, h: 0.42, fontSize: 11, color: NEW, valign: "middle" });
+  T(s, [{ text: "retain_until  ", options: { bold: true } }, { text: "보관 기간 · 발표 뒤" }], { x: 3.02, y: 3.6, w: 2.0, h: 0.42, fontSize: 11, color: NEW, valign: "middle" });
 
   // 내역서 → 딸린 표 5개
   const kids = [
@@ -516,7 +516,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     ["links", "출처 결정", "이 문장 ← 이 AI 답 (맞다 / 아니다)"],
     ["redactions", "가린 것", "어느 기록인지만 · 내용은 안 옴"],
     ["shares", "교수 링크", "토큰 · 만료 · 학생이 끊을 수 있음"],
-    ["checks", "제출 전 다듬기 · 새로", "고친 문장 수만 셈 · 원문 없음"],
+    ["checks", "제출 전 다듬기 · 발표 뒤", "고친 문장 수만 셈 · 원문 없음"],
   ];
   const kx = 5.65, kw = 3.85, kh = 0.4, kg = 0.08, ky0 = 2.4;
   line(5.15, 3.35, 0.3, 0, false); lab(5.17, 3.1, "1 : N");
@@ -529,11 +529,11 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
       { x: kx + 0.12, y, w: kw - 0.2, h: kh, fontSize: 11, valign: "middle" });
   });
 
-  T(s, [{ text: "파랑 = 새로 더함", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
+  T(s, [{ text: "파랑 = 설계에 넣음 · 구현은 발표 뒤 2주", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
     { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes([
     "DB는 두 줄기입니다. 위는 기록 — 학생, 과제, 기록 한 번, 기록 이벤트 순으로 쌓이고, 이벤트엔 글 대신 해시만 있습니다.",
-    "아래는 제출 — 과제마다 내역서가 있고, 학생이 고른 원문, 출처 결정, 가린 것, 교수 링크가 붙습니다. 새로 더하는 건 파랑 두 개, 학생이 제출 전에 고친 문장 수를 세는 checks와 보관 기간입니다. (약 30초)",
+    "아래는 제출 — 과제마다 내역서가 있고, 학생이 고른 원문, 출처 결정, 가린 것, 교수 링크가 붙습니다. 파랑 두 개, 학생이 제출 전에 고친 문장 수를 세는 checks와 내역서 보관 기간도 설계에 넣었고, 구현은 발표 뒤 2주에 합니다. (약 30초)",
     "",
     "질문 대비",
     "· 로그인 토큰을 왜 JWT 말고 DB(tokens)에 두나? → 학생 기록이라 '이 기기 연결 끊기'가 바로 돼야 함 (server/db.py).",
