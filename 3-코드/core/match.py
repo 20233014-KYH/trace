@@ -494,7 +494,7 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
     tcands = candidates([{"id": k, "text": t} for k, t in enumerate((proc or {}).get("typed", []))])
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
     # 붙여넣은 글이 어느 AI 답의 몇 번째 문장인지 — 붙여넣은 글도 같은 규칙으로 잇는다
-    pasted_at, 붙인답 = {}, {}                 # 붙인답: 붙여넣기(id) → 그 글이 이어진 AI 답 id 들
+    pasted_at, 붙인답, 그대로답 = {}, {}, {}     # 붙인답: 붙여넣기(id) → 그 글이 이어진 AI 답 id 들 · 그대로답: 그중 거의 그대로(exact)
     답_id = {c["answer"] for c in cands}
     for p in pasted or []:
         된다 = {i for i in 답_id if 앞서(i, p)}               # 붙여넣기보다 늦게 물어본 답은 빼고 — 답마다 한 번만 셈
@@ -503,6 +503,8 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
             hit = link_sentence(s, cands, keep=이른)
             if hit["label"] != "none":
                 붙인답.setdefault(id(p), set()).add(hit["answer"])
+                if hit["label"] == "exact":
+                    그대로답.setdefault(id(p), set()).add(hit["answer"])
                 for i in hit["sents"]:
                     pasted_at.setdefault((hit["answer"], i), p)
     # 문장을 담은 붙여넣기 찾기용 (AI 답 붙여넣기 · 다른 곳 붙여넣기 모두) — 붙여넣은 시각 순
@@ -543,6 +545,14 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                                  paste={**e, "source": e.get("domain") or "AI", "category": "ai"})
                     elif r["label"] != "none":                               # 다른 곳에서 먼저 붙여넣은 글
                         r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"], paste=e)
+            # AI 앱에서 복사해 그대로 붙인 글인데, 그 글이 지금 이은 답에 그대로 들어 있지 않음 → 그 답에서 복사한 게 아니다.
+            # 원래 답이 기록에 없을 때(Trace 를 켜기 전 대화 · 화면을 못 읽음) 짧은 줄이 글자 조각만 겹치는 다른 답에 "고침" 으로
+            # 이어졌다 (11/2 실제 시험: ChatGPT 앱 보고서 답의 "H₂ = 해시(H₁ || 데이터₂)" → "해시 테이블이 뭐야?" 답)
+            if pasted and r["label"] in ("edited", "viewed") and r["answer"] is not None:
+                e, e_ai = 처음_붙인(s, True)
+                if e is not None and e_ai and r["answer"] not in 그대로답.get(id(e), ()):
+                    r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"],
+                             paste={**e, "source": e.get("domain") or "AI", "category": "ai"})
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
                 # AI 답과 거의 그대로(exact) 이어진 문장은 다른 곳 붙여넣기가 '고쳐 씀' 정도로만 닮았을 땐 안 바꾼다
