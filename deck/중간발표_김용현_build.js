@@ -84,34 +84,41 @@ const card = (slide, x, y, w, h, fill, name) =>
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("인사이트: 학생은 기준을 모르고, 감시를 걱정한다", { placeholder: "title" });
 
-  const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.8;
+  // 칸마다 Q(실제 설문 문항) · A(고른 답) — "59% 가 무엇을 고른 59% 인지" 바로 보이게 (11/2 김용현 안)
+  const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.75;
   const cols = [
-    { stats: [["59%", "\"어디까지 밝혀야 할지\n모르겠다\"", "밝히기 어려운 점 1위"]], decide: "기준이 없다\n→ 내역서가 기준 양식" },
-    { stats: [["59%", "\"받는 쪽이 요구하면\"", "켜는 이유 1위"], ["44%", "\"감시받는 느낌\"", "꺼리는 이유 1위"]], decide: "교수가 요건으로 거는 길\n→ 원문은 학생 PC에" },
-    { stats: [["44%", "\"AI 초안을 그대로 내기\"는\n쓰면 안 된다", "밝히면 된다 50% · 그냥 내도 된다 6%"]], decide: "그대로 낸 곳을\n→ 제출 전 다듬기" },
+    { stats: [["59%", "AI 사용을 밝힐 때 어려운 점은?", "\"어디까지 밝혀야 할지\n모르겠다\"", "1위 · 여러 개 고름"]],
+      decide: "기준이 없다\n→ 내역서가 기준 양식" },
+    { stats: [["59%", "이런 도구, 언제 켜겠나요?", "\"받는 쪽이 요구하면\"", ""], ["44%", "켜기 꺼려지는 이유는?", "\"감시받는 느낌\"", ""]],
+      decide: "교수가 요건으로 거는 길\n→ 원문은 학생 PC에" },
+    { stats: [["94%", "AI 초안을 그대로 내는 건?", "\"그냥 내면 안 된다\"", "밝히면 된다 50% · 쓰면 안 된다 44%"]],
+      decide: "그대로 낸 곳은\n→ 공개하고, 다듬게" },
   ];
   cols.forEach((c, i) => {
-    const x = 0.5 + i * (cw + gap);
+    const x = 0.5 + i * (cw + gap), two = c.stats.length > 1;
     card(s, x, cy, cw, ch, SOFT, "insight-" + i);
-    let y = cy + 0.2;
-    c.stats.forEach(([num, line, sub]) => {
-      const two = c.stats.length > 1;
-      T(s, num, { x: x + 0.2, y, w: cw - 0.4, h: two ? 0.5 : 0.65, fontSize: two ? 28 : 36, bold: true, color: ACCENT });
-      y += two ? 0.52 : 0.7;
-      const lh = line.includes("\n") ? 0.5 : 0.27;
-      T(s, line, { x: x + 0.2, y, w: cw - 0.4, h: lh, fontSize: 14, bold: true });
-      y += lh + 0.02;
-      T(s, sub, { x: x + 0.2, y, w: cw - 0.4, h: 0.25, fontSize: 12, color: MUTED });
-      y += two ? 0.32 : 0.3;
+    let y = cy + 0.18;
+    c.stats.forEach(([num, q, a, sub]) => {
+      T(s, num, { x: x + 0.2, y, w: cw - 0.4, h: two ? 0.45 : 0.62, fontSize: two ? 26 : 36, bold: true, color: ACCENT });
+      y += two ? 0.47 : 0.68;
+      T(s, [{ text: "Q.  ", options: { bold: true, color: ACCENT } }, { text: q, options: { color: MUTED } }],
+        { x: x + 0.2, y, w: cw - 0.4, h: 0.24, fontSize: 11 });
+      y += 0.26;
+      const ah = a.includes("\n") ? 0.48 : 0.27;          // 두 줄 답은 둘째 줄을 A. 뒤에 맞춤
+      T(s, [{ text: "A.  ", options: { bold: true, color: ACCENT } }, { text: a.replace("\n", "\n      "), options: { bold: true } }],
+        { x: x + 0.2, y, w: cw - 0.4, h: ah, fontSize: 13, valign: "top" });
+      y += ah + 0.03;
+      if (sub) { T(s, sub, { x: x + 0.2, y, w: cw - 0.4, h: 0.22, fontSize: 10, color: MUTED }); y += 0.25; }
+      y += two ? 0.12 : 0.05;
     });
     card(s, x + 0.15, cy + ch - dh - 0.15, cw - 0.3, dh, ACCENT_BG, "decide-" + i);
     T(s, c.decide, { x: x + 0.3, y: cy + ch - dh - 0.15, w: cw - 0.6, h: dh, fontSize: 14, bold: true, color: ACCENT, valign: "middle" });
   });
 
-  T(s, "Trace 학생 설문 2026.10 · 응답 34명 · 여러 개 고름 · 59% = 20명 · 44% = 15명 · 50% = 17명 · 6% = 2명 · 공학 · 컴퓨터 18명, 2학년 19명으로 치우침 → 경향만 봄",
+  T(s, "Trace 학생 설문 2026.10 · 응답 34명 · 59% = 20명 · 44% = 15명 · 94% = 32명 · 공학·컴퓨터 18명, 2학년 19명으로 치우침 → 경향만",
     { x: 0.5, y: 4.9, w: 9, h: 0.25, fontSize: 10, color: MUTED });
 
-  s.addNotes("학생 설문에서 59%가 '어디까지 밝혀야 할지 모르겠다'고 답했습니다. 켜는 이유 1위는 '요구하면'(59%), 꺼리는 이유 1위는 '감시받는 느낌'(44%)이었고, AI 초안을 그대로 내는 건 44%가 '쓰면 안 된다'고 봤습니다. 그래서 교수가 요구하는 길로, 원문은 PC에 두고, 제출 전에 다듬게 했습니다. (약 22초)");
+  s.addNotes("학생 설문에서 AI 사용을 밝힐 때 어려운 점을 물었더니 59%가 '어디까지 밝혀야 할지 모르겠다'고 했습니다. 이런 도구를 언제 켜겠냐는 질문엔 59%가 '받는 쪽이 요구하면', 꺼려지는 이유는 44%가 '감시받는 느낌'이었습니다. 그리고 AI 초안을 그냥 내도 된다는 학생은 6%뿐이었습니다. 그래서 교수가 요구하는 길로, 원문은 PC에 두고, 그대로 낸 곳은 공개하고 다듬게 했습니다. (약 25초)");
 }
 
 // ───────── 9장 ─────────
