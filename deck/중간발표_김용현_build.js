@@ -149,27 +149,35 @@ const card = (slide, x, y, w, h, fill, name) =>
     { text: "학생 · 쓰는 사람", options: { bold: true, color: ACCENT, breakLine: true } },
     { text: "평소처럼 과제를 하고\n제출 전에 직접 고친다", options: { color: INK } },
   ], { x: 0.68, y: 3.0, w: 2.55, h: 1.9, fontSize: 10.5, valign: "top", paraSpaceAfter: 2 });
-  // 기존 방법과 차이
-  T(s, "기존 방법과 무엇이 다른가", { x: 3.6, y: 2.6, w: 5.9, h: 0.28, fontSize: 13, bold: true });
-  const cw = [1.55, 2.5, 1.85];
-  const rows = [
-    ["대화 캡처 제출", "교수가 보고서와 캡처를\n한 줄씩 대조", "빠뜨려도 모름"],
-    ["카피킬러 · GPT킬러", "큰 DB에서 비슷한 글 찾기\nAI 작성은 확률로 추정", "학생이 실제로 쓴\nAI 답은 모름"],
-    ["Trace", "학생이 실제로 본 AI 답과\n문장을 직접 비교", "확률 없이 사실만\n제출 전에 고칠 기회"],
-  ];
-  rows.forEach((r, i) => {
-    const y = 2.98 + i * 0.78, me = i === 2;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 3.6, y, w: 5.9, h: 0.7, rectRadius: 0.06, fill: { color: me ? ACCENT_BG : "FFFFFF" }, line: { color: me ? ACCENT : LINE, width: me ? 1.5 : 0.75 } });
-    let x = 3.72;
+  // 카피킬러 + Trace — 교수님 피드백 (10/28) "카피킬러와 합쳐 고쳐 쓰게"
+  T(s, "카피킬러 + Trace: 서로 못 보는 걸 본다", { x: 3.6, y: 2.55, w: 5.9, h: 0.28, fontSize: 13, bold: true });
+  T(s, [{ text: "교수님 피드백 ", options: { bold: true, color: ACCENT } }, { text: "\"카피킬러와 합쳐, 고쳐 쓰게 하라\" → 카피킬러가 못 보는 '과정'을 Trace가 맡는다", options: { color: MUTED } }],
+    { x: 3.6, y: 2.85, w: 5.9, h: 0.22, fontSize: 9.5 });
+  const cw = [1.55, 2.0, 2.35], cx0 = 3.6, ty = 3.15, rh = 0.5;
+  [["", "카피킬러", "Trace (제출 전 다듬기)"]].concat([
+    ["무엇과 비교", "세상 문서 DB와\n결과물만", "학생이 실제로 본 AI 답 ·\n웹 글과 과정까지"],
+    ["웹 글을 GPT로\n바꿔 쓰면", "어절이 끊겨\n놓치기 쉬움", "복사 → GPT → 붙여넣기가\n남아 'AI 답 그대로'"],
+    ["기록 밖에서 본\n논문 · 웹", "잡음", "못 잡음 → 카피킬러에 맡김"],
+    ["보여 주는 것", "표절률 %", "문장마다 출처 →\n학생이 직접 고침"],
+  ]).forEach((r, i) => {
+    const y = i === 0 ? ty : ty + 0.3 + (i - 1) * rh, h = i === 0 ? 0.28 : rh - 0.04;
+    if (i > 0) s.addShape(pres.shapes.LINE, { x: cx0, y: y - 0.02, w: 5.9, h: 0, line: { color: LINE, width: 0.75 } });
+    let x = cx0;
     r.forEach((t, k) => {
-      T(s, t, { x, y, w: cw[k] - 0.1, h: 0.7, fontSize: k === 0 ? 11.5 : 10, bold: k === 0, color: k === 0 ? (me ? ACCENT : INK) : (me ? INK : MUTED), valign: "middle" });
+      if (k === 2) s.addShape(pres.shapes.RECTANGLE, { x: x - 0.06, y, w: cw[2] + 0.02, h, fill: { color: ACCENT_BG }, line: { color: ACCENT_BG } });
+      T(s, t, { x, y, w: cw[k] - 0.1, h, fontSize: i === 0 ? 10.5 : (k === 0 ? 9.5 : 9.5), bold: i === 0 || k === 0,
+        color: i === 0 ? (k === 2 ? ACCENT : INK) : (k === 0 ? MUTED : (k === 2 ? INK : MUTED)), valign: "middle" });
       x += cw[k];
     });
   });
   s.addNotes([
     "Trace는 AI 사용을 잡아내는 도구가 아니라, 학생이 제출 전에 스스로 고치게 하고 그 과정을 공개하는 도구입니다.",
     "흐름은 네 단계입니다. 평소처럼 AI와 과제를 하면 기록되고, 출처 보기에서 문장마다 어느 AI 답에서 왔는지 보고, 제출 전에 AI 답과 똑같은 문장이나 출처 없이 붙인 웹 글, 곧 표절 의심 문장을 직접 고치거나 인용을 단 뒤, 교수에게 내역서 링크 한 장으로 공개합니다.",
-    "캡처 제출은 교수가 손으로 대조해야 하고, 카피킬러 같은 검사기는 학생이 실제로 쓴 AI 답을 모른 채 확률로 추정합니다. Trace는 학생이 실제로 본 AI 답과 문장을 직접 비교하고, 확률이 아니라 사실만 보여 줍니다. (약 25초)",
+    "교수님 피드백이 '카피킬러와 합쳐 고쳐 쓰게 하라'였습니다. 카피킬러는 세상 문서와 결과물만 비교해서, 웹 글을 GPT로 바꿔 쓰면 놓치기 쉽습니다. Trace는 학생이 실제로 본 AI 답과 웹 글, 그리고 복사 → GPT → 붙여넣기 과정까지 봅니다. 반대로 기록 밖에서 본 글은 카피킬러가 잡습니다. 그래서 둘은 서로 못 보는 걸 보는 짝이고, Trace는 점수 대신 학생이 제출 전에 직접 고치게 합니다. (약 30초)",
+    "",
+    "질문 대비",
+    "· 카피킬러와 실제로 연동하나? → 지금은 연동하지 않음. 학생이 같은 보고서를 카피킬러에도 돌리는 식으로 함께 씀. Trace는 카피킬러가 못 보는 '과정'을 맡음.",
+    "· 표절 기준은? → 교육부 연구윤리 지침의 표절 정의 '출처 표시 없이 활용' — 출처 없이 붙인 웹 글을 다듬을 곳으로 보여 줌.",
   ].join("\n"));
 }
 
