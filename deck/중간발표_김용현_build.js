@@ -188,19 +188,30 @@ const card = (slide, x, y, w, h, fill, name) =>
     num(7.72, y, n);
     T(s, [{ text: a, options: { bold: true, breakLine: true } }, { text: b, options: { color: MUTED, fontSize: 9 } }], { x: 8.06, y: y - 0.04, w: 1.42, h: 0.42, fontSize: 10, valign: "top" });
   });
-  // 기술 스택 — 공통 / 윈도우 / 맥
-  const stack = [
-    ["공통", "Python   ·   크롬 확장   ·   Flask (서버)   ·   PostgreSQL (Supabase)"],
-    ["윈도우", "Word 읽기 = COM   ·   AI 앱 읽기 = UI Automation"],
-    ["맥", "Word 읽기 = AppleScript   ·   AI 앱 읽기 = 손쉬운 사용 API"],
+  // 기술 스택 — 공통 / 윈도우 구현 / 맥 구현 (칸마다 알약)
+  const pw = t => t.reduce((w, [a, b]) => w + [...(a + b)].reduce((n, ch) => n + (/[\u3131-\uD79D]/.test(ch) ? 0.118 : ch === " " ? 0.035 : 0.068), 0), 0) + 0.24;
+  const pill = (x, y, parts) => {
+    const w = pw(parts);
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: 0.22, rectRadius: 0.11, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
+    T(s, parts.map(([a, b]) => [a && { text: a, options: { color: MUTED } }, { text: b, options: { bold: true } }]).flat().filter(Boolean),
+      { x, y, w, h: 0.22, fontSize: 9, align: "center", valign: "middle", margin: 0 });
+    return w;
+  };
+  const cols = [
+    ["공통", 3.3, [[["", "Python"]], [["", "크롬 확장"]]], [[["", "Flask 서버"]], [["", "PostgreSQL · Supabase"]]]],
+    ["윈도우 구현", 2.75, [[["Word ← ", "COM"]]], [[["AI 앱 ← ", "UI Automation"]]]],
+    ["맥 구현", 2.75, [[["Word ← ", "AppleScript"]]], [[["AI 앱 ← ", "손쉬운 사용 API"]]]],
   ];
-  T(s, "기술 스택", { x: 0.5, y: 4.66, w: 1.2, h: 0.24, fontSize: 10, bold: true, color: ACCENT });
-  stack.forEach(([k, v], i) => {
-    const y = 4.66 + i * 0.25;
-    T(s, k, { x: 1.35, y, w: 0.6, h: 0.24, fontSize: 9.5, bold: true, valign: "middle" });
-    T(s, v, { x: 1.95, y, w: 7.55, h: 0.24, fontSize: 10, color: INK, valign: "middle" });
+  let cx = 0.5;
+  cols.forEach(([head, w, r1, r2]) => {
+    card(s, cx, 4.68, w, 0.78, SOFT, "stack-" + head);
+    T(s, head, { x: cx + 0.14, y: 4.72, w: w - 0.2, h: 0.22, fontSize: 10, bold: true, color: ACCENT });
+    [r1, r2].forEach((row, ri) => {
+      let px = cx + 0.14;
+      row.forEach(parts => { px += pill(px, 4.97 + ri * 0.25, parts) + 0.08; });
+    });
+    cx += w + 0.1;
   });
-  s.addShape(pres.shapes.LINE, { x: 0.5, y: 4.62, w: 9.0, h: 0, line: { color: LINE, width: 0.75 } });
   s.addNotes([
     "Trace는 웹사이트가 아니라 학생 PC에 까는 데스크톱 앱입니다. Word나 ChatGPT 앱처럼 브라우저 밖까지 읽고, 원문을 PC에만 두기 위해서입니다. 아래 기술 스택처럼 Python 하나로 기록기와 화면을 묶었고, 윈도우는 COM과 UI Automation, 맥은 AppleScript와 손쉬운 사용 API로 따로 구현했습니다.",
     "학생 PC에서는 기록기와 크롬 확장이 AI 대화, 복사와 붙여넣기, Word 변화, 키 횟수를 모으고, 출처 잇기가 보고서 문장을 AI 답과 이어 줍니다. 이 원문은 PC에만 저장됩니다.",
