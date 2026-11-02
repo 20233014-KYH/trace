@@ -19,9 +19,17 @@ pres.defineSlideMaster({
   objects: [
     { placeholder: { options: { name: "title", type: "title", x: 0.5, y: 0.35, w: 9, h: 0.6,
       fontFace: FONT, fontSize: 26, bold: true, color: INK, valign: "top", align: "left", margin: 0 }, text: "" } },
+    // 오른쪽 위: 로고 점 셋 (앱 아이콘과 같은 모티프) + 이름
+    { image: { x: 8.3, y: 0.145, w: 0.33, h: 0.11, path: IMG + "dots.png" } },
+    { text: { text: "Trace", options: { x: 8.66, y: 0.1, w: 0.45, h: 0.2, fontFace: FONT, fontSize: 9, bold: true, color: "9B9A95", margin: 0, valign: "middle" } } },
+    { line: { x: 9.13, y: 0.13, w: 0, h: 0.14, line: { color: "D9D8D3", width: 0.75 } } },
   ],
+  slideNumber: { x: 9.23, y: 0.1, w: 0.3, h: 0.2, fontFace: FONT, fontSize: 9, color: "9B9A95", align: "left", margin: 0 },
 });
 
+// 제목 위 작은 섹션 표시 — 요구 항목 번호 · 이름 (교수가 어디가 무슨 항목인지 바로 찾게)
+const sec = (slide, n, name) => slide.addText([{ text: n, options: { bold: true, color: ACCENT } }, { text: "   " + name, options: { color: "9B9A95" } }],
+  { isTextBox: true, fontFace: FONT, x: 0.5, y: 0.1, w: 6, h: 0.2, fontSize: 9, margin: 0, valign: "middle", charSpacing: 0.5 });
 const T = (slide, text, o) => slide.addText(text, Object.assign({ isTextBox: true, fontFace: FONT, margin: 0, color: INK }, o));
 const card = (slide, x, y, w, h, fill, name) =>
   slide.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h, rectRadius: 0.08, fill: { color: fill }, line: { color: fill }, objectName: name });
@@ -77,6 +85,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("문제 정의: 대학은 이미 AI 사용 공개를 요구한다", { placeholder: "title" });
+  sec(s, "01", "문제 정의 · 인사이트");
 
   // 숫자 두 개
   T(s, "56곳", { x: 0.5, y: 1.15, w: 1.9, h: 0.75, fontSize: 44, bold: true, objectName: "stat-56" });
@@ -117,6 +126,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("인사이트: 학생은 기준을 모르고, 감시를 걱정한다", { placeholder: "title" });
+  sec(s, "01", "문제 정의 · 인사이트");
 
   // 칸마다 Q(실제 설문 문항) · A(고른 답) — "59% 가 무엇을 고른 59% 인지" 바로 보이게 (11/2 김용현 안)
   const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.75;
@@ -159,10 +169,11 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("서비스 콘셉트: 잡지 않고, 제출 전에 고치게 한다", { placeholder: "title" });
+  sec(s, "02", "서비스 기획");
   const flow = [
     ["기록", "평소처럼 AI와 과제\n원문은 학생 PC에만"],
     ["출처 보기", "문장마다 어느 AI 답 ·\n웹 글에서 왔는지"],
-    ["제출 전 다듬기", "AI 답과 똑같은 문장 ·\n표절 의심(출처 없는 웹 글)을\n학생이 직접 고침"],
+    ["제출 전 다듬기", "AI 답 그대로인 문장과\n표절 의심(출처 없는 웹 글)을\n학생이 직접 고침"],
     ["공개", "교수에게\n내역서 링크 한 장"],
   ];
   flow.forEach(([h, d], i) => {
@@ -177,13 +188,13 @@ const card = (slide, x, y, w, h, fill, name) =>
   // 누가 쓰나
   card(s, 0.5, 2.55, 2.85, 2.8, SOFT, "who");
   T(s, "누가 쓰나", { x: 0.68, y: 2.65, w: 2.5, h: 0.28, fontSize: 13, bold: true });
-  T(s, [
-    { text: "교수 · 첫 고객", options: { bold: true, color: ACCENT, breakLine: true } },
-    { text: "AI 허용 과제에 사용 내역을 요구\n설치 없이 내역서 링크 · QR만 연다", options: { color: INK, breakLine: true } },
-    { text: " ", options: { fontSize: 5, breakLine: true } },
-    { text: "학생 · 쓰는 사람", options: { bold: true, color: ACCENT, breakLine: true } },
-    { text: "평소처럼 과제를 하고\n제출 전에 직접 고친다", options: { color: INK } },
-  ], { x: 0.68, y: 3.0, w: 2.55, h: 1.9, fontSize: 10.5, valign: "top", paraSpaceAfter: 2 });
+  [["교수", "첫 고객", "AI 허용 과제에 사용 내역 요구\n설치 없이 내역서 링크 · QR만 연다"],
+   ["학생", "쓰는 사람", "평소처럼 과제를 하고\n제출 전에 직접 고친다"]].forEach(([who, role, d], k) => {
+    const y = 3.05 + k * 1.12;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.62, y, w: 2.61, h: 1.0, rectRadius: 0.06, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
+    T(s, [{ text: who + "  ", options: { bold: true, color: ACCENT } }, { text: role, options: { color: MUTED, fontSize: 9.5 } }], { x: 0.76, y: y + 0.1, w: 2.4, h: 0.26, fontSize: 12 });
+    T(s, d, { x: 0.76, y: y + 0.4, w: 2.42, h: 0.52, fontSize: 10, valign: "top" });
+  });
   // 카피킬러 + Trace — 교수님 피드백 (10/28) "카피킬러와 합쳐 고쳐 쓰게"
   T(s, "카피킬러 + Trace: 서로 못 보는 걸 본다", { x: 3.6, y: 2.55, w: 5.9, h: 0.28, fontSize: 13, bold: true });
   T(s, [{ text: "교수님 피드백  ", options: { bold: true, color: ACCENT } }, { text: "잡는 데서 끝내지 말고 학생이 고쳐 쓰며 배우게(교육적 가치) · 카피킬러 같은 점검과 합쳐서", options: { color: INK, breakLine: true } },
@@ -222,6 +233,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("핵심 기능과 개발 범위", { placeholder: "title" });
+  sec(s, "02", "서비스 기획");
   const feats = [
     ["기록", "AI 대화 · 복사/붙여넣기 · Word 글 변화 · 키 횟수", "원문은 학생 PC에만, 서버엔 해시만"],
     ["출처 보기", "보고서 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
@@ -229,16 +241,16 @@ const card = (slide, x, y, w, h, fill, name) =>
     ["내역서 · 교수 링크", "학생이 고른 것만 PDF 한 장 + 링크 · QR", "기록과 일치 확인 · 고친 문장 수는 발표 뒤"],
   ];
   feats.forEach(([h, a, b], i) => {
-    const x = 0.5 + (i % 2) * 4.55, y = 1.0 + Math.floor(i / 2) * 1.38, w = 4.45;
-    card(s, x, y, w, 1.26, SOFT, "feat-" + i);
+    const x = 0.5 + (i % 2) * 4.55, y = 1.0 + Math.floor(i / 2) * 1.42, w = 4.45;
+    card(s, x, y, w, 1.3, SOFT, "feat-" + i);
     s.addShape(pres.shapes.OVAL, { x: x + 0.16, y: y + 0.14, w: 0.3, h: 0.3, fill: { color: ACCENT }, line: { color: ACCENT } });
     T(s, String(i + 1), { x: x + 0.16, y: y + 0.14, w: 0.3, h: 0.3, fontSize: 12, bold: true, color: "FFFFFF", align: "center", valign: "middle" });
     T(s, h, { x: x + 0.56, y: y + 0.13, w: w - 0.7, h: 0.32, fontSize: 14, bold: true, valign: "middle" });
     T(s, [{ text: a, options: { breakLine: true } }, { text: b, options: { color: MUTED } }], { x: x + 0.56, y: y + 0.5, w: w - 0.7, h: 0.66, fontSize: 10.5, valign: "top", paraSpaceAfter: 3 });
   });
   // 개발 범위
-  card(s, 0.5, 3.85, 9.0, 1.5, ACCENT_BG, "scope");
-  T(s, "개발 범위", { x: 0.68, y: 3.93, w: 3, h: 0.3, fontSize: 13, bold: true, color: ACCENT });
+  card(s, 0.5, 3.95, 9.0, 1.3, ACCENT_BG, "scope");
+  T(s, "개발 범위", { x: 0.68, y: 4.03, w: 3, h: 0.3, fontSize: 13, bold: true, color: ACCENT });
   const scope = [
     ["대상", "AI를 허용한 학부 과제"],
     ["운영체제", "윈도우 · 맥 (Apple 칩)"],
@@ -249,8 +261,8 @@ const card = (slide, x, y, w, h, fill, name) =>
   const sw5 = [1.55, 1.6, 2.3, 1.45, 1.75];
   let sx = 0.68;
   scope.forEach(([k, v], i) => {
-    T(s, k, { x: sx, y: 4.3, w: sw5[i] - 0.1, h: 0.22, fontSize: 9.5, bold: true, color: MUTED });
-    T(s, v, { x: sx, y: 4.53, w: sw5[i] - 0.1, h: 0.7, fontSize: 10.5, valign: "top" });
+    T(s, k, { x: sx, y: 4.4, w: sw5[i] - 0.1, h: 0.22, fontSize: 9.5, bold: true, color: MUTED });
+    T(s, v, { x: sx, y: 4.63, w: sw5[i] - 0.1, h: 0.7, fontSize: 10.5, valign: "top" });
     sx += sw5[i];
   });
   s.addNotes([
@@ -267,6 +279,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("제출 전 다듬기: 검증된 기준을 코드로", { placeholder: "title" });
+  sec(s, "02", "서비스 기획");
   const cw = [2.05, 2.95, 2.95, 1.05], x0 = 0.5;
   const rows = [
     ["무엇을", "근거", "Trace에서", "상태"],
@@ -312,6 +325,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("사용자 경험: 교수는 링크만 열고, 학생은 평소처럼 쓴다", { placeholder: "title" });
+  sec(s, "03", "사용자 경험 설계");
   T(s, [{ text: "User Flow   ", options: { bold: true, color: INK } }, { text: "주황 = 교수 · 파랑 = 학생 · 굵은 파랑 = 새로 더한 제출 전 다듬기", options: { color: MUTED } }],
     { x: 0.5, y: 0.95, w: 9, h: 0.24, fontSize: 10 });
   s.addImage({ path: IMG + "user-flow-crop.png", x: 0.6, y: 1.22, w: 8.8, h: 8.8 / 2.569 });
@@ -335,14 +349,15 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 6장 (이어서) 와이어프레임 ①② ─────────
 [
   ["와이어프레임 ① 로그인 · 홈", [
-    ["wf-login.png", 1.596, "로그인", "구글 · 카카오 · 이메일. 첫 화면부터 '원문은 내 PC에만 · 점수 · 판정 없음'을 보여 감시처럼 느끼지 않게"],
-    ["wf-home.png", 1.596, "홈", "과제를 마감 순으로. 카드마다 4단계(기록 → 출처 보기 → 연결 확인 → 내역서) 진행. 기록 중이면 맨 위에 멈춤 · 마치기"]]],
+    ["wf-login.png", 1.596, "로그인", "구글 · 카카오 · 이메일로 로그인\n첫 화면부터 '원문은 내 PC에만 · 점수 · 판정 없음'"],
+    ["wf-home.png", 1.596, "홈", "과제를 마감 순으로, 카드마다 4단계 진행 표시\n기록 중이면 맨 위에 멈춤 · 마치기"]]],
   ["와이어프레임 ② 출처 보기 · 교수 링크", [
-    ["wf-source.png", 1.596, "출처 보기", "보고서 문장마다 어디서 왔는지 색으로. 문장을 누르면 오른쪽에 AI 답 원문과 복사 → 붙여넣기 시각"],
-    ["wf-statement.png", 1.415, "교수 링크 (내역서)", "학생이 고른 것만. 서버 기록과 맞으면 '서버 기록과 일치'. 숫자와 사실만"]]],
+    ["wf-source.png", 1.596, "출처 보기", "보고서 문장마다 어디서 왔는지 색으로 표시\n누르면 AI 답 원문과 복사 → 붙여넣기 시각"],
+    ["wf-statement.png", 1.415, "교수 링크 (내역서)", "학생이 고른 것만, 숫자와 사실만\n서버 기록과 맞으면 '서버 기록과 일치'"]]],
 ].forEach(([title, two], si) => {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText(title, { placeholder: "title" });
+  sec(s, "03", "사용자 경험 설계");
   two.forEach(([f, r, h, d], i) => {
     const cx = 0.5 + i * 4.6, cy = 1.0, bw = 4.4, bh = 2.9;
     s.addShape(pres.shapes.RECTANGLE, { x: cx, y: cy, w: bw, h: bh, fill: { color: SOFT }, line: { color: LINE, width: 0.75 } });
@@ -362,20 +377,27 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("UI/UX 프로토타입", { placeholder: "title" });
+  sec(s, "04", "UI/UX 프로토타입");
   card(s, 0.5, 1.0, 4.6, 4.35, ACCENT_BG, "figma");
   T(s, "피그마 프로토타입", { x: 0.7, y: 1.12, w: 4.2, h: 0.32, fontSize: 15, bold: true, color: ACCENT });
   T(s, FIGMA_URL ? [{ text: FIGMA_URL, options: { hyperlink: { url: FIGMA_URL, tooltip: "피그마 프로토타입 열기" } } }] : "피그마 링크 자리 (박상진에게 받으면 넣기)",
     { x: 0.7, y: 1.5, w: 4.2, h: 0.5, fontSize: 11, color: FIGMA_URL ? ACCENT : "C0502A", valign: "top" });
-  T(s, "화면 7개", { x: 0.7, y: 2.15, w: 4.2, h: 0.26, fontSize: 11.5, bold: true });
-  T(s, [
-    { text: "학생", options: { bold: true, color: ACCENT, breakLine: true } },
-    { text: "S-0 동의 · S-1 홈 + 기록 중 작은 창", options: { breakLine: true } },
-    { text: "S-2 출처 보기 · 제출 전 다듬기", options: { breakLine: true } },
-    { text: "S-3 연결 확인 · S-4 제출 전 가리기", options: { breakLine: true } },
-    { text: " ", options: { fontSize: 5, breakLine: true } },
-    { text: "교수", options: { bold: true, color: "C0502A", breakLine: true } },
-    { text: "P-1 내역서 화면 · P-2 내역서 상세" },
-  ], { x: 0.7, y: 2.45, w: 4.2, h: 1.9, fontSize: 10.5, valign: "top", paraSpaceAfter: 2 });
+  T(s, "화면 7개 · ★ 핵심", { x: 0.7, y: 2.1, w: 4.2, h: 0.26, fontSize: 11.5, bold: true });
+  const tile = (x, y, id, name, star, c) => {
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: 0.74, h: 0.62, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: star ? c : LINE, width: star ? 1.5 : 0.75 } });
+    T(s, [{ text: (star ? "★ " : "") + id, options: { bold: true, color: c, fontSize: 9, breakLine: true } }, { text: name, options: { fontSize: 8.5, color: INK } }],
+      { x: x + 0.04, y, w: 0.68, h: 0.62, align: "center", valign: "middle" });
+  };
+  const flow = (y, label, c, arr) => {
+    T(s, label, { x: 0.7, y: y - 0.26, w: 1, h: 0.22, fontSize: 10, bold: true, color: c });
+    arr.forEach(([id, name, star], k) => {
+      const x = 0.7 + k * 0.86;
+      tile(x, y, id, name, star, c);
+      if (k < arr.length - 1) s.addShape(pres.shapes.LINE, { x: x + 0.75, y: y + 0.31, w: 0.1, h: 0, line: { color: MUTED, width: 1, endArrowType: "triangle" } });
+    });
+  };
+  flow(2.7, "학생", ACCENT, [["S-0", "동의"], ["S-1", "홈 · 기록 중", 1], ["S-2", "출처 보기\n다듬기", 1], ["S-3", "연결 확인"], ["S-4", "제출 전\n가리기", 1]]);
+  flow(3.75, "교수", "C0502A", [["P-1", "내역서", 1], ["P-2", "내역서 상세", 1]]);
   T(s, "보는 법: 위 링크를 열고 ▶ (프레젠테이션)", { x: 0.7, y: 4.9, w: 4.2, h: 0.3, fontSize: 9.5, color: MUTED });
   // 직접 써 보고 고친 것
   card(s, 5.35, 1.0, 4.15, 4.35, SOFT, "selftest");
@@ -389,8 +411,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   fixes.forEach(([p, f, v], i) => {
     const y = 1.72 + i * 1.0;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.48, y, w: 3.9, h: 0.88, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
-    T(s, p, { x: 5.6, y: y + 0.06, w: 3.0, h: 0.44, fontSize: 10, bold: true, valign: "top" });
-    T(s, "→ " + f, { x: 5.6, y: y + 0.5, w: 3.0, h: 0.32, fontSize: 9.5, color: ACCENT, valign: "middle" });
+    T(s, p, { x: 5.6, y: y + 0.1, w: 3.0, h: 0.32, fontSize: 10, bold: true, valign: "middle" });
+    T(s, "→ " + f, { x: 5.6, y: y + 0.42, w: 3.0, h: 0.32, fontSize: 9.5, color: ACCENT, valign: "middle" });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.6, y: y + 0.1, w: 0.68, h: 0.24, rectRadius: 0.12, fill: { color: ACCENT_BG }, line: { color: ACCENT, width: 0.75 } });
     T(s, v, { x: 8.6, y: y + 0.1, w: 0.68, h: 0.24, fontSize: 9, bold: true, color: ACCENT, align: "center", valign: "middle" });
   });
@@ -405,6 +427,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("시스템 설계: 원문은 학생 PC에 남는다", { placeholder: "title" });
+  sec(s, "05", "시스템 설계");
   const FE = ACCENT, BE = "4A4A46", DB = "2E7D5B";
   // 범례
   [["FE", FE, "Frontend"], ["BE", BE, "Backend"], ["DB", DB, "Database"]].forEach(([k, c, name], i) => {
@@ -518,6 +541,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("DB 설계: 기록 줄기와 제출 줄기", { placeholder: "title" });
+  sec(s, "06", "DB 설계");
   const NEW = ACCENT;
   const box = (x, y, w, h, name, ko, sub, opt = {}) => {
     const dash = opt.next;
@@ -581,6 +605,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("개발 계획: 이미 돌아가는 것 위에 더한다", { placeholder: "title" });
+  sec(s, "07", "개발 계획");
   const YH = ACCENT, SJ = "2E7D5B", BOTH = MUTED;
   const head = (x, y, t) => T(s, t, { x, y, w: 4, h: 0.28, fontSize: 13, bold: true });
   const dot = (x, y, c) => s.addShape(pres.shapes.OVAL, { x, y, w: 0.1, h: 0.1, fill: { color: c }, line: { color: c } });
