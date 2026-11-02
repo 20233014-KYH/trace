@@ -32,11 +32,9 @@ const card = (slide, x, y, w, h, fill, name) =>
   s.background = { color: INK };
   const COPY = "E5484D", COPY_BG = "FDECEC", EDIT = "3E63DD", EDIT_BG = "EAF0FD", BAR = "E3E2DE";   // 앱 출처 보기 색 (app/shell.css)
   // 로고 (앱 아이콘 = 상진 10/13) + 이름
-  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 1.12, w: 0.92, h: 0.92 });
-  T(s, "Trace", { x: 1.68, y: 1.08, w: 4, h: 0.95, fontSize: 54, bold: true, color: "FFFFFF", valign: "middle", objectName: "cover-title" });
-  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 4.7, h: 0.5, fontSize: 22, color: "FFFFFF" });
-  T(s, "AI 답과 참고한 글을 어떻게 썼는지 기록하고,\n제출 전에 그대로 가져온 곳을 학생이 다듬게 한 뒤,\n교수에게 한 장으로 공개합니다.",
-    { x: 0.6, y: 2.95, w: 5.2, h: 0.95, fontSize: 13, color: "C9C8C3" });
+  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 1.5, w: 0.92, h: 0.92 });
+  T(s, "Trace", { x: 1.68, y: 1.46, w: 4, h: 0.95, fontSize: 54, bold: true, color: "FFFFFF", valign: "middle", objectName: "cover-title" });
+  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.68, w: 4.7, h: 0.5, fontSize: 22, color: "FFFFFF" });
   T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 5.4, h: 0.3, fontSize: 12, color: "C9C8C3" });
 
   // 그래픽: 왼쪽 출처(AI 답 · 웹 글) → 오른쪽 보고서 문장마다 색 — "문장마다 어디서 왔는지"
