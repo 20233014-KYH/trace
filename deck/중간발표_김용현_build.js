@@ -30,11 +30,48 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide();
   s.background = { color: INK };
-  T(s, "Trace", { x: 0.6, y: 1.35, w: 6, h: 0.9, fontSize: 54, bold: true, color: "FFFFFF", objectName: "cover-title" });
-  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 7, h: 0.5, fontSize: 24, color: "FFFFFF" });
+  const COPY = "E5484D", COPY_BG = "FDECEC", EDIT = "3E63DD", EDIT_BG = "EAF0FD", BAR = "E3E2DE";   // 앱 출처 보기 색 (app/shell.css)
+  // 로고 (앱 아이콘 = 상진 10/13) + 이름
+  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 1.12, w: 0.92, h: 0.92 });
+  T(s, "Trace", { x: 1.68, y: 1.08, w: 4, h: 0.95, fontSize: 54, bold: true, color: "FFFFFF", valign: "middle", objectName: "cover-title" });
+  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 4.7, h: 0.5, fontSize: 22, color: "FFFFFF" });
   T(s, "AI 답과 참고한 글을 어떻게 썼는지 기록하고,\n제출 전에 그대로 가져온 곳을 학생이 다듬게 한 뒤,\n교수에게 한 장으로 공개합니다.",
-    { x: 0.6, y: 2.95, w: 6.6, h: 0.95, fontSize: 13, color: "C9C8C3" });
-  T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 6.5, h: 0.3, fontSize: 12, color: "C9C8C3" });
+    { x: 0.6, y: 2.95, w: 5.2, h: 0.95, fontSize: 13, color: "C9C8C3" });
+  T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 5.4, h: 0.3, fontSize: 12, color: "C9C8C3" });
+
+  // 그래픽: 왼쪽 출처(AI 답 · 웹 글) → 오른쪽 보고서 문장마다 색 — "문장마다 어디서 왔는지"
+  const src = [
+    ["ChatGPT", "AI 답", 1.25, COPY],
+    ["Claude", "AI 답", 2.35, EDIT],
+    ["웹 글", "복사해 붙임", 3.45, "C9C8C3"],
+  ];
+  // 보고서 카드
+  const dx = 7.25, dy = 0.95, dw = 2.2, dh = 3.75;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: dx, y: dy, w: dw, h: dh, rectRadius: 0.08, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" },
+    shadow: { type: "outer", color: "000000", opacity: 0.35, blur: 12, offset: 4, angle: 90 } });
+  T(s, "보고서.docx", { x: dx + 0.18, y: dy + 0.14, w: 1.6, h: 0.22, fontSize: 9, bold: true, color: INK });
+  // 문장 줄: [폭, 색 배경, 밑줄 색] — 색 = 어디서 왔는지
+  const lines = [[1.8, null], [1.6, COPY_BG, COPY], [1.75, COPY_BG, COPY], [1.2, null], [1.7, null], [1.55, EDIT_BG, EDIT], [1.8, null], [1.35, null],
+                 [1.7, "F4F3EF", "9B9A95"], [1.6, null], [1.1, null]];
+  const lineY = {};
+  lines.forEach(([w, bg, c], k) => {
+    const y = dy + 0.55 + k * 0.28;
+    if (bg) s.addShape(pres.shapes.RECTANGLE, { x: dx + 0.14, y: y - 0.06, w: w + 0.08, h: 0.2, fill: { color: bg }, line: { color: bg } });
+    s.addShape(pres.shapes.RECTANGLE, { x: dx + 0.18, y: y + 0.01, w, h: 0.06, fill: { color: c || BAR }, line: { color: c || BAR } });
+    if (c && !lineY[c]) lineY[c] = y + 0.04;
+  });
+  // 출처 말풍선 + 잇는 선
+  src.forEach(([name, kind, y, c]) => {
+    const bx = 5.35, bw = 1.25, bh = 0.62, cy = y + bh / 2;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: bx, y, w: bw, h: bh, rectRadius: 0.1, fill: { color: "4A4843" }, line: { color: c, width: 1.25 } });
+    s.addShape(pres.shapes.OVAL, { x: bx + 0.12, y: cy - 0.07, w: 0.14, h: 0.14, fill: { color: c }, line: { color: c } });
+    T(s, [{ text: name, options: { bold: true, color: "FFFFFF", breakLine: true } }, { text: kind, options: { color: "C9C8C3", fontSize: 8.5 } }],
+      { x: bx + 0.34, y, w: bw - 0.38, h: bh, fontSize: 10, valign: "middle" });
+    const ty = lineY[c === "C9C8C3" ? "9B9A95" : c];
+    s.addShape(pres.shapes.LINE, { x: bx + bw, y: cy, w: dx + 0.14 - (bx + bw), h: ty - cy, flipV: ty < cy,
+      line: { color: c, width: 1.25, dashType: c === "C9C8C3" ? "dash" : "solid", endArrowType: "oval" } });
+  });
+  T(s, "문장마다 어디서 왔는지", { x: dx, y: dy + dh + 0.1, w: dw, h: 0.24, fontSize: 9.5, color: "9B9A95", align: "center" });
   s.addNotes("AI를 허용하는 수업에서, 대화 내역 제출을 대신하는 Trace입니다. (약 10초)");
 }
 
