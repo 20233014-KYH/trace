@@ -84,6 +84,24 @@ def main():
           라벨[0] == 라벨[2] == "exact" and all(l in ("exact", "edited") for l in 라벨[:4]), 라벨)
     check("① 구글 답 문단 = 다른 곳 (Claude 답과 비슷해도)", 라벨[4:7] == ["web"] * 3, 라벨)
     check("직접 쓴 글 = 출처 기록 없음", 라벨[7] == "none", 라벨)
+    # ③ 맥: 키 입력 이벤트의 app 이 "Microsoft Word" (윈도우는 WINWORD.EXE) — 11/2 맥에서 직접 친 글이 전부 "키 입력 없음" 으로 보였다
+    친글 = "해시 체인이란 데이터를 반복해서 해시하는 구조다."
+    for app, 이름 in (("Microsoft Word", "맥"), ("WINWORD.EXE", "윈도우")):
+        p = M.process_evidence([{"ts": T("40:07"), "type": "keys", "count": 60, "app": app, "category": "work"}],
+                               [{"ts": T("40:11"), "source": "office", "kind": "diff", "text": 친글, "meta": {"app": "Word", "file": F, "where": "문단 4"}}])
+        check(f"③ {이름} Word 에서 친 글 = 타이핑 (쓴 과정 기록 없음 아님)", p["typed"] == [친글] and p["noproc"] == [], p)
+    # ④ AI 앱에서 복사해 그대로 붙였는데 원래 답이 기록에 없음 (11/2 실제: ChatGPT 앱 보고서 답이 빠짐) → 글자 조각만 겹치는
+    #    다른 답에 "고침" 으로 잇지 않고 "AI 에서 그대로 붙여넣음 · 대화 기록 없음"
+    다른답 = "해시 테이블은 키를 해시 함수로 변환해 데이터를 빠르게 저장하고 찾는 자료구조야."
+    공식 = "H₂ = 해시(H₁ || 데이터₂)"
+    cx4 = [{"ts": T("50:01"), "source": "desktop", "kind": "ai_answer_excerpt", "text": 공식, "meta": {"tool": "ChatGPT 앱", "domain": "chatgpt"}}]
+    ev4 = [{"ts": T("50:01"), "type": "copy", "hash": h(공식), "app": "ChatGPT", "category": "ai", "len": len(공식)},
+           {"ts": T("50:02"), "type": "paste", "hash": h(공식), "app": "Microsoft Word", "len": len(공식)},
+           {"ts": T("50:02"), "type": "doc_paste_at", "app": "Word", "file": F, "where": "문단 1"}]
+    줄 = M.link_document([공식], [{"id": 0, "text": 다른답, "ts": T("40:00"), "asked": T("39:50")}],
+                        M.pasted_from_ai(ev4, cx4), M.pasted_from_other(ev4, cx4), M.process_evidence(ev4, cx4))[0][0]
+    check("④ 원래 답이 없는 AI 붙여넣기 = 그대로 붙여넣음 (엉뚱한 답에 '고침' 으로 안 이음)",
+          줄["label"] == "web" and 줄["answer"] is None and 줄["paste"]["category"] == "ai" and 줄["paste"]["source"] == "chatgpt", 줄)
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
 

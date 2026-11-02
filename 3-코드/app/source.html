@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/ui/shell.css">
 <style>
 /* 출처 보기 — 캔버스 "Trace 화면 뼈대" 4 · 4 AI 답 기준 · 4 메뉴 접음 (1차 확정 10/11)
-   흑연(zinc) · Pretendard · 색 결정 C: AI 답과 같음 · 다른 곳에서 옴 = 빨강 바탕 (10/12 이름 바꿈 · 보면서 똑같이 쳐도 빨강) · 고침 = 파랑 바탕 · 보고 씀 = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색
+   흑연(zinc) · Pretendard · 색 결정 C: AI 답과 같음 · 다른 곳에서 옴 = 빨강 바탕 (10/12 이름 바꿈 · 보면서 똑같이 쳐도 빨강) · 고침 = 파랑 바탕 · 참고함(옛 보고 씀) = 파랑 점선 밑줄 · 출처 기록 없음 = 거의 안 보이는 회색
    ★ 점수·퍼센트 없음. 보기만 하는 화면 — 맞다/아니다는 다음 단계(연결 확인). */
 
 /* 도구 줄 */
@@ -103,12 +103,12 @@
 .doc-in.fixing .s:not(.fix){background:none;text-decoration-color:transparent}
 .doc-in.fixing .tag{opacity:.4}
 .doc-in.fixing .s.kept:not(.on){background:none}
-.fx{margin-top:16px;padding-top:16px;border-top:1px solid var(--soft);display:flex;flex-direction:column;gap:10px}
+.fx{margin-top:12px;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .fx-h{display:flex;align-items:center;gap:8px;font-size:13.5px}.fx-h b{font-weight:700}
 .fx-h span{margin-left:auto;font-size:12.5px;color:var(--muted)}
 .fx p{margin:0;font-size:13.5px;line-height:1.6;color:var(--ink2)}
 .fx .acts{display:flex;gap:8px}
-.fx .acts .btn{height:32px;padding:0 12px;font-weight:500;font-size:14px;border-radius:10px}
+.fx .acts .btn{background:#fff;height:32px;padding:0 12px;font-weight:500;font-size:14px;border-radius:10px}
 .fx .acts .btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}.fx .acts .btn.dark:hover{background:#27272a}
 .fx .acts .btn:disabled{opacity:.5;cursor:default}
 .fx .hint{margin:0;font-size:12.5px;color:var(--faint);line-height:1.5}
@@ -219,13 +219,14 @@
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const KIND = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
+  // 범례와 같은 이름 (11/1 · 보고 씀 → 참고함)
+  const KIND = { exact: "AI 답과 일치 및 유사", similar: "AI 답과 일치 및 유사", edited: "붙여넣고 고침", viewed: "AI 답 참고함",
                  web: "다른 곳에서 붙여넣음", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
-  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "" };
+  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "참고함", web: "다른 곳", noproc: "과정 없음", none: "" };
   const 앱이름 = { "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱", "chrome.exe": "Chrome", "msedge.exe": "Edge", "whale.exe": "웨일", "firefox.exe": "Firefox" };
   const 받은곳 = p => p.domain || 앱이름[(p.app || "").toLowerCase()] || p.app || "";         // 받은 사이트 · 없으면 앱
   const 짧게 = x =>x.kind === "noproc" && x.proc && x.proc.how === "download" ? "받은 파일" : SHORT[x.kind];   // 기록 중 받은 결과물 파일 (10/15)
-  const GROUP = { copy: "AI 답과 같음", edited: "고침", viewed: "보고 씀", none: "출처 기록 없음" };
+  const GROUP = { copy: "AI 답과 같음", edited: "고침", viewed: "참고함", none: "출처 기록 없음" };
   const DOT = { copy: "var(--copy-d)", edited: "var(--edit-d)", viewed: "var(--edit-d)", none: "#d4d4d8" };
   const wid = new URLSearchParams(location.search).get("work") || "";
   let D = null, cur = -1, tab = "doc", qcur = -1, filt = "all", works = [];
@@ -329,14 +330,18 @@
   function render() {
     const c = D.counts;
     $("lg-doc").innerHTML = "";
-    // 빨강 = 글이 그대로 들어온 것 (결정 C) → 범례도 "그대로" 하나 (10/31 · AI 답 · 다른 곳 · 과정 없음은 문장을 누르면 오른쪽에)
+    // 빨강 = 글이 그대로 들어온 것 (결정 C) → 범례는 "AI 답과 일치 및 유사" 하나 (11/1 · 숫자도 AI 답만 — 다른 곳 · 과정 없음은 문장을 누르면 오른쪽에)
     // 출처 기록 없음 = 색 없는 글이라 범례에서 뺌 — 범례 숫자 5개 → 3개
-    [["그대로", "var(--copy-d)", c.copy], [GROUP.edited, "var(--edit-d)", c.edited], [GROUP.viewed, null, c.viewed]]
+    const ai = D.sentences.filter(x => x.kind === "exact" || x.kind === "similar").length;
+    const 다른곳 = D.sentences.filter(x => x.kind === "web" || x.kind === "noproc").length;
+    [["AI 답과 일치 및 유사", "var(--copy-d)", ai], [GROUP.edited, "var(--edit-d)", c.edited], [GROUP.viewed, null, c.viewed]]
       .forEach(([t, col, k]) => {
         const sp = el("span");
         if (col) { const i = el("i", "sw"); i.style.background = col; sp.append(i, t); }
         else sp.append(el("span", "u", t));
-        sp.append(el("b", null, String(k))); $("lg-doc").append(sp);
+        sp.append(el("b", null, String(k)));
+        if (col === "var(--copy-d)" && 다른곳) sp.append(el("b", null, `· 다른 곳 ${다른곳}`));   // 빨강이지만 AI 답 아님 — 새 색 없이 숫자만 (11/1 · 내역서와 같음)
+        $("lg-doc").append(sp);
       });
     $("lg-ai").innerHTML = "";
     [[c.questions, "질문"], [c.used, "결과물에 글이 들어간 답"], [c.ref, "참고만 한 답"]].forEach(([n, t]) => {
@@ -394,7 +399,7 @@
       p.sents.forEach(k => {
         const x = D.sentences[k];
         if (어절(x.text) < 6) return;
-        if (x.kind === "exact" || (x.kind === "web" && !인용표시.test(문단))) out.add(k);
+        if (x.kind === "exact" || x.kind === "similar" || (x.kind === "web" && !인용표시.test(문단))) out.add(k);   // 문장 전부든 일부든 AI 답과 같은 글 (11/1)
       });
     });
     return out;
@@ -433,11 +438,11 @@
       u.onclick = () => { 둠바꿈(x.text, false); 새로(x.k); };
       box.append(u); return box;
     }
-    const ai = x.kind === "exact";
-    box.append(el("p", null, ai ? "AI 답을 그대로 붙인 문장이에요. 그대로 내도 괜찮아요 — 내역서에 그대로 공개돼요."
-                                : "다른 곳에서 붙여 넣은 글인데 출처 표시가 없어요. 따옴표나 출처를 달면 돼요."));
+    const ai = x.kind !== "web";
+    box.append(el("p", null, ai ? (x.kind === "exact" ? "AI 답을 그대로 붙인 문장이에요." : "AI 답과 거의 같은 문장이에요.") + " 내 말로 다듬어 보는 걸 추천해요."
+                                : "다른 곳에서 붙여 넣은 글인데 출처 표시가 없어요. 따옴표나 출처를 달아 보는 걸 추천해요."));
     const acts = el("div", "acts"), say = el("div", "say"); say.hidden = true;
-    const 고치기 = (글, dark) => { const b = el("button", "btn" + (dark ? " dark" : ""), 글); b.type = "button"; b.onclick = () => 다듬기(b, say); return b; };
+    const 고치기 = (글, dark) => { const b = el("button", "btn" + (dark ? " dark" : ""), 글); b.type = "button"; b.onclick = () => 다듬기(b, say, x.text); return b; };
     if (ai) {
       const keep = el("button", "btn", "그대로 둠"); keep.type = "button";
       keep.onclick = () => { 둠바꿈(x.text, true); 새로(x.k); };
@@ -451,9 +456,9 @@
     if (범위 === "fix") { if (!n) return 보기("all"); nav = 남은(); }
     pick(k, false);
   }
-  async function 다듬기(btn, say) {
+  async function 다듬기(btn, say, text) {                    // text = 이 문장 — Word 에서 찾아 선택 (11/1)
     btn.disabled = true; say.hidden = false; say.className = "say"; say.textContent = "여는 중…";
-    try { const r = await call("POST", "/local/refine", null, { work_id: wid }); say.textContent = r.message; 다듬는중 = true; }
+    try { const r = await call("POST", "/local/refine", null, { work_id: wid, text }); say.textContent = r.message; 다듬는중 = true; }
     catch (e) { say.className = "say err"; say.textContent = e.message; }
     btn.disabled = false;
   }
@@ -520,7 +525,9 @@
     const det = $("det"); det.textContent = "";
     if (!x) { det.append(el("div", "placeholder", "왼쪽에서 문장을 누르면 어디서 왔는지 여기 보입니다")); return; }
     const q = x.q != null ? D.questions[x.q] : null;
-    head(det, DOT[x.group], KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
+    const AI붙임 = x.kind === "web" && x.paste && x.paste.category === "ai";   // AI 앱 · 사이트에서 복사했는데 그 대화는 기록에 없음 (11/2)
+    head(det, DOT[x.group], AI붙임 ? "AI 답에서 그대로 붙여넣음" : KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
+    if (후보.has(x.k)) det.append(다듬기칸(x));               // 맨 위 — 아래에 두면 스크롤해야 보여 지나치기 쉬움 (11/1)
     if (q) { det.append(el("h5", null, "질문")); det.append(el("div", "txt", q.question || "질문 기록 없음")); }
     det.append(el("h5", null, "결과물")); det.append(el("div", "box", x.text));
     if (q && q.answer) {
@@ -536,7 +543,8 @@
       const from = p.domain || p.source || (q ? q.tool : "");
       const b = el("b", null, from || "붙여넣기");
       src.append(b, ` · ${hm(p.copied_at)} 복사 → ${hm(p.pasted_at)} ${p.where || "붙여넣음"}`);
-      if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
+      if (AI붙임) det.append(el("div", "note", "그 AI 대화는 기록에 없어요 — Trace 를 켜기 전에 나눈 대화이거나, 화면을 읽지 못했어요."));
+      else if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
     } else if (x.kind === "viewed" || x.kind === "exact" || x.kind === "similar") {
       src.append(el("b", null, "붙여넣기 기록 없음"), x.kind === "viewed" ? " · 글자가 비슷해서 이은 것"
                  : x.kind === "exact" ? " · 보면서 쳤어도 글이 AI 답과 같아요" : " · 보면서 쳤어도 글이 AI 답과 거의 같아요");
@@ -558,7 +566,6 @@
       src.append("이어지는 AI 답이나 붙여넣기 기록이 없습니다.");
       det.append(el("div", "note", "직접 썼다는 뜻은 아닙니다. 휴대폰 등 다른 기기에서 본 AI 는 기록되지 않습니다."));
     }
-    if (후보.has(x.k)) det.append(다듬기칸(x));
   }
 
   // AI 답 기준 — 질문 목록
@@ -577,7 +584,7 @@
       const m = el("div", "qm"); m.append(el("small", null, `질문 ${q.n} · ${q.tool}`), el("div", q.question ? "" : "none", q.question || "질문 기록 없음"));
       const ch = el("div", "chips");
       if (q.uses.length) {
-        [["copy", "AI 답과 같음"], ["edited", "고침"], ["viewed", "보고 씀"]].forEach(([g, t]) => {
+        [["copy", "AI 답과 같음"], ["edited", "고침"], ["viewed", "참고함"]].forEach(([g, t]) => {
           if (!q.groups[g]) return;
           const c = el("span", "chip " + g);
           if (g === "viewed") c.append(el("span", null, t), ` ${q.groups[g]}`); else c.textContent = `${t} ${q.groups[g]}`;

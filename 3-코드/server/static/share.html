@@ -181,8 +181,8 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
   const tool = t => TOOL[String(t || "").toLowerCase()] || t || "AI";
   // 문장 묶음 (출처 보기 결정 C · 1차 확정 10/12 이름)
   const CLS = { copy: "ex", edited: "ed", viewed: "vw", none: "no" };
-  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "보고 씀", web: "다른 곳", noproc: "과정 없음", none: "기록 없음" };
-  const LONG = { exact: "AI 답과 일치", similar: "AI 답과 유사", edited: "붙여넣고 고침", viewed: "AI 답 보고 씀",
+  const SHORT = { exact: "일치", similar: "유사", edited: "고침", viewed: "참고함", web: "다른 곳", noproc: "과정 없음", none: "기록 없음" };
+  const LONG = { exact: "AI 답과 일치 및 유사", similar: "AI 답과 일치 및 유사", edited: "붙여넣고 고침", viewed: "AI 답 참고함",
                  web: "다른 곳에서 옴", noproc: "쓴 과정 기록 없음", none: "출처 기록 없음" };
   const DOT = { copy: "#e5484d", edited: "#3e63dd", viewed: "#3e63dd", none: "#a1a1aa" };
   const USAGE = [["learn", "이해·자료 찾기"], ["fix", "고치기·검토"], ["write", "작성"]];
@@ -369,8 +369,10 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
     const rc = d.result_counts || (() => { const k = links.map(l => l.kind); return { ai: k.filter(x => x === "exact" || x === "similar").length, edited: k.filter(x => x === "edited").length, viewed: k.filter(x => x === "viewed").length }; })();
     const c5 = card("결과물에 들어간 것", rc.total ? `보고서 ${rc.total}문장 · 문장마다는 "출처 보기" 탭` : `학생이 확인한 연결 ${links.length}곳`);
     const rows = el("div");
-    [["ai", "AI 답과 같음", "#fdecec"], ["other", "다른 곳에서 옴", "#fdecec"], ["edited", "붙여넣고 고침", "#eaf0fd"], ["viewed", "AI 답 보고 씀", null], ["none", "출처 기록 없음", "none"]].forEach(([k, label, bg]) => {
-      if (rc[k] == null || (k === "other" && !rc[k])) return;
+    // 빨강은 하나 — 다른 곳(웹 · 파일 · 과정 없음)은 새 색 없이 숫자만 따로 (11/1)
+    [["ai", "AI 답과 일치 및 유사", "#fdecec"], ["edited", "붙여넣고 고침", "#eaf0fd"], ["viewed", "AI 답 참고함", null], ["none", "출처 기록 없음", "none"]].forEach(([k, label, bg]) => {
+      if (rc[k] == null) return;
+      if (k === "ai" && rc.other) label += ` · 다른 곳 ${n(rc.other)}`;
       const r = el("div", "rrow");
       if (bg === null) r.append(el("span", "dl"));
       else { const i = el("i"); if (bg === "none") { i.style.background = "rgba(24,24,27,.06)"; i.style.boxShadow = "inset 0 0 0 1px #e4e4e7"; } else i.style.background = bg; r.append(i); }
@@ -412,11 +414,13 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
     const S = src.sentences || [], Q = src.questions || [];
     const cnt = { copy: 0, edited: 0, viewed: 0, none: 0 };
     S.forEach(x => { if (cnt[x.group] != null) cnt[x.group]++; });
+    const 다른곳 = S.filter(x => x.kind === "web" || x.kind === "noproc").length;   // 빨강이지만 AI 답은 아님 — 숫자만 따로 · 문장엔 "다른 곳" 꼬리표 (11/1)
+    cnt.copy -= 다른곳;
     const bar = el("div", "bar2"), lg = el("div", "legend");
-    [["copy", "AI 답과 같음", "#e5484d"], ["edited", "고침", "#3e63dd"], ["viewed", "보고 씀", null], ["none", "출처 기록 없음", "none"]].forEach(([g, label, c]) => {
+    [["copy", "AI 답과 일치 및 유사", "#e5484d"], ["edited", "고침", "#3e63dd"], ["viewed", "참고함", null], ["none", "출처 기록 없음", "none"]].forEach(([g, label, c]) => {
       const sp = el("span");
       if (c === null) { const u = el("span", null, label); u.style.cssText = "text-decoration:underline dashed #3e63dd;text-decoration-thickness:1.5px;text-underline-offset:5px"; add(sp, u, el("em", null, String(cnt[g]))); }
-      else { const i = el("i"); if (c === "none") { i.style.background = "rgba(24,24,27,.06)"; i.style.boxShadow = "inset 0 0 0 1px #e4e4e7"; } else i.style.background = c; add(sp, i, document.createTextNode(label + " "), el("em", null, String(cnt[g]))); }
+      else { const i = el("i"); if (c === "none") { i.style.background = "rgba(24,24,27,.06)"; i.style.boxShadow = "inset 0 0 0 1px #e4e4e7"; } else i.style.background = c; add(sp, i, document.createTextNode(label + " "), el("em", null, String(cnt[g]))); if (g === "copy" && 다른곳) sp.append(el("em", null, ` · 다른 곳 ${다른곳}`)); }
       lg.append(sp);
     });
     const nav = el("div"); nav.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:4px;flex:none";
@@ -535,9 +539,9 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
         if (q.hidden) qt.append(el("span", "badge b-hide", "가림"));
         mid.append(qt);
         const bd = el("div", "bd");
-        if (q.counts.copy) bd.append(el("span", "badge b-red", `AI 답과 같음 ${q.counts.copy}`));
+        if (q.counts.copy) bd.append(el("span", "badge b-red", `AI 답과 일치 및 유사 ${q.counts.copy}`));
         if (q.counts.edited) bd.append(el("span", "badge b-blue", `고침 ${q.counts.edited}`));
-        if (q.counts.viewed) { const b = el("span", "badge b-view"); b.append(el("span", null, `보고 씀 ${q.counts.viewed}`)); bd.append(b); }
+        if (q.counts.viewed) { const b = el("span", "badge b-view"); b.append(el("span", null, `참고함 ${q.counts.viewed}`)); bd.append(b); }
         if (!q.used) bd.append(el("span", "badge b-ref", "참고만"));
         if (q.paras.length) { const p = el("span", null, `문단 ${q.paras.join(" · ")}`); p.style.cssText = "font-size:12px;color:#71717a;margin-left:2px"; bd.append(p); }
         add(r, el("span", "vl"), el("span", "t", hm(q.ts)), el("span", "d" + (q.used ? "" : " ref")), mid, bd);

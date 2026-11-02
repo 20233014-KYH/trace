@@ -115,7 +115,7 @@ def main():
     종류 = sorted(s["kind"] for s in 제안)
     검사("6 문장마다 연결 제안", r.status_code == 200 and len(제안) == 6, f"{종류}")
     검사("7 match_rec 정답과 같은 모양", 종류.count("exact") == 2 and 종류.count("edited") == 2 and 종류.count("viewed") == 2,
-         "일치 2 · 붙여넣고 고침 2 · 보고 씀 2")
+         "일치 2 · 붙여넣고 고침 2 · 참고함 2")
 
     # 고르기: 다섯째는 아니다 · 둘째 답(인덱스)의 질문은 가린다
     고름 = {s["key"]: "confirmed" for s in 제안}

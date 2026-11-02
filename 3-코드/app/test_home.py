@@ -15,6 +15,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -147,22 +148,41 @@ def main():
         # ── 제출 전 다듬기 [다듬기] (10/31) — 기록 이어서 켜기 + 결과물 Word 열기 ──
         r = P("/local/refine", {"work_id": 새})
         검사("다듬기: 다른 과제를 기록 중이면 막음", r.status_code == 409 and "다른 과제" in r.json["message"])
-        켠, 연 = [], []
-        WK.설정.update(start=lambda w: 켠.append(w) or {"ok": True}, open_file=lambda p: 연.append(p) or True)
+        켠, 연, 고름 = [], [], []
+        WK.설정.update(start=lambda w: 켠.append(w) or {"ok": True}, open_file=lambda p: 연.append(p) or True,
+                       select_text=lambda p, t: 고름.append((p, t)))
         WK.설정["bridge"] = lambda: None
         ST.출처._파일["W-match_view"] = ("고른 파일.docx", b"")
-        r = P("/local/refine", {"work_id": "W-match_view"})
+        r = P("/local/refine", {"work_id": "W-match_view", "text": "그 문장"})
         검사("다듬기: 기록이 꺼져 있으면 이 과제 기록을 켬 · 자리 모르는 파일은 직접 열라고",
-             r.status_code == 200 and 켠 == ["W-match_view"] and r.json["started"] and not r.json["opened"] and not 연 and "열어 고쳐" in r.json["message"])
+             r.status_code == 200 and 켠 == ["W-match_view"] and r.json["started"] and not r.json["opened"] and not 연 and not 고름 and "열어 고쳐" in r.json["message"])
         WK.설정["bridge"] = lambda: {"work_id": "W-match_view", "session_id": "x"}
         자리 = os.path.join(data, "보고서.docx"); open(자리, "wb").close()
         ST.출처._파일["W-match_view"] = ("보고서.docx", b"")
         ST.safefile.write_json(os.path.join(data, "docs-found.json"), {"W-match_view": 자리})
-        r = P("/local/refine", {"work_id": "W-match_view"})
-        검사("다듬기: 이미 이 과제 기록 중이면 그대로 두고 · 아는 자리의 파일을 Word 로 엶",
-             r.status_code == 200 and 켠 == ["W-match_view"] and not r.json["started"] and r.json["opened"] and 연 == [자리])
+        r = P("/local/refine", {"work_id": "W-match_view", "text": "  해시 충돌이란 서로 다른 키가 같은 값을 가지는 경우다.  "})
+        for _ in range(20):                                       # 문장 고르기는 따로 도는 일
+            if 고름: break
+            time.sleep(0.05)
+        검사("다듬기: 이미 이 과제 기록 중이면 그대로 두고 · 아는 자리의 파일을 Word 로 엶 · 그 문장을 Word 에서 찾아 고름",
+             r.status_code == 200 and 켠 == ["W-match_view"] and not r.json["started"] and r.json["opened"] and 연 == [자리]
+             and 고름 == [(자리, "해시 충돌이란 서로 다른 키가 같은 값을 가지는 경우다.")], str(고름))
+        검사("다듬기: Word 가 없으면 문장 고르기는 조용히 넘어감", WK._문장_고르기(자리, "없는 문장", 기다림=0) is False)
+        부른, 원래 = [], (WK.sys.platform, WK.subprocess.run)    # 맥은 startfile 이 없어서 open 으로 (11/1)
+        WK.sys.platform, WK.subprocess.run = "darwin", lambda a, **k: 부른.append(a) or type("R", (), {"returncode": 0})()
+        try:
+            검사("다듬기: 맥에서는 open 으로 결과물 파일을 엶", WK._파일_열기(자리) is True and 부른 == [["open", 자리]], str(부른))
+            답 = iter(["no-doc", "not-found", "ok"])                # 맥 문장 고르기 (11/2) — 문서가 잡힐 때까지 기다렸다가 앞 250자로 찾음
+            부른.clear()
+            WK.subprocess.run = lambda a, **k: 부른.append(a) or type("R", (), {"stdout": next(답, "ok") + "\n"})()
+            긴 = "가" * 300
+            검사("다듬기: 맥에서는 osascript 로 Word 에서 그 문장을 찾아 고름 (문서 이름 · 찾을 앞부분 · 나머지 길이)",
+                 WK._문장_고르기(자리, 긴, 기다림=5) is True and all(a[0] == "osascript" for a in 부른)
+                 and 부른[-1][3:] == ["보고서.docx", "가" * 250, "가" * 250, "50"], str([a[3:4] + [len(a[4]), a[6]] for a in 부른]))
+        finally:
+            WK.sys.platform, WK.subprocess.run = 원래
         ST.출처._파일.pop("W-match_view", None); os.remove(os.path.join(data, "docs-found.json")); os.remove(자리)
-        for k in ("start", "open_file"):
+        for k in ("start", "open_file", "select_text"):
             WK.설정.pop(k)
         WK.설정["bridge"] = lambda: None
 
