@@ -525,7 +525,8 @@
     const det = $("det"); det.textContent = "";
     if (!x) { det.append(el("div", "placeholder", "왼쪽에서 문장을 누르면 어디서 왔는지 여기 보입니다")); return; }
     const q = x.q != null ? D.questions[x.q] : null;
-    head(det, DOT[x.group], KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
+    const AI붙임 = x.kind === "web" && x.paste && x.paste.category === "ai";   // AI 앱 · 사이트에서 복사했는데 그 대화는 기록에 없음 (11/2)
+    head(det, DOT[x.group], AI붙임 ? "AI 답에서 그대로 붙여넣음" : KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
     if (후보.has(x.k)) det.append(다듬기칸(x));               // 맨 위 — 아래에 두면 스크롤해야 보여 지나치기 쉬움 (11/1)
     if (q) { det.append(el("h5", null, "질문")); det.append(el("div", "txt", q.question || "질문 기록 없음")); }
     det.append(el("h5", null, "결과물")); det.append(el("div", "box", x.text));
@@ -542,7 +543,8 @@
       const from = p.domain || p.source || (q ? q.tool : "");
       const b = el("b", null, from || "붙여넣기");
       src.append(b, ` · ${hm(p.copied_at)} 복사 → ${hm(p.pasted_at)} ${p.where || "붙여넣음"}`);
-      if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
+      if (AI붙임) det.append(el("div", "note", "그 AI 대화는 기록에 없어요 — Trace 를 켜기 전에 나눈 대화이거나, 화면을 읽지 못했어요."));
+      else if (x.kind === "web" && p.category) src.append(` · ${p.category}`);
     } else if (x.kind === "viewed" || x.kind === "exact" || x.kind === "similar") {
       src.append(el("b", null, "붙여넣기 기록 없음"), x.kind === "viewed" ? " · 글자가 비슷해서 이은 것"
                  : x.kind === "exact" ? " · 보면서 쳤어도 글이 AI 답과 같아요" : " · 보면서 쳤어도 글이 AI 답과 거의 같아요");
