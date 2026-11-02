@@ -24,12 +24,14 @@ from desktop_ai import A_HEAD, ANSWER_CLS, KST, Q_HEAD, QUESTION_CLS, SKIP_NAMES
 
 # 맥 앱 이름(소문자 · NSWorkspace localizedName) → 체인에 남길 도구 이름. 서버 _앱이름 에도 "claude" · "chatgpt" 가 있다
 APPS = {"claude": "Claude 앱", "chatgpt": "ChatGPT 앱"}
-BUNDLES = {"com.anthropic.claudefordesktop": "claude", "com.openai.chat": "chatgpt"}
+BUNDLES = {"com.anthropic.claudefordesktop": "claude", "com.openai.chat": "chatgpt",
+           "com.openai.codex": "chatgpt"}                # 맥 ChatGPT 앱 26.x (크로미움 · 11/2 확인) 은 번들 id 가 codex
 ATTRS = ["AXRole", "AXSubrole", "AXRoleDescription", "AXDOMClassList", "AXTitle", "AXDescription", "AXValue", "AXChildren"]
 SKIP_ROLES = {"AXButton", "AXImage", "AXProgressIndicator", "AXBusyIndicator", "AXToolbar", "AXMenu", "AXMenuBar",
               "AXMenuButton", "AXPopUpButton", "AXCheckBox", "AXRadioButton", "AXTextField", "AXScrollBar"}
 SKIP_DESC = {"time", "시간", "status", "상태"}
 MAX_NODES = 20000
+TIME_TEXT = re.compile(r"^(오전|오후)\s*\d{1,2}:\d{2}$|^\d{1,2}:\d{2}\s*(AM|PM)?$", re.I)   # 메시지 옆 시각 "오후 1:20"
 
 
 class _N:
@@ -147,7 +149,9 @@ class MacDesktopAIWatcher(DesktopAIWatcher):
         walk2(root, False)
         if arts:
             return arts
-        # 화면낭독 제목만 있는 화면 (ChatGPT 앱처럼) — 제목 다음 형제가 글 덩어리
+        # 화면낭독 제목만 있는 화면 (ChatGPT 앱처럼) — 제목 다음 형제들이 글 덩어리
+        # 맥 ChatGPT 앱 (11/2 · 26.1027 · 크로미움): "ChatGPT 답변:" 바로 다음은 빈 상태 칸(AXApplicationStatus · sr-only)이고
+        # 글 문단은 그 뒤 형제들이라, 다음 제목 전까지 글 칸을 모아 하나로 본다 (버튼 · 시각 · 상태 칸은 뺌)
         heads = []
 
         def walk3(nd):
@@ -155,8 +159,19 @@ class MacDesktopAIWatcher(DesktopAIWatcher):
                 if k.role == "AXHeading":
                     t = _모은글(k).strip()
                     role = "question" if Q_HEAD.match(t) else "answer" if A_HEAD.match(t) else None
-                    if role and i + 1 < len(nd.kids):
-                        heads.append((nd.kids[i + 1], role))
+                    if role:
+                        글칸 = []
+                        for s in nd.kids[i + 1:]:
+                            if s.role == "AXHeading":
+                                break
+                            if s.sub == "AXApplicationStatus" or "sr-only" in s.cls or s.role in SKIP_ROLES \
+                                    or (s.role == "AXStaticText" and TIME_TEXT.match(s.name() or "")):
+                                continue
+                            글칸.append(s)
+                        if 글칸:
+                            묶음 = _N({}, nd)
+                            묶음.kids = 글칸
+                            heads.append((묶음, role))
                         continue
                 walk3(k)
         walk3(root)

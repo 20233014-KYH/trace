@@ -108,6 +108,22 @@ def 데스크톱():
                                                    F("AXGroup", kids=[F("AXStaticText", text="안녕")])])])
     msgs = w._찾기(나무(F("AXWindow", kids=[article])))
     검사("13 클래스가 없으면 feed 안 article + 화면낭독 제목으로 질문", msgs and w._글(*msgs[0]) == ("question", "안녕"), msgs)
+    # 맥 ChatGPT 앱 26.x (11/2 실제 화면) — 제목 바로 뒤는 빈 상태 칸 · 글 문단은 그 뒤 형제들 · 시각 · 버튼은 뺌
+    줄 = F("AXGroup", kids=[
+        F("AXHeading", text="내가 한 말:", kids=[F("AXStaticText", text="내가 한 말:")]),
+        F("AXGroup", "_bubble_nu8ad_1", kids=[F("AXGroup", "_Paragraph_xjxw3_2", kids=[F("AXStaticText", text="해시 테이블이 뭐야?")])]),
+        F("AXStaticText", text="오후 1:20"),
+        F("AXGroup", "contents", kids=[F("AXButton", text="메시지 복사")]),
+        F("AXHeading", text="ChatGPT 답변:", kids=[F("AXStaticText", text="ChatGPT 답변:")]),
+        F("AXGroup", "sr-only", sub="AXApplicationStatus"),
+        F("AXGroup", "_Paragraph_xjxw3_2", kids=[F("AXStaticText", text="키를 해시 함수로 바꿔 저장하는 자료구조야.")]),
+        F("AXGroup", "_Paragraph_xjxw3_2", kids=[F("AXStaticText", text="충돌은 처리해야 해.")]),
+        F("AXButton", text="복사"), F("AXStaticText", text="오후 1:20")])
+    msgs = w._찾기(나무(F("AXWindow", kids=[줄])))
+    읽음 = [w._글(*m) for m in msgs]
+    검사("14 맥 ChatGPT 앱: 답 제목 뒤 빈 상태 칸을 건너 문단을 모두 읽음 · 시각 · 버튼 뺌",
+         읽음 == [("question", "해시 테이블이 뭐야?"), ("answer", "키를 해시 함수로 바꿔 저장하는 자료구조야.\n충돌은 처리해야 해.")], 읽음)
+    검사("15 맥 ChatGPT 앱 번들 id (com.openai.codex) 도 ChatGPT 앱으로", D.BUNDLES.get("com.openai.codex") == "chatgpt")
 
 
 if __name__ == "__main__":
