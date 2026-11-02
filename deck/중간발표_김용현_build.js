@@ -29,7 +29,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   const s = pres.addSlide();
   s.background = { color: INK };
   T(s, "Trace", { x: 0.6, y: 1.35, w: 6, h: 0.9, fontSize: 54, bold: true, color: "FFFFFF", objectName: "cover-title" });
-  T(s, "AI 사용 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 7, h: 0.5, fontSize: 24, color: "FFFFFF" });
+  T(s, "AI 사용 내역 공개, 손 대신 기록으로", { x: 0.6, y: 2.25, w: 7, h: 0.5, fontSize: 24, color: "FFFFFF" });
   T(s, "AI 답과 참고한 글을 어떻게 썼는지 기록하고,\n제출 전에 그대로 가져온 곳을 학생이 다듬게 한 뒤,\n교수에게 한 장으로 공개합니다.",
     { x: 0.6, y: 2.95, w: 6.6, h: 0.95, fontSize: 13, color: "C9C8C3" });
   T(s, "창의프로젝트1 · 중간 설계 발표 · 김용현 · 박상진", { x: 0.6, y: 4.65, w: 6.5, h: 0.3, fontSize: 12, color: "C9C8C3" });
@@ -42,7 +42,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 2장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("대학은 이미 AI 사용 공개를 요구한다", { placeholder: "title" });
+  s.addText("문제 정의: 대학은 이미 AI 사용 공개를 요구한다", { placeholder: "title" });
 
   // 숫자 두 개
   T(s, "56곳", { x: 0.5, y: 1.15, w: 1.9, h: 0.75, fontSize: 44, bold: true, objectName: "stat-56" });
@@ -82,7 +82,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 3장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("학생 설문이 말해 준 것", { placeholder: "title" });
+  s.addText("인사이트: 학생은 기준을 모르고, 감시를 걱정한다", { placeholder: "title" });
 
   const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.8;
   const cols = [
@@ -117,7 +117,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 9장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("원문은 학생 PC에 남는다", { placeholder: "title" });
+  s.addText("시스템 설계: 원문은 학생 PC에 남는다", { placeholder: "title" });
   const FE = ACCENT, BE = "4A4A46", DB = "2E7D5B";
   // 범례
   [["FE", FE, "Frontend"], ["BE", BE, "Backend"], ["DB", DB, "Database"]].forEach(([k, c, name], i) => {
@@ -187,7 +187,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 10장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("지금 테이블에 2가지만 더한다", { placeholder: "title" });
+  s.addText("DB 설계: 지금 테이블에 2가지만 더한다", { placeholder: "title" });
   const NEW = ACCENT;
   const box = (x, y, w, h, name, ko, sub, opt = {}) => {
     const dash = opt.next;
@@ -248,7 +248,7 @@ const card = (slide, x, y, w, h, fill, name) =>
 // ───────── 11장 ─────────
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("이미 돌아가는 것 위에 더한다", { placeholder: "title" });
+  s.addText("개발 계획: 이미 돌아가는 것 위에 더한다", { placeholder: "title" });
   // 일정
   const steps = [["지금 · 11/1", "v0.1.14\n다듬기까지 돌아감"], ["발표 뒤 2주", "다듬음 N · 내역서 한 줄\n실제 수업 전 필수 3개"], ["12주", "실제 학생 · 교수\n사용 테스트"], ["13주", "테스트 결과로\n고치기"], ["14주", "최종 발표"]];
   const sw = 1.7, sg = 0.125;
