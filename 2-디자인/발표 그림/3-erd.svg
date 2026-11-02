@@ -124,5 +124,5 @@
 <text x="841.0" y="672" font-size="14" fill="#52514e" font-weight="700" text-anchor="start">1</text>
 <text x="40" y="860" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">더하는 것 2가지</text>
 <text x="40" y="886" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· statements.retain_until: 보관 기간</text>
-<text x="40" y="912" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: 교수에게 가는 &quot;다듬음 N&quot;을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
+<text x="40" y="912" font-size="16" fill="#52514e" font-weight="400" text-anchor="start">· checks: 교수에게 보일 &quot;제출 전 고친 문장 수&quot;를 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)</text>
 </svg>

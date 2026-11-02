@@ -62,7 +62,7 @@ def user_flow():
 
     # 교수
     b += step(140, 170, "①", "과제 공지", ["AI 허용 · Trace 내역서 첨부", "복붙 감점 (Trace 밖 · LMS)"], ORANGE, ORANGE_BG)
-    b += step(1080, 170, "⑦", "내역서 화면", ["그대로 3 · 고침 11 · 다듬음 2", "내역서 맨 위 한 줄"], ORANGE, ORANGE_BG)
+    b += step(1080, 170, "⑦", "내역서 화면", ["AI 답 그대로 3 · 제출 전 고침 2", "내역서 맨 위 한 줄"], ORANGE, ORANGE_BG)
     b += step(1330, 170, "⑧", "내역서 상세", ["AI 답과 문장 나란히", "물어볼 곳 → 면담"], ORANGE, ORANGE_BG)
     # 학생
     y1 = 400
@@ -86,7 +86,7 @@ def user_flow():
     b += arrow(1290, 216, 1328, 216)                  # ⑦→⑧
     b += text(1110, 352, "내역서 링크", 13, MUTED)
     # 비고
-    b += text(140, 728, "교수는 학생이 준 내역서 링크 · QR만 연다 (로그인 없음). 다듬을 곳 목록은 학생만 보고, 교수에겐 \"다듬음 N\"만 간다. 표절률 · 점수 없음.", 15, INK2)
+    b += text(140, 728, "교수는 학생이 준 내역서 링크 · QR만 연다 (로그인 없음). 다듬을 곳 목록은 학생만 보고, 교수에겐 고친 문장 수만 간다. 표절률 · 점수 없음.", 15, INK2)
     return svg(W, H, b)
 
 
@@ -112,7 +112,7 @@ def architecture():
     b += comp(64, 335, 592, 92, "① 가리기 → ② 해시 체인", ["개인정보를 먼저 가리고, 가린 글의 해시를 사슬로 묶는다 (core/chain.py)"])
     b += comp(64, 465, 280, 112, "원문 보관 (PC에만)", ["AI 질문 · 답 원문", "복사한 글 · 문서 버전"], stroke=BLUE)
     b += comp(376, 465, 280, 112, "출처 잇기", ["문장 ↔ AI 답 (core/match.py)", "그대로 · 고침 · 기록 없음"])
-    b += comp(376, 600, 280, 112, "제출 전 다듬기", ["다듬을 곳 · [다듬기] → Word 열기", "다듬음 N 세기 (만들 것)"], stroke=BLUE)
+    b += comp(376, 600, 280, 112, "제출 전 다듬기", ["다듬을 곳 · [다듬기] → Word 열기", "고친 문장 수 세기 (만들 것)"], stroke=BLUE)
     b += comp(64, 600, 280, 112, "앱 화면 (pywebview)", ["기록 · 출처 보기 · 다듬기", "확인 · 가리기 · 제출"])
     b += arrow(204, 297, 204, 333)
     b += arrow(516, 297, 516, 333)
@@ -131,7 +131,7 @@ def architecture():
     b += box(820, 640, 360, 130, SURF, INK2, sw=2, r=16)
     b += text(844, 680, "DB", 24, INK, 700)
     b += text(892, 680, "Supabase (PostgreSQL)", 16, INK2)
-    b += lines(844, 714, ["기록 이벤트(해시) · 내역서 · 링크", "(더할 것) 다듬음 N · 보관 기간 — 원문 없음"], 16, INK2, 24)
+    b += lines(844, 714, ["기록 이벤트(해시) · 내역서 · 링크", "(더할 것) 고친 문장 수 · 보관 기간 — 원문 없음"], 16, INK2, 24)
     b += f'<line x1="1000" y1="550" x2="1000" y2="638" stroke="{INK2}" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)"/>\n'
 
     # 교수
@@ -241,7 +241,7 @@ def erd():
         b += f'<path d="M{tx+tw/2},{ty+th} L{tx+tw/2},730 L{1610},730 L{1610},{ky+kh/2} L{kx+kw},{ky+kh/2}" fill="none" stroke="{INK2}" stroke-width="1.8"/>\n'
         b += text(kx + kw + 4, ky + kh / 2 - 6, "N", 14, INK2, 700)
     b += text(tx + tw / 2 + 6, ty + th + 20, "1", 14, INK2, 700)
-    b += lines(40, 860, ["더하는 것 2가지", "· statements.retain_until: 보관 기간", "· checks: 교수에게 가는 \"다듬음 N\"을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)"], 16, INK2, 26)
+    b += lines(40, 860, ["더하는 것 2가지", "· statements.retain_until: 보관 기간", "· checks: 교수에게 보일 \"제출 전 고친 문장 수\"를 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)"], 16, INK2, 26)
     return svg(W, H, b)
 
 
