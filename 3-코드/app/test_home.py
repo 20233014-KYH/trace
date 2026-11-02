@@ -172,6 +172,13 @@ def main():
         WK.sys.platform, WK.subprocess.run = "darwin", lambda a, **k: 부른.append(a) or type("R", (), {"returncode": 0})()
         try:
             검사("다듬기: 맥에서는 open 으로 결과물 파일을 엶", WK._파일_열기(자리) is True and 부른 == [["open", 자리]], str(부른))
+            답 = iter(["no-doc", "not-found", "ok"])                # 맥 문장 고르기 (11/2) — 문서가 잡힐 때까지 기다렸다가 앞 250자로 찾음
+            부른.clear()
+            WK.subprocess.run = lambda a, **k: 부른.append(a) or type("R", (), {"stdout": next(답, "ok") + "\n"})()
+            긴 = "가" * 300
+            검사("다듬기: 맥에서는 osascript 로 Word 에서 그 문장을 찾아 고름 (문서 이름 · 찾을 앞부분 · 나머지 길이)",
+                 WK._문장_고르기(자리, 긴, 기다림=5) is True and all(a[0] == "osascript" for a in 부른)
+                 and 부른[-1][3:] == ["보고서.docx", "가" * 250, "가" * 250, "50"], str([a[3:4] + [len(a[4]), a[6]] for a in 부른]))
         finally:
             WK.sys.platform, WK.subprocess.run = 원래
         ST.출처._파일.pop("W-match_view", None); os.remove(os.path.join(data, "docs-found.json")); os.remove(자리)

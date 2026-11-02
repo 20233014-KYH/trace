@@ -362,6 +362,8 @@ def _결과물_자리(wid):
 def _문장_고르기(p, 글, 기다림=20):
     """[다듬기] 로 연 Word 문서에서 그 문장을 찾아 선택하고 그 자리로 스크롤 (11/1).
     Word 가 문서를 열 때까지 기다림 · 못 찾거나(그새 고침) Word 가 아니면 조용히 넘어감 — 파일은 이미 열려 있다"""
+    if sys.platform == "darwin":
+        return _문장_고르기_맥(p, 글, 기다림)
     try:
         import pythoncom
         import win32com.client
@@ -398,6 +400,60 @@ def _문장_고르기(p, 글, 기다림=20):
         return False
     finally:
         pythoncom.CoUninitialize()
+
+
+# 맥 Word 의 AppleScript (11/2) — 기록기(collector/office_mac.py)가 Word 를 읽는 것과 같은 "자동화" 권한이라 새로 묻지 않는다.
+# 범위(text object)에서 찾으면 찾은 자리가 돌아오지 않아서, 커서를 맨 앞에 두고 선택 영역(selection)으로 찾는다 — 찾으면 선택이 그 글로 옮겨 간다.
+# 못 찾으면 학생의 원래 선택(커서)으로 돌려놓는다 · Word 가 꺼져 있으면 새로 띄우지 않는다 (기다리는 동안 켜지면 그때 잡힘).
+_맥_고르기 = '''on run argv
+	set docName to item 1 of argv
+	set needle to item 2 of argv
+	set raw to item 3 of argv
+	set extra to (item 4 of argv) as integer
+	if not (application "Microsoft Word" is running) then return "no-doc"
+	tell application "Microsoft Word"
+		try
+			set d to document docName
+			get name of d
+		on error
+			return "no-doc"
+		end try
+		activate
+		activate object (window 1 of d)
+		set s0 to selection start of selection
+		set e0 to selection end of selection
+		set selection start of selection to 0
+		set selection end of selection to 0
+		set f to find object of selection
+		clear formatting f
+		execute find f find text needle match case true match forward true wrap find find stop
+		if (content of selection) is not raw then
+			set selection start of selection to s0
+			set selection end of selection to e0
+			return "not-found"
+		end if
+		if extra > 0 then set selection end of selection to (selection end of selection) + extra
+		return "ok"
+	end tell
+end run'''
+
+
+def _문장_고르기_맥(p, 글, 기다림=20):
+    """맥판 _문장_고르기 — osascript 로 Word 에서 그 문장을 찾아 선택. 문서가 열릴 때까지 기다리고, 못 찾으면 조용히 넘어감"""
+    이름, 끝 = os.path.basename(p), time.time() + 기다림
+
+    def 부르기(n):
+        r = subprocess.run(["osascript", "-e", _맥_고르기, 이름, 글[:n].replace("^", "^^"), 글[:n], str(max(len(글) - n, 0))],
+                           capture_output=True, text=True, timeout=30)
+        return r.stdout.strip()
+    try:
+        while 부르기(30) == "no-doc":                             # 막 연 Word 는 몇 초 뒤에야 문서가 잡힘
+            if time.time() >= 끝:
+                return False
+            time.sleep(0.5)
+        return any(부르기(n) == "ok" for n in (250, 80, 30))       # Word 찾기는 255자까지 · 띄어쓰기가 조금 달라도 앞부분으로
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def _파일_열기(p):
