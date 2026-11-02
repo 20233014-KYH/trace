@@ -161,7 +161,7 @@ def architecture():
 def erd():
     W, H = 1640, 1000
     b = text(40, 52, "ERD — 지금 테이블에 2가지만 더한다", 30, weight=700)
-    b += text(40, 84, "회색 = 지금 있음 · 파란 칸 = 새로 더함 · 점선 = 다음 단계 · 1 ── N = 하나가 여러 개를 가짐", 17, INK2)
+    b += text(40, 84, "회색 = 지금 있음 · 파란 칸 = 새로 더함 · 1 ── N = 하나가 여러 개를 가짐", 17, INK2)
     HD, RH, BW = 40, 26, 270
     pos = {}
 
@@ -196,8 +196,7 @@ def erd():
 
     b += table("users", 40, 130, "users 학생", ["id", "email · name", "google_sub · kakao_sub", "deleted_at"])
     b += table("auth", 40, 330, "tokens · devices · login_tickets", ["user_id", "로그인 토큰 · 기기 · 로그인 표"])
-    b += table("assign", 370, 130, "assignments 모아 보기", ["id · title · memo", "submit_token 학생용", "view_token_hash 교수용", "org (비워 둠) · created_at"], nxt=True)
-    b += table("works", 370, 400, "works 과제", ["id · user_id", "title · ai_scope", "deleted_at"], next_rows=["assignment_id"])
+    b += table("works", 370, 130, "works 과제", ["id · user_id", "title · ai_scope", "deleted_at"])
     b += table("sessions", 700, 130, "sessions 기록 한 번", ["id · work_id", "root · head (체인 끝)", "chain_len · integrity_ok", "sealed_at · verified"])
     b += table("events", 1030, 130, "events 기록 이벤트", ["session_id · id · seq", "type · ts", "payload (원문 대신 해시)", "server_h"])
     b += table("bc", 1310, 130, "batches · contexts", ["session_id", "받은 묶음 · 작업 맥락"])
@@ -225,7 +224,6 @@ def erd():
 
     b += rel("users", "auth", "b", "t")
     b += rel("users", "works", "r", "l", 20, -20)
-    b += rel("assign", "works", "b", "t", 0, 0, MUTED)
     b += rel("works", "sessions", "r", "l", -30, 0)
     b += rel("sessions", "events", "r", "l")
     b += rel("works", "st", "r", "l", 20, 0)
@@ -243,7 +241,7 @@ def erd():
         b += f'<path d="M{tx+tw/2},{ty+th} L{tx+tw/2},730 L{1610},730 L{1610},{ky+kh/2} L{kx+kw},{ky+kh/2}" fill="none" stroke="{INK2}" stroke-width="1.8"/>\n'
         b += text(kx + kw + 4, ky + kh / 2 - 6, "N", 14, INK2, 700)
     b += text(tx + tw / 2 + 6, ty + th + 20, "1", 14, INK2, 700)
-    b += lines(40, 860, ["더하는 것 2가지", "· statements.retain_until: 보관 기간", "· checks: 교수에게 가는 \"다듬음 N\"을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)", "· (다음 단계) assignments · works.assignment_id: 30명 모아 보기"], 16, INK2, 26)
+    b += lines(40, 860, ["더하는 것 2가지", "· statements.retain_until: 보관 기간", "· checks: 교수에게 가는 \"다듬음 N\"을 센다. 원문 · 고친 문장은 넣지 않음 (PC에 남음)"], 16, INK2, 26)
     return svg(W, H, b)
 
 
