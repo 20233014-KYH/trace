@@ -146,9 +146,9 @@ const card = (slide, x, y, w, h, fill, name) =>
   // 학생 PC
   card(s, 0.5, 1.1, 3.75, 3.45, SOFT, "pc");
   T(s, [{ text: "학생 PC", options: { bold: true } }, { text: "  설치형 앱 · 윈도우 · 맥", options: { color: MUTED, fontSize: 10 } }], { x: 0.7, y: 1.2, w: 3.4, h: 0.3, fontSize: 14 });
-  row(0.65, 1.55, 3.45, "FE", FE, "앱 화면", "기록 · 출처 보기 · 다듬기 · 제출 (pywebview)");
+  row(0.65, 1.55, 3.45, "FE", FE, "앱 화면", "기록 · 출처 보기 · 다듬기 · 제출");
   row(0.65, 2.27, 3.45, "BE", BE, "기록기 · 브라우저 확장", "AI 대화 · 복사/붙여넣기 · Word 변화 · 키 횟수");
-  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "문장 ↔ AI 답 연결 (core/match.py)");
+  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "보고서 문장 ↔ AI 답 연결");
   row(0.65, 3.71, 3.45, "DB", DB, "원문 보관 — PC에만", "AI 답 · 학생 글 원문 (개인정보 먼저 가림)", true);
   // 서버
   card(s, 4.95, 1.1, 2.45, 2.1, SOFT, "server");
@@ -190,15 +190,15 @@ const card = (slide, x, y, w, h, fill, name) =>
   });
   // 기술 스택 — 공통 / 윈도우 / 맥
   const stack = [
-    ["공통", "Python 3.11 · pywebview (화면) · PyInstaller · 크롬 확장 Manifest V3 · Flask · SQLAlchemy · Supabase PostgreSQL · GitHub Actions"],
-    ["윈도우", "Word 읽기 = pywin32 (COM)   ·   ChatGPT · Claude 앱 읽기 = UI Automation   ·   설치 = Inno Setup → exe"],
-    ["맥", "Word 읽기 = AppleScript   ·   ChatGPT · Claude 앱 읽기 = 손쉬운 사용 API (pyobjc)   ·   설치 = 서명된 dmg"],
+    ["공통", "Python   ·   크롬 확장   ·   Flask (서버)   ·   PostgreSQL (Supabase)"],
+    ["윈도우", "Word 읽기 = COM   ·   AI 앱 읽기 = UI Automation"],
+    ["맥", "Word 읽기 = AppleScript   ·   AI 앱 읽기 = 손쉬운 사용 API"],
   ];
   T(s, "기술 스택", { x: 0.5, y: 4.66, w: 1.2, h: 0.24, fontSize: 10, bold: true, color: ACCENT });
   stack.forEach(([k, v], i) => {
     const y = 4.66 + i * 0.25;
     T(s, k, { x: 1.35, y, w: 0.6, h: 0.24, fontSize: 9.5, bold: true, valign: "middle" });
-    T(s, v, { x: 1.95, y, w: 7.55, h: 0.24, fontSize: 9.5, color: MUTED, valign: "middle" });
+    T(s, v, { x: 1.95, y, w: 7.55, h: 0.24, fontSize: 10, color: INK, valign: "middle" });
   });
   s.addShape(pres.shapes.LINE, { x: 0.5, y: 4.62, w: 9.0, h: 0, line: { color: LINE, width: 0.75 } });
   s.addNotes([
@@ -209,7 +209,9 @@ const card = (slide, x, y, w, h, fill, name) =>
     "질문 대비",
     "· 해시가 뭔가? → 글의 지문 같은 64자리 값. 해시만 보고 원래 글은 알 수 없음. 기록마다 앞 해시와 사슬처럼 이어서, 하나라도 빼거나 바꾸면 끝값이 달라짐.",
     "· 개인정보는? → 이메일 · 전화번호 · 주민번호 · 카드번호 · API 키는 PC에 저장하기 전에 가림.",
+    "· 화면은 뭘로? → 앱 안에 HTML 창을 띄움 (pywebview). 따로 프레임워크 없이 설치 파일 하나로.",
     "· 배포는? → 버전 태그 하나 → GitHub Actions가 exe · dmg 함께 빌드. 맥은 같은 인증서로 서명해야 업데이트해도 권한이 안 풀림.",
+    "· COM / UI Automation / 손쉬운 사용이 뭔가? → 운영체제가 주는 '다른 앱 글 읽기' 기능. 그래서 맥은 처음에 권한을 허락받음.",
     "· 키로거 아닌가요? → 어떤 키인지는 저장 안 함. 앱별로 10초마다 '친 횟수 · 지운 횟수'만.",
     "· 학생이 PC 원문을 고쳐서 내면? → 기록 때 해시가 이미 서버에 있어서 '기록과 다름'으로 표시됨.",
     "· 기록을 꺼 두고 쓰면? → 그 부분은 '출처 기록 없음'. 직접 썼다고도, 베꼈다고도 단정하지 않음.",
