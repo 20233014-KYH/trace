@@ -556,18 +556,26 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     line: Object.assign({ color: opt.color || INK, width: 1.25, dashType: opt.dash ? "dash" : "solid" }, arrow ? { endArrowType: "triangle" } : {}) });
   const lab = (x, y, t, c) => T(s, t, { x, y, w: 0.5, h: 0.2, fontSize: 10, bold: true, color: c || MUTED });
 
+  // 두 줄기를 바탕 띠로 나눔 — 위 회색 = 기록 줄기 · 아래 초록 = 제출 줄기 (파랑은 '발표 뒤 구현' 뜻이라 띠에 안 씀)
+  const REC = "5F5E5A", SUB = "2E7D5B";
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.38, y: 1.0, w: 9.24, h: 1.22, rectRadius: 0.08, fill: { color: "F4F3EF" }, line: { color: "F4F3EF" } });
+  T(s, [{ text: "① 기록 줄기", options: { bold: true, color: REC } }, { text: "   기록하는 동안 쌓임 · 글 대신 해시만", options: { color: MUTED } }], { x: 0.52, y: 1.04, w: 6, h: 0.22, fontSize: 10 });
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.38, y: 2.36, w: 9.24, h: 2.64, rectRadius: 0.08, fill: { color: "EEF6F1" }, line: { color: "EEF6F1" } });
+  T(s, [{ text: "② 제출 줄기", options: { bold: true, color: SUB, breakLine: true } }, { text: "내역서를 만들 때\n학생이 고른 것만", options: { color: MUTED, fontSize: 9.5 } }],
+    { x: 0.52, y: 2.46, w: 2.1, h: 0.75, fontSize: 11, valign: "top" });
+
   // 줄기: 학생 → 과제 → 기록 한 번 → 기록 이벤트
-  box(0.5, 1.15, 1.95, 0.85, "users", "학생", "이메일 · 구글/카카오 계정 번호");
-  box(2.8, 1.15, 1.95, 0.85, "works", "과제", "제목 · 허용 범위 메모");
-  box(5.1, 1.15, 1.95, 0.85, "sessions", "기록 한 번", "시작 · 끝 · 잠금 (조작 확인용)");
-  box(7.4, 1.15, 2.1, 0.85, "events", "기록 이벤트", "종류 · 시각 · 원문 대신 해시");
-  [[2.45, 2.8], [4.75, 5.1], [7.05, 7.4]].forEach(([a, b]) => { line(a, 1.42, b - a, 0, true); lab(a + 0.02, 1.16, "1 : N"); });
+  box(0.5, 1.3, 1.95, 0.8, "users", "학생", "이메일 · 구글/카카오 계정 번호");
+  box(2.8, 1.3, 1.95, 0.8, "works", "과제", "제목 · 허용 범위 메모");
+  box(5.1, 1.3, 1.95, 0.8, "sessions", "기록 한 번", "시작 · 끝 · 잠금 (조작 확인용)");
+  box(7.4, 1.3, 2.1, 0.8, "events", "기록 이벤트", "종류 · 시각 · 원문 대신 해시");
+  [[2.45, 2.8], [4.75, 5.1], [7.05, 7.4]].forEach(([a, b]) => { line(a, 1.57, b - a, 0, true); lab(a + 0.02, 1.31, "1 : N"); });
 
   // 과제 → 내역서
-  line(3.775, 2.0, 0, 0.55, true); lab(3.85, 2.15, "1 : N");
-  box(2.8, 2.55, 2.35, 1.6, "statements", "내역서", "요약 숫자 · 학생 설명 두 개\n원문이 기록과 맞는지");
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 2.92, y: 3.6, w: 2.11, h: 0.42, rectRadius: 0.05, fill: { color: ACCENT_BG }, line: { color: NEW, width: 1 } });
-  T(s, [{ text: "retain_until  ", options: { bold: true } }, { text: "보관 기간 · 발표 뒤" }], { x: 3.02, y: 3.6, w: 2.0, h: 0.42, fontSize: 11, color: NEW, valign: "middle" });
+  line(3.775, 2.1, 0, 0.6, true); lab(3.85, 2.4, "1 : N");
+  box(2.8, 2.7, 2.35, 1.6, "statements", "내역서", "요약 숫자 · 학생 설명 두 개\n원문이 기록과 맞는지");
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 2.92, y: 3.75, w: 2.11, h: 0.42, rectRadius: 0.05, fill: { color: ACCENT_BG }, line: { color: NEW, width: 1 } });
+  T(s, [{ text: "retain_until  ", options: { bold: true } }, { text: "보관 기간 · 발표 뒤" }], { x: 3.02, y: 3.75, w: 2.0, h: 0.42, fontSize: 11, color: NEW, valign: "middle" });
 
   // 내역서 → 딸린 표 5개
   const kids = [
@@ -577,8 +585,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     ["shares", "교수 링크", "토큰 · 만료 · 학생이 끊을 수 있음"],
     ["checks", "제출 전 다듬기 · 발표 뒤", "고친 문장 수만 셈 · 원문 없음"],
   ];
-  const kx = 5.65, kw = 3.85, kh = 0.4, kg = 0.08, ky0 = 2.4;
-  line(5.15, 3.35, 0.3, 0, false); lab(5.17, 3.1, "1 : N");
+  const kx = 5.65, kw = 3.85, kh = 0.4, kg = 0.08, ky0 = 2.55;
+  line(5.15, 3.5, 0.3, 0, false); lab(5.17, 3.25, "1 : N");
   line(5.45, ky0 + kh / 2, 0, (kids.length - 1) * (kh + kg), false);
   kids.forEach(([n, ko, sub], i) => {
     const y = ky0 + i * (kh + kg), isNew = n === "checks";
@@ -589,7 +597,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   });
 
   T(s, [{ text: "파랑 = 설계에 넣음 · 구현은 발표 후 2주 안에", options: { color: MUTED } }],
-    { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
+    { x: 0.5, y: 5.1, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes([
     "DB는 두 줄기입니다. 위는 기록으로, 학생 · 과제 · 기록 순으로 쌓이고 글 대신 해시만 남습니다.",
     "아래는 제출로, 내역서에 학생이 고른 원문과 교수 링크가 붙습니다. 파랑 두 개, 고친 문장 수와 보관 기간은 발표 후 2주 안에 구현합니다. (약 20초)",
