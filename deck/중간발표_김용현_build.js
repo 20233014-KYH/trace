@@ -260,12 +260,6 @@ const card = (slide, x, y, w, h, fill, name) =>
   box(7.4, 1.15, 2.1, 0.85, "events", "기록 이벤트", "종류 · 시각 · 원문 대신 해시");
   [[2.45, 2.8], [4.75, 5.1], [7.05, 7.4]].forEach(([a, b]) => { line(a, 1.42, b - a, 0, true); lab(a + 0.02, 1.16, "1 : N"); });
 
-  // 다음 단계: 모아 보기
-  box(0.5, 2.55, 1.95, 0.85, "assignments", "", "30명 모아 보기 · 다음 단계", { next: true });
-  line(2.45, 2.97, 0.17, 0, false, { dash: true, color: MUTED });
-  line(2.62, 1.8, 0, 1.17, false, { dash: true, color: MUTED });
-  line(2.62, 1.8, 0.18, 0, true, { dash: true, color: MUTED });
-
   // 과제 → 내역서
   line(3.775, 2.0, 0, 0.55, true); lab(3.85, 2.15, "1 : N");
   box(2.8, 2.55, 2.35, 1.6, "statements", "내역서", "요약 숫자 · 학생 설명 두 개\n원문이 기록과 맞는지");
@@ -291,14 +285,14 @@ const card = (slide, x, y, w, h, fill, name) =>
       { x: kx + 0.12, y, w: kw - 0.2, h: kh, fontSize: 11, valign: "middle" });
   });
 
-  T(s, [{ text: "파랑 = 새로 더함 · 점선 = 다음 단계", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
+  T(s, [{ text: "파랑 = 새로 더함", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
     { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes([
     "DB는 Supabase의 PostgreSQL이고, 크게 두 줄기입니다.",
     "윗줄은 기록 줄기입니다. users, 학생 한 명이 works, 과제를 여러 개 갖고, 과제 하나에 sessions, 기록을 켠 한 번 한 번이 쌓이고, 그 안에 events, 기록 이벤트가 쌓입니다. 그래서 모두 1 대 N입니다. 이벤트에는 언제, 무슨 종류인지와 해시만 있고 글은 없습니다. sessions에는 해시 사슬의 처음과 끝, 그리고 기록을 끝낼 때 봉인한 시각이 남아서, 나중에 이벤트가 빠지거나 바뀌었는지 확인할 수 있습니다.",
     "아랫줄은 제출 줄기입니다. 과제 하나로 statements, 내역서를 만듭니다. 내역서에는 요약 숫자와 학생이 직접 쓰는 설명 두 개, 'AI를 어디에 썼나', '어떻게 확인했나'가 들어갑니다.",
     "내역서 하나에 표 다섯 개가 붙습니다. messages는 학생이 고른 질문과 답 원문인데, 서버에 원문이 있는 곳은 여기 하나뿐이고 해시로 확인된 것만 들어옵니다. links는 '이 문장은 이 AI 답에서 왔다, 아니다'라는 학생의 결정, redactions는 학생이 가린 기록인데 어느 기록인지만 남고 내용은 안 옵니다. shares는 교수 링크로, 만료일이 있고 학생이 끊을 수 있습니다.",
-    "지금 테이블에 새로 더하는 건 파랑 두 가지뿐입니다. checks는 제출 전 다듬기 결과를 세는 표로, 원문 없이 문장을 어떻게 처리했는지만 남겨서 교수 화면에 '다듬음 N'으로 보입니다. retain_until은 내역서를 언제까지 둘지, 예를 들어 성적 이의 신청 기간까지로 정하는 칸입니다. 점선인 assignments, 교수가 30명을 한 화면에 모아 보는 표는 다음 단계입니다. (약 55초)",
+    "지금 테이블에 새로 더하는 건 파랑 두 가지뿐입니다. checks는 제출 전 다듬기 결과를 세는 표로, 원문 없이 문장을 어떻게 처리했는지만 남겨서 교수 화면에 '다듬음 N'으로 보입니다. retain_until은 내역서를 언제까지 둘지, 예를 들어 성적 이의 신청 기간까지로 정하는 칸입니다. (약 50초)",
     "",
     "질문 대비",
     "· 로그인 토큰을 왜 JWT 말고 DB(tokens)에 두나? → 학생 기록이라 '이 기기 연결 끊기'가 바로 돼야 함 (server/db.py).",
