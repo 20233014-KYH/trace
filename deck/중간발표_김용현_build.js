@@ -529,7 +529,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
       { x: kx + 0.12, y, w: kw - 0.2, h: kh, fontSize: 11, valign: "middle" });
   });
 
-  T(s, [{ text: "파랑 = 설계에 넣음 · 구현은 발표 뒤 2주", options: { color: MUTED } }, { text: "   그림에서 뺀 것: 로그인 보조 표 3개 (tokens · devices · login_tickets) · batches · contexts", options: { color: MUTED } }],
+  T(s, [{ text: "파랑 = 설계에 넣음 · 구현은 발표 뒤 2주", options: { color: MUTED } }],
     { x: 0.5, y: 4.95, w: 9, h: 0.25, fontSize: 10 });
   s.addNotes([
     "DB는 두 줄기입니다. 위는 기록 — 학생, 과제, 기록 한 번, 기록 이벤트 순으로 쌓이고, 이벤트엔 글 대신 해시만 있습니다.",
