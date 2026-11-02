@@ -293,21 +293,22 @@ const card = (slide, x, y, w, h, fill, name) =>
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("자료 출처", { placeholder: "title" });
+  // 보이는 글자 = 그대로 복사해도 열리는 주소 · 눌러도 열림 (11/2 · 모두 200 확인)
   const 출처 = [
-    ["2장", "대교협 총장 설문 — 머니투데이, 「'AI로 과제 뚝딱'…골머리 앓는 대학들, 'AI 가이드라인' 속속 도입」 (2026.2.26)", "mt.co.kr/policy/2026/02/26/2026022610083850284"],
-    ["2장", "명지대학교 생성형 AI 활용 가이드라인 (2026.8 제정)", "mju.ac.kr/mjukr/12491/subview.do"],
-    ["2장", "고려대학교 인공지능 수업 가이드라인 (2025.9)", "ini.korea.ac.kr/assets/pdf/GenAIGuideline.pdf"],
-    ["2장", "교육부 · 대교협 대학 AI 활용 윤리 가이드라인 — 교수신문, 「AI 윤리 '신호등' 세 개 섰다」 (2026.10.27)", "kyosu.net/news/articleView.html?idxno=211514"],
-    ["2장", "연세대 중간고사 AI 집단 부정행위 — 뉴시스 (2025.11.10)", "newsis.com/view/NISX20251110_0003396613"],
-    ["3장", "Trace 학생 설문 (2026.10.10 · 팀 자체 조사 · 응답 34명 · 공학 · 컴퓨터 18명, 2학년 19명)", "github.com/20233014-KYH/trace — 1-기획/7-학생 설문 결과 34명"],
-    ["다듬기", "교육부 「연구윤리 확보를 위한 지침」 표절 정의 (출처 표시 없이 활용) — 명지대 연구윤리 안내", "mju.ac.kr/research/12477/subview.do"],
-    ["9 ~ 11장", "Trace 코드 · DB 구조 · 릴리스 (v0.1.17, 2026.11.2)", "github.com/20233014-KYH/trace"],
+    ["2장", "대교협 총장 설문 — 머니투데이, 「'AI로 과제 뚝딱'…골머리 앓는 대학들, 'AI 가이드라인' 속속 도입」 (2026.2.26)", "https://www.mt.co.kr/policy/2026/02/26/2026022610083850284"],
+    ["2장", "명지대학교 생성형 AI 활용 가이드라인 (2026.8 제정)", "https://mju.ac.kr/mjukr/12491/subview.do"],
+    ["2장", "고려대학교 인공지능 수업 가이드라인 (2025.9)", "https://ini.korea.ac.kr/assets/pdf/GenAIGuideline.pdf"],
+    ["2장", "교육부 · 대교협 대학 AI 활용 윤리 가이드라인 — 교수신문, 「AI 윤리 '신호등' 세 개 섰다」 (2026.10.27)", "https://www.kyosu.net/news/articleView.html?idxno=211514"],
+    ["2장", "연세대 중간고사 AI 집단 부정행위 — 뉴시스 (2025.11.10)", "https://mobile.newsis.com/view/NISX20251110_0003396613"],
+    ["3장", "Trace 학생 설문 (2026.10.10 · 팀 자체 조사 · 응답 34명) — 폴더 안 「7-학생 설문 결과 34명」", "https://github.com/20233014-KYH/trace/tree/main/1-기획"],
+    ["다듬기", "교육부 「연구윤리 확보를 위한 지침」 표절 정의 (출처 표시 없이 활용) — 명지대 연구윤리 안내", "https://www.mju.ac.kr/research/12477/subview.do"],
+    ["9 ~ 11장", "Trace 코드 · DB 구조 · 릴리스 v0.1.17 (2026.11.2)", "https://github.com/20233014-KYH/trace"],
   ];
   출처.forEach(([장, 무엇, 주소], i) => {
     const y = 1.05 + i * 0.47;
     T(s, 장, { x: 0.5, y, w: 0.85, h: 0.22, fontSize: 10, bold: true, color: ACCENT });
     T(s, 무엇, { x: 1.4, y, w: 8.1, h: 0.22, fontSize: 10.5 });
-    T(s, 주소, { x: 1.4, y: y + 0.21, w: 8.1, h: 0.2, fontSize: 10, color: MUTED });
+    T(s, [{ text: 주소, options: { hyperlink: { url: encodeURI(주소), tooltip: 주소 } } }], { x: 1.4, y: y + 0.21, w: 8.1, h: 0.2, fontSize: 10, color: MUTED });
   });
   s.addNotes("(발표하지 않는 장) 4 ~ 8장(박상진)에 쓴 자료가 있으면 여기 더하기.");
 }
