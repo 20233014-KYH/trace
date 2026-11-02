@@ -188,19 +188,20 @@ const card = (slide, x, y, w, h, fill, name) =>
     num(7.72, y, n);
     T(s, [{ text: a, options: { bold: true, breakLine: true } }, { text: b, options: { color: MUTED, fontSize: 9 } }], { x: 8.06, y: y - 0.04, w: 1.42, h: 0.42, fontSize: 10, valign: "top" });
   });
-  // 기술 스택 — 공통 / 윈도우 구현 / 맥 구현 (칸마다 알약)
-  const pw = t => t.reduce((w, [a, b]) => w + [...(a + b)].reduce((n, ch) => n + (/[\u3131-\uD79D]/.test(ch) ? 0.118 : ch === " " ? 0.035 : 0.068), 0), 0) + 0.24;
+  // 기술 스택 — 앱 구현 / 윈도우 구현 / 맥 구현 (칸마다 알약 · 조각마다 [글, "b" 굵게 | "m" 흐리게])
+  const pw = parts => parts.reduce((w, [t]) => w + [...t].reduce((n, ch) => n + (/[\u3131-\uD79D]/.test(ch) ? 0.118 : ch === " " ? 0.035 : 0.068), 0), 0) + 0.24;
   const pill = (x, y, parts) => {
     const w = pw(parts);
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: 0.22, rectRadius: 0.11, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
-    T(s, parts.map(([a, b]) => [a && { text: a, options: { color: MUTED } }, { text: b, options: { bold: true } }]).flat().filter(Boolean),
+    T(s, parts.map(([t, k]) => ({ text: t, options: k === "b" ? { bold: true } : { color: MUTED } })),
       { x, y, w, h: 0.22, fontSize: 9, align: "center", valign: "middle", margin: 0 });
     return w;
   };
   const cols = [
-    ["공통", 3.3, [[["", "Python"]], [["", "크롬 확장"]]], [[["", "Flask 서버"]], [["", "PostgreSQL · Supabase"]]]],
-    ["윈도우 구현", 2.75, [[["Word ← ", "COM"]]], [[["AI 앱 ← ", "UI Automation"]]]],
-    ["맥 구현", 2.75, [[["Word ← ", "AppleScript"]]], [[["AI 앱 ← ", "손쉬운 사용 API"]]]],
+    ["앱 구현", 3.6, [[["Python", "b"], [" 프로그램 하나", "m"]], [["화면", "b"], [" = 앱 안의 HTML 창", "m"]]],
+                     [[["설치", "b"], [" = 윈도우 exe · 맥 dmg", "m"]], [["업데이트", "b"], [" = 앱 안에서", "m"]]]],
+    ["윈도우 구현", 2.6, [[["Word ← ", "m"], ["COM", "b"]]], [[["AI 앱 ← ", "m"], ["UI Automation", "b"]]]],
+    ["맥 구현", 2.6, [[["Word ← ", "m"], ["AppleScript", "b"]]], [[["AI 앱 ← ", "m"], ["손쉬운 사용 API", "b"]]]],
   ];
   let cx = 0.5;
   cols.forEach(([head, w, r1, r2]) => {
@@ -213,14 +214,15 @@ const card = (slide, x, y, w, h, fill, name) =>
     cx += w + 0.1;
   });
   s.addNotes([
-    "Trace는 웹사이트가 아니라 학생 PC에 까는 데스크톱 앱입니다. Word나 ChatGPT 앱처럼 브라우저 밖까지 읽고, 원문을 PC에만 두기 위해서입니다. 아래 기술 스택처럼 Python 하나로 기록기와 화면을 묶었고, 윈도우는 COM과 UI Automation, 맥은 AppleScript와 손쉬운 사용 API로 따로 구현했습니다.",
+    "Trace는 웹사이트가 아니라 학생 PC에 까는 데스크톱 앱입니다. 왼쪽 아래 '앱 구현'처럼, Python 프로그램 하나에 기록기와 화면을 묶었고, 화면은 앱 안에 HTML 창으로 띄웁니다. 윈도우는 exe, 맥은 dmg로 한 번 설치하면, 그 뒤 새 버전은 앱 안에서 바로 받습니다. 앱으로 만든 이유는 Word나 ChatGPT 앱처럼 브라우저 밖까지 읽어야 해서인데, 이건 운영체제마다 방법이 달라 윈도우는 COM과 UI Automation, 맥은 AppleScript와 손쉬운 사용 API로 따로 구현했습니다.",
     "학생 PC에서는 기록기와 크롬 확장이 AI 대화, 복사와 붙여넣기, Word 변화, 키 횟수를 모으고, 출처 잇기가 보고서 문장을 AI 답과 이어 줍니다. 이 원문은 PC에만 저장됩니다.",
-    "① 기록하는 동안 서버엔 글의 지문인 해시만 갑니다. ② 제출할 때 학생이 고른 원문만 오고, 서버가 해시를 다시 계산해 기록 때와 같은지 확인합니다. ③ 교수는 계정 없이 링크로 읽기만 합니다. (약 55초)",
+    "① 기록하는 동안 서버엔 글의 지문인 해시만 갑니다. ② 제출할 때 학생이 고른 원문만 오고, 서버가 해시를 다시 계산해 기록 때와 같은지 확인합니다. ③ 교수는 계정 없이 링크로 읽기만 합니다. (약 60초)",
     "",
     "질문 대비",
     "· 해시가 뭔가? → 글의 지문 같은 64자리 값. 해시만 보고 원래 글은 알 수 없음. 기록마다 앞 해시와 사슬처럼 이어서, 하나라도 빼거나 바꾸면 끝값이 달라짐.",
     "· 개인정보는? → 이메일 · 전화번호 · 주민번호 · 카드번호 · API 키는 PC에 저장하기 전에 가림.",
-    "· 화면은 뭘로? → 앱 안에 HTML 창을 띄움 (pywebview). 따로 프레임워크 없이 설치 파일 하나로.",
+    "· 화면은 뭘로? → 앱 안에 HTML 창을 띄움 (pywebview 라이브러리). React 같은 프레임워크 없이 HTML · JS.",
+    "· 업데이트는? → 처음만 내려받아 설치. 그 뒤엔 앱이 직접 받아 바꿈 (맥 '열지 않음' · 윈도우 'PC 보호' 경고를 매번 안 보게).",
     "· 배포는? → 버전 태그 하나 → GitHub Actions가 exe · dmg 함께 빌드. 맥은 같은 인증서로 서명해야 업데이트해도 권한이 안 풀림.",
     "· COM / UI Automation / 손쉬운 사용이 뭔가? → 운영체제가 주는 '다른 앱 글 읽기' 기능. 그래서 맥은 처음에 권한을 허락받음.",
     "· 키로거 아닌가요? → 어떤 키인지는 저장 안 함. 앱별로 10초마다 '친 횟수 · 지운 횟수'만.",
