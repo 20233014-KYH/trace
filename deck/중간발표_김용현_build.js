@@ -1,6 +1,7 @@
 // 중간발표 전체 (1 ~ 11장 · 자료 출처) — 4 ~ 8장은 박상진 부탁으로 김용현이 만듦 (11/3)
 const pptxgen = require("pptxgenjs");
 const fs = require("fs"), path = require("path");
+const FIGMA_URL = "";   // 피그마 프로토타입 — 상진에게 받으면 넣기 (보기 권한 공개 링크) · 10장 · 마무리 장
 const IMG = (fs.existsSync(path.join(__dirname, "img")) ? path.join(__dirname, "img") : "/Users/yonghyeonkim/dev/trace/deck/img") + "/";
 const out = process.argv[2];
 
@@ -364,7 +365,6 @@ const card = (slide, x, y, w, h, fill, name) =>
 });
 
 // ───────── 프로토타입 — 피그마 링크 · 직접 써 보고 고친 것 ─────────
-const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 링크)
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("UI/UX 프로토타입", { placeholder: "title" });
@@ -704,6 +704,37 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     "· 타이핑 패턴? → \"4분 동안 2초 넘게 멈춘 적 없음 · 고친 횟수 0 · 한 번에 1,100자\" 같은 사실만 보여 줌. 판정하지 않음.",
     "· AI 답 연결 정확도? → 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 — 붙여넣은 시각보다 뒤에 나온 답에는 잇지 않게.",
   ].join("\n"));
+}
+
+// ───────── 마무리 — 직접 확인 (QR) ─────────
+{
+  const s = pres.addSlide();
+  s.background = { color: INK };
+  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 0.75, w: 0.62, h: 0.62 });
+  T(s, "직접 확인해 보세요", { x: 1.38, y: 0.72, w: 6, h: 0.68, fontSize: 30, bold: true, color: "FFFFFF", valign: "middle" });
+  T(s, "Trace는 지금 v0.1.17로 윈도우 · 맥에서 돌아갑니다", { x: 0.6, y: 1.5, w: 8, h: 0.3, fontSize: 13, color: "C9C8C3" });
+  const qrs = [
+    ["qr-demo.png", "교수 화면 데모", "설치 없이 바로 — 예시 내역서", "https://trace-server-8aa0.onrender.com/s/demo"],
+    ["qr-download.png", "앱 내려받기", "윈도우 · 맥(Apple 칩) · 크롬 확장", "https://trace-server-8aa0.onrender.com/download"],
+  ];
+  qrs.forEach(([f, h, d, u], i) => {
+    const x = 0.6 + i * 3.0, y = 2.15, w = 2.75, hh = 3.0;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: hh, rectRadius: 0.1, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
+    s.addImage({ path: IMG + f, x: x + 0.62, y: y + 0.2, w: 1.5, h: 1.5 });
+    T(s, h, { x: x + 0.15, y: y + 1.8, w: w - 0.3, h: 0.3, fontSize: 14, bold: true, align: "center" });
+    T(s, d, { x: x + 0.15, y: y + 2.1, w: w - 0.3, h: 0.24, fontSize: 9.5, color: MUTED, align: "center" });
+    T(s, [{ text: u.replace("https://", ""), options: { hyperlink: { url: u, tooltip: h } } }], { x: x + 0.1, y: y + 2.45, w: w - 0.2, h: 0.24, fontSize: 8, color: ACCENT, align: "center" });
+  });
+  // 피그마 — 상진에게 링크 받으면 FIGMA_URL 에 넣기 (10장과 같은 값)
+  const fx = 6.6, fy = 2.15;
+  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: fx, y: fy, w: 2.8, h: 3.0, rectRadius: 0.1, fill: { color: "4A4843" }, line: { color: "6A6863", width: 1 } });
+  T(s, "피그마 프로토타입", { x: fx + 0.2, y: fy + 0.25, w: 2.4, h: 0.3, fontSize: 14, bold: true, color: "FFFFFF" });
+  T(s, "학생 화면 5 · 교수 화면 2", { x: fx + 0.2, y: fy + 0.58, w: 2.4, h: 0.24, fontSize: 9.5, color: "C9C8C3" });
+  T(s, FIGMA_URL ? [{ text: FIGMA_URL, options: { hyperlink: { url: FIGMA_URL, tooltip: "피그마 프로토타입 열기" } } }] : "링크 자리\n(박상진에게 받으면 넣기)",
+    { x: fx + 0.2, y: fy + 1.0, w: 2.4, h: 0.8, fontSize: 10.5, color: FIGMA_URL ? "9CC3E6" : "E8A08A", valign: "top" });
+  T(s, "첫 접속은 서버가 깨어나느라\n30초쯤 걸릴 수 있어요", { x: fx + 0.2, y: fy + 2.2, w: 2.4, h: 0.6, fontSize: 9, color: "9B9A95", valign: "top" });
+  T(s, "창의프로젝트1 · 1조 · 김용현 · 박상진", { x: 0.6, y: 5.25, w: 6, h: 0.24, fontSize: 10, color: "9B9A95" });
+  s.addNotes("감사합니다. 교수 화면 데모는 설치 없이 QR로 바로 보실 수 있습니다. 질문 받겠습니다. (약 5초 · 발표 전에 데모 링크를 한 번 열어 서버를 깨워 두기)");
 }
 
 // ───────── 맨 뒤 · 자료 출처 (두 장) ─────────
