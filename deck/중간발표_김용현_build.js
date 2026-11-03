@@ -716,24 +716,19 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, "Trace는 지금 v0.1.17로 윈도우 · 맥에서 돌아갑니다", { x: 0.6, y: 1.5, w: 8, h: 0.3, fontSize: 13, color: "C9C8C3" });
   const qrs = [
     ["qr-demo.png", "교수 화면 데모", "설치 없이 바로 — 예시 내역서", "https://trace-server-8aa0.onrender.com/s/demo"],
-    ["qr-download.png", "앱 내려받기", "윈도우 · 맥(Apple 칩) · 크롬 확장", "https://trace-server-8aa0.onrender.com/download"],
+    ["qr-download.png", "앱 내려받기", "윈도우 · 맥(Apple 칩) — 크롬 확장도", "https://trace-server-8aa0.onrender.com/download"],
   ];
+  // QR 두 장 — 왼쪽 QR · 오른쪽 설명 (피그마 링크는 10장에만)
   qrs.forEach(([f, h, d, u], i) => {
-    const x = 0.6 + i * 3.0, y = 2.15, w = 2.75, hh = 3.0;
+    const x = 0.6 + i * 4.5, y = 2.2, w = 4.3, hh = 2.5;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: hh, rectRadius: 0.1, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
-    s.addImage({ path: IMG + f, x: x + 0.62, y: y + 0.2, w: 1.5, h: 1.5 });
-    T(s, h, { x: x + 0.15, y: y + 1.8, w: w - 0.3, h: 0.3, fontSize: 14, bold: true, align: "center" });
-    T(s, d, { x: x + 0.15, y: y + 2.1, w: w - 0.3, h: 0.24, fontSize: 9.5, color: MUTED, align: "center" });
-    T(s, [{ text: u.replace("https://", ""), options: { hyperlink: { url: u, tooltip: h } } }], { x: x + 0.1, y: y + 2.45, w: w - 0.2, h: 0.24, fontSize: 8, color: ACCENT, align: "center" });
+    s.addImage({ path: IMG + f, x: x + 0.25, y: y + 0.3, w: 1.9, h: 1.9 });
+    T(s, h, { x: x + 2.35, y: y + 0.45, w: 1.8, h: 0.34, fontSize: 17, bold: true });
+    T(s, d.replace(" — ", "\n"), { x: x + 2.35, y: y + 0.85, w: 1.85, h: 0.6, fontSize: 10.5, color: MUTED, valign: "top" });
+    T(s, [{ text: u.replace("https://", "").replace(".onrender.com", ".onrender.com\n"), options: { hyperlink: { url: u, tooltip: h } } }],
+      { x: x + 2.35, y: y + 1.65, w: 1.85, h: 0.5, fontSize: 8.5, color: ACCENT, valign: "top" });
   });
-  // 피그마 — 상진에게 링크 받으면 FIGMA_URL 에 넣기 (10장과 같은 값)
-  const fx = 6.6, fy = 2.15;
-  s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: fx, y: fy, w: 2.8, h: 3.0, rectRadius: 0.1, fill: { color: "4A4843" }, line: { color: "6A6863", width: 1 } });
-  T(s, "피그마 프로토타입", { x: fx + 0.2, y: fy + 0.25, w: 2.4, h: 0.3, fontSize: 14, bold: true, color: "FFFFFF" });
-  T(s, "학생 화면 5 · 교수 화면 2", { x: fx + 0.2, y: fy + 0.58, w: 2.4, h: 0.24, fontSize: 9.5, color: "C9C8C3" });
-  T(s, FIGMA_URL ? [{ text: FIGMA_URL, options: { hyperlink: { url: FIGMA_URL, tooltip: "피그마 프로토타입 열기" } } }] : "링크 자리\n(박상진에게 받으면 넣기)",
-    { x: fx + 0.2, y: fy + 1.0, w: 2.4, h: 0.8, fontSize: 10.5, color: FIGMA_URL ? "9CC3E6" : "E8A08A", valign: "top" });
-  T(s, "첫 접속은 서버가 깨어나느라\n30초쯤 걸릴 수 있어요", { x: fx + 0.2, y: fy + 2.2, w: 2.4, h: 0.6, fontSize: 9, color: "9B9A95", valign: "top" });
+  T(s, "첫 접속은 서버가 깨어나느라 30초쯤 걸릴 수 있어요", { x: 0.6, y: 4.82, w: 8.8, h: 0.24, fontSize: 9.5, color: "9B9A95" });
   T(s, "창의프로젝트1 · 1조 · 김용현 · 박상진", { x: 0.6, y: 5.25, w: 6, h: 0.24, fontSize: 10, color: "9B9A95" });
   s.addNotes("감사합니다. 교수 화면 데모는 설치 없이 QR로 바로 보실 수 있습니다. 질문 받겠습니다. (약 5초 · 발표 전에 데모 링크를 한 번 열어 서버를 깨워 두기)");
 }
