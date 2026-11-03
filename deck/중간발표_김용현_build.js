@@ -1,7 +1,7 @@
 // 중간발표 전체 (1 ~ 11장 · 자료 출처) — 4 ~ 8장은 박상진 부탁으로 김용현이 만듦 (11/3)
 const pptxgen = require("pptxgenjs");
 const fs = require("fs"), path = require("path");
-const FIGMA_URL = "https://www.figma.com/proto/7vUUX1TAiLuxEVJnePvymH/Trace-%EC%A4%91%EA%B0%84%EC%A0%90%EA%B2%80-%E2%80%94-%ED%99%94%EB%A9%B4-%C2%B7-%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85";   // 피그마 프로토타입 재생 링크 (박상진 11/3 · 보기 권한 공개 · 열면 바로 ▶) · 9장
+const FIGMA_URL = "https://www.figma.com/proto/7vUUX1TAiLuxEVJnePvymH/Trace-%EC%A4%91%EA%B0%84%EC%A0%90%EA%B2%80-%E2%80%94-%ED%99%94%EB%A9%B4-%C2%B7-%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85";   // 피그마 프로토타입 재생 링크 (박상진 11/3 · 보기 권한 공개 · 열면 바로 ▶) · 10장
 const FIGMA_LABEL = "figma.com · Trace 중간점검 — 화면 · 프로토타입";   // 화면에 보이는 글 (주소가 길어서) · 누르면 FIGMA_URL
 const IMG = (fs.existsSync(path.join(__dirname, "img")) ? path.join(__dirname, "img") : "/Users/yonghyeonkim/dev/trace/deck/img") + "/";
 const out = process.argv[2];
@@ -339,29 +339,32 @@ const card = (slide, x, y, w, h, fill, name) =>
   ].join("\n"));
 }
 
-// ───────── 6장 (이어서) 와이어프레임 — 한 장 2×2 (11/3 분량 줄임) ─────────
-{
+// ───────── 6장 (이어서) 와이어프레임 ①② ─────────
+[
+  // 11/3 박상진: 10/19 와이어프레임 → 지금 앱 화면 (피그마 프로토타입과 같은 그림 · 2-디자인/피그마 넣을 화면)
+  ["와이어프레임 ① 처음 한 번 · 홈", [
+    ["scr-welcome.png", 1.6, "처음 한 번", "무엇을 기록하고 무엇은 안 하는지 먼저 보여 줌\n원문은 내 PC에만 · 교수에겐 내가 고른 것만"],
+    ["scr-home.png", 1.6, "홈", "쓰는 법 4단계 · 과제마다 '다음 할 일' 버튼 하나\n마감 순 · 카드마다 4단계 진행 표시"]]],
+  ["와이어프레임 ② 다듬기 · 교수 링크", [
+    ["scr-refine.png", 1.6, "출처 보기 · 제출 전 다듬기", "문장마다 어디서 왔는지 색으로 · [다듬을 곳]만 모아 보기\n[다듬기] → 기록이 켜지고 Word에서 그 문장 선택"],
+    ["scr-prof.png", 1.6, "교수 링크 (내역서)", "학생이 고른 것만, 숫자와 사실만\n'AI 답과 일치 및 유사 N · 다른 곳 M' · 서버 기록과 일치"]]],
+].forEach(([title, two], si) => {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
-  s.addText("화면 설계: 지금 앱의 주요 화면", { placeholder: "title" });
+  s.addText(title, { placeholder: "title" });
   sec(s, "03", "사용자 경험 설계");
-  const wf = [
-    // 11/3 박상진: 10/19 와이어프레임 → 지금 앱 화면 (피그마 프로토타입과 같은 그림)
-    ["scr-welcome.png", 1.6, "처음 한 번", "무엇을 기록하고\n무엇은 안 하는지 먼저\n원문은 내 PC에만"],
-    ["scr-home.png", 1.6, "홈", "쓰는 법 4단계\n과제마다 '다음 할 일'\n버튼 하나 · 마감 순"],
-    ["scr-refine.png", 1.6, "출처 보기 · 다듬기", "문장마다 어디서 왔는지\n[다듬을 곳]만 모아 보기\n[다듬기] → Word 그 문장"],
-    ["scr-prof.png", 1.6, "교수 링크 (내역서)", "학생이 고른 것만\n숫자와 사실만\n'서버 기록과 일치'"],
-  ];
-  wf.forEach(([f, r, h, d], i) => {
-    const cx = 0.5 + (i % 2) * 4.6, cy = 1.0 + Math.floor(i / 2) * 2.12, bw = 2.95, bh = 1.95;
+  two.forEach(([f, r, h, d], i) => {
+    const cx = 0.5 + i * 4.6, cy = 1.0, bw = 4.4, bh = 2.9;
     s.addShape(pres.shapes.RECTANGLE, { x: cx, y: cy, w: bw, h: bh, fill: { color: SOFT }, line: { color: LINE, width: 0.75 } });
     const iw = Math.min(bw, bh * r), ih = iw / r;
     s.addImage({ path: IMG + f, x: cx + (bw - iw) / 2, y: cy + (bh - ih) / 2, w: iw, h: ih });
-    T(s, h, { x: cx + 3.07, y: cy + 0.08, w: 1.35, h: 0.3, fontSize: 13, bold: true });
-    T(s, d, { x: cx + 3.07, y: cy + 0.45, w: 1.38, h: 1.1, fontSize: 9.5, color: MUTED, valign: "top", paraSpaceAfter: 2 });
+    T(s, h, { x: cx, y: 4.05, w: bw, h: 0.3, fontSize: 14, bold: true });
+    T(s, d, { x: cx, y: 4.4, w: bw, h: 0.75, fontSize: 10.5, color: MUTED, valign: "top" });
   });
-  T(s, "11/3 · 앱 v0.1.17 실제 화면 — 피그마 프로토타입과 같은 그림", { x: 0.5, y: 5.26, w: 9, h: 0.2, fontSize: 9, color: MUTED });
-  s.addNotes("(말 없이 넘김 — 화면만 보여 줌. 시간이 남으면: 처음 켤 때 무엇을 기록하고 무엇은 안 하는지부터 보여 줘 감시처럼 느끼지 않게 했고, 다듬을 곳만 모아 보고 [다듬기]를 누르면 기록이 켜진 채 Word에서 그 문장이 선택됩니다.)");
-}
+  T(s, "11/3 · 앱 v0.1.17 실제 화면 — 피그마 프로토타입과 같은 그림", { x: 0.5, y: 5.25, w: 9, h: 0.22, fontSize: 9.5, color: MUTED });
+  s.addNotes("(말 없이 넘김 — 화면만 보여 줌. 시간이 남으면: " + (si === 0
+    ? "처음 켤 때 무엇을 기록하고 무엇은 안 하는지부터 보여 줘 감시처럼 느끼지 않게 했고, 홈은 과제마다 다음 할 일 버튼 하나만 둡니다.)"
+    : "다듬을 곳만 모아 보고, [다듬기]를 누르면 기록이 켜진 채 Word에서 그 문장이 선택됩니다. 교수 링크는 학생이 고른 것만 보여 줍니다.)"));
+});
 
 // ───────── 프로토타입 — 피그마 링크 · 직접 써 보고 고친 것 ─────────
 {
@@ -400,26 +403,17 @@ const card = (slide, x, y, w, h, fill, name) =>
     ["그대로 붙인 글이 엉뚱한 답에 '고쳐 씀'으로 이어짐", "원래 답이 없으면 'AI에서 그대로 붙여넣음'으로", "v0.1.17"],
   ];
   fixes.forEach(([p, f, v], i) => {
-    const y = 1.68 + i * 0.78;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.48, y, w: 3.9, h: 0.7, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
+    const y = 1.72 + i * 1.0;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.48, y, w: 3.9, h: 0.88, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
     T(s, p, { x: 5.6, y: y + 0.1, w: 3.0, h: 0.32, fontSize: 10, bold: true, valign: "middle" });
-    T(s, "→ " + f, { x: 5.6, y: y + 0.38, w: 3.0, h: 0.32, fontSize: 9.5, color: ACCENT, valign: "middle" });
+    T(s, "→ " + f, { x: 5.6, y: y + 0.42, w: 3.0, h: 0.32, fontSize: 9.5, color: ACCENT, valign: "middle" });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 8.6, y: y + 0.1, w: 0.68, h: 0.24, rectRadius: 0.12, fill: { color: ACCENT_BG }, line: { color: ACCENT, width: 0.75 } });
     T(s, v, { x: 8.6, y: y + 0.1, w: 0.68, h: 0.24, fontSize: 9, bold: true, color: ACCENT, align: "center", valign: "middle" });
   });
-  T(s, "팀 안에서 해 본 것 → 실제 학생 · 교수 테스트는 12주", { x: 5.53, y: 4.93, w: 3.9, h: 0.3, fontSize: 9.5, color: MUTED, valign: "middle" });
-  // 직접 확인 QR (마무리 장을 여기로 합침 · 11/3) — 데모는 설치 없이 · 첫 접속 30초쯤
-  [["qr-demo.png", "교수 화면 데모", "설치 없이 바로", "https://trace-server-8aa0.onrender.com/s/demo"],
-   ["qr-download.png", "앱 내려받기", "윈도우 · 맥", "https://trace-server-8aa0.onrender.com/download"]].forEach(([f, h, d, u], i) => {
-    const x = 5.53 + i * 1.98, y = 4.12;
-    s.addShape(pres.shapes.RECTANGLE, { x, y, w: 0.72, h: 0.72, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.5 } });
-    s.addImage({ path: IMG + f, x: x + 0.03, y: y + 0.03, w: 0.66, h: 0.66 });
-    T(s, [{ text: h, options: { bold: true, breakLine: true, hyperlink: { url: u, tooltip: h } } }, { text: d, options: { color: MUTED, fontSize: 9 } }],
-      { x: x + 0.8, y: y + 0.08, w: 1.15, h: 0.56, fontSize: 10, color: INK, valign: "top" });
-  });
+  T(s, "팀 안에서 해 본 것 → 실제 학생 · 교수 테스트는 12주", { x: 5.53, y: 4.82, w: 3.9, h: 0.4, fontSize: 9.5, color: MUTED, valign: "middle" });
   s.addNotes([
     "프로토타입은 피그마 링크로 보실 수 있습니다. 지금 앱 화면 그대로 학생 화면 아홉 개, 교수 화면 두 개를 이었고, 별 표시가 핵심 화면입니다.",
-    "오른쪽 아래 QR로 교수 화면 데모는 설치 없이 바로 보실 수 있습니다. 오른쪽은 저희가 직접 과제를 하나 써 보며 찾은 문제 세 개로, v0.1.16과 v0.1.17에서 고쳤습니다. (약 25초 · 발표 전에 데모 링크를 한 번 열어 서버를 깨워 두기)",
+    "오른쪽은 저희가 직접 과제를 하나 써 보며 찾은 문제 세 개로, v0.1.16과 v0.1.17에서 고쳤습니다. (약 20초)",
   ].join("\n"));
 }
 
@@ -524,7 +518,7 @@ const card = (slide, x, y, w, h, fill, name) =>
     "· FE / BE / DB = 화면(Frontend) / 뒤에서 일하는 부분(Backend) / 저장소(Database)",
     "· 해시 = 글마다 만드는 64자리 지문. 지문만으론 글을 알 수 없지만, 같은 글인지는 확인됨",
     "· Flask = 서버 프로그램 (Python) · Render = 서버를 올려 둔 곳 · Supabase = 인터넷 DB (PostgreSQL)",
-    "· 학생 PC '원문 보관' vs 서버 밑 DB → PC 쪽은 앱 폴더의 파일 (같은 컴퓨터라 한 상자) · 서버 DB는 인터넷 DB (서버는 Render, DB는 Supabase — 서로 다른 곳이라 따로 그리고 화살표로 이음). 서버 DB의 원문은 학생이 내역서에 고른 대화뿐 (11장 messages)",
+    "· 학생 PC '원문 보관' vs 서버 밑 DB → PC 쪽은 앱 폴더의 파일 (같은 컴퓨터라 한 상자) · 서버 DB는 인터넷 DB (서버는 Render, DB는 Supabase — 서로 다른 곳이라 따로 그리고 화살표로 이음). 서버 DB의 원문은 학생이 내역서에 고른 대화뿐 (12장 messages)",
     "· 개인정보 먼저 가림 = 이메일 · 전화번호 · 주민번호 · 카드번호 · API 키는 PC에 저장하기 전에 가림",
     "",
     "질문 대비",
@@ -539,8 +533,8 @@ const card = (slide, x, y, w, h, fill, name) =>
     "· 기록을 꺼 두고 쓰면? → 그 부분은 '출처 기록 없음'. 직접 썼다고도, 베꼈다고도 단정하지 않음.",
     "· 윈도우 · 맥 기능 차이? → v0.1.17에서 다듬기 문장 고르기 · ChatGPT 앱 읽기까지 맞춤. 남은 차이: 맥은 Apple 칩만 (인텔 맥 미지원).",
     "· 그럼 웹으로는 못 하나? → 웹 AI 대화만 볼 거면 확장으로 됨. 하지만 Word에서 친 글 · 데스크톱 AI 앱 · 앱 사이 붙여넣기는 못 봄 → 출처를 이을 수 없음.",
-    "· 설치가 번거롭지 않나? → exe/dmg 하나 · 자동 업데이트(서버 /api/app/latest). 설치 오류는 실제 수업 전에 먼저 고침 (12장).",
-    "· 서버가 해외(싱가포르)인데? → 실제 수업 전에 국외 이전 동의 문구를 동의 화면에 넣음 (실제 수업 전 보완 · 12장).",
+    "· 설치가 번거롭지 않나? → exe/dmg 하나 · 자동 업데이트(서버 /api/app/latest). 설치 오류는 실제 수업 전에 먼저 고침 (13장).",
+    "· 서버가 해외(싱가포르)인데? → 실제 수업 전에 국외 이전 동의 문구를 동의 화면에 넣음 (실제 수업 전 보완 · 13장).",
   ].join("\n"));
 }
 
@@ -697,7 +691,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   });
   s.addNotes([
     "마지막으로 개발 계획입니다. 지금 버전 0.1.17로 윈도우와 맥 모두 다듬기까지 돌아갑니다. 발표 후 2주 동안 저는 고쳐 쓰는 법 안내와 가짜 참고문헌 확인을, 상진이는 기록을 꺼 둔 동안 바뀐 글 표시와 타이핑 패턴을 만듭니다. 12 ~ 13주에 실제로 써 보며 고치고, 14주에 최종 버전을 냅니다.",
-    "역할은 제가 서버와 다듬기, 상진이가 화면과 기록기입니다. 예상 문제 중 가장 큰 건 AI 답을 완전히 다른 말로 바꿔 쓰면 못 찾는 건데, 베꼈다고 단정하지 않고 '출처 기록 없음'으로 둡니다. 감사합니다. 질문 받겠습니다. (약 35초)",
+    "역할은 제가 서버와 다듬기, 상진이가 화면과 기록기입니다. 예상 문제 중 가장 큰 건 AI 답을 완전히 다른 말로 바꿔 쓰면 못 찾는 건데, 베꼈다고 단정하지 않고 '출처 기록 없음'으로 둡니다. (약 35초)",
     "",
     "그림 풀이 (물으면)",
     "· 다듬기 안내 = [인용 달기] · [다듬기] 버튼 옆에 따옴표 · 출처 다는 법, 바꿔 쓰기 세 단계를 띄움 (6장)",
@@ -716,6 +710,32 @@ const card = (slide, x, y, w, h, fill, name) =>
     "· 타이핑 패턴? → \"4분 동안 2초 넘게 멈춘 적 없음 · 고친 횟수 0 · 한 번에 1,100자\" 같은 사실만 보여 줌. 판정하지 않음.",
     "· AI 답 연결 정확도? → 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 — 붙여넣은 시각보다 뒤에 나온 답에는 잇지 않게.",
   ].join("\n"));
+}
+
+// ───────── 마무리 — 직접 확인 (QR) ─────────
+{
+  const s = pres.addSlide();
+  s.background = { color: INK };
+  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 0.75, w: 0.62, h: 0.62 });
+  T(s, "직접 확인해 보세요", { x: 1.38, y: 0.72, w: 6, h: 0.68, fontSize: 30, bold: true, color: "FFFFFF", valign: "middle" });
+  T(s, "Trace는 지금 v0.1.17로 윈도우 · 맥에서 돌아갑니다", { x: 0.6, y: 1.5, w: 8, h: 0.3, fontSize: 13, color: "C9C8C3" });
+  const qrs = [
+    ["qr-demo.png", "교수 화면 데모", "설치 없이 바로 — 예시 내역서", "https://trace-server-8aa0.onrender.com/s/demo"],
+    ["qr-download.png", "앱 내려받기", "윈도우 · 맥(Apple 칩) — 크롬 확장도", "https://trace-server-8aa0.onrender.com/download"],
+  ];
+  // QR 두 장 — 왼쪽 QR · 오른쪽 설명 (피그마 링크는 10장에만)
+  qrs.forEach(([f, h, d, u], i) => {
+    const x = 0.6 + i * 4.5, y = 2.2, w = 4.3, hh = 2.5;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: hh, rectRadius: 0.1, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
+    s.addImage({ path: IMG + f, x: x + 0.25, y: y + 0.3, w: 1.9, h: 1.9 });
+    T(s, h, { x: x + 2.35, y: y + 0.45, w: 1.8, h: 0.34, fontSize: 17, bold: true });
+    T(s, d.replace(" — ", "\n"), { x: x + 2.35, y: y + 0.85, w: 1.85, h: 0.6, fontSize: 10.5, color: MUTED, valign: "top" });
+    T(s, [{ text: u.replace("https://", "").replace(".onrender.com", ".onrender.com\n"), options: { hyperlink: { url: u, tooltip: h } } }],
+      { x: x + 2.35, y: y + 1.65, w: 1.85, h: 0.5, fontSize: 8.5, color: ACCENT, valign: "top" });
+  });
+  T(s, "첫 접속은 서버가 깨어나느라 30초쯤 걸릴 수 있어요", { x: 0.6, y: 4.82, w: 8.8, h: 0.24, fontSize: 9.5, color: "9B9A95" });
+  T(s, "창의프로젝트1 · 1조 · 김용현 · 박상진", { x: 0.6, y: 5.25, w: 6, h: 0.24, fontSize: 10, color: "9B9A95" });
+  s.addNotes("감사합니다. 교수 화면 데모는 설치 없이 QR로 바로 보실 수 있습니다. 질문 받겠습니다. (약 5초 · 발표 전에 데모 링크를 한 번 열어 서버를 깨워 두기)");
 }
 
 // ───────── 맨 뒤 · 자료 출처 (두 장) ─────────
