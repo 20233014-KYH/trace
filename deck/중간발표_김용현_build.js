@@ -128,41 +128,32 @@ const card = (slide, x, y, w, h, fill, name) =>
   s.addText("인사이트: 학생은 기준을 모르고, 감시를 걱정한다", { placeholder: "title" });
   sec(s, "01", "문제 정의 · 인사이트");
 
-  // 칸마다 Q(실제 설문 문항) · A(고른 답) — "59% 가 무엇을 고른 59% 인지" 바로 보이게 (11/2 김용현 안)
-  const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.75;
+  // 질문 4개 = 칸 4개 · 칸마다 Q(실제 설문 문항) · A(고른 답) → 결론 하나 (11/3 김용현 안: 1 · 23 · 4 → 1 · 2 · 3 · 4)
+  const gap = 0.12, cw = (9 - gap * 3) / 4, cy = 1.15, ch = 3.55, dh = 0.8;
   const cols = [
-    { stats: [["59%", "AI 사용을 밝힐 때 어려운 점은?", "\"어디까지 밝혀야 할지\n모르겠다\"", "1위 · 여러 개 고름"]],
-      decide: "기준이 없다\n→ 내역서가 기준 양식" },
-    { stats: [["59%", "이런 도구, 언제 켜겠나요?", "\"받는 쪽이 요구하면\"", ""], ["44%", "켜기 꺼려지는 이유는?", "\"감시받는 느낌\"", ""]],
-      decide: "교수가 요구할 때 켜는 도구\n→ 원문은 학생 PC에만" },
-    { stats: [["94%", "AI 초안을 그대로 내는 건?", "\"그냥 내면 안 된다\"", "밝히면 된다 50% · 쓰면 안 된다 44%"]],
-      decide: "AI 답 그대로인 문장은\n→ 표시하고, 고칠 기회를" },
+    ["59%", "AI 사용을 밝힐 때\n어려운 점은?", "\"어디까지 밝혀야\n할지 모르겠다\"", "1위 · 여러 개 고름", "기준이 없다", "내역서가 기준 양식"],
+    ["59%", "이런 도구,\n언제 켜겠나요?", "\"받는 쪽이\n요구하면\"", "1위 · 여러 개 고름", "요구받으면 켠다", "교수가 과제에 건다"],
+    ["44%", "켜기 꺼려지는\n이유는?", "\"감시받는 느낌\"", "1위 · 여러 개 고름", "감시가 걱정이다", "원문은 학생 PC에만"],
+    ["94%", "AI 초안을\n그대로 내는 건?", "\"그냥 내면\n안 된다\"", "밝히면 된다 50%\n쓰면 안 된다 44%", "그냥 내면 안 된다", "표시하고 고칠 기회"],
   ];
-  cols.forEach((c, i) => {
-    const x = 0.5 + i * (cw + gap), two = c.stats.length > 1;
+  cols.forEach(([num, q, a, sub, find, act], i) => {
+    const x = 0.5 + i * (cw + gap), ix = x + 0.18, iw = cw - 0.32;
     card(s, x, cy, cw, ch, SOFT, "insight-" + i);
-    let y = cy + 0.18;
-    c.stats.forEach(([num, q, a, sub]) => {
-      T(s, num, { x: x + 0.2, y, w: cw - 0.4, h: two ? 0.45 : 0.62, fontSize: two ? 26 : 36, bold: true, color: ACCENT });
-      y += two ? 0.47 : 0.68;
-      T(s, [{ text: "Q.  ", options: { bold: true, color: ACCENT } }, { text: q, options: { color: MUTED } }],
-        { x: x + 0.2, y, w: cw - 0.4, h: 0.24, fontSize: 11 });
-      y += 0.26;
-      const ah = a.includes("\n") ? 0.48 : 0.27;          // 두 줄 답은 둘째 줄을 A. 뒤에 맞춤
-      T(s, [{ text: "A.  ", options: { bold: true, color: ACCENT } }, { text: a.replace("\n", "\n      "), options: { bold: true } }],
-        { x: x + 0.2, y, w: cw - 0.4, h: ah, fontSize: 13, valign: "top" });
-      y += ah + 0.03;
-      if (sub) { T(s, sub, { x: x + 0.2, y, w: cw - 0.4, h: 0.22, fontSize: 10, color: MUTED }); y += 0.25; }
-      y += two ? 0.12 : 0.05;
-    });
-    card(s, x + 0.15, cy + ch - dh - 0.15, cw - 0.3, dh, ACCENT_BG, "decide-" + i);
-    T(s, c.decide, { x: x + 0.3, y: cy + ch - dh - 0.15, w: cw - 0.6, h: dh, fontSize: 14, bold: true, color: ACCENT, valign: "middle" });
+    T(s, num, { x: ix, y: cy + 0.15, w: iw, h: 0.6, fontSize: 34, bold: true, color: ACCENT });
+    T(s, [{ text: "Q. ", options: { bold: true, color: ACCENT } }, { text: q.replace("\n", "\n     "), options: { color: MUTED } }],
+      { x: ix, y: cy + 0.82, w: iw, h: 0.42, fontSize: 10.5, valign: "top" });
+    T(s, [{ text: "A. ", options: { bold: true, color: ACCENT } }, { text: a.replace("\n", "\n     "), options: { bold: true } }],
+      { x: ix, y: cy + 1.3, w: iw, h: 0.5, fontSize: 12.5, valign: "top" });
+    T(s, sub, { x: ix, y: cy + 1.86, w: iw, h: 0.42, fontSize: 9.5, color: MUTED, valign: "top" });
+    card(s, x + 0.12, cy + ch - dh - 0.12, cw - 0.24, dh, ACCENT_BG, "decide-" + i);
+    T(s, [{ text: find, options: { color: ACCENT, breakLine: true } }, { text: "→ " + act, options: { bold: true, color: ACCENT } }],
+      { x: x + 0.22, y: cy + ch - dh - 0.12, w: cw - 0.4, h: dh, fontSize: 11.5, valign: "middle", paraSpaceAfter: 2 });
   });
 
   T(s, "Trace 학생 설문 2026.10 · 응답 34명 · 59% = 20명 · 44% = 15명 · 94% = 32명 · 공학·컴퓨터 18명, 2학년 19명으로 치우침 → 경향만",
     { x: 0.5, y: 4.9, w: 9, h: 0.25, fontSize: 10, color: MUTED });
 
-  s.addNotes("학생 설문에서 59%가 \"어디까지 밝혀야 할지 모르겠다\"고 해서, 기준 양식인 내역서를 만들었습니다. \"감시받는 느낌\"이 걸림돌이라 원문은 학생 PC에만 둡니다. 그리고 94%가 AI 초안을 그냥 내면 안 된다고 해서, AI 답 그대로인 문장을 표시하고 제출 전에 고칠 수 있게 했습니다. (약 25초)");
+  s.addNotes("학생 설문에서 59%가 \"어디까지 밝혀야 할지 모르겠다\"고 해서, 기준 양식인 내역서를 만들었습니다. 켜는 이유 1위가 \"받는 쪽이 요구하면\"이라 교수가 과제에 거는 도구로 만들었고, \"감시받는 느낌\"이 걸림돌이라 원문은 학생 PC에만 둡니다. 그리고 94%가 AI 초안을 그냥 내면 안 된다고 해서, AI 답 그대로인 문장을 표시하고 제출 전에 고칠 수 있게 했습니다. (약 30초)");
 }
 
 // ───────── 4장 서비스 콘셉트 ─────────
