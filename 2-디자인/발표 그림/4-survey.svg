@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" width="1600" height="640" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#52514e"/></marker></defs>
+<rect width="1600" height="640" fill="#ffffff"/>
+<text x="40" y="52" font-size="30" fill="#0b0b0b" font-weight="700" text-anchor="start">학생 설문 34명 — 켜는 이유는 바깥에서, 걸림돌은 감시</text>
+<text x="40" y="84" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">2026.10 · 여러 개 고름 · 공학 · 컴퓨터 계열 18명, 2학년 19명으로 치우침 → 경향만</text>
+<text x="40" y="140" font-size="22" fill="#0b0b0b" font-weight="700" text-anchor="start">켜는 이유</text>
+<text x="316" y="191" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">받는 쪽이 요구하면</text>
+<path d="M330,170 L706.0,170 Q710.0,170 710.0,174 L710.0,196 Q710.0,200 706.0,200 L330,200 z" fill="#2a78d6"/>
+<text x="720.0" y="191" font-size="16" fill="#0b0b0b" font-weight="700" text-anchor="start">20명</text>
+<text x="316" y="239" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">가산점 · 우대</text>
+<path d="M330,218 L649.0,218 Q653.0,218 653.0,222 L653.0,244 Q653.0,248 649.0,248 L330,248 z" fill="#b9cfe9"/>
+<text x="663.0" y="239" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">17명</text>
+<text x="316" y="287" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">의심받았을 때 증명</text>
+<path d="M330,266 L535.0,266 Q539.0,266 539.0,270 L539.0,292 Q539.0,296 535.0,296 L330,296 z" fill="#b9cfe9"/>
+<text x="549.0" y="287" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">11명</text>
+<text x="316" y="335" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">내가 먼저 보고 고를 수 있으면</text>
+<path d="M330,314 L478.0,314 Q482.0,314 482.0,318 L482.0,340 Q482.0,344 478.0,344 L330,344 z" fill="#b9cfe9"/>
+<text x="492.0" y="335" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">8명</text>
+<text x="316" y="383" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">내역서 자동</text>
+<path d="M330,362 L402.0,362 Q406.0,362 406.0,366 L406.0,388 Q406.0,392 402.0,392 L330,392 z" fill="#b9cfe9"/>
+<text x="416.0" y="383" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">4명</text>
+<line x1="330" y1="162" x2="330" y2="398" stroke="#52514e" stroke-width="1.5"/>
+<text x="820" y="140" font-size="22" fill="#0b0b0b" font-weight="700" text-anchor="start">꺼리는 이유</text>
+<text x="1096" y="191" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">감시받는 느낌</text>
+<path d="M1110,170 L1391.0,170 Q1395.0,170 1395.0,174 L1395.0,196 Q1395.0,200 1391.0,200 L1110,200 z" fill="#2a78d6"/>
+<text x="1405.0" y="191" font-size="16" fill="#0b0b0b" font-weight="700" text-anchor="start">15명</text>
+<text x="1096" y="239" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">AI 사용이 드러나 불리할까 봐</text>
+<path d="M1110,218 L1277.0,218 Q1281.0,218 1281.0,222 L1281.0,244 Q1281.0,248 1277.0,248 L1110,248 z" fill="#b9cfe9"/>
+<text x="1291.0" y="239" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">9명</text>
+<text x="1096" y="287" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">다른 탭 · 메신저까지 기록될까 봐</text>
+<path d="M1110,266 L1220.0,266 Q1224.0,266 1224.0,270 L1224.0,292 Q1224.0,296 1220.0,296 L1110,296 z" fill="#b9cfe9"/>
+<text x="1234.0" y="287" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">6명</text>
+<text x="1096" y="335" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">받는 쪽이 오해할까 봐</text>
+<path d="M1110,314 L1220.0,314 Q1224.0,314 1224.0,318 L1224.0,340 Q1224.0,344 1220.0,344 L1110,344 z" fill="#b9cfe9"/>
+<text x="1234.0" y="335" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">6명</text>
+<text x="1096" y="383" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">꺼려지지 않는다</text>
+<path d="M1110,362 L1201.0,362 Q1205.0,362 1205.0,366 L1205.0,388 Q1205.0,392 1201.0,392 L1110,392 z" fill="#b9cfe9"/>
+<text x="1215.0" y="383" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">5명</text>
+<text x="1096" y="431" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">설치 · 설정이 귀찮다</text>
+<path d="M1110,410 L1201.0,410 Q1205.0,410 1205.0,414 L1205.0,436 Q1205.0,440 1201.0,440 L1110,440 z" fill="#b9cfe9"/>
+<text x="1215.0" y="431" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">5명</text>
+<text x="1096" y="479" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="end">컴퓨터가 느려질까 봐</text>
+<path d="M1110,458 L1144.0,458 Q1148.0,458 1148.0,462 L1148.0,484 Q1148.0,488 1144.0,488 L1110,488 z" fill="#b9cfe9"/>
+<text x="1158.0" y="479" font-size="16" fill="#0b0b0b" font-weight="400" text-anchor="start">2명</text>
+<line x1="1110" y1="162" x2="1110" y2="494" stroke="#52514e" stroke-width="1.5"/>
+<text x="40" y="600" font-size="17" fill="#52514e" font-weight="400" text-anchor="start">→ 교수가 요구하는 길(B2B)로 시작하고, 학생 화면은 감시처럼 보이지 않게 (무엇이 기록되고 안 되는지 · 언제든 멈춤 · 보내기 전에 고름)</text>
+</svg>
