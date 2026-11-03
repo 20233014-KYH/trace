@@ -228,7 +228,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   sec(s, "02", "서비스 기획");
   const feats = [
     ["기록", "AI 대화 · 복사/붙여넣기 · Word 글 변화 · 키 횟수", "원문은 학생 PC에만, 서버엔 해시만"],
-    ["출처 보기", "보고서 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
+    ["출처 보기", "과제 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
     ["제출 전 다듬기", "AI 답과 똑같은 문장 · 출처 없는 웹 글만 모아 보기", "[다듬기] [인용 달기] [그대로 둠] — 고치는 건 학생"],
     ["내역서 · 교수 링크", "학생이 고른 것만 PDF 한 장 + 링크 · QR", "기록과 일치 확인 · 고친 문장 수는 발표 뒤"],
   ];
@@ -442,8 +442,8 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, [{ text: "학생 PC", options: { bold: true } }, { text: "  설치형 앱 · 윈도우 · 맥", options: { color: MUTED, fontSize: 10 } }], { x: 0.7, y: 1.2, w: 3.4, h: 0.3, fontSize: 14 });
   row(0.65, 1.55, 3.45, "FE", FE, "앱 화면", "기록 · 출처 보기 · 다듬기 · 제출");
   row(0.65, 2.27, 3.45, "BE", BE, "기록기 · 브라우저 확장", "AI 대화 · 복사/붙여넣기 · Word 글 · 키 횟수");
-  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "보고서 문장 ↔ AI 답 연결");
-  row(0.65, 3.71, 3.45, "DB", DB, "원문 보관 — PC에만", "AI 답 · 학생 글 원문 (개인정보 먼저 가림)", true);
+  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "과제 문장 ↔ AI 답 연결");
+  row(0.65, 3.71, 3.45, "DB", DB, "원문 보관 — PC에만", "AI 대화 · 과제 글 원문 (개인정보 먼저 가림)", true);
   // 서버
   card(s, 4.95, 1.1, 2.45, 2.1, SOFT, "server");
   T(s, [{ text: "서버", options: { bold: true } }, { text: "  Flask · Render", options: { color: MUTED, fontSize: 10 } }], { x: 5.12, y: 1.2, w: 2.2, h: 0.3, fontSize: 14 });
@@ -458,7 +458,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   card(s, 4.95, 3.55, 2.45, 1.0, SOFT, "db");
   chip(5.12, 3.68, "DB", DB);
   T(s, "Supabase · PostgreSQL", { x: 5.56, y: 3.65, w: 1.8, h: 0.28, fontSize: 12, bold: true });
-  T(s, "해시 · 내역서 · 링크\n원문 없음", { x: 5.56, y: 3.95, w: 1.8, h: 0.5, fontSize: 10, color: MUTED });
+  T(s, "해시 · 내역서 · 링크\n원문은 학생이 고른 대화만", { x: 5.56, y: 3.95, w: 1.8, h: 0.5, fontSize: 10, color: MUTED });
   // 교수
   card(s, 8.05, 1.1, 1.45, 1.35, ACCENT_BG, "prof");
   T(s, "교수", { x: 8.2, y: 1.2, w: 1.2, h: 0.3, fontSize: 14, bold: true, color: ACCENT });
@@ -515,6 +515,7 @@ const card = (slide, x, y, w, h, fill, name) =>
     "· FE / BE / DB = 화면(Frontend) / 뒤에서 일하는 부분(Backend) / 저장소(Database)",
     "· 해시 = 글마다 만드는 64자리 지문. 지문만으론 글을 알 수 없지만, 같은 글인지는 확인됨",
     "· Flask = 서버 프로그램 (Python) · Render = 서버를 올려 둔 곳 · Supabase = 인터넷 DB (PostgreSQL)",
+    "· 학생 PC '원문 보관' vs 서버 밑 DB → PC 쪽은 앱 폴더의 파일 (같은 컴퓨터라 한 상자) · 서버 DB는 인터넷 DB (서버는 Render, DB는 Supabase — 서로 다른 곳이라 따로 그리고 화살표로 이음). 서버 DB의 원문은 학생이 내역서에 고른 대화뿐 (12장 messages)",
     "· 개인정보 먼저 가림 = 이메일 · 전화번호 · 주민번호 · 카드번호 · API 키는 PC에 저장하기 전에 가림",
     "",
     "질문 대비",
