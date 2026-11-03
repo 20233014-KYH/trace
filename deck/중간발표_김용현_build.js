@@ -1,6 +1,7 @@
 // 중간발표 전체 (1 ~ 11장 · 자료 출처) — 4 ~ 8장은 박상진 부탁으로 김용현이 만듦 (11/3)
 const pptxgen = require("pptxgenjs");
 const fs = require("fs"), path = require("path");
+const FIGMA_URL = "";   // 피그마 프로토타입 — 상진에게 받으면 넣기 (보기 권한 공개 링크) · 10장 · 마무리 장
 const IMG = (fs.existsSync(path.join(__dirname, "img")) ? path.join(__dirname, "img") : "/Users/yonghyeonkim/dev/trace/deck/img") + "/";
 const out = process.argv[2];
 
@@ -115,11 +116,11 @@ const card = (slide, x, y, w, h, fill, name) =>
   card(s, 0.5, 4.15, 9, 0.85, ACCENT_BG, "how-checked");
   T(s, "확인 방법은?", { x: 0.75, y: 4.15, w: 1.5, h: 0.85, fontSize: 16, bold: true, color: ACCENT, valign: "middle" });
   T(s, [
-    { text: "교수가 보고서와 대화 캡처를 한 줄씩 대조", options: { breakLine: true } },
+    { text: "교수가 제출된 과제와 AI 대화 내역을 한 줄씩 대조", options: { breakLine: true } },
     { text: "연세대 AI 집단 부정행위(2025.11)도 교수가 학생 영상을 돌려 보며 적발", options: { color: MUTED, fontSize: 12 } },
   ], { x: 2.3, y: 4.15, w: 7.0, h: 0.85, fontSize: 14, valign: "middle" });
 
-  s.addNotes("대학은 이미 AI 사용 공개를 요구하고 있습니다. 가이드라인을 둔 56곳 중 32곳이 과제에 사용 내역을 밝히라고 하고, 명지대 · 고려대와 교육부 가이드라인도 같은 방향입니다. 그런데 확인은 교수가 보고서와 대화 캡처를 하나하나 대조하는 것뿐입니다. (약 20초)");
+  s.addNotes("대학은 이미 AI 사용 공개를 요구하고 있습니다. 가이드라인을 둔 56곳 중 32곳이 과제에 사용 내역을 밝히라고 하고, 명지대 · 고려대와 교육부 가이드라인도 같은 방향입니다. 그런데 확인은 교수가 제출된 과제와 AI 대화 내역을 하나하나 대조하는 것뿐입니다. (약 20초)");
 }
 
 // ───────── 3장 ─────────
@@ -128,41 +129,32 @@ const card = (slide, x, y, w, h, fill, name) =>
   s.addText("인사이트: 학생은 기준을 모르고, 감시를 걱정한다", { placeholder: "title" });
   sec(s, "01", "문제 정의 · 인사이트");
 
-  // 칸마다 Q(실제 설문 문항) · A(고른 답) — "59% 가 무엇을 고른 59% 인지" 바로 보이게 (11/2 김용현 안)
-  const cw = 2.9, gap = 0.15, cy = 1.15, ch = 3.55, dh = 0.75;
+  // 질문 4개 = 칸 4개 · 칸마다 Q(실제 설문 문항) · A(고른 답) → 결론 하나 (11/3 김용현 안: 1 · 23 · 4 → 1 · 2 · 3 · 4)
+  const gap = 0.12, cw = (9 - gap * 3) / 4, cy = 1.15, ch = 3.55, dh = 0.8;
   const cols = [
-    { stats: [["59%", "AI 사용을 밝힐 때 어려운 점은?", "\"어디까지 밝혀야 할지\n모르겠다\"", "1위 · 여러 개 고름"]],
-      decide: "기준이 없다\n→ 내역서가 기준 양식" },
-    { stats: [["59%", "이런 도구, 언제 켜겠나요?", "\"받는 쪽이 요구하면\"", ""], ["44%", "켜기 꺼려지는 이유는?", "\"감시받는 느낌\"", ""]],
-      decide: "교수가 요구할 때 켜는 도구\n→ 원문은 학생 PC에만" },
-    { stats: [["94%", "AI 초안을 그대로 내는 건?", "\"그냥 내면 안 된다\"", "밝히면 된다 50% · 쓰면 안 된다 44%"]],
-      decide: "AI 답 그대로인 문장은\n→ 표시하고, 고칠 기회를" },
+    ["59%", "AI 사용을 밝힐 때\n어려운 점은?", "\"어디까지 밝혀야\n할지 모르겠다\"", "1위 · 여러 개 고름", "기준이 없다", "내역서가 기준 양식"],
+    ["59%", "이런 도구,\n언제 켜겠나요?", "\"받는 쪽이\n요구하면\"", "1위 · 여러 개 고름", "요구받으면 켠다", "교수가 요구하고\n    학생이 쓴다"],
+    ["44%", "켜기 꺼려지는\n이유는?", "\"감시받는 느낌\"", "1위 · 여러 개 고름", "감시가 걱정이다", "원문은 학생 PC에만"],
+    ["94%", "AI 초안을\n그대로 내는 건?", "\"그냥 내면\n안 된다\"", "밝히면 된다 50%\n쓰면 안 된다 44%", "그냥 내면 안 된다", "표시하고 고칠 기회"],
   ];
-  cols.forEach((c, i) => {
-    const x = 0.5 + i * (cw + gap), two = c.stats.length > 1;
+  cols.forEach(([num, q, a, sub, find, act], i) => {
+    const x = 0.5 + i * (cw + gap), ix = x + 0.18, iw = cw - 0.32;
     card(s, x, cy, cw, ch, SOFT, "insight-" + i);
-    let y = cy + 0.18;
-    c.stats.forEach(([num, q, a, sub]) => {
-      T(s, num, { x: x + 0.2, y, w: cw - 0.4, h: two ? 0.45 : 0.62, fontSize: two ? 26 : 36, bold: true, color: ACCENT });
-      y += two ? 0.47 : 0.68;
-      T(s, [{ text: "Q.  ", options: { bold: true, color: ACCENT } }, { text: q, options: { color: MUTED } }],
-        { x: x + 0.2, y, w: cw - 0.4, h: 0.24, fontSize: 11 });
-      y += 0.26;
-      const ah = a.includes("\n") ? 0.48 : 0.27;          // 두 줄 답은 둘째 줄을 A. 뒤에 맞춤
-      T(s, [{ text: "A.  ", options: { bold: true, color: ACCENT } }, { text: a.replace("\n", "\n      "), options: { bold: true } }],
-        { x: x + 0.2, y, w: cw - 0.4, h: ah, fontSize: 13, valign: "top" });
-      y += ah + 0.03;
-      if (sub) { T(s, sub, { x: x + 0.2, y, w: cw - 0.4, h: 0.22, fontSize: 10, color: MUTED }); y += 0.25; }
-      y += two ? 0.12 : 0.05;
-    });
-    card(s, x + 0.15, cy + ch - dh - 0.15, cw - 0.3, dh, ACCENT_BG, "decide-" + i);
-    T(s, c.decide, { x: x + 0.3, y: cy + ch - dh - 0.15, w: cw - 0.6, h: dh, fontSize: 14, bold: true, color: ACCENT, valign: "middle" });
+    T(s, num, { x: ix, y: cy + 0.15, w: iw, h: 0.6, fontSize: 34, bold: true, color: ACCENT });
+    T(s, [{ text: "Q. ", options: { bold: true, color: ACCENT } }, { text: q.replace("\n", "\n     "), options: { color: MUTED } }],
+      { x: ix, y: cy + 0.82, w: iw, h: 0.42, fontSize: 10.5, valign: "top" });
+    T(s, [{ text: "A. ", options: { bold: true, color: ACCENT } }, { text: a.replace("\n", "\n     "), options: { bold: true } }],
+      { x: ix, y: cy + 1.3, w: iw, h: 0.5, fontSize: 12.5, valign: "top" });
+    T(s, sub, { x: ix, y: cy + 1.86, w: iw, h: 0.42, fontSize: 9.5, color: MUTED, valign: "top" });
+    card(s, x + 0.12, cy + ch - dh - 0.12, cw - 0.24, dh, ACCENT_BG, "decide-" + i);
+    T(s, [{ text: find, options: { color: ACCENT, breakLine: true } }, { text: "→ " + act, options: { bold: true, color: ACCENT } }],
+      { x: x + 0.22, y: cy + ch - dh - 0.12, w: cw - 0.4, h: dh, fontSize: 11.5, valign: "middle", paraSpaceAfter: 2 });
   });
 
   T(s, "Trace 학생 설문 2026.10 · 응답 34명 · 59% = 20명 · 44% = 15명 · 94% = 32명 · 공학·컴퓨터 18명, 2학년 19명으로 치우침 → 경향만",
     { x: 0.5, y: 4.9, w: 9, h: 0.25, fontSize: 10, color: MUTED });
 
-  s.addNotes("학생 설문에서 59%가 \"어디까지 밝혀야 할지 모르겠다\"고 해서, 기준 양식인 내역서를 만들었습니다. \"감시받는 느낌\"이 걸림돌이라 원문은 학생 PC에만 둡니다. 그리고 94%가 AI 초안을 그냥 내면 안 된다고 해서, AI 답 그대로인 문장을 표시하고 제출 전에 고칠 수 있게 했습니다. (약 25초)");
+  s.addNotes("학생 설문에서 59%가 \"어디까지 밝혀야 할지 모르겠다\"고 해서, 기준 양식인 내역서를 만들었습니다. 켜는 이유 1위가 \"받는 쪽이 요구하면\"이라 교수가 요구하고 학생이 쓰는 구조로 만들었고, \"감시받는 느낌\"이 걸림돌이라 원문은 학생 PC에만 둡니다. 그리고 94%가 AI 초안을 그냥 내면 안 된다고 해서, AI 답 그대로인 문장을 표시하고 제출 전에 고칠 수 있게 했습니다. (약 30초)");
 }
 
 // ───────── 4장 서비스 콘셉트 ─────────
@@ -188,7 +180,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   // 누가 쓰나
   card(s, 0.5, 2.55, 2.85, 2.8, SOFT, "who");
   T(s, "누가 쓰나", { x: 0.68, y: 2.65, w: 2.5, h: 0.28, fontSize: 13, bold: true });
-  [["교수", "첫 고객", "AI 허용 과제에 사용 내역 요구\n설치 없이 내역서 링크 · QR만 연다"],
+  [["교수", "요구하는 사람", "AI 허용 과제에 사용 내역 요구\n설치 없이 내역서 링크 · QR만 연다"],
    ["학생", "쓰는 사람", "평소처럼 과제를 하고\n제출 전에 직접 고친다"]].forEach(([who, role, d], k) => {
     const y = 3.05 + k * 1.12;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.62, y, w: 2.61, h: 1.0, rectRadius: 0.06, fill: { color: "FFFFFF" }, line: { color: LINE, width: 0.75 } });
@@ -236,7 +228,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   sec(s, "02", "서비스 기획");
   const feats = [
     ["기록", "AI 대화 · 복사/붙여넣기 · Word 글 변화 · 키 횟수", "원문은 학생 PC에만, 서버엔 해시만"],
-    ["출처 보기", "보고서 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
+    ["출처 보기", "과제 문장마다 어디서 왔는지", "AI 답 그대로 · 고쳐 씀 · 웹 글 · 기록 없음"],
     ["제출 전 다듬기", "AI 답과 똑같은 문장 · 출처 없는 웹 글만 모아 보기", "[다듬기] [인용 달기] [그대로 둠] — 고치는 건 학생"],
     ["내역서 · 교수 링크", "학생이 고른 것만 PDF 한 장 + 링크 · QR", "기록과 일치 확인 · 고친 문장 수는 발표 뒤"],
   ];
@@ -373,7 +365,6 @@ const card = (slide, x, y, w, h, fill, name) =>
 });
 
 // ───────── 프로토타입 — 피그마 링크 · 직접 써 보고 고친 것 ─────────
-const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 링크)
 {
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
   s.addText("UI/UX 프로토타입", { placeholder: "title" });
@@ -451,8 +442,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   T(s, [{ text: "학생 PC", options: { bold: true } }, { text: "  설치형 앱 · 윈도우 · 맥", options: { color: MUTED, fontSize: 10 } }], { x: 0.7, y: 1.2, w: 3.4, h: 0.3, fontSize: 14 });
   row(0.65, 1.55, 3.45, "FE", FE, "앱 화면", "기록 · 출처 보기 · 다듬기 · 제출");
   row(0.65, 2.27, 3.45, "BE", BE, "기록기 · 브라우저 확장", "AI 대화 · 복사/붙여넣기 · Word 글 · 키 횟수");
-  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "보고서 문장 ↔ AI 답 연결");
-  row(0.65, 3.71, 3.45, "DB", DB, "원문 보관 — PC에만", "AI 답 · 학생 글 원문 (개인정보 먼저 가림)", true);
+  row(0.65, 2.99, 3.45, "BE", BE, "출처 잇기 · 제출 전 다듬기", "과제 문장 ↔ AI 답 연결");
+  row(0.65, 3.71, 3.45, "DB", DB, "원문 보관 — PC에만", "AI 대화 · 과제 글 원문 (개인정보 먼저 가림)", true);
   // 서버
   card(s, 4.95, 1.1, 2.45, 2.1, SOFT, "server");
   T(s, [{ text: "서버", options: { bold: true } }, { text: "  Flask · Render", options: { color: MUTED, fontSize: 10 } }], { x: 5.12, y: 1.2, w: 2.2, h: 0.3, fontSize: 14 });
@@ -467,7 +458,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   card(s, 4.95, 3.55, 2.45, 1.0, SOFT, "db");
   chip(5.12, 3.68, "DB", DB);
   T(s, "Supabase · PostgreSQL", { x: 5.56, y: 3.65, w: 1.8, h: 0.28, fontSize: 12, bold: true });
-  T(s, "해시 · 내역서 · 링크\n원문 없음", { x: 5.56, y: 3.95, w: 1.8, h: 0.5, fontSize: 10, color: MUTED });
+  T(s, "해시 · 내역서 · 링크\n원문은 학생이 고른 대화만", { x: 5.56, y: 3.95, w: 1.8, h: 0.5, fontSize: 10, color: MUTED });
   // 교수
   card(s, 8.05, 1.1, 1.45, 1.35, ACCENT_BG, "prof");
   T(s, "교수", { x: 8.2, y: 1.2, w: 1.2, h: 0.3, fontSize: 14, bold: true, color: ACCENT });
@@ -524,6 +515,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     "· FE / BE / DB = 화면(Frontend) / 뒤에서 일하는 부분(Backend) / 저장소(Database)",
     "· 해시 = 글마다 만드는 64자리 지문. 지문만으론 글을 알 수 없지만, 같은 글인지는 확인됨",
     "· Flask = 서버 프로그램 (Python) · Render = 서버를 올려 둔 곳 · Supabase = 인터넷 DB (PostgreSQL)",
+    "· 학생 PC '원문 보관' vs 서버 밑 DB → PC 쪽은 앱 폴더의 파일 (같은 컴퓨터라 한 상자) · 서버 DB는 인터넷 DB (서버는 Render, DB는 Supabase — 서로 다른 곳이라 따로 그리고 화살표로 이음). 서버 DB의 원문은 학생이 내역서에 고른 대화뿐 (12장 messages)",
     "· 개인정보 먼저 가림 = 이메일 · 전화번호 · 주민번호 · 카드번호 · API 키는 PC에 저장하기 전에 가림",
     "",
     "질문 대비",
@@ -638,8 +630,8 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     { x: 6.9, y: 0.94, w: 2.6, h: 0.24, fontSize: 9.5, align: "right" });
   const steps = [
     ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "제출 전 다듬기까지 동작"]]],
-    ["발표 뒤 2주", [[YH, "다듬기 안내 · 고친 문장 수"], [YH, "참고문헌 확인 (Crossref)"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
-    ["12 ~ 13주", [[YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
+    ["발표 뒤 2주", [[YH, "다듬기 안내 · 고친 문장 수"], [YH, "Crossref API 연동 · 참고문헌 확인"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
+    ["12 ~ 13주", [[BOTH, "한글(hwpx) 문서 읽기"], [YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
     ["14주", [[BOTH, "최종 버전 배포"]]],
   ];
   const sw = 2.2, sg = 0.067;
@@ -660,7 +652,7 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   const people = [
     ["김용현", YH, "서버 · 교수용 내역서 · 다듬기",
       ["Flask 서버 · 구글/카카오 로그인", "조작 확인 · 내역서 PDF · 교수 링크", "맥 버전 (다듬기 · ChatGPT 앱) · 배포"],
-      ["다듬기 안내 · 참고문헌 확인 (Crossref)", "내역서에 고친 문장 수 표시", "수업 전 보완 (설치 · 보안 · 동의)"]],
+      ["다듬기 안내 · Crossref API 연동", "내역서에 고친 문장 수 표시", "수업 전 보완 (설치 · 보안 · 동의)"]],
     ["박상진", SJ, "화면 · 기록기 · 확장",
       ["윈도우 기록기 (Word · AI 앱)", "크롬 확장 (ChatGPT · Claude · Gemini)", "화면 디자인 · 제출 전 다듬기"],
       ["기록 꺼진 동안 바뀐 글 표시", "타이핑 패턴 (직접 쓰기 vs 옮겨 치기)"]],
@@ -684,14 +676,15 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
   head(5.85, 2.7, "예상 기술 문제 → 해결");
   const probs = [
     ["AI 답을 완전히 다른 말로 바꾸면 못 찾는다", "몇 단어 고친 문장은 지금도 찾음 · 완전히 바꾼 건 \"출처 기록 없음\""],
+    ["한글(HWP) 문서는 아직 못 읽는다", "새 한글 형식(hwpx) 읽기 추가 · 그전엔 Word · PDF로"],
     ["ChatGPT 앱 등이 바뀌면 대화를 못 읽는다", "새 버전마다 자동 시험 · 앱 안에서 바로 업데이트"],
     ["타이핑 패턴 연구는 영어 · 실험실 기준이다", "한글로 직접 쓰기 vs 옮겨 치기를 직접 시험"],
   ];
   probs.forEach(([p, f], i) => {
-    const y = 3.03 + i * 0.8;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.85, y, w: 3.65, h: 0.66, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
-    T(s, p, { x: 5.97, y: y + 0.08, w: 3.45, h: 0.26, fontSize: 10.5, bold: true, valign: "middle" });
-    T(s, "→ " + f, { x: 5.97, y: y + 0.36, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
+    const y = 3.03 + i * 0.6;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.85, y, w: 3.65, h: 0.54, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
+    T(s, p, { x: 5.97, y: y + 0.05, w: 3.45, h: 0.24, fontSize: 10.5, bold: true, valign: "middle" });
+    T(s, "→ " + f, { x: 5.97, y: y + 0.28, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
   });
   s.addNotes([
     "마지막으로 개발 계획입니다. 지금 버전 0.1.17로 윈도우와 맥 모두 다듬기까지 돌아갑니다. 발표 후 2주 동안 저는 고쳐 쓰는 법 안내와 가짜 참고문헌 확인을, 상진이는 기록을 꺼 둔 동안 바뀐 글 표시와 타이핑 패턴을 만듭니다. 12 ~ 13주에 실제로 써 보며 고치고, 14주에 최종 버전을 냅니다.",
@@ -699,8 +692,9 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     "",
     "그림 풀이 (물으면)",
     "· 다듬기 안내 = [인용 달기] · [다듬기] 버튼 옆에 따옴표 · 출처 다는 법, 바꿔 쓰기 세 단계를 띄움 (6장)",
-    "· 참고문헌 확인 (Crossref) = 보고서 참고문헌 목록만 Crossref에 조회해 실제 있는 문헌인지 확인. 학생 본문은 안 나감",
+    "· Crossref API 연동 · 참고문헌 확인 = Crossref(논문 DOI를 관리하는 비영리 기관)의 무료 공개 API에 과제 참고문헌 목록만 조회해 실제 있는 문헌인지 확인. 학생 본문은 안 나감",
     "· 고친 문장 수 = 제출 전에 학생이 다듬거나 인용을 단 문장 수 → 교수 내역서에 숫자로",
+    "· 한글(HWP)? → 설문 34명 중 13명이 한글 사용. 지금은 Word · PDF만 읽음. 12 ~ 13주에 새 한글 형식(hwpx) 읽기 추가 — 함께: 맥은 김용현, 윈도우는 박상진. 그전엔 PDF로 내보내면 출처 보기는 되지만, 한글에서 직접 쓰는 과정(문서 변화) 기록은 Word에서만 됨.",
     "· 수업 전 보완 = 윈도우 설치 오류 · 서버 주소 주인 확인 · 해외 서버 동의 문구",
     "· 단어만 바꾼 문장 알림 (Kiwi) = 한국어 형태소 분석으로 어순 · 조사만 바뀐 문장을 '단어만 바뀜'으로 알려 줌",
     "· AI 답 연결 정확도 = 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 등을 고침",
@@ -713,6 +707,32 @@ const FIGMA_URL = "";   // 상진에게 받으면 넣기 (보기 권한 공개 �
     "· 타이핑 패턴? → \"4분 동안 2초 넘게 멈춘 적 없음 · 고친 횟수 0 · 한 번에 1,100자\" 같은 사실만 보여 줌. 판정하지 않음.",
     "· AI 답 연결 정확도? → 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 — 붙여넣은 시각보다 뒤에 나온 답에는 잇지 않게.",
   ].join("\n"));
+}
+
+// ───────── 마무리 — 직접 확인 (QR) ─────────
+{
+  const s = pres.addSlide();
+  s.background = { color: INK };
+  s.addImage({ path: IMG + "app-icon.png", x: 0.6, y: 0.75, w: 0.62, h: 0.62 });
+  T(s, "직접 확인해 보세요", { x: 1.38, y: 0.72, w: 6, h: 0.68, fontSize: 30, bold: true, color: "FFFFFF", valign: "middle" });
+  T(s, "Trace는 지금 v0.1.17로 윈도우 · 맥에서 돌아갑니다", { x: 0.6, y: 1.5, w: 8, h: 0.3, fontSize: 13, color: "C9C8C3" });
+  const qrs = [
+    ["qr-demo.png", "교수 화면 데모", "설치 없이 바로 — 예시 내역서", "https://trace-server-8aa0.onrender.com/s/demo"],
+    ["qr-download.png", "앱 내려받기", "윈도우 · 맥(Apple 칩) — 크롬 확장도", "https://trace-server-8aa0.onrender.com/download"],
+  ];
+  // QR 두 장 — 왼쪽 QR · 오른쪽 설명 (피그마 링크는 10장에만)
+  qrs.forEach(([f, h, d, u], i) => {
+    const x = 0.6 + i * 4.5, y = 2.2, w = 4.3, hh = 2.5;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w, h: hh, rectRadius: 0.1, fill: { color: "FFFFFF" }, line: { color: "FFFFFF" } });
+    s.addImage({ path: IMG + f, x: x + 0.25, y: y + 0.3, w: 1.9, h: 1.9 });
+    T(s, h, { x: x + 2.35, y: y + 0.45, w: 1.8, h: 0.34, fontSize: 17, bold: true });
+    T(s, d.replace(" — ", "\n"), { x: x + 2.35, y: y + 0.85, w: 1.85, h: 0.6, fontSize: 10.5, color: MUTED, valign: "top" });
+    T(s, [{ text: u.replace("https://", "").replace(".onrender.com", ".onrender.com\n"), options: { hyperlink: { url: u, tooltip: h } } }],
+      { x: x + 2.35, y: y + 1.65, w: 1.85, h: 0.5, fontSize: 8.5, color: ACCENT, valign: "top" });
+  });
+  T(s, "첫 접속은 서버가 깨어나느라 30초쯤 걸릴 수 있어요", { x: 0.6, y: 4.82, w: 8.8, h: 0.24, fontSize: 9.5, color: "9B9A95" });
+  T(s, "창의프로젝트1 · 1조 · 김용현 · 박상진", { x: 0.6, y: 5.25, w: 6, h: 0.24, fontSize: 10, color: "9B9A95" });
+  s.addNotes("감사합니다. 교수 화면 데모는 설치 없이 QR로 바로 보실 수 있습니다. 질문 받겠습니다. (약 5초 · 발표 전에 데모 링크를 한 번 열어 서버를 깨워 두기)");
 }
 
 // ───────── 맨 뒤 · 자료 출처 (두 장) ─────────
