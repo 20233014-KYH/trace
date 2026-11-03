@@ -1,7 +1,7 @@
 // 중간발표 전체 (1 ~ 11장 · 자료 출처) — 4 ~ 8장은 박상진 부탁으로 김용현이 만듦 (11/3)
 const pptxgen = require("pptxgenjs");
 const fs = require("fs"), path = require("path");
-const FIGMA_URL = "https://www.figma.com/design/7vUUX1TAiLuxEVJnePvymH/Trace-%EC%A4%91%EA%B0%84%EC%A0%90%EA%B2%80-%E2%80%94-%ED%99%94%EB%A9%B4-%C2%B7-%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85?node-id=0-1";   // 피그마 프로토타입 (박상진 11/3 · 보기 권한 공개) · 10장
+const FIGMA_URL = "https://www.figma.com/proto/7vUUX1TAiLuxEVJnePvymH/Trace-%EC%A4%91%EA%B0%84%EC%A0%90%EA%B2%80-%E2%80%94-%ED%99%94%EB%A9%B4-%C2%B7-%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85";   // 피그마 프로토타입 재생 링크 (박상진 11/3 · 보기 권한 공개 · 열면 바로 ▶) · 10장
 const FIGMA_LABEL = "figma.com · Trace 중간점검 — 화면 · 프로토타입";   // 화면에 보이는 글 (주소가 길어서) · 누르면 FIGMA_URL
 const IMG = (fs.existsSync(path.join(__dirname, "img")) ? path.join(__dirname, "img") : "/Users/yonghyeonkim/dev/trace/deck/img") + "/";
 const out = process.argv[2];
