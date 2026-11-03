@@ -631,7 +631,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   const steps = [
     ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "제출 전 다듬기까지 동작"]]],
     ["발표 뒤 2주", [[YH, "다듬기 안내 · 고친 문장 수"], [YH, "참고문헌 확인 (Crossref)"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
-    ["12 ~ 13주", [[YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
+    ["12 ~ 13주", [[BOTH, "한글(hwpx) 문서 읽기"], [YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
     ["14주", [[BOTH, "최종 버전 배포"]]],
   ];
   const sw = 2.2, sg = 0.067;
@@ -676,14 +676,15 @@ const card = (slide, x, y, w, h, fill, name) =>
   head(5.85, 2.7, "예상 기술 문제 → 해결");
   const probs = [
     ["AI 답을 완전히 다른 말로 바꾸면 못 찾는다", "몇 단어 고친 문장은 지금도 찾음 · 완전히 바꾼 건 \"출처 기록 없음\""],
+    ["한글(HWP) 문서는 아직 못 읽는다", "새 한글 형식(hwpx) 읽기 추가 · 그전엔 Word · PDF로"],
     ["ChatGPT 앱 등이 바뀌면 대화를 못 읽는다", "새 버전마다 자동 시험 · 앱 안에서 바로 업데이트"],
     ["타이핑 패턴 연구는 영어 · 실험실 기준이다", "한글로 직접 쓰기 vs 옮겨 치기를 직접 시험"],
   ];
   probs.forEach(([p, f], i) => {
-    const y = 3.03 + i * 0.8;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.85, y, w: 3.65, h: 0.66, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
-    T(s, p, { x: 5.97, y: y + 0.08, w: 3.45, h: 0.26, fontSize: 10.5, bold: true, valign: "middle" });
-    T(s, "→ " + f, { x: 5.97, y: y + 0.36, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
+    const y = 3.03 + i * 0.6;
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.85, y, w: 3.65, h: 0.54, rectRadius: 0.05, fill: { color: "FFFFFF" }, line: { color: LINE, width: 1 } });
+    T(s, p, { x: 5.97, y: y + 0.05, w: 3.45, h: 0.24, fontSize: 10.5, bold: true, valign: "middle" });
+    T(s, "→ " + f, { x: 5.97, y: y + 0.28, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
   });
   s.addNotes([
     "마지막으로 개발 계획입니다. 지금 버전 0.1.17로 윈도우와 맥 모두 다듬기까지 돌아갑니다. 발표 후 2주 동안 저는 고쳐 쓰는 법 안내와 가짜 참고문헌 확인을, 상진이는 기록을 꺼 둔 동안 바뀐 글 표시와 타이핑 패턴을 만듭니다. 12 ~ 13주에 실제로 써 보며 고치고, 14주에 최종 버전을 냅니다.",
@@ -693,6 +694,7 @@ const card = (slide, x, y, w, h, fill, name) =>
     "· 다듬기 안내 = [인용 달기] · [다듬기] 버튼 옆에 따옴표 · 출처 다는 법, 바꿔 쓰기 세 단계를 띄움 (6장)",
     "· 참고문헌 확인 (Crossref) = 보고서 참고문헌 목록만 Crossref에 조회해 실제 있는 문헌인지 확인. 학생 본문은 안 나감",
     "· 고친 문장 수 = 제출 전에 학생이 다듬거나 인용을 단 문장 수 → 교수 내역서에 숫자로",
+    "· 한글(HWP)? → 설문 34명 중 13명이 한글 사용. 지금은 Word · PDF만 읽음. 12 ~ 13주에 새 한글 형식(hwpx) 읽기 추가. 그전엔 PDF로 내보내면 출처 보기는 되지만, 한글에서 직접 쓰는 과정(문서 변화) 기록은 Word에서만 됨.",
     "· 수업 전 보완 = 윈도우 설치 오류 · 서버 주소 주인 확인 · 해외 서버 동의 문구",
     "· 단어만 바꾼 문장 알림 (Kiwi) = 한국어 형태소 분석으로 어순 · 조사만 바뀐 문장을 '단어만 바뀜'으로 알려 줌",
     "· AI 답 연결 정확도 = 나중에 물어본 답에 글자가 겹쳐 잘못 이어지는 경우 등을 고침",
