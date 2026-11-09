@@ -632,8 +632,8 @@ const card = (slide, x, y, w, h, fill, name) =>
   T(s, [{ text: "●", options: { color: YH } }, { text: " 김용현   ", options: { color: MUTED } }, { text: "●", options: { color: SJ } }, { text: " 박상진   ", options: { color: MUTED } }, { text: "●", options: { color: BOTH } }, { text: " 함께", options: { color: MUTED } }],
     { x: 6.9, y: 0.94, w: 2.6, h: 0.24, fontSize: 9.5, align: "right" });
   const steps = [
-    ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "제출 전 다듬기까지 동작"]]],
-    ["발표 뒤 2주", [[YH, "다듬기 안내 · 고친 문장 수"], [YH, "AI 답에서 온 참고문헌 알림"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
+    ["지금 · v0.1.17", [[BOTH, "윈도우 · 맥 모두"], [BOTH, "제출 전 다듬기까지 동작"], [SJ, "다듬기 안내 카드 (구현 · 다음 버전)"]]],
+    ["발표 뒤 2주", [[YH, "내기 직전 공개 점검 · 고친 문장 수"], [YH, "AI 답에서 온 참고문헌 알림"], [YH, "수업 전 보완 (설치 · 보안)"], [SJ, "꺼진 동안 바뀐 글 · 타이핑 패턴"]]],
     ["12 ~ 13주", [[BOTH, "한글(hwpx) 문서 읽기"], [YH, "단어만 바꾼 문장 알림 (Kiwi)"], [BOTH, "테스트 중 나온 오류 고치기"], [BOTH, "AI 답 연결 정확도 높이기"]]],
     ["14주", [[BOTH, "최종 버전 배포"]]],
   ];
@@ -655,7 +655,7 @@ const card = (slide, x, y, w, h, fill, name) =>
   const people = [
     ["김용현", YH, "서버 · 교수용 내역서 · 다듬기",
       ["Flask 서버 · 구글/카카오 로그인", "조작 확인 · 내역서 PDF · 교수 링크", "맥 버전 (다듬기 · ChatGPT 앱) · 배포"],
-      ["다듬기 안내 · 참고문헌 알림", "고친 문장 수 · 수업 전 보완", "한글(hwpx) 읽기 — 맥"]],
+      ["내기 직전 공개 점검 · 참고문헌 알림", "고친 문장 수 · 수업 전 보완", "한글(hwpx) 읽기 — 맥"]],
     ["박상진", SJ, "화면 · 기록기 · 출처 잇기",
       ["기록기 · 크롬 확장 (Word · AI 앱 · 웹)", "출처 잇기: 문장 ↔ AI 답 연결", "학생 앱 화면 전부 · 제출 전 다듬기"],
       ["기록 밖 변경을 출처 보기 · 내역서에", "타이핑 패턴 (직접 쓰기 vs 옮겨 치기)", "한글(hwpx) 읽기 — 윈도우"]],
@@ -690,11 +690,12 @@ const card = (slide, x, y, w, h, fill, name) =>
     T(s, "→ " + f, { x: 5.97, y: y + 0.28, w: 3.45, h: 0.22, fontSize: 9.5, color: ACCENT, valign: "middle" });
   });
   s.addNotes([
-    "마지막으로 개발 계획입니다. 지금 버전 0.1.17로 윈도우와 맥 모두 다듬기까지 돌아갑니다. 발표 후 2주 동안 저는 고쳐 쓰는 법 안내와 AI 답에서 온 참고문헌 알림을, 상진이는 기록을 꺼 둔 동안 바뀐 글 표시와 타이핑 패턴을 만듭니다. 12 ~ 13주에 실제로 써 보며 고치고, 14주에 최종 버전을 냅니다.",
+    "마지막으로 개발 계획입니다. 지금 버전 0.1.17로 윈도우와 맥 모두 다듬기까지 돌아가고, 사실 · 이유 · 고치는 법을 알려 주는 다듬기 안내 카드도 이미 만들어 다음 버전에 들어갑니다. 발표 후 2주 동안 저는 내기 직전 공개 점검과 AI 답에서 온 참고문헌 알림을, 상진이는 기록을 꺼 둔 동안 바뀐 글 표시와 타이핑 패턴을 만듭니다. 12 ~ 13주에 실제로 써 보며 고치고, 14주에 최종 버전을 냅니다.",
     "역할은 제가 서버와 교수용 내역서, 맥 버전을, 상진이가 화면과 기록기, 출처 잇기와 제출 전 다듬기를 맡았습니다. 예상 문제 중 가장 큰 건 AI 답을 완전히 다른 말로 바꿔 쓰면 못 찾는 건데, 베꼈다고 단정하지 않고 '출처 기록 없음'으로 둡니다. (약 35초)",
     "",
     "그림 풀이 (물으면)",
-    "· 다듬기 안내 = [인용 달기] · [다듬기] 버튼 옆에 따옴표 · 출처 다는 법, 바꿔 쓰기 세 단계를 띄움 (6장)",
+    "· 다듬기 안내 카드 = 짚인 문장마다 사실(어디서 왔나) · 이유(근거) · 고치는 법(바꿔 쓰기 세 단계 · 인용 형식) + 근거 줄. 고친 문장은 주지 않음 (6장). 박상진 구현 (#113) · 다음 버전에 배포",
+    "· 내기 직전 공개 점검 = 내역서 만들기 직전, 확인 안 한 AI 연결 · 가려서 빠진 연결 · 비어 있는 설명 칸을 한 줄씩 알려 줌. 막지 않음 ([이대로 내기])",
     "· 참고문헌 알림 = 참고문헌 줄이 AI 답에서 왔으면 'AI 답에서 온 참고문헌이에요, 직접 확인해 보세요'로 알려 줌. 진짜인지 판단하지 않음 (Crossref · KCI 조회는 검토 후 뺌 · 11/7)",
     "· 고친 문장 수 = 제출 전에 학생이 다듬거나 인용을 단 문장 수 → 교수 내역서에 숫자로",
     "· 한글(HWP)? → 설문 34명 중 13명이 한글 사용. 지금은 Word · PDF만 읽음. 12 ~ 13주에 새 한글 형식(hwpx) 읽기 추가 — 함께: 맥은 김용현, 윈도우는 박상진. 그전엔 PDF로 내보내면 출처 보기는 되지만, 한글에서 직접 쓰는 과정(문서 변화) 기록은 Word에서만 됨.",
@@ -755,11 +756,10 @@ const card = (slide, x, y, w, h, fill, name) =>
     ["6장", "Barrón-Cedeño 외, 「Plagiarism Meets Paraphrasing」 (CL 2013)", "https://aclanthology.org/J13-4005/"],
     ["6장", "이민철, 「Kiwi: 한국어 형태소 분석기 구현」 (한국디지털인문학회 2024)", "https://accesson.kr/kjdh/v.1/1/109/43508?lang=ko"],
     ["6장", "Walters · Wilder, ChatGPT 인용의 날조와 오류 (Scientific Reports 2023)", "https://doi.org/10.1038/s41598-023-41032-5"],
-    ["6장", "Crossref REST API 문서 (query.bibliographic 로 참고문헌 찾기)", "https://www.crossref.org/documentation/retrieve-metadata/rest-api/"],
     ["6장", "Dee · Jacob, 「Rational Ignorance in Education」 (J. Human Resources 2012)", "https://www.nber.org/papers/w15672"],
     ["6장", "Graham 외, 「Informing Writing」 (Carnegie 2011)", "https://carnegie.org/publication/informing-writing-the-benefits-of-formative-assessment/"],
-    ["10 ~ 12장", "Trace 코드 · DB 구조 · 릴리스 v0.1.17 (2026.11.2)", "https://github.com/20233014-KYH/trace"],
-    ["12장", "Crossley 외, 직접 쓴 글과 옮겨 친 글의 키 입력 구분 (EDM 2024)", "https://www.educationaldatamining.org/EDM2024/proceedings/2024.EDM-short-papers.47/2024.EDM-short-papers.47.pdf"],
+    ["11 ~ 13장", "Trace 코드 · DB 구조 · 릴리스 v0.1.17 (2026.11.2)", "https://github.com/20233014-KYH/trace"],
+    ["13장", "Crossley 외, 직접 쓴 글과 옮겨 친 글의 키 입력 구분 (EDM 2024)", "https://www.educationaldatamining.org/EDM2024/proceedings/2024.EDM-short-papers.47/2024.EDM-short-papers.47.pdf"],
   ];
   // 한 장 · 두 단 (발표하지 않는 장 — 글씨 작게)
   const s = pres.addSlide({ masterName: "TITLE_ONLY" });
