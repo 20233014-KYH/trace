@@ -495,6 +495,7 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
     # 붙여넣은 글이 어느 AI 답의 몇 번째 문장인지 — 붙여넣은 글도 같은 규칙으로 잇는다
     pasted_at, 붙인답, 그대로답 = {}, {}, {}     # 붙인답: 붙여넣기(id) → 그 글이 이어진 AI 답 id 들 · 그대로답: 그중 거의 그대로(exact)
+    그대로양 = {}                               # 붙여넣기(id) → {답 id: 그대로 이어진 글자 수} — 그 붙여넣기의 진짜 출처 답을 가리려고 (11/16)
     답_id = {c["answer"] for c in cands}
     for p in pasted or []:
         된다 = {i for i in 답_id if 앞서(i, p)}               # 붙여넣기보다 늦게 물어본 답은 빼고 — 답마다 한 번만 셈
@@ -504,20 +505,34 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
             if hit["label"] != "none":
                 붙인답.setdefault(id(p), set()).add(hit["answer"])
                 if hit["label"] == "exact":
-                    그대로답.setdefault(id(p), set()).add(hit["answer"])
+                    양 = 그대로양.setdefault(id(p), {})
+                    양[hit["answer"]] = 양.get(hit["answer"], 0) + len(norm(s))
                 for i in hit["sents"]:
                     pasted_at.setdefault((hit["answer"], i), p)
+    # 그 붙여넣기의 출처 답 = 붙여넣은 글의 꽤 많은 부분(그대로 이어진 글자의 20% 이상)이 들어 있는 답만.
+    # 한두 줄만 우연히 같은 답은 출처가 아니다 (11/16 실제 시험: ChatGPT 앱 답을 복사할 때 딸려 온 "8" 한 줄이 다른 대화의
+    # 답에도 있어서 그 답이 출처로 잡혔고, 같이 딸려 온 영어 카드 제목들이 그 답에 "고침" 으로 이어져 출처가 엉뚱하게 나옴)
+    for pid, 양 in 그대로양.items():
+        합 = sum(양.values())
+        그대로답[pid] = {a for a, n in 양.items() if n * 5 >= 합}
+    출처답 = set().union(*그대로답.values()) if 그대로답 else set()
     # 문장을 담은 붙여넣기 찾기용 (AI 답 붙여넣기 · 다른 곳 붙여넣기 모두) — 붙여넣은 시각 순
     붙여넣기들 = sorted([(p, True) for p in pasted or []] + [(p, False) for p in others or []], key=lambda x: x[0].get("pasted_at") or "")
     붙후보 = candidates([{"id": k, "text": p["text"]} for k, (p, _) in enumerate(붙여넣기들)])   # 한 색인 · answer = 붙여넣기 번호
+    붙글 = [norm(p["text"]) for p, _ in 붙여넣기들]
 
     def 처음_붙인(s, 그대로):
         """이 문장을 담은 가장 이른 붙여넣기 (p, AI 답 붙여넣기인가) — 문장이 문서에 처음 들어온 때.
         그대로=True 면 거의 그대로(90% 이상) 들어 있을 때만 (주제만 비슷한 글 · 날짜처럼 글자 조각만 겹치는 글로 바꾸지 않게)
         (10/14) 붙여넣기마다 link_sentence 를 따로 부르던 것을 한 번에 — 붙여넣기마다의 결론(그대로 · 고침)은 같다"""
         라벨 = _라벨들(s, 붙후보)
+        n = norm(s)
         for k, (p, ai) in enumerate(붙여넣기들):
             if 라벨.get(k) == "exact" or (라벨.get(k) == "edited" and not 그대로):
+                return p, ai
+            # 붙여넣은 글 안에 이 문장이 글자 그대로 들어 있음 — 붙여넣은 글에선 앞뒤 줄과 한 문장으로 붙어 있어 문장끼리 비교로는
+            # "거의 그대로" 가 안 나오는 경우 (11/16: AI 앱 답에 딸려 온 카드 제목 줄들)
+            if 라벨.get(k) == "edited" and len(n) >= MIN_CHARS and n in 붙글[k]:
                 return p, ai
         return None, None
     out = []
@@ -548,11 +563,13 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
             # AI 앱에서 복사해 그대로 붙인 글인데, 그 글이 지금 이은 답에 그대로 들어 있지 않음 → 그 답에서 복사한 게 아니다.
             # 원래 답이 기록에 없을 때(Trace 를 켜기 전 대화 · 화면을 못 읽음) 짧은 줄이 글자 조각만 겹치는 다른 답에 "고침" 으로
             # 이어졌다 (11/2 실제 시험: ChatGPT 앱 보고서 답의 "H₂ = 해시(H₁ || 데이터₂)" → "해시 테이블이 뭐야?" 답)
-            if pasted and r["label"] in ("edited", "viewed") and r["answer"] is not None:
+            # (11/16) 글자가 그대로 같아도("8" 같은 짧은 줄) 그 답이 어느 붙여넣기의 출처도 아니면 마찬가지 — 우연히 같은 줄
+            if pasted and r["answer"] is not None and (r["label"] in ("edited", "viewed") or (r["label"] == "exact" and r["answer"] not in 출처답)):
                 e, e_ai = 처음_붙인(s, True)
                 if e is not None and e_ai and r["answer"] not in 그대로답.get(id(e), ()):
+                    # alongside: 그 복사의 출처 답은 기록에 있음 — 이 줄만 답 본문에 없는 글 (답과 함께 복사된 카드 제목 등 · 11/16)
                     r.update(label="web", full=False, answer=None, sents=None, ai_text=e["text"],
-                             paste={**e, "source": e.get("domain") or "AI", "category": "ai"})
+                             paste={**e, "source": e.get("domain") or "AI", "category": "ai", "alongside": bool(그대로답.get(id(e)))})
             if wcands and r["paste"] is None:
                 w = link_sentence(s, wcands)
                 # AI 답과 거의 그대로(exact) 이어진 문장은 다른 곳 붙여넣기가 '고쳐 씀' 정도로만 닮았을 땐 안 바꾼다

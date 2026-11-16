@@ -45,6 +45,10 @@ def L(case, name):
 NO_PATH = "match_rec"      # 10/11 전 기록처럼 문서 위치(doc_path)가 없는 과제 — 학생이 골라야 함
 
 
+출처_견본 = [{"title": "HTTPS - 위키백과", "url": "https://ko.wikipedia.org/wiki/HTTPS"},
+             {"title": "", "url": "https://developer.mozilla.org/ko/docs/Web/HTTP/Overview"}]
+
+
 def 학생_PC(data):
     """시험마다 과제 하나 · 세션 하나. 기록기가 남겼을 파일 세 가지(events · context · ai-messages)를 만든다.
     문서 위치(doc_path): 기록에 남은 이름으로 data/문서/ 에 report.docx 를 복사해 두고 그 자리를 적는다 (NO_PATH 빼고)"""
@@ -66,7 +70,9 @@ def 학생_PC(data):
                     continue
                 ts = f"{start[:14]}{k * 2:02d}:{s:02d}{start[19:]}"
                 msg_all.append({"session_id": sid, "event_id": f"evt_9{k:02d}{role[0]}", "ts": ts, "tool": a.get("tool", ""),
-                                "model": a.get("model", ""), "turn": k * 2 + 1, "role": role, "hash": sha256_text(text), "text": text})
+                                "model": a.get("model", ""), "turn": k * 2 + 1, "role": role, "hash": sha256_text(text), "text": text,
+                                # AI 답에 달린 출처 링크 (11/16) — 첫 답은 둘 · 둘째 답은 밝히지 않음([]) · 그 뒤는 기록 없음(옛 확장 · 앱)
+                                **({"sources": 출처_견본 if k == 0 else []} if role == "answer" and case == "match_mix" and k < 2 else {})})
         ev_all += [{**e, "session_id": sid} for e in evs]
         ctx_all += [{**c, "session_id": sid} for c in L(case, "context")]
         이름 = next((e["file"] for e in evs if e.get("app") == "Word" and e.get("file")), None)
@@ -177,6 +183,18 @@ def main():
             검사("문장 ↔ 질문 서로 이어짐", 이어짐)
             txt = json.dumps(d, ensure_ascii=False)
             검사("점수·퍼센트 없음", not re.search(r"ratio|cover|score|\d+\s?%", txt))
+        print("\n  ━━ AI 가 밝힌 출처 (11/16 · 교수님 피드백)")
+        qs = c.post("/local/source", data={"work_id": "W-match_mix"}, headers=H, **HOST).json["questions"]
+        검사("AI 답에 달린 출처 링크가 질문마다 옴 · 안 밝힌 답은 [] · 기록 없는 답은 None",
+             [q.get("sources") for q in qs] == [출처_견본, [], None], str([q.get("sources") for q in qs]))
+        연 = []
+        ST.출처._기록["open_url"] = 연.append
+        J = lambda url, wid="W-match_mix": c.post("/local/source/link", json={"work_id": wid, "url": url}, headers=H, **HOST)
+        검사("출처 링크는 기본 브라우저로 엶", J(출처_견본[0]["url"]).status_code == 200 and 연 == [출처_견본[0]["url"]], str(연))
+        검사("기록에 없는 주소 · http 가 아닌 주소 · 다른 과제의 주소는 안 엶",
+             J("https://example.com/x").status_code == 404 and J("file:///C:/x").status_code == 400
+             and J(출처_견본[0]["url"], "W-match_web").status_code == 404 and len(연) == 1, str(연))
+        ST.출처._기록.pop("open_url")
         print(f"\n  {'─' * 70}\n  통과 {통과} · 실패 {실패}\n")
     finally:
         shutil.rmtree(data, ignore_errors=True)

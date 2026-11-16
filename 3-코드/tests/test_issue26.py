@@ -93,11 +93,39 @@ def test_partial_answer():
     c._on_ai_msg({"kind": "ai_answer", "text": part, "meta": meta})
     c._on_ai_msg({"kind": "ai_answer", "text": full, "meta": meta})
     c._on_ai_msg({"kind": "ai_answer", "text": "다시 생성한 전혀 다른 답입니다.", "meta": meta})
+    # 마우스로 복사(Ctrl+C 아님)한 직후 작업표시줄을 눌러도 복사한 곳은 방금 앞에 있던 창 (11/16 실제 시험)
+    창 = [("chrome.exe", "DLSS 설명 - Chrome")]
+    C.foreground = lambda: 창[0]
+    C.idle_seconds = lambda: 0
+    c.describe = lambda exe, title: {"app": exe, "title": title, "category": "ai" if exe == "chrome.exe" else "other"}
+    클립 = [None]
+    c._read_clip_hash = lambda: 클립[0]
+    c._desktop_excerpt = lambda app: None
+    c._tick()
+    창[0] = ("explorer.exe", ""); 클립[0] = "sha256:aaa"; c._tick()
+    클립[0] = "sha256:bbb"; c._prev_at -= 10; c._tick()                 # 한참 뒤 셸에서 생긴 복사는 그대로 셸
+    c._copy_win = None
+    # AI 답에 달린 출처 링크 (11/16) — 확장이 보낸 것 중 http(s) · 처음 본 주소만 · 질문엔 안 붙임
+    c._on_ai_msg({"kind": "ai_answer", "text": "출처가 달린 답입니다.", "meta": {"tool": "ChatGPT", "turn": 4, "sources": [
+        {"title": " 위키  백과 ", "url": "https://ko.wikipedia.org/wiki/DNS"}, {"title": "x", "url": "javascript:alert(1)"},
+        {"title": "또", "url": "https://ko.wikipedia.org/wiki/DNS"}, "엉뚱한 값", {"url": "http://example.com/a"}]}})
+    c._on_ai_msg({"kind": "ai_answer", "text": "출처를 안 밝힌 답입니다.", "meta": {"tool": "ChatGPT", "turn": 6, "sources": []}})
+    c._on_ai_msg({"kind": "ai_question", "text": "질문엔 출처가 없다", "meta": {"tool": "ChatGPT", "turn": 7, "sources": [{"url": "https://a.b"}]}})
     c.sink.close()
     recs = [json.loads(l) for f in os.listdir(cfg["data_dir"]) if f.startswith("ai-messages")
             for l in open(os.path.join(cfg["data_dir"], f), encoding="utf-8")]
-    check("④ 기록기: 완성본이 잘린 답을 대체한다고 남김 (replaces)", len(recs) == 3 and recs[1].get("replaces") == recs[0]["hash"])
+    check("④ 기록기: 완성본이 잘린 답을 대체한다고 남김 (replaces)", len(recs) == 6 and recs[1].get("replaces") == recs[0]["hash"])
     check("④ 기록기: 다시 생성한 다른 답은 대체가 아님", "replaces" not in recs[2])
+    check("⑤ 기록기: AI 답의 출처 링크를 PC 파일에 — http(s) · 같은 주소 한 번 · 이름 정리",
+          recs[3].get("sources") == [{"title": "위키 백과", "url": "https://ko.wikipedia.org/wiki/DNS"}, {"title": "", "url": "http://example.com/a"}], str(recs[3].get("sources")))
+    check("⑤ 기록기: 안 밝힌 답은 [] · 확장이 안 보낸 답(앱 · 옛 확장)과 질문엔 칸이 없음",
+          recs[4].get("sources") == [] and "sources" not in recs[0] and "sources" not in recs[5])
+    체인 = [json.loads(l) for f in os.listdir(cfg["data_dir"]) if f.startswith("events") for l in open(os.path.join(cfg["data_dir"], f), encoding="utf-8")]
+    check("⑤ 체인(서버로 가는 것)엔 출처 주소가 없음", not any("wikipedia" in json.dumps(e) for e in 체인))
+    recs = recs[:3]
+    복사 = [(e.get("app"), e.get("category")) for e in 체인 if e.get("type") == "copy"]
+    check("⑥ 기록기: 마우스 복사 직후 작업표시줄을 눌러도 복사한 곳 = 방금 앞 창 (3초 넘으면 그대로)",
+          복사 == [("chrome.exe", "ai"), ("explorer.exe", "other")], str(복사))
     kept = [r["text"] for r in M.latest_messages(recs)]
     check("④ 연결·내역서: 잘린 답은 빼고 완성본·다시 생성한 답만", kept == [full, "다시 생성한 전혀 다른 답입니다."], str([k[:10] for k in kept]))
     old = [{k: v for k, v in r.items() if k != "replaces"} for r in recs]          # replaces 가 없는 예전 기록

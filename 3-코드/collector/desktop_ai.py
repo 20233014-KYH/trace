@@ -39,6 +39,27 @@ SKIP_NAMES = {"제안된 작업", "Suggested actions"}
 ANSWER_CLS = ("standard-markdown", "font-claude-response")
 QUESTION_CLS = ("font-user-message",)
 
+# AI 답에 달린 출처 링크 (11/16 · 교수님 피드백) — 앱 화면(크로미움)의 링크는 역할 link · 주소는 Value 속성으로 읽힌다
+UIA_VALUE = 30045                                                        # UIA_ValueValuePropertyId
+UIA_HYPERLINK = 50005                                                    # UIA_HyperlinkControlTypeId
+SELF_HOSTS = re.compile(r"(^|\.)(chatgpt\.com|openai\.com|claude\.ai|anthropic\.com)$")
+
+
+def clean_source(name, url):
+    """링크 하나 → {title, url} | None. http(s) 만 · AI 앱 자기 주소 · 추적 꼬리(utm_*) 뺌 (확장 answerSources 와 같은 규칙)"""
+    from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+    try:
+        u = urlsplit(str(url or "").strip())
+    except ValueError:
+        return None
+    host = (u.hostname or "").lower()
+    if u.scheme not in ("http", "https") or not host or SELF_HOSTS.search(host) or host == "localhost" or host.startswith("127."):   # 이 PC 주소는 출처가 아님
+        return None
+    q = urlencode([(k, v) for k, v in parse_qsl(u.query, keep_blank_values=True) if not k.lower().startswith("utm_")])
+    title = " ".join(str(name or "").split())[:120]
+    return {"title": title or re.sub(r"^www\.", "", host), "url": urlunsplit((u.scheme, u.netloc, u.path, q, ""))[:500]}
+
+
 NEW_CHAT_SEC = 120                                                       # 새 채팅 화면을 본 뒤 이 안에 생긴 대화 = 새 대화
 
 
@@ -67,6 +88,7 @@ class DesktopAIWatcher(threading.Thread):
         self._convs = set()       # 한 번이라도 읽은 대화
         self._empty_at = 0.0      # 새 채팅 화면(메시지 없음)을 마지막으로 본 시각
         self._dumped = 0.0
+        self._src = {}            # key → 그 답에서 읽은 출처 링크 [{title, url}]
 
     def stop(self):
         self._stop.set()
@@ -117,6 +139,8 @@ class DesktopAIWatcher(threading.Thread):
             name = _get(el, "CurrentName")
             slot = name if re.search(r"\d", name) else i                   # "2개 메시지 중 2번째" · "메시지 42" 처럼 번호가 있으면 그걸로
             convs.setdefault(conv, []).append((f"{conv}|{slot}|{role}", role, text))
+            if role == "answer":
+                self._src[f"{conv}|{slot}|{role}"] = self._links                # 방금 _read 가 모은 이 답의 링크
         for conv, items in convs.items():
             self._send(exe, conv, items)
 
@@ -144,7 +168,9 @@ class DesktopAIWatcher(threading.Thread):
             self.emit_context([{"id": str(uuid.uuid4()), "ts": datetime.now(KST).isoformat(timespec="seconds"),
                                 "source": "desktop", "kind": kind, "text": text,
                                 "meta": {"tool": self.APPS[exe], "domain": exe, "conv": conv, "turn": n,
-                                         "history": key in self._history}}])
+                                         "history": key in self._history,
+                                         # 링크를 읽었을 때만 붙인다 — 앱은 링크가 안 읽힐 수도 있어서 "없음"을 "밝히지 않음"으로 단정하지 않는다
+                                         **({"sources": self._src[key]} if kind == "ai_answer" and self._src.get(key) else {})}}])
 
     # ── 메시지 찾기 · 읽기 ──
     def _up(self, el, test, up=14):
@@ -205,11 +231,25 @@ class DesktopAIWatcher(threading.Thread):
     def _read(self, el, hint):
         """(role, 본문) — article 을 따라 내려가며 글자만. 화면낭독 제목으로 질문/답을 가리고, 버튼·시각·진행 표시는 뺀다"""
         parts, heads = [], []
+        links, seen = [], set()
+        self._links = links
+
+        def link(c, name):
+            try:
+                url = c.GetCurrentPropertyValue(UIA_VALUE)
+            except Exception:
+                return
+            s = clean_source(name, url) if isinstance(url, str) else None
+            if s and s["url"] not in seen and len(links) < 20:
+                seen.add(s["url"])
+                links.append(s)
 
         def walk(e, depth=0):
             c = self.W.GetFirstChildElement(e)
             while c:
                 role, cls, name = _get(c, "CurrentAriaRole"), _get(c, "CurrentClassName").split(), _get(c, "CurrentName")
+                if role == "link" or _get(c, "CurrentControlType", 0) == UIA_HYPERLINK:
+                    link(c, name)               # 출처 링크 — 글자는 아래에서 그대로 읽는다
                 if "sr-only" in cls:
                     if role == "heading":
                         heads.append(name)

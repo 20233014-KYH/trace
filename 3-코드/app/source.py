@@ -22,6 +22,7 @@ import os
 import re
 import threading
 import time
+import webbrowser
 from datetime import datetime
 
 from flask import Blueprint, abort, jsonify, request, send_from_directory
@@ -176,6 +177,20 @@ def open_recorded():
     if not _열기(wid, name):
         return jsonify(error="moved", message=f'"{name}" 이 기록된 자리에 없습니다. 옮겼거나 지웠으면 직접 골라 주세요'), 410
     return _분석(wid)
+
+
+@bp.post("/local/source/link")
+def open_link():
+    """{work_id, url} → AI 답에 달려 있던 출처 링크를 기본 브라우저로 연다 (11/16).
+    앱 창 안에서 열면 Trace 화면이 그 사이트로 바뀌어 버린다. 이 과제 기록에 있는 출처 주소만 연다 — 화면이 준 아무 주소나 열지 않는다"""
+    b = request.get_json(force=True, silent=True) or {}
+    url, rec = str(b.get("url") or ""), 과제_기록(str(b.get("work_id") or ""))
+    if not rec or not url.lower().startswith(("http://", "https://")):
+        return jsonify(error="bad_request", message="열 수 없는 주소예요"), 400
+    if not any(s.get("url") == url for m in rec[0] for s in (m.get("sources") or [])):
+        return jsonify(error="not_found", message="이 과제 기록에 없는 주소예요"), 404
+    _기록.get("open_url", webbrowser.open)(url)
+    return jsonify(ok=True)
 
 
 def _열기(wid, name):
@@ -365,6 +380,8 @@ def _build(paras, msgs, events, context):
             p = s.get("paste")
             if p:
                 x["paste"] = {k: p.get(k, "") for k in ("copied_at", "pasted_at", "where", "domain", "source", "category")}
+                if p.get("alongside"):
+                    x["paste"]["alongside"] = True          # AI 답과 함께 복사된 글 (그 답은 기록에 있음 · 11/16)
             if s["label"] == "web":
                 x["ai_text"] = s.get("ai_text")                    # 붙여넣은 글 원문 (다른 곳)
             if s["label"] == "noproc":
@@ -392,6 +409,8 @@ def _build(paras, msgs, events, context):
             "uses": [x["k"] for x in 쓰임],
             "groups": {g: sum(1 for x in 쓰임 if x["group"] == g) for g in ("copy", "edited", "viewed")},
             "paras": sorted({x["p"] + 1 for x in 쓰임}),
+            # AI 가 이 답에 단 출처 링크 (11/16 교수님 피드백) — 확장이 기록한 것만 · None = 기록 없음(앱 답 · 옛 기록), [] = 밝히지 않음
+            "sources": main.get("sources") if main else None,
             # 교수 링크 출처 보기(김용현 · 10/12): 이 질문·답이 체인의 어느 기록인지 — 서버가 원문을 해시로 맞춰 본다
             "refs": {k: {"session_id": r["session_id"], "event_id": r["event_id"], "hash": r.get("hash", "")}
                      for k, r in (("q", q), ("a", main)) if r and r.get("event_id")},
