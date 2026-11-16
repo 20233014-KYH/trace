@@ -69,6 +69,16 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 .empty{max-width:440px;margin:auto;text-align:center;color:var(--muted);font-size:14px}
 .empty h3{color:var(--ink);font-size:17px;margin:0 0 6px}
 .empty .next{display:inline-flex;padding:0 18px;margin-top:16px}
+/* 내기 전에 확인할 것 (14번 문서 B1 ~ B4 · 피그마 F-5a · 11/16) — 막지 않음 · 버튼은 고칠 곳으로 데려갈 뿐 */
+.pre{margin:14px 0 6px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--bg)}
+.pre .ph{display:flex;align-items:baseline;gap:8px}.pre .ph b{font-size:15px;font-weight:700}
+.pre .ph span{margin-left:auto;font-size:12px;color:var(--muted)}
+.pre ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.pre li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.6;color:var(--ink2)}
+.pre li::before{content:"";width:5px;height:5px;border-radius:50%;background:#a1a1aa;flex:none;margin-top:9px}
+.pre li p{flex:1;margin:0}
+.pre li .btn{flex:none;align-self:center}
+.pre .why{margin-top:10px;font-size:12px;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -184,9 +194,33 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   function row(title, sub, sw_) { const r = el("div", "row"); const t = el("div", "rt"); t.append(el("b", null, title), el("small", null, sub)); r.append(t, sw_); return r; }
   const until = days => { const d = new Date(Date.now() + days * 864e5); return `${d.getMonth() + 1}/${d.getDate()} 까지`; };
 
+  // ── 내기 전에 확인할 것 (B1 ~ B4) — 설명 칸은 치는 대로 다시 본다 ──
+  function 점검() {
+    const p = D.pre || {}, dr = D.draft, 빈 = !(dr.explain_use || "").trim();
+    const out = [];
+    if (p.unsure) out.push([`AI 답과 이어진 문장 ${p.unsure}개가 아직 확인 전이에요. 확인하지 않으면 그 대화는 내역서에서 빠져요.`, "확인하러 가기",
+      () => { location.href = "/confirm?work=" + encodeURIComponent(wid); }]);
+    if (p.dropped) out.push([`답을 가려서 문장 ${p.dropped}개의 출처 연결이 내역서에서 빠져요. 개인 정보만 가리고 답은 남길 수도 있어요.`, "가리기 다시 보기",
+      () => { open = 3; render(); $("secs").querySelector(".sec.open")?.scrollIntoView({ block: "start", behavior: "smooth" }); }]);
+    const 쓰기 = () => { open = 1; render(); const t = $("t-explain_use"); if (t) { t.scrollIntoView({ block: "center", behavior: "smooth" }); t.focus(); } };
+    if (p.noproc && 빈) out.push([`쓴 과정 기록이 없는 글이 ${p.noproc}문장 있어요 (예: 다른 컴퓨터에서 쓴 글). 설명 칸에 어디서 썼는지 한 줄 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
+    if (p.ai && 빈) out.push(["AI를 쓴 기록이 있는데 설명 칸이 비어 있어요. 어디에 어떻게 썼는지 한두 줄 적어 보세요.", "설명 쓰기", 쓰기]);
+    return out;
+  }
+  function 점검칸() {
+    const 할것 = 점검(), x = el("div", "pre"); x.id = "pre"; x.hidden = !할것.length;
+    const h = el("div", "ph"); h.append(el("b", null, `내기 전에 확인할 것 ${할것.length}`), el("span", null, "막지 않아요 · 그대로 내려받아도 돼요"));
+    const ul = el("ul");
+    할것.forEach(([말, 버튼, 할일]) => { const li = el("li"), b = el("button", "btn", 버튼); b.type = "button"; b.onclick = 할일; li.append(el("p", null, 말), b); ul.append(li); });
+    x.append(h, ul, el("div", "why", "설문: 학생 59%가 \"어디까지 밝혀야 할지 모르겠다\" — 빠진 곳만 알려 줘요"));
+    return x;
+  }
+  function 점검_다시() { const o = $("pre"); if (o) o.replaceWith(점검칸()); }
+
   function render() {
     const c = D.counts, dr = D.draft;
     const box = $("secs"); box.textContent = "";
+    box.append(점검칸());
     const len = s => (s || "").trim().length;
     const s1 = [len(dr.explain_use) ? `1번 ${len(dr.explain_use)}자` : "1번 비어 있음", len(dr.explain_check) ? `2번 ${len(dr.explain_check)}자` : "2번 비어 있음"];
     box.append(sec(1, "학생 설명 · 질문 흐름", s1.join(" · ") + ` · 대표 질문 ${D.flow.filter(q => q.picked).length}개`, b => {
@@ -197,6 +231,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
         const cnt = el("div", "cnt", `${len(ta.value)} / ${MAX}`);
         ta.oninput = () => {
           dr[k] = ta.value; cnt.textContent = `${len(ta.value)} / ${MAX}`; cnt.classList.toggle("over", len(ta.value) > MAX);
+          점검_다시();
           if (len(ta.value) > MAX) return;
           pend[k] = ta.value; clearTimeout(saveT); saveT = setTimeout(flush, 250);   // 잠깐 멈추면 저장 → PDF 다시 (깜빡임 없이 바꿔 끼움)
         };

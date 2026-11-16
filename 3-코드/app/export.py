@@ -10,6 +10,7 @@ export.py — 학생 PC 의 "내역서 내보내기" 화면 (캔버스 7 · 10/1
   ③ 가리기 — 보낼 질문·답에서 전화번호 · 이메일 · 주민번호 · 카드번호 · API 키 모양을 **규칙으로** 찾는다 (AI 안 씀)
              찾기만 하고 정하는 건 학생. 질문은 기본 가림 · 답을 가리면 그 연결은 내역서에서 빠짐 (기본 안 가림)
   ④ 링크 기간 — 7 · 14 · 30일
+맨 위 = 내기 전에 확인할 것 (14번 문서 B1 ~ B4 · 11/16 · 피그마 F-5a) — 빠진 곳만 알려 주고 막지는 않는다
 [PDF 내려받기] = 서버에 내역서를 만들고(POST /works/<id>/statements) 링크를 받아(POST /statements/<id>/share) PDF 를 연다.
 
 서버로 가는 것 (statement.py /local/statement 와 같은 원칙):
@@ -113,6 +114,9 @@ def export():
                 "auto": sum(1 for l in r["confirmed"] if l["origin"] == "auto"),
                 "questions": sum(1 for m in 보냄 if m["role"] == "question"),
                 "hidden": len(가림), "masked": len(일부), "dropped": sum(1 for l in r["confirmed"] if l["answer_id"] in 가림)},
+        # 내기 직전 점검 B1 ~ B4 (14번 문서 · 11/16) 의 재료 — 숫자만. 설명 칸이 비었는지는 화면이 치는 대로 본다
+        pre={"unsure": r["unsure"], "dropped": sum(1 for l in r["confirmed"] if l["answer_id"] in 가림),
+             "noproc": r["noproc"], "ai": bool(r["all_msgs"])},
         made=(초안.get("made") or {}).get("url") and {k: 초안["made"][k] for k in ("url", "pdf_url", "expires_at", "at")} or None)
 
 
@@ -290,7 +294,7 @@ def _모으기(wid):
               "other": 종류.count("web") + 종류.count("noproc"), "edited": 종류.count("edited"),
               "viewed": 종류.count("viewed"), "none": 종류.count("none")}
     r = {"file": name, "title": d["title"], "confirmed": confirmed, "rejected": rejected, "unsure": unsure,
-         "result_counts": 결과수, "questions": 질문칸,
+         "result_counts": 결과수, "questions": 질문칸, "noproc": 종류.count("noproc"),     # B3 쓴 과정 기록 없는 문장 (11/16)
          "usage_counts": {k: sum(1 for q in 질문칸 if q["usage"] == k) for k, _, _ in 쓰임새},
          "sent_base": 보냄, "events": events, "sessions": 세션,
          # 교수 링크 출처 보기를 켜면 이 과제의 질문 · 답 전부가 간다 (김용현 #44 · statement._출처_보기 로 만듦)
