@@ -175,13 +175,17 @@ window.TraceShell = (function () {
   async function fetchWorks() {
     let pc = [];
     try { pc = (await call("GET", "/local/source/works")).works; } catch (e) {}
-    let mine = null, user = null;
+    let mine = null, user = null, logged = false;
     try {
       const s = await call("GET", "/local/state");
+      logged = !!s.logged_in;
       if (s.logged_in) { const r = await call("GET", "/local/works"); mine = r.works; user = r.user || s.user; }
     } catch (e) { mine = null; }
-    return { works: mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions })), user: mine ? user : null };
+    // logged_in 인데 목록이 없으면 = 서버가 늦거나 자는 중 (로그인 안 한 게 아님 · 11/16)
+    return { works: mine ? mine : pc.map(w => ({ id: w.id, title: w.id, pc_sessions: w.pc_sessions })), user: mine ? user : null,
+             logged_in: logged, offline: logged && !mine };
   }
+  function 도는(글) { const d = el("div", "loading"); d.append(el("i", "spin")); if (글) d.append(el("span", null, 글)); return d; }
   // ── 왼쪽 아래 내 이름 → 누르면 프로필 칸 (10/15) — 크롬 프로필 메뉴처럼 이름 · 이메일 · 계정 설정 · 앱 정보 · 로그아웃.
   //    모든 화면이 이것 하나를 씀 (전엔 홈에만 로그아웃 아이콘이 있었음 · 한 번 누르면 바로 나가져서 잘못 누르기도 쉬웠음)
   const 프로필_그림 = {
@@ -241,10 +245,18 @@ window.TraceShell = (function () {
 
   function drawWorks(wid, d) {
     $("me").innerHTML = "";
+    $("me").classList.remove("me-btn"); $("me").onclick = null;
     if (d.user) {
       profile($("me"), d.user);
+    } else if (d.offline) {                                   // 로그인은 돼 있는데 서버가 아직 답을 안 줌 — 돌면서 다시 물어봄 (11/16)
+      if (다시_물음 < 20) $("me").append(도는("서버에 연결하는 중"));
+      else {
+        const b = el("button", "nav", null); b.type = "button"; b.append(el("span", "t", "서버에 연결하지 못했어요 · 다시"));
+        b.onclick = () => { 다시_물음 = 0; loadWorks(wid, { stay: true }); };
+        $("me").append(b);
+      }
     } else {
-      const a = el("a", "nav", null); a.href = "/login"; a.append(el("span", "t", "로그인하면 과제 이름이 보입니다"));
+      const a = el("a", "nav", null); a.href = "/login"; a.append(el("span", "t", "로그인"));
       $("me").append(a);
     }
     // 내 과제는 기록이 없어도 보임 (새 과제를 만들면 바로 왼쪽에 생겨야 함 · 10/13)
@@ -260,10 +272,23 @@ window.TraceShell = (function () {
     const me = works.find(w => w.id === wid);
     if ($("c-work")) $("c-work").textContent = me ? me.title : (wid || "과제");
   }
+  let 다시_물음 = 0;
   async function loadWorks(wid, opt) {
     opt = opt || {};
     const 옛 = 기억();
-    const 새로 = fetchWorks().then(d => { 기억(d); drawWorks(wid, d); return d; });
+    if (!옛 && $("works") && !$("works").children.length) {      // 처음 — 받아 올 때까지 도는 표시 (옛 문구 "로그인하면 과제 이름이 보입니다" 대신 · 11/16)
+      $("works").append(도는()); $("me").textContent = ""; $("me").append(도는());
+    }
+    const 새로 = fetchWorks().then(d => {
+      if (d.offline && 옛) {                                  // 서버가 늦으면 지난번 목록(진짜 과제 이름)을 그대로 두고 뒤에서 다시
+        if (다시_물음++ < 20) setTimeout(() => loadWorks(wid, { stay: true }), 3000);
+        return 옛;
+      }
+      if (!d.offline) { 기억(d); 다시_물음 = 0; }
+      drawWorks(wid, d);
+      if (d.offline && 다시_물음++ < 20) setTimeout(() => loadWorks(wid, { stay: true }), 3000);   // 무료 서버가 깨는 동안 (1분쯤)
+      return d;
+    });
     const d = 옛 && (!wid || 옛.works.some(w => w.id === wid)) ? (drawWorks(wid, 옛), 옛) : await 새로;
     if (!wid && d.works.length && !opt.stay) location.replace("/go?work=" + encodeURIComponent(d.works[0].id));
     return d.works;
