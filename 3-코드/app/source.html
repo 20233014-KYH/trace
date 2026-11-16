@@ -410,7 +410,7 @@
   // A5 AI 답에서 온 참고문헌 (14번 문서 · 11/16 용현) — "참고문헌" 제목 아래 줄이 기록상 AI 답에서 왔을 때만.
   //   참고문헌 줄은 짧아도 짚는다 (6어절 규칙 밖) · 그 칸의 웹 글은 그 자체가 출처 표시라 A2 · A3 로 짚지 않는다
   //   진짜 있는 논문인지는 판단하지 않는다 — "AI 답에서 왔다"(사실)와 "직접 찾아 확인해 보세요"(방법)까지만
-  const 참고문헌_제목 = /^\s*(\d+[.)]?\s*)?(참고\s*문헌|참고\s*자료|참고한\s*자료|인용\s*문헌|references?|bibliography|works\s+cited)\s*[:：]?\s*$/i;
+  const 참고문헌_제목 = /^\s*(\d+[.)]?\s*)?((참고|인용|주요|관련)?\s*(문헌|자료)(\s*목록)?|참고한\s*자료|references?|bibliography|works\s+cited)\s*[:：]?\s*$/i;
   const AI에서 = x => ["exact", "similar", "edited", "viewed"].includes(x.kind) || AI붙임(x);
   function 참고문헌_문단() {                               // 참고문헌 제목 다음 문단들 (다음 다른 제목 전까지)
     const out = new Set(); let 안 = false;
