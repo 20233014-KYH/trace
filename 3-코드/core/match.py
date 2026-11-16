@@ -354,7 +354,7 @@ KEYS_WINDOW = (-15, 12)  # 글 변화(diff) 시각 기준으로 이 구간(초)�
 
 
 def process_evidence(events, context):
-    """과정 기록 → 문서에 글이 생긴 길 {"typed": [글], "noproc": [{"text","how","ts","file"}]}
+    """과정 기록 → 문서에 글이 생긴 길 {"typed": [글], "typed_at": [(시각, 글)], "noproc": [{"text","how","ts","file"}]}
 
     · 타이핑: 붙여넣기 아닌 글 변화(diff) 중 그 무렵 그 앱에서 키를 충분히 누른 것 (키는 한 번 쓰면 깎는다 —
       타이핑 직후 프로그램이 한꺼번에 넣은 글이 그 키를 또 쓰지 않게)
@@ -364,7 +364,7 @@ def process_evidence(events, context):
     붙인 = {id(d) for _, _, ds in paste_groups(events, context) for d in ds}      # 여러 문단 붙여넣기의 나머지 문단까지 (10/14)
     keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_KEY_APPS),
                   key=lambda k: k[0])
-    typed, noproc = [], []
+    typed, typed_at, noproc = [], [], []          # typed_at = (시각, 글) — 그 글을 친 때 (11/16 · 답보다 먼저 쓴 문장 거르기)
     # 같은 파일을 여러 번 받았으면 하나만 — 받은 곳이 확실한 것(AI 사이트 · 사이트 이름 있음) → 그중 먼저 받은 것 (10/17 · 글이 같아
     # 어느 것에 이어질지는 순서로 정해지는데, 받은 곳을 모르는 앞 기록에 이어져 "Chrome" 으로만 보였다)
     받기 = {}
@@ -395,9 +395,11 @@ def process_evidence(events, context):
                     k[1] -= take; got += take
                     if got >= 2 * n:
                         break
-            (typed.append(c["text"]) if got >= need else
-             noproc.append({"text": c["text"], "how": "nokeys", "ts": c["ts"], "file": meta.get("file", "")}))
-    return {"typed": typed, "noproc": noproc}
+            if got >= need:
+                typed.append(c["text"]); typed_at.append((c["ts"], c["text"]))
+            else:
+                noproc.append({"text": c["text"], "how": "nokeys", "ts": c["ts"], "file": meta.get("file", "")})
+    return {"typed": typed, "typed_at": typed_at, "noproc": noproc}
 
 
 PASTE_TICK = 1          # 초 — 붙여넣기 직후 Word 를 읽은 그 한 번(같은 순간)에 생긴 글 변화는 모두 그 붙여넣기 (10/14)
@@ -490,6 +492,15 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
         시각을 모르면(옛 기록 · 시험) 막지 않는다"""
         t, c = 답시각.get(answer_id), (p or {}).get("copied_at") or (p or {}).get("pasted_at")
         return not t or not c or _secs(t, c) >= -5
+    # 답보다 먼저 쓴 문장 (11/16 실제 시험: 15:05 에 친 "20233014 김용현" 이 15:07 에 물어본 ChatGPT 답의 "2025년 · 140개교" 와
+    # 숫자 조각이 겹쳐 '보고 씀' 으로 제안됨). 그 문장을 **마지막으로 친 때**가 그 답을 물어보기 전이면 그 답에서 올 수 없다.
+    # 친 기록(typed_at)이 없으면(옛 기록 · 시험) 막지 않는다 · 일부라도 답 뒤에 쳤으면 막지 않는다
+    친글 = [(ts, norm(t)) for ts, t in (proc or {}).get("typed_at", []) if len(norm(t)) >= 4]
+
+    def 먼저_씀(s, answer_id):
+        t, n = 답시각.get(answer_id), norm(s)
+        입력 = [ts for ts, d in 친글 if d in n]
+        return bool(t and 입력) and _secs(t, max(입력)) < -5
     wcands = candidates([{"id": k, "text": p["text"]} for k, p in enumerate(others or [])])
     tcands = candidates([{"id": k, "text": t} for k, t in enumerate((proc or {}).get("typed", []))])
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
@@ -576,6 +587,11 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                 # (10/14: 표 칸 "M5 Pro / M5 Max" 가 긴 구글 답 문장과 글자 조각만 겹쳐 '다른 곳' 으로 넘어감)
                 if w["label"] != "none" and (r["label"] != "exact" or w["label"] == "exact"):
                     r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
+            # 붙여넣기 기록 없이 글자만 닮은 제안(그대로 · 보고 씀)을 거른다 (11/16):
+            #   ① 답을 물어보기 전에 다 쳐 둔 문장 ② 숫자를 빼면 MIN_CHARS 도 안 되는 줄(학번 · 날짜 · 쪽수) — 숫자 조각만 겹친 것
+            if r["paste"] is None and r["label"] in ("exact", "viewed") and r["answer"] is not None and (
+                    먼저_씀(s, r["answer"]) or (r["label"] == "viewed" and len(re.sub(r"\d", "", norm(s))) < MIN_CHARS)):
+                r.update(label="none", full=False, answer=None, sents=None, ai_text=None)
             # 붙여넣기 기록이 없는데 타이핑 기록도 없이 문서에 나타난 글 → 쓴 과정 기록 없음 (10/7)
             if ncands and r["label"] in ("none", "viewed") and link_sentence(s, tcands)["label"] == "none":
                 x = link_sentence(s, ncands)
