@@ -361,6 +361,9 @@ def process_evidence(events, context):
     · 과정 없음: ① 문서를 처음 볼 때 이미 있던 글(doc_open) ② 키 입력 없이 들어온 글 변화
     붙여넣기 글 변화(doc_paste_at 과 같은 시각·자리)는 여기서 빼고 pasted_from_ai / pasted_from_other 가 다룬다."""
     pastes = {(d["ts"], d.get("where")) for d in events if d.get("type") == "doc_paste_at"}
+    붙인자리 = {}                               # 문단 → 붙여넣은 시각들
+    for t, w in pastes:
+        붙인자리.setdefault(w, []).append(t)
     붙인 = {id(d) for _, _, ds in paste_groups(events, context) for d in ds}      # 여러 문단 붙여넣기의 나머지 문단까지 (10/14)
     keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_KEY_APPS),
                   key=lambda k: k[0])
@@ -376,16 +379,30 @@ def process_evidence(events, context):
             if h not in 받기 or k < 받기[h][0]:
                 받기[h] = (k, id(c))
     고른_받기 = {i for _, i in 받기.values()}
+    본글, 꼬리, 최근붙임, 친문단 = {}, {}, {}, {}           # 최근붙임: (파일, 문단) → (시각, 붙여넣은 글의 글자 조각)
+    본글, 꼬리 = 본글, 꼬리                         # 파일 → 앞서 기록된 글(글 변화 · 붙여넣은 자리 · 열 때 있던 글)의 글자 조각 · (파일, 문단) → 앞 조각 끝 글자
     for c in sorted(context, key=lambda c: c.get("ts", "")):
         meta = c.get("meta", {})
         if c.get("kind") == "doc_open" and c.get("text", "").strip():
-            noproc.append({"text": c["text"], "how": "open", "ts": c["ts"], "file": meta.get("file", "")})
+            # 이 파일을 전에 기록한 적이 있으면 "다시 연 것" (앱을 다시 켬 · 업데이트 · 기록 다시 시작) — 그때 쓴 과정이 이미 기록에 있다.
+            # 앞서 기록된 글로 설명되는 줄은 빼고, 기록 밖에서 새로 생긴 줄만 남긴다 (11/16 맥 실제 시험: v0.1.18 로 업데이트하며
+            # 기록이 둘로 나뉘자 둘째 기록의 "열 때 있던 글" 1,219자가 첫 기록의 '보고 씀' 을 덮어 '쓴 과정 기록 없음' 으로 나옴)
+            앞, 글 = 본글.get(meta.get("file", "")), c["text"]
+            if 앞:
+                글 = "\n".join(l for l in 글.split("\n") if l.strip() and not _기록된_줄(l, 앞))
+            if 글.strip():
+                noproc.append({"text": 글, "how": "open", "ts": c["ts"], "file": meta.get("file", "")})
         elif c.get("kind") == "download" and meta.get("hash") in 받기 and id(c) not in 고른_받기:
             continue
         elif c.get("kind") == "download" and c.get("text", "").strip():
             # 기록하는 동안 AI 앱 · 브라우저에서 받은 결과물 파일의 글 (collector/downloads.py · 10/15) — 결과물 문장이 여기서 왔으면 빨강
             noproc.append({"text": c["text"], "how": "download", "ts": c["ts"], "file": meta.get("name", ""),
                            "app": meta.get("app", ""), "domain": meta.get("domain", ""), "category": meta.get("category", "")})
+        elif c.get("kind") == "diff" and c.get("text", "").strip() and ((c["ts"], meta.get("where")) in pastes or id(c) in 붙인):
+            최근붙임[(meta.get("file"), meta.get("where"))] = (c["ts"], _bigrams(norm(c["text"])))
+        elif c.get("kind") == "diff" and c.get("text", "").strip() and _붙임_나머지(c, 최근붙임.get((meta.get("file"), meta.get("where"))),
+                                                                                 붙인자리.get(meta.get("where"), ())):
+            pass        # 붙여넣은 글을 Word 가 두 번에 나눠 읽은 나머지 (11/16 맥 실제 시험: 붙이고 11초 뒤 같은 문단에 겹친 글 41자가 '쓴 과정 기록 없음')
         elif c.get("kind") == "diff" and c.get("text", "").strip() and (c["ts"], meta.get("where")) not in pastes and id(c) not in 붙인:
             n, got = len(c["text"].strip()), 0
             need = max(2, int(n * TYPED_KEYS))
@@ -397,9 +414,36 @@ def process_evidence(events, context):
                         break
             if got >= need:
                 typed.append(c["text"]); typed_at.append((c["ts"], c["text"]))
+                k = (meta.get("file"), meta.get("where"))
+                친문단[k] = 친문단.get(k, "") + c["text"]
             else:
                 noproc.append({"text": c["text"], "how": "nokeys", "ts": c["ts"], "file": meta.get("file", "")})
-    return {"typed": typed, "typed_at": typed_at, "noproc": noproc}
+        if c.get("kind") in ("diff", "paste_at", "doc_open") and meta.get("file") and c.get("text"):
+            # 타이핑은 몇 글자씩 조각으로 기록된다(" 이 연구는" " 국내외" …) — 같은 문단의 앞 조각 끝 글자를 붙여 이음새 조각까지 센다
+            n, 자리 = norm(c["text"]), (meta["file"], meta.get("where"))
+            본글.setdefault(meta["file"], set()).update(_bigrams(꼬리.get(자리, "") + n))
+            if n:
+                꼬리[자리] = n[-1]
+    # 조각조각 친 글(" 이 연구는" " 국내외" …)은 문단마다 이어 붙인 것도 친 글로 — 한 조각만으론 문장과 비교가 안 된다 (11/16)
+    return {"typed": typed + [t for t in 친문단.values() if t not in typed], "typed_at": typed_at, "noproc": noproc}
+
+
+def _붙임_나머지(c, 붙임, 자리시각=()):
+    """이 글 변화가 바로 앞 같은 문단 붙여넣기의 나머지인가 —
+    ① 붙여넣은 자리(doc_paste_at) 10초 안 (Word 를 늦게 읽어 붙여넣은 글이 몇 초 뒤에 글 변화로 옴 · 맥) 또는
+    ② 30초 안 붙여넣은 글과 글자 조각 60% 이상이 같음 (Word 가 붙여넣은 글을 두 번에 나눠 읽음)"""
+    if any(0 <= _secs(t, c["ts"]) <= 10 for t in 자리시각):
+        return True
+    if not 붙임 or not 0 <= _secs(붙임[0], c["ts"]) <= 30:
+        return False
+    b = _bigrams(norm(c["text"]))
+    return len(b) >= 2 and sum(1 for x in b if x in 붙임[1]) >= 0.6 * len(b)
+
+
+def _기록된_줄(line, 앞):
+    """이 줄이 앞서 기록된 글로 설명되나 — 글자 조각의 90% 이상이 앞 기록에 있음 (아주 짧은 줄은 설명된 것으로)"""
+    b = _bigrams(norm(line))
+    return len(b) < 2 or sum(1 for x in b if x in 앞) >= 0.9 * len(b)
 
 
 PASTE_TICK = 1          # 초 — 붙여넣기 직후 Word 를 읽은 그 한 번(같은 순간)에 생긴 글 변화는 모두 그 붙여넣기 (10/14)
@@ -608,6 +652,30 @@ def _link_short_lines(out, cands):
     이어졌고 **그 붙여넣은 원문 안에 이 줄이 그대로 있으면** 같은 붙여넣기로 잇는다 (이슈 #26-3).
     붙여넣은 글 안에서만 찾으니 우연히 겹칠 위험이 없다 — 직접 친 짧은 제목("어린 시절")은 붙여넣은 글에 없으니 그대로 둔다."""
     flat = [r for row in out for r in row]
+    # 같은 문단 안에서 AI 답에 이어진 문장 바로 옆의 짧은 조각이 **그 답 원문에 그대로** 있으면 같은 답으로 (11/16 맥 실제 시험:
+    # 참고문헌 "이유미, & 윤회정. (2024). 생성형 AI 시대의…" 가 마침표마다 잘려 "이유미, & 윤회정." "(2024)." 만 출처 기록 없음)
+    답글 = {}
+    for c in cands:
+        답글.setdefault(c["answer"], []).append(c["text"])
+    답글 = {a: norm(" ".join(ts)) for a, ts in 답글.items()}
+    바뀜 = True
+    while 바뀜:                                     # 조각이 연달아 있으면 이은 조각 옆 조각도 (앞 조각이 뒤 조각보다 먼저 보이므로 다시 돈다)
+      바뀜 = False
+      for row in out:
+        for k, r in enumerate(row):
+            n = norm(r["text"])
+            if r["label"] != "none" or not n or len(n) >= MIN_CHARS:
+                continue
+            for j in (k - 1, k + 1):
+                nb = row[j] if 0 <= j < len(row) else None
+                # 옆 문장이 그 답과 그대로 같고, 조각 + 옆 문장을 이은 글이 답 원문에 그 순서대로 있을 때만 (한 줄이 잘린 것)
+                이음 = (norm(nb["text"]) + n if j < k else n + norm(nb["text"])) if nb else ""
+                if nb and nb.get("answer") is not None and nb["label"] == "exact" and 이음 in 답글.get(nb["answer"], ""):
+                    i = next((c["sents"][0] for c in cands if c["answer"] == nb["answer"] and len(c["sents"]) == 1 and n in norm(c["text"])), None)
+                    r.update(label=nb["label"], full=nb["label"] == "exact", answer=nb["answer"], sents=(i,) if i is not None else nb["sents"],
+                             ai_text=nb["ai_text"], paste=nb.get("paste"))
+                    바뀜 = True
+                    break
     조각 = {}                                        # 과정 없이 나타난 글(받은 파일 등) → 그 글의 줄 · 줄 안 문장 (norm)
     for k, r in enumerate(flat):
         n = norm(r["text"])
