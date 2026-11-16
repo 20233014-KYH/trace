@@ -16,6 +16,7 @@ import io
 import os
 import re
 from datetime import date
+from urllib.parse import urlsplit
 from xml.sax.saxutils import escape
 
 from reportlab.graphics import renderPDF
@@ -133,6 +134,15 @@ def _md(iso, 요일=False):
 def _mins(v):
     v = round(v or 0)
     return (f"{v // 60}시간 {v % 60}분" if v % 60 else f"{v // 60}시간") if v >= 60 else f"{v}분"
+
+
+def _사이트(u):
+    """주소 → 사이트 이름 (www. 뺌). http(s) 가 아니면 "" """
+    try:
+        p = urlsplit(str(u or ""))
+    except ValueError:
+        return ""
+    return p.hostname.removeprefix("www.") if p.scheme in ("http", "https") and p.hostname else ""
 
 
 def _hm(v):
@@ -493,6 +503,18 @@ def render(d, url):
         문단 = sorted({(l["result"].get("location") or {}).get("paragraph") for l in 고른} - {None})
         범위 = (f"문단 {문단[0]}" if len(문단) == 1 else f"문단 {문단[0]}~{문단[-1]}") + " · " if 문단 else ""
         body += [Spacer(1, 8 * X), P(" ".join(칠(l, 80) for l in 고른) + f" <font color='#71717a'>— {범위}나머지는 링크에서</font>", "ex")]
+    # AI 가 그 답에 단 출처 (11/16 교수님 피드백 · 15번 문서) — 학생이 출처 보기를 켰을 때만 자료가 있다.
+    # 결과물에 글이 들어간 답만 · 사이트 이름만 · 맞는 출처인지는 따지지 않는다. 기록이 없는 답(앱 · 옛 기록)은 셈에서 뺀다
+    밝힌 = [q for q in ((d.get("source") or {}).get("questions") or []) if q.get("uses") and isinstance(q.get("sources"), list)]
+    if 밝힌:
+        곳 = list(dict.fromkeys(h for q in 밝힌 for x in q["sources"] if (h := _사이트(x.get("url")))))
+        안밝힘 = sum(1 for q in 밝힌 if not q["sources"])
+        if 곳:
+            출처줄 = "AI가 밝힌 출처 · " + " · ".join(곳[:4]) + (f" 외 {len(곳) - 4}곳" if len(곳) > 4 else "")
+            출처줄 += (f" (출처를 밝히지 않은 답 {안밝힘}개)" if 안밝힘 else "") + " — 맞는 출처인지는 확인하지 않음 · 주소는 링크에서"
+        else:
+            출처줄 = f"결과물에 글이 들어간 답 {안밝힘}개 모두 AI가 출처를 밝히지 않음"
+        body += [Spacer(1, 6 * X), P(E(출처줄), "note")]
     남은 = []
     if d.get("rejected"):
         남은.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
