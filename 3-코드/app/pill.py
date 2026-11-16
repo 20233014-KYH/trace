@@ -163,7 +163,8 @@ def main():
         except Exception:
             pass
     c = Collector(cfg, a.work or cfg.get("work_id", "W_local"), a.dry_run)
-    threading.Thread(target=c.run, daemon=True, name="collector").start()
+    수집 = threading.Thread(target=c.run, daemon=True, name="collector")
+    수집.start()
 
     api = Api(c, p)
     w, h = SIZE["pill"]
@@ -176,6 +177,10 @@ def main():
     )
     webview.start(_make_transparent, api._win, debug=False)
     c.stop()                                              # 창이 닫히면 수집기도 정리
+    # 수집기가 마지막 기록 묶음 · session_end · 봉인(end)을 서버로 보낼 때까지 기다린다 (11/16 맥 실제 시험).
+    # 전엔 창이 닫히자마자(■ 뒤 1.5초) 프로그램이 끝나 데몬 스레드가 같이 죽어서, 서버가 늦으면 봉인이 안 가고
+    # "서버 확인 전" 으로 남았다 (마지막 묶음까지 빠진 기록도). 못 보내면 queue.jsonl 에 남아 다음 기록 때 다시 보낸다
+    수집.join(timeout=15)
 
 
 if __name__ == "__main__":
