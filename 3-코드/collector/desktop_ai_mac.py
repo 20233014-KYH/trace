@@ -7,6 +7,7 @@ desktop_ai_mac.py — 맥 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱)의 질�
   메시지 = HTML 클래스로 찾는다 (웹 Claude · 윈도우판 ③과 같음): 답 font-claude-response · standard-markdown, 질문 font-user-message.
   못 찾으면 대화 목록(feed) 안의 article + 화면낭독 제목("Claude 응답:" · "입력 내용:")으로 (윈도우판 ①)
 · ChatGPT 앱은 맥에선 웹 화면이 아닌 앱이라 구조가 다르다 — 화면낭독 제목("ChatGPT 답변:" 등)이 있으면 그것으로, 없으면 못 읽음
+  (26.x 크로미움판은 AXEnhancedUserInterface 를 켜야 대화 화면이 열림 · 11/16)
   (debug=true 면 화면 구조를 data/desktop-ai-debug.txt 에 남긴다 → 셀렉터를 맞춘다)
 · 대화 · 이전 대화(history) · 생성 끝(두 번 연속 같으면) 판단은 윈도우판 _send 를 그대로 쓴다 → collector._on_context
 안 하는 것: 화면 캡처 · 키 입력 · 앱 밖 창 · 권한 없이 읽기 (없으면 한 번 권한 창을 띄우고 기다림)
@@ -86,12 +87,16 @@ class MacDesktopAIWatcher(DesktopAIWatcher):
         if pid not in self._켬:                       # Electron 앱(Claude)은 이걸 켜야 웹 화면 구조를 연다 (켜는 데 한두 번 걸림)
             self._켬.add(pid)
             mac_ax.set_(root, "AXManualAccessibility", True)
+            if key == "chatgpt":
+                self._크로미움_켜기(root)
         win = mac_ax.get(root, "AXFocusedWindow") or mac_ax.get(root, "AXMainWindow")
         if win is None:
             return
         tree, n = self._읽기(win)
         msgs = self._찾기(tree)
         if not msgs:
+            if key == "chatgpt" and n < 50:           # 대화 화면이 아직 안 열림 (크로미움이 접근성을 다시 끄기도 함) → 다시 켬
+                self._크로미움_켜기(root)
             self._empty_at = time.time()
             self._dump_mac(key, tree, n)
             return
@@ -102,6 +107,13 @@ class MacDesktopAIWatcher(DesktopAIWatcher):
             convs.setdefault(conv, []).append((f"{conv}|{i}|{role}", role, text))
         for conv, items in convs.items():
             self._send(key, conv, items)
+
+    @staticmethod
+    def _크로미움_켜기(root):
+        """맥 ChatGPT 앱 26.x (번들 com.openai.codex · 크로미움) 는 AXManualAccessibility 로는 대화 화면(AXWebArea)을 안 연다 —
+        창 틀 요소 12개만 보여 질문 · 답을 하나도 못 읽었다 (11/16 김용현 맥 실제 시험 · 26.1029). 크롬 계열이 보는
+        AXEnhancedUserInterface 를 켜면 2~3초 뒤 대화 화면이 열리고 "내가 한 말:" · "ChatGPT 답변:" 제목으로 읽힌다"""
+        mac_ax.set_(root, "AXEnhancedUserInterface", True)
 
     def _읽기(self, el):
         """창 아래 요소를 한 번에 훑어 _N 나무로 (앱과 요소마다 한 번씩만 주고받음)"""
