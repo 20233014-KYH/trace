@@ -509,7 +509,13 @@
      3
     ],
     "question_ok": true,
-    "answer_ok": true
+    "answer_ok": true,
+    "sources": [
+     {
+      "title": "데이터베이스 정규화 - 위키백과",
+      "url": "https://ko.wikipedia.org/wiki/데이터베이스_정규화"
+     }
+    ]
    },
    {
     "n": 2,
@@ -572,7 +578,8 @@
      4
     ],
     "question_ok": true,
-    "answer_ok": true
+    "answer_ok": true,
+    "sources": []
    }
   ]
  },

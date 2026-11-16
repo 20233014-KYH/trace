@@ -485,7 +485,9 @@ def _출처_보기(분석, 고름, 가림, messages):
                      "question": None if 숨김 else q.get("question"), "hidden": 숨김,
                      "question_hash": None if 숨김 else (r.get("q") or {}).get("hash"),
                      "answer": q.get("answer"), "answer_hash": (r.get("a") or {}).get("hash"),
-                     "uses": [k for k in q.get("uses", []) if not 문장[k].get("rejected")], "paras": q.get("paras")})
+                     "uses": [k for k in q.get("uses", []) if not 문장[k].get("rejected")], "paras": q.get("paras"),
+                     # AI 가 이 답에 단 출처 링크 (11/16 교수님 피드백 · 15번 문서 ④) — 확장이 기록한 것만. 없으면 키를 안 넣음(모름)
+                     **({"sources": q["sources"]} if isinstance(q.get("sources"), list) else {})})
     return {"file": 분석["file"], "title": b["title"], "paragraphs": b["paragraphs"], "sentences": 문장, "questions": 질문}
 
 

@@ -67,8 +67,12 @@ def 학생_PC(data, email, pw):
             f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
     쓰기("events-2026-10-05.jsonl", evs)
     쓰기("context-2026-10-05.jsonl", [{"session_id": sid, **c} for c in L("context")])
+    # 첫 답에만 AI 가 단 출처 링크 (11/16 확장 0.3.11) — 위험한 주소 하나를 섞어 서버가 거르는지 본다
+    출처들 = {"1": [{"title": "위키백과 — 데이터베이스 정규화", "url": "https://ko.wikipedia.org/wiki/데이터베이스_정규화"},
+                    {"title": "나쁜 링크", "url": "javascript:alert(1)"}]}
     쓰기("ai-messages-2026-10-05.jsonl", [{"session_id": sid, "event_id": e["id"], "ts": e["ts"], "tool": e["tool"],
-                                           "turn": e["turn"], "role": e["role"], "hash": e["hash"], "text": 원문[e["hash"]]}
+                                           "turn": e["turn"], "role": e["role"], "hash": e["hash"], "text": 원문[e["hash"]],
+                                           **({"sources": 출처들[e["turn"]]} if e["role"] == "answer" and e["turn"] in 출처들 else {})}
                                           for e in evs if e["type"] == "ai_msg"])
     requests.post(BASE + f"/works/{wid}/sessions", json={"id": sid, "started_at": evs[0]["ts"]}, headers=H, timeout=30)
     requests.post(BASE + f"/sessions/{sid}/events", json={"events": evs, "chain_head": prev}, timeout=30)
@@ -187,6 +191,10 @@ def main():
     검사("24 질문 기준: 가린 질문은 원문 없이", any(q.get("hidden") and q.get("question") is None for q in Q)
          and 가린질문 not in json.dumps(교수3, ensure_ascii=False), f"질문 {len(Q)}개")
     검사("25 질문·답 원문을 서버가 맞춰 봄", all(q.get("answer_ok") is True for q in Q if q.get("answer")), "")
+    출처칸 = [q.get("sources") for q in Q if "sources" in q]
+    검사("25b AI가 밝힌 출처 → 교수 링크까지", any(any("wikipedia.org" in x["url"] for x in v) for v in 출처칸),
+         f"출처 있는 답 {len(출처칸)}개")
+    검사("25c javascript: 같은 주소는 서버가 뺌", "javascript:" not in json.dumps(교수3, ensure_ascii=False), "")
     세션3 = (교수3.get("summary") or {}).get("by_session", [])
     과정 = (세션3[0] if 세션3 else {}).get("process") or {}
     검사("26 작업 과정 켬 → 기록 목록 + 세 줄", len(세션3) == 1 and len(과정.get("ai", [])) == 4 and len(과정.get("paste", [])) == 4

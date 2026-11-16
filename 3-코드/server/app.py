@@ -1020,6 +1020,26 @@ def summary(wid):
     return jsonify(work_id=wid, **답)
 
 
+def _출처링크_정리(v):
+    """출처 보기 질문마다 AI 가 답에 단 출처 링크 [{title, url}] (11/16 · 15번 문서 ④) → 교수 화면에 내보내도 되는 모양만.
+    학생 PC 가 보낸 값이라 그대로 믿지 않는다: http(s) 주소만(javascript: 같은 것 막음) · 같은 주소는 한 번 · 최대 20개 · 길이 자름.
+    목록이 아니면 None — 모름(키를 뺌). [] 와 다르다: [] 는 AI 가 출처를 밝히지 않은 답"""
+    if not isinstance(v, list):
+        return None
+    out, seen = [], set()
+    for x in v:
+        if not isinstance(x, dict):
+            continue
+        url = str(x.get("url") or "").strip()[:500]
+        if not url.lower().startswith(("http://", "https://")) or url in seen:
+            continue
+        seen.add(url)
+        out.append({"title": " ".join(str(x.get("title") or "").split())[:120], "url": url})
+        if len(out) >= 20:
+            break
+    return out
+
+
 @app.post("/api/works/<wid>/statements")
 @로그인_필요
 def create_statement(wid):
@@ -1041,7 +1061,14 @@ def create_statement(wid):
     if 출처 is not None and not (isinstance(출처, dict) and all(isinstance(출처.get(k), list)
                                                            for k in ("paragraphs", "sentences", "questions"))):
         return jsonify(error="bad_request", message="source 는 paragraphs · sentences · questions 가 든 것이어야 합니다"), 400
-    보류 = b.get("unsure", 0)                                  # "잘 모르겠음" 개수 (10/12) — 원문은 받지 않는다
+    if 출처 is not None:
+        for q in 출처["questions"]:
+            if isinstance(q, dict) and "sources" in q:
+                if (정리 := _출처링크_정리(q["sources"])) is None:
+                    del q["sources"]
+                else:
+                    q["sources"] = 정리
+    보류 = b.get("unsure", 0)                                 # "잘 모르겠음" 개수 (10/12) — 원문은 받지 않는다
     if not isinstance(보류, int) or isinstance(보류, bool) or not 0 <= 보류 <= 100000:
         return jsonify(error="bad_request", message="unsure 는 0 이상의 정수입니다"), 400
     for 이름 in ("explain_use", "explain_check"):              # v3 질문 두 칸 — 각 150자
