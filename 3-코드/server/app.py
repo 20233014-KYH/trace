@@ -81,6 +81,27 @@ def 이벤트들(db세션, sid):
     return [r.payload for r in 행들]
 
 
+def _기록_권한(d, s=None, work=None):
+    """기록기 주소(세션 만들기 · 이벤트 · 봉인 · 맥락 · 읽기)의 문지기 (11/16 · 수업 전 보완).
+    전에는 여기가 다 열려 있어서 세션 id 만 알면 누구나 남의 기록을 읽고, 이벤트를 끼워 넣어 체인을 깨뜨리고,
+    세션을 다른 과제로 옮길 수 있었다. 이제 **주인 있는 과제의 기록은 그 주인 토큰으로만** 읽고 쓴다.
+    주인 없는 과제(로그인 안 하고 기록 · 옛 기록기)는 예전처럼 받는다 — 단 TRACE_REQUIRE_AUTH=1 이면 토큰이 있어야 한다.
+    통과면 None, 막으면 (응답, 코드)."""
+    wid = work if work is not None else (s.work_id if s is not None else None)
+    w = d.get(db.Work, wid) if wid else None
+    주인 = w.user_id if w is not None else None
+    u = 토큰_사용자(d)
+    if 주인 is None:
+        if 인증_강제 and not u:
+            return jsonify(error="unauthorized", message="로그인이 필요합니다"), 401
+        return None
+    if u is None:
+        return jsonify(error="unauthorized", message="로그인이 필요합니다 — 이 과제 주인의 기록입니다"), 401
+    if u.id != 주인:
+        return jsonify(error="forbidden", message="내 과제의 기록이 아닙니다"), 403
+    return None
+
+
 # ─────────────────────────── 인증 (계약 1절) ───────────────────────────
 #
 # ★ 지금은 '켜져 있지만 강제하지 않는다' ★
@@ -113,8 +134,8 @@ def 로그인_필요(f):
 
     전엔 TRACE_REQUIRE_AUTH=1 일 때만 막아서, 로그인 없이도 과제 목록 → 과제(이름 추측 가능) → 세션 id
     → 기록(창 이름 포함)이 줄줄이 읽혔다. 인터넷에 올리면 누구나 학생 기록을 보게 된다.
-    기록기가 쓰는 주소(세션·이벤트·봉인·맥락)는 여기 안 걸린다 — 기록기가 아직 토큰을 안 보내서.
-    그쪽은 TRACE_REQUIRE_AUTH 로 나중에 막는다."""
+    기록기가 쓰는 주소(세션·이벤트·봉인·맥락)는 여기 안 걸린다 — 로그인 안 한 기록도 받아야 해서.
+    그쪽은 _기록_권한 이 막는다: 주인 있는 과제의 기록은 그 주인만 (11/16)."""
     @functools.wraps(f)
     def 감싼것(*a, **kw):
         with db.Session() as d:
@@ -758,6 +779,9 @@ def create_session(work):
         s0 = d.get(db.Sess, b.get("id"))
         if s0 is not None and s0.deleted_at:
             return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
+        # 남의 과제에 세션을 붙이거나, 남의 세션을 내 과제로 옮기지 못하게 (11/16) — 둘 다 그 주인이어야
+        if (막음 := _기록_권한(d, work=work) or (_기록_권한(d, s0) if s0 is not None else None)):
+            return 막음
         if w0 is None:
             # ★ 기록기는 과제를 따로 만들지 않고 config 의 work_id 로 바로 세션을 보낸다.
             #   SQLite 는 없는 과제를 가리키는 세션도 받아 주지만, PostgreSQL(Supabase) 은 외래키로 거절한다 (500).
@@ -784,6 +808,8 @@ def events(sid):
     받은시각 = now()
     with db.Session() as d:
         s = 세션_가져오기(d, sid, create=True)
+        if (막음 := _기록_권한(d, s)):
+            return 막음
         if s.deleted_at:                      # 지운 기록에 기록기가 계속 보내면 받지 않는다 (지운 걸 되살리지 않게)
             return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
         기존 = {r.id for r in d.query(db.Event.id).filter(db.Event.session_id == sid).all()}
@@ -843,6 +869,8 @@ def end(sid):
         s = 세션_가져오기(d, sid)
         if not s:
             return jsonify(error="not_found"), 404
+        if (막음 := _기록_권한(d, s)):
+            return 막음
         if s.deleted_at:
             return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
 
@@ -872,6 +900,8 @@ def end(sid):
 def get_session(sid):
     with db.Session() as d:
         s = 세션_가져오기(d, sid)
+        if s and (막음 := _기록_권한(d, s)):
+            return 막음
         evs = 이벤트들(d, sid) if s else []
         if not s or not evs:
             return jsonify(error="not_found"), 404
@@ -887,8 +917,11 @@ def get_session(sid):
 def get_events(sid):
     after, limit = request.args.get("after"), int(request.args.get("limit", 500))
     with db.Session() as d:
-        if not 세션_가져오기(d, sid):
+        s = 세션_가져오기(d, sid)
+        if not s:
             return jsonify(error="not_found"), 404
+        if (막음 := _기록_권한(d, s)):
+            return 막음
         evs = 이벤트들(d, sid)
     if after:
         idx = next((i for i, e in enumerate(evs) if e["id"] == after), -1)
@@ -917,6 +950,8 @@ def context(sid):
         s = 세션_가져오기(d, sid)
         if not s:
             return jsonify(error="not_found"), 404
+        if (막음 := _기록_권한(d, s)):
+            return 막음
         if s.deleted_at:
             return jsonify(error="gone", message="학생이 지운 기록입니다"), 410
         for it in 항목들:
@@ -931,8 +966,11 @@ def context(sid):
 @app.get("/api/sessions/<sid>/context")
 def get_context(sid):
     with db.Session() as d:
-        if not 세션_가져오기(d, sid):
+        s = 세션_가져오기(d, sid)
+        if not s:
             return jsonify(error="not_found"), 404
+        if (막음 := _기록_권한(d, s)):
+            return 막음
         항목 = [{"id": c.id, "ts": c.ts, "source": c.source, "kind": c.kind,
                  "text": c.text, "meta": c.meta or {}}
                 for c in (d.query(db.Context)

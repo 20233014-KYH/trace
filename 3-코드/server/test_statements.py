@@ -67,11 +67,11 @@ def 사람(꼬리, 이름):
     return 답.get("token")
 
 
-def 기록하기(wid, 글들, 봉인=True):
-    """기록기 흉내. 글들 = [(role, text)] → ai_msg 이벤트에는 해시만 넣는다. (세션 id, {role+순번: 이벤트 id})"""
+def 기록하기(wid, 글들, 봉인=True, 토큰=None):
+    """기록기 흉내 (로그인한 기록기 = 토큰을 붙임 · 11/16 기록 문지기). 글들 = [(role, text)] → ai_msg 이벤트에는 해시만 넣는다. (세션 id, {role+순번: 이벤트 id})"""
     sid = str(uuid.uuid4())
     호출(f"/works/{wid}/sessions", {"id": sid, "started_at": "2026-10-08T14:00:00+09:00",
-                                     "device": {"name": "TEST", "os": "win"}})
+                                     "device": {"name": "TEST", "os": "win"}}, 토큰=토큰)
     이벤트들 = [{"id": "evt_000001", "ts": "2026-10-08T14:00:00+09:00", "type": "session_start"}]
     for i, (role, text) in enumerate(글들):
         이벤트들.append({"id": f"evt_{i + 2:06d}", "ts": f"2026-10-08T14:0{i + 1}:00+09:00", "type": "ai_msg",
@@ -82,9 +82,9 @@ def 기록하기(wid, 글들, 봉인=True):
     for e in 이벤트들:
         prev = C.next_hash(prev, e)
         e["h"] = prev
-    호출(f"/sessions/{sid}/events", {"events": 이벤트들, "chain_head": prev, "chain_len": len(이벤트들)})
+    호출(f"/sessions/{sid}/events", {"events": 이벤트들, "chain_head": prev, "chain_len": len(이벤트들)}, 토큰=토큰)
     if 봉인:
-        호출(f"/sessions/{sid}/end", {"ended_at": "2026-10-08T14:30:00+09:00", "root": prev})
+        호출(f"/sessions/{sid}/end", {"ended_at": "2026-10-08T14:30:00+09:00", "root": prev}, 토큰=토큰)
     return sid, [e["id"] for e in 이벤트들 if e["type"] == "ai_msg"]
 
 
@@ -101,7 +101,7 @@ def main():
     질문 = "광합성의 명반응과 암반응 차이를 설명해 줘"
     답 = "명반응은 빛을 받아 ATP와 NADPH를 만들고, 암반응(캘빈 회로)은 그것으로 CO2를 고정해 포도당을 만듭니다."
     결과 = "명반응은 빛으로 ATP와 NADPH를 만들고, 캘빈 회로는 이를 써서 이산화탄소를 고정한다."
-    sid, (q_id, a_id) = 기록하기(wid, [("question", 질문), ("answer", 답)])
+    sid, (q_id, a_id) = 기록하기(wid, [("question", 질문), ("answer", 답)], 토큰=갑)
 
     맞다 = {"answer_hash": sha256_text(답), "question_hash": sha256_text(질문), "result_hash": sha256_text(결과),
             "result_text": 결과, "location": {"file": "보고서.docx", "paragraph": 3},
@@ -132,13 +132,13 @@ def main():
     검사("5 ai_msg 가 아닌 이벤트", {p["why"] for p in r.get("problems", [])} == {"not_in_chain"},
          f"{r.get('problems')}")
     _, w2 = 호출("/works", {"title": "다른 과제"}, 토큰=갑)
-    sid2, (q2, _) = 기록하기(w2["id"], [("question", 질문), ("answer", 답)])
+    sid2, (q2, _) = 기록하기(w2["id"], [("question", 질문), ("answer", 답)], 토큰=갑)
     코드, r = 호출(f"/works/{wid}/statements",
                   {"messages": [{"session_id": sid2, "event_id": q2, "text": 질문}]}, 토큰=갑)
     검사("6 다른 과제의 세션", {p["why"] for p in r.get("problems", [])} == {"not_in_work"}, f"{r.get('problems')}")
 
     # ④ 아직 봉인 안 한 세션
-    sid3, (q3, _) = 기록하기(wid, [("question", "봉인 전 질문"), ("answer", "봉인 전 답")], 봉인=False)
+    sid3, (q3, _) = 기록하기(wid, [("question", "봉인 전 질문"), ("answer", "봉인 전 답")], 봉인=False, 토큰=갑)
     코드, r = 호출(f"/works/{wid}/statements",
                   {"messages": [{"session_id": sid3, "event_id": q3, "text": "봉인 전 질문"}]}, 토큰=갑)
     검사("7 봉인 전 세션은 검증 안 됨", r.get("verified") is False and

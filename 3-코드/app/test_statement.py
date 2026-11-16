@@ -75,8 +75,8 @@ def 학생_PC(data, email, pw):
                                            **({"sources": 출처들[e["turn"]]} if e["role"] == "answer" and e["turn"] in 출처들 else {})}
                                           for e in evs if e["type"] == "ai_msg"])
     requests.post(BASE + f"/works/{wid}/sessions", json={"id": sid, "started_at": evs[0]["ts"]}, headers=H, timeout=30)
-    requests.post(BASE + f"/sessions/{sid}/events", json={"events": evs, "chain_head": prev}, timeout=30)
-    requests.post(BASE + f"/sessions/{sid}/end", json={"ended_at": evs[-1]["ts"], "root": prev}, timeout=30)
+    requests.post(BASE + f"/sessions/{sid}/events", json={"events": evs, "chain_head": prev}, headers=H, timeout=30)
+    requests.post(BASE + f"/sessions/{sid}/end", json={"ended_at": evs[-1]["ts"], "root": prev}, headers=H, timeout=30)
     return wid
 
 
