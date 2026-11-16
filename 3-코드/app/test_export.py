@@ -65,6 +65,9 @@ def main():
         검사("처음: 붙여넣기로 확실한 것만 연결 · 나머지는 잘 모르겠음",
              d["counts"]["confirmed"] == d["counts"]["auto"] == 3 and d["counts"]["unsure"] == 3 and d["counts"]["rejected"] == 0,
              json.dumps(d["counts"], ensure_ascii=False))
+        검사("내기 전 점검 재료 (B1 · B4 · 11/16) — 확인 전 3 · AI 기록 있음 · 숫자만",
+             d["pre"]["unsure"] == 3 and d["pre"]["ai"] is True and d["pre"]["dropped"] == 0
+             and all(isinstance(v, (int, bool)) for v in d["pre"].values()), json.dumps(d["pre"]))
         검사("전화번호 · 이메일 찾음 → 기본은 그 부분만 가림 (질문은 그대로 · 10/12)",
              any(f["role"] == "question" and "전화번호 1개" in f["what"] and "이메일 1개" in f["what"] and f["masked"] and not f["hidden"]
                  and "⟦가림:전화번호⟧" in f["preview"] and "010-1234-5678" not in f["preview"] for f in d["found"]))
@@ -176,6 +179,7 @@ def main():
         검사("답을 가리면 그 연결은 빠지고 위치만", d["counts"]["dropped"] >= 1
              and len([l for l in b2["links"] if l["decision"] == "confirmed"]) == 4 - d["counts"]["dropped"]
              and {"session_id": a_id.split("/")[0], "event_id": a_id.split("/")[1]} in b2["redactions"])
+        검사("B2 답을 가려 빠진 연결 수 = 점검 재료", d["pre"]["dropped"] == d["counts"]["dropped"] >= 1, str(d["pre"]))
 
         # 교수 링크 출처 보기 · 작업 과정 켜기 (김용현 #44 의 서버 기능) — 질문 · 답 전부가 가므로 가리기도 전부를 본다
         D({"with_source": True, "with_process": True, "hide": {a_id: False}})
