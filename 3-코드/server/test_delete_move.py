@@ -65,8 +65,8 @@ def 기록하기(wid, 토큰, 멈춤=False):
         e["id"] = f"evt_{i + 1:06d}"
         prev = C.next_hash(prev, e)
         e["h"] = prev
-    호출(f"/sessions/{sid}/events", {"events": evs, "chain_head": prev})
-    코드, r = 호출(f"/sessions/{sid}/end", {"ended_at": evs[-1]["ts"], "root": prev})
+    호출(f"/sessions/{sid}/events", {"events": evs, "chain_head": prev}, 토큰=토큰)
+    코드, r = 호출(f"/sessions/{sid}/end", {"ended_at": evs[-1]["ts"], "root": prev}, 토큰=토큰)
     return sid, evs[1]["id"], 답, r.get("verified")
 
 
@@ -104,9 +104,9 @@ def main():
     검사("9 기록 지우기", 코드 == 200 and r.get("deleted_at"), "")
     r = 호출(f"/works/{w1}/summary", 토큰=갑)[1]
     검사("10 요약: 지운 기록 1개 · 숫자엔 안 들어감", len(r.get("deleted_sessions", [])) == 1 and r.get("sessions") == 1, "")
-    코드, _ = 호출(f"/sessions/{s3}/events", {"events": [{"id": "evt_000099", "ts": "2026-10-10T22:00:00+09:00", "type": "keys"}]})
+    코드, _ = 호출(f"/sessions/{s3}/events", {"events": [{"id": "evt_000099", "ts": "2026-10-10T22:00:00+09:00", "type": "keys"}]}, 토큰=갑)
     검사("11 지운 기록에 더 보내면 410", 코드 == 410, f"HTTP {코드} (되살아나지 않게)")
-    코드, r = 호출(f"/sessions/{s3}/events")
+    코드, r = 호출(f"/sessions/{s3}/events", 토큰=갑)
     검사("12 지운 기록의 이벤트는 없음", r.get("events") == [], "")
 
     # ④ 과제 지우기 — 이미 낸 링크는 "지운 기록입니다"
@@ -123,10 +123,10 @@ def main():
     검사("16 지운 과제는 PDF 도 없음", 코드 == 404, f"HTTP {코드}")
     목록 = 호출("/works", 토큰=갑)[1]
     검사("17 내 과제 목록에서 빠짐", all(w["id"] != w1 for w in 목록) and any(w["id"] == w2 for w in 목록), "")
-    코드, _ = 호출(f"/works/{w1}/sessions", {"id": str(uuid.uuid4()), "started_at": "2026-10-12T10:00:00+09:00"})
+    코드, _ = 호출(f"/works/{w1}/sessions", {"id": str(uuid.uuid4()), "started_at": "2026-10-12T10:00:00+09:00"}, 토큰=갑)
     검사("18 지운 과제에 새 기록 안 받음", 코드 == 410, f"HTTP {코드}")
-    코드, _ = 호출(f"/sessions/{s1}/events")
-    검사("19 지운 과제의 이벤트도 지워짐", 호출(f"/sessions/{s1}/events")[1].get("events") == [], "")
+    코드, _ = 호출(f"/sessions/{s1}/events", 토큰=갑)
+    검사("19 지운 과제의 이벤트도 지워짐", 호출(f"/sessions/{s1}/events", 토큰=갑)[1].get("events") == [], "")
 
     print("  " + "─" * 70 + f"\n  {통과}개 통과, {실패}개 실패\n")
     return 1 if 실패 else 0
