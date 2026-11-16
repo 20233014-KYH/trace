@@ -376,6 +376,8 @@
     }
     if (D.title) box.append(el("h1", null, D.title));
     후보 = 다듬을_곳();
+    // 지금 짚은 문장을 이 PC 에 기억 → 내보낼 때 "제출 전 고침 N" (짚였다가 바뀐 문장 수 · 서버엔 개수만 · 11/16)
+    if (D.file) call("POST", "/local/source/flags", null, { work_id: wid, file: D.file, flagged: [...후보.keys()].map(k => D.sentences[k].text) }).catch(() => {});
     D.paragraphs.forEach(p => {
       const para = el("p", "para" + (p.head ? " head" : ""));
       p.sents.forEach((k, i) => {

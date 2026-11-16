@@ -140,6 +140,17 @@ def main():
         검사("v3 ③ 문장 수 = 출처 보기 (숫자만 감)", rc.get("total") == len(src["sentences"]) and rc.get("ai", 0) + rc.get("other", 0) == src["counts"]["copy"]
              and (rc.get("edited"), rc.get("viewed"), rc.get("none")) == (src["counts"]["edited"], src["counts"]["viewed"], src["counts"]["none"]),
              json.dumps(rc, ensure_ascii=False))
+        검사("제출 전 고침: 짚인 기억이 없으면 refined 안 감", "refined" not in rc)
+        # 출처 보기가 짚은 문장 기억 (11/16) — 지금 문서에 있는 문장 둘(하나는 아직 짚임) + 고쳐서 사라진 옛 문장 하나
+        있는1, 있는2 = src["sentences"][0]["text"], src["sentences"][1]["text"]
+        F = lambda fl: c.post("/local/source/flags", json={"work_id": W, "file": src["file"], "flagged": fl}, headers=H, **HOST)
+        F([있는1, 있는2, "고치기 전 옛 문장 — 지금 문서엔 없음"])
+        F([있는1])                                                  # 다시 열었더니 있는2 는 더 안 짚임 (인용을 닮)
+        검사("제출 전 고침 = 짚였다가 바뀐 문장 (사라짐 1 + 안 짚임 1)", EX._결과수(EX._모으기(W)).get("refined") == 2,
+             str(EX._결과수(EX._모으기(W))))
+        검사("다른 문서의 기억은 안 셈", S.고친_수(W, "다른.docx", [있는1]) == 0
+             and F([]).status_code == 200 and c.post("/local/source/flags", json={"work_id": W}, headers=H, **HOST).status_code == 400)
+        os.remove(S._짚은_경로(W))                                  # 뒤 검사(같은 링크 다시 쓰기)가 보는 몸통을 그대로 두게
         uc = body.get("usage_counts") or {}
         검사("v3 ① 쓰임새 수 = 이 과제의 질문 수 (숫자만)", sum(uc.values()) == len(E().json["flow"]) and set(uc) == {"learn", "fix", "write"},
              json.dumps(uc, ensure_ascii=False))

@@ -405,6 +405,7 @@ section.qlist{flex:1;min-width:0;padding:12px 10px;display:flex;flex-direction:c
     });
     c5.append(rows);
     const more = [];
+    if (rc.refined) more.push(`제출 전 다듬기에서 짚였다가 학생이 내기 전에 고친 문장 ${n(rc.refined)}개`);
     if (d.rejected) more.push(`Trace가 제안했지만 학생이 "아니다"라고 고른 연결 ${d.rejected}개`);
     if (d.unsure) more.push(`학생이 판단을 보류한 제안 ${d.unsure}개 (원문은 보내지 않음)`);
     if (d.redacted) more.push(`학생이 가린 항목 ${d.redacted}개 (내용은 오지 않았고 기록에는 남아 있음)`);

@@ -255,11 +255,16 @@ def main():
     검사("37 교수 규칙은 학생이 넣었을 때만", r.get("ai_scope") is None and r.get("explain_check") == "교재와 비교", "과제 메모가 있어도 저절로 안 들어감")
     검사("38 도구(모델) · 날짜별 구간", r.get("tools") == [{"tool": "chatgpt", "models": ["gpt-5-6"]}]
          and (r.get("summary") or {}).get("days") and "from_other_chars" in r["summary"]["pastes"], f"{r.get('tools')}")
-    결과수 = {"total": 30, "ai": 18, "other": 0, "edited": 1, "viewed": 3, "none": 8}
+    결과수 = {"total": 30, "ai": 18, "other": 0, "edited": 1, "viewed": 3, "none": 8, "refined": 2}   # refined = 제출 전 고침 (11/16)
     코드, r = 호출(f"/works/{wid}/statements", {"messages": 원문, "result_counts": 결과수}, 토큰=갑)
     _, sh4 = 호출(f"/statements/{r['id']}/share", {}, 토큰=갑)
     _, r = 호출(f"/share/{sh4['token']}")
     검사("39 v3 ③ 문장 수가 교수 화면 · PDF 까지", 코드 == 201 and r.get("result_counts") == 결과수, f"{r.get('result_counts')}")
+    with urllib.request.urlopen(BASE + f"/share/{sh4['token']}/pdf", timeout=60) as 응답:
+        import io as _io
+        from pypdf import PdfReader
+        글 = "".join(p.extract_text() for p in PdfReader(_io.BytesIO(응답.read())).pages)
+    검사("39b 제출 전 고침이 PDF 에", "고친 문장 2개" in 글.replace("\n", ""), "")
     쓰임수 = {"learn": 4, "fix": 0, "write": 1}
     질문원문 = 원문[0]                                          # q_id 의 질문
     흐름 = [{"session_id": sid, "event_id": q_id, "usage": "learn", "used": True}]
