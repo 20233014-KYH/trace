@@ -66,6 +66,31 @@ function geminiAnswer(el) {
   c.querySelectorAll("p, h1, h2, h3, h4, h5, h6, pre, blockquote, ul, ol, table").forEach((b) => b.append("\n\n"));   // 문단 = 빈 줄 (10/7 · 결과물 화면에서 문단대로 보이게)
   return cleanText(c.textContent.split("\n").map((l) => l.trim()).join("\n"));   // 칩을 지운 자리의 빈칸까지 정리
 }
+// AI 답에 달린 출처 링크 (11/16 · 교수님 피드백: "AI가 그 내용을 어디서 가져왔는지 표시") — 웹 검색으로 답하면 답 안에 링크가 붙는다.
+// 사이트마다 출처 모양(칩 · 각주 · 알약)은 달라도 링크(a[href])는 답 덩어리 안에 있어서 공통으로 읽는다.
+// AI 사이트 자기 주소 · 구글 우회 주소(/url?q=) · 추적 꼬리(utm_*)는 정리한다. 맞는 출처인지는 따지지 않는다 — 표시만
+const SELF_HOSTS = /(^|\.)(chatgpt\.com|openai\.com|claude\.ai|anthropic\.com|gemini\.google\.com|accounts\.google\.com)$/;
+function answerSources(el) {
+  const out = [], seen = new Set();
+  for (const a of el?.querySelectorAll?.("a[href]") || []) {
+    let u;
+    try { u = new URL(a.getAttribute("href"), location.href); } catch { continue; }
+    if (/(^|\.)google\.[a-z.]+$/.test(u.hostname) && u.pathname === "/url") {          // 구글 우회 주소 → 진짜 주소
+      try { u = new URL(u.searchParams.get("q") || u.searchParams.get("url") || ""); } catch { continue; }
+    }
+    if (!/^https?:$/.test(u.protocol) || u.hostname === location.hostname || SELF_HOSTS.test(u.hostname) || /^(localhost|127\.)/.test(u.hostname)) continue;   // 이 PC 주소는 출처가 아님
+    [...u.searchParams.keys()].filter((k) => /^utm_/i.test(k)).forEach((k) => u.searchParams.delete(k));
+    u.hash = "";
+    const url = u.toString().slice(0, 500);
+    if (seen.has(url)) continue;
+    seen.add(url);
+    const name = (a.getAttribute("aria-label") || a.getAttribute("title") || a.innerText || "").replace(/\s+/g, " ").trim();
+    out.push({ title: (name || u.hostname.replace(/^www\./, "")).slice(0, 120), url });
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
 const SITES = [
   {
     tool: "ChatGPT",
@@ -186,8 +211,10 @@ function scan() {
     // 생성이 2초 넘게 멈춘 사이 잘린 답이 한 번 더 저장됐다 (이슈 #26-4 · 맥 ChatGPT 새 채팅 201자 → 269자)
     const busy = m.role === "answer" && (m.streaming === true || (i === msgs.length - 1 && site.generating()));
     if (!still || busy) { pending = true; return; }
+    const 출처 = m.role === "answer" ? answerSources(m.el) : [];     // AI 답에 달린 출처 링크 (11/16)
     if (send(m.role === "question" ? "ai_question" : "ai_answer", text,
-             { tool: site.tool, conv, turn: i + 1, model: m.model || "", history: st.history, msg_id: m.id || "" }))
+             { tool: site.tool, conv, turn: i + 1, model: m.model || "", history: st.history, msg_id: m.id || "",
+               ...(m.role === "answer" ? { sources: 출처 } : {}) }))
       st.sent = text;
     else if (toggles) st.sent = text;         // 토글이 꺼진 항목은 다시 시도하지 않음
     else pending = true;                      // 기록 중이 아니면 나중에 다시

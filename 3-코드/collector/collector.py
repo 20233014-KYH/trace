@@ -68,12 +68,33 @@ BROWSERS = set().union(*BROWSER_APPS.values())
 KST = timezone(timedelta(hours=9))
 
 
+# 윈도우 셸 — 작업표시줄 · 시작 메뉴 · 검색. 여기서 글을 복사하는 일은 거의 없다 (복사 직후 잠깐 앞에 오는 창)
+SHELL_APPS = {"explorer.exe", "searchhost.exe", "startmenuexperiencehost.exe", "shellexperiencehost.exe"}
+
+
 def now_iso() -> str:
     return datetime.now(KST).isoformat(timespec="seconds")
 
 
 def sha256_text(s: str) -> str:
     return "sha256:" + hashlib.sha256(s.encode("utf-8", "surrogatepass")).hexdigest()
+
+
+def _출처_정리(v):
+    """확장이 보낸 AI 답의 출처 링크 [{title, url}] → 믿을 수 있는 모양만 (11/16).
+    http(s) 주소만 · 같은 주소는 한 번 · 최대 20개 · 길이 자름. 화면에서 온 값이라 그대로 믿지 않는다"""
+    out, seen = [], set()
+    for x in v if isinstance(v, list) else []:
+        if not isinstance(x, dict):
+            continue
+        url = str(x.get("url") or "").strip()[:500]
+        if not url.lower().startswith(("http://", "https://")) or url in seen:
+            continue
+        seen.add(url)
+        out.append({"title": " ".join(str(x.get("title") or "").split())[:120], "url": url})
+        if len(out) >= 20:
+            break
+    return out
 
 
 def load_token(data_dir: str, server: str):
@@ -381,6 +402,7 @@ class Collector:
         self._clip_len = 0
         self._clip_text = ""
         self._copy_win = None       # Ctrl+C 누른 순간의 (app, category)
+        self._prev, self._prev_at = None, 0.0   # 바로 앞 창 (app, title, category) · 바뀐 시각
         self._last_paste = None     # (time, len) 마지막 Ctrl+V — 저장 파일 diff 가 붙여넣은 자리 판정에 씀
         self._fdiff = None
         self._git = None
@@ -540,6 +562,8 @@ class Collector:
         key = (d["app"], d["title"], d["category"])
         if key != self._cur:
             self._flush_keys()
+            if self._cur:
+                self._prev, self._prev_at = self._cur, now      # 바로 앞 창 — 마우스로 복사한 뒤 작업표시줄을 누른 경우 (11/16)
             self._cur = key
             self.sink.emit({"type": "window", **d})
 
@@ -557,6 +581,11 @@ class Collector:
                 self._clip_hash = h
                 # Ctrl+C 를 누른 순간의 창을 쓴다 — 누르고 바로 작업표시줄을 클릭하면 폴링 시점엔 explorer.exe 가 앞에 있어서
                 src = self._copy_win if (self._copy_win and now - self._copy_at < 3) else (self._cur[0], self._cur[2])
+                # Ctrl+C 가 아닌 복사(ChatGPT 의 복사 단추 · 마우스 오른쪽 → 복사)는 누른 순간을 모른다. 그 직후 작업표시줄을 눌러
+                # 폴링 때 앞 창이 윈도우 셸이면, 방금(3초 안)까지 앞에 있던 창에서 복사한 것으로 본다 — 안 그러면 AI 답 복사가
+                # "explorer.exe · other" 로 남아 붙여넣기가 AI 답과 안 이어졌다 (11/16 실제 시험)
+                if not self._copy_win and src[0].lower() in SHELL_APPS and self._prev and now - self._prev_at < 3:
+                    src = (self._prev[0], self._prev[2])
                 self._copy_win = None
                 self._copies[h] = src
                 self.sink.emit({"type": "copy", "len": self._clip_len, "hash": h,
@@ -749,11 +778,13 @@ class Collector:
         prev = self._ai_last.get(slot)
         replaces = prev[0] if prev and len(text) > len(prev[1]) and text.startswith(prev[1]) else ""
         self._ai_last[slot] = (h, text)
+        출처 = _출처_정리(meta["sources"]) if role == "answer" and "sources" in meta else None   # AI 답에 달린 출처 링크 — PC 파일에만 (11/16) · [] = 안 밝힘 · None = 모름(앱 답 · 옛 확장)
         with open(os.path.join(self.sink.data_dir, f"ai-messages-{datetime.now(KST):%Y-%m-%d}.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"session_id": self.session_id, "event_id": ev["id"], "ts": ev["ts"], "seen_at": it.get("ts"),
                                 "tool": ev["tool"], "model": meta.get("model", ""), "conv": ev["conv"], "turn": ev["turn"],
                                 "role": role, "hash": h, "masked": n_masked, "history": bool(meta.get("history")),
-                                "url": meta.get("url", ""), **({"replaces": replaces} if replaces else {}), "text": text},
+                                "url": meta.get("url", ""), **({"replaces": replaces} if replaces else {}),
+                                **({"sources": 출처} if 출처 is not None else {}), "text": text},
                                ensure_ascii=False) + "\n")
 
     def stop(self):
