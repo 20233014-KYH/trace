@@ -105,6 +105,7 @@
 .det .placeholder{color:var(--faint);font-size:13.5px;margin:auto;text-align:center}
 /* 제출 전 다듬기 (10/31 · 캔버스 S-2) — [전체 | 다듬을 곳] 에서 다듬을 곳을 고르면 다른 색은 옅어지고 다듬을 곳만 남음
    다듬을 곳 = 제목이 아닌 6어절 이상 문장 중 A1 AI 답과 일치 · 유사 · A2 출처 표시 없이 붙여 넣은 다른 곳 글 · A3 따옴표만 있고 출처 없음
+   + A5 참고문헌 제목 아래 줄 중 AI 답에서 온 것 (짧아도 · 11/16)
    빨간 경고 · 점수 없음 · 카드엔 사실 → 이유 → 방법 + 회색 근거 줄 (14번 문서) */
 .doc-in.fixing .s:not(.fix){background:none;text-decoration-color:transparent}
 .doc-in.fixing .tag{opacity:.4}
@@ -379,7 +380,7 @@
       const para = el("p", "para" + (p.head ? " head" : ""));
       p.sents.forEach((k, i) => {
         const x = D.sentences[k];
-        const s = el("span", "s " + x.group + (후보.has(k) ? " fix" : ""), x.text);
+        const s = el("span", "s " + x.group + (후보.has(k) || 참고딸림.has(k) ? " fix" : ""), x.text);
         s.dataset.k = k; s.tabIndex = -1;
         s.onclick = () => pick(k, false);
         para.append(s);
@@ -399,15 +400,36 @@
   //   A2 다른 곳에서 붙여 넣었는데 같은 문단에 따옴표도 출처도 없음
   //   A3 따옴표는 있는데 출처가 없음 — 인용 = 따옴표 + 출처 둘 다
   // (6어절 = 카피킬러 기본값 · 지침 원문엔 숫자가 없다 · 제목 · 용어 · 짧은 줄은 그대로 써도 됨)
-  let 후보 = new Map(), 범위 = "all", 다듬는중 = false;          // 문장 번호 → "A1" | "A2" | "A3"
+  let 후보 = new Map(), 범위 = "all", 다듬는중 = false;          // 문장 번호 → "A1" | "A2" | "A3" | "A5"
   const 어절 = t => t.trim().split(/\s+/).filter(Boolean).length;
   const 출처표시 = /\[\d+\]|\(\s*출처|출처\s*[:：]|https?:\/\/|www\./;
   const 따옴표 = /["“”「」『』]/;
   const AI붙임 = x => x.kind === "web" && x.paste && x.paste.category === "ai";   // AI 앱 · 사이트에서 복사했는데 그 대화는 기록에 없음 (11/2)
+  // A5 AI 답에서 온 참고문헌 (14번 문서 · 11/16 용현) — "참고문헌" 제목 아래 줄이 기록상 AI 답에서 왔을 때만.
+  //   참고문헌 줄은 짧아도 짚는다 (6어절 규칙 밖) · 그 칸의 웹 글은 그 자체가 출처 표시라 A2 · A3 로 짚지 않는다
+  //   진짜 있는 논문인지는 판단하지 않는다 — "AI 답에서 왔다"(사실)와 "직접 찾아 확인해 보세요"(방법)까지만
+  const 참고문헌_제목 = /^\s*(\d+[.)]?\s*)?(참고\s*문헌|참고\s*자료|참고한\s*자료|인용\s*문헌|references?|bibliography|works\s+cited)\s*[:：]?\s*$/i;
+  const AI에서 = x => ["exact", "similar", "edited", "viewed"].includes(x.kind) || AI붙임(x);
+  function 참고문헌_문단() {                               // 참고문헌 제목 다음 문단들 (다음 다른 제목 전까지)
+    const out = new Set(); let 안 = false;
+    D.paragraphs.forEach((p, i) => {
+      const 글 = p.sents.map(k => D.sentences[k].text).join(" ");
+      if (글.length <= 30 && 참고문헌_제목.test(글)) { 안 = true; return; }
+      if (p.head) { 안 = false; return; }
+      if (안) out.add(i);
+    });
+    return out;
+  }
+  const 참고딸림 = new Map();                               // 참고문헌 줄의 나머지 조각 → 대표 조각 번호
   function 다듬을_곳() {
-    const out = new Map();
-    D.paragraphs.forEach(p => {
+    const out = new Map(), 참고 = 참고문헌_문단(); 참고딸림.clear();
+    D.paragraphs.forEach((p, pi) => {
       if (p.head) return;
+      if (참고.has(pi)) {                                  // 참고문헌 한 줄이 마침표마다 조각나도 한 곳으로 — 첫 조각이 대표, 나머지는 딸림
+        const ks = p.sents.filter(k => AI에서(D.sentences[k]));
+        if (ks.length) { out.set(ks[0], "A5"); ks.slice(1).forEach(k => 참고딸림.set(k, ks[0])); }
+        return;
+      }
       const 문단 = p.sents.map(k => D.sentences[k].text).join(" ");
       p.sents.forEach(k => {
         const x = D.sentences[k];
@@ -428,7 +450,10 @@
   const 남은 = () => { const s = 둠(); return [...후보.keys()].filter(k => !s.has(D.sentences[k].text)).sort((a, b) => a - b); };
 
   function 둔표시() {                                      // 그대로 둔 문장은 다듬을 곳 보기에서 옅게
-    const s = 둠(); document.querySelectorAll(".s.fix").forEach(e => e.classList.toggle("kept", s.has(D.sentences[e.dataset.k].text)));
+    const s = 둠(); document.querySelectorAll(".s.fix").forEach(e => {
+      const k = +e.dataset.k, 대표 = 참고딸림.has(k) ? 참고딸림.get(k) : k;
+      e.classList.toggle("kept", s.has(D.sentences[대표].text));
+    });
   }
   function 보기(x) {                                       // [전체 | 다듬을 곳] — 지금 어느 쪽인지 늘 보이고, 돌아갈 [전체] 도 늘 옆에
     범위 = x; 둔표시();
@@ -467,6 +492,12 @@
                     "내 말로 바꾸고 싶다면 — ① 답을 이해할 때까지 읽고 ② 답을 닫고 쓴 다음 ③ 답과 다시 대조해 보세요."],
                근거: "기준: 바꿔 쓰기 방법 · Purdue OWL" };
     }
+    if (종류 === "A5") {
+      const 답 = q ? `${q.tool || "AI"} 답(${때(q.ts)})` : `${p.source || p.domain || "AI"} 답(${때(p.copied_at)} 복사)`;
+      return { 말: [`이 참고문헌은 ${답}에서 왔어요. AI가 만든 참고문헌은 실제로 없는 경우가 있어요.`,
+                    "제목 · 저자 · 연도로 직접 검색해 확인해 보세요 (도서관 · 구글 학술검색 · RISS 등)."],
+               근거: "근거: AI가 만든 참고문헌 중 실제로 없던 것 GPT-4 18% · GPT-3.5 55% (Walters · Wilder 2023)" };
+    }
     const 곳 = p.domain || p.source || "다른 곳", 출처 = `(출처: ${[p.domain || p.source, 날짜점(p.copied_at || p.pasted_at)].filter(Boolean).join(", ") || "사이트, 날짜"})`;
     if (종류 === "A3")
       return { 말: [`따옴표는 있는데 어디서 왔는지가 없어요. 끝에 ${출처}를 달아 보세요.`],
@@ -483,7 +514,8 @@
     const h = el("div", "fx-h"); h.append(el("b", null, "내기 전에"), el("span", null, 둔 ? "" : `다듬을 곳 ${i + 1} / ${남.length}`));
     box.append(h);
     if (둔) {
-      box.append(el("p", null, 종류 === "A1" ? "그대로 두기로 했어요. 내역서에 그대로 공개돼요."
+      box.append(el("p", null, 종류 === "A5" ? "확인했다고 표시했어요. 이 PC 에만 기억해요."
+                             : 종류 === "A1" ? "그대로 두기로 했어요. 내역서에 그대로 공개돼요."
                                              : "그대로 두기로 했어요. 교수님 화면에도 '다른 곳에서 붙여넣음'으로 보여요."));
       const u = el("button", "undo", "되돌리기"); u.type = "button";
       u.onclick = () => { 둠바꿈(x.text, false); 새로(x.k); };
@@ -496,7 +528,12 @@
     const 고치기 = (글, dark) => { const b = el("button", "btn" + (dark ? " dark" : ""), 글); b.type = "button"; b.onclick = () => 다듬기(b, say, x.text); return b; };
     const keep = el("button", "btn", "그대로 둠"); keep.type = "button";            // 안 고치는 것도 학생 마음 — 모든 경우에 (11/8 · 14번 F2)
     keep.onclick = () => { 둠바꿈(x.text, true); 새로(x.k); };
-    if (종류 === "A1") acts.append(고치기("문장 다듬기", true), keep);
+    if (종류 === "A5") {                                       // [확인했어요] = 같은 참고문헌 줄(문단)의 다른 조각도 함께
+      const ok = el("button", "btn dark", "확인했어요"); ok.type = "button";
+      ok.onclick = () => { 둠바꿈(x.text, true); 새로(x.k); };   // 대표 조각만 기억 — 딸린 조각도 같이 옅어짐
+      acts.append(ok, 고치기("문장 다듬기", false));
+    }
+    else if (종류 === "A1") acts.append(고치기("문장 다듬기", true), keep);
     else if (종류 === "A3") acts.append(고치기("인용 달기", true), keep);
     else acts.append(고치기("인용 달기", true), 고치기("문장 다듬기", false), keep);
     box.append(acts, el("p", "hint", "누르면 이 과제 기록이 켜지고 Word 에서 이 문장이 선택돼요 · 고치는 건 직접 해요"), say);
@@ -593,7 +630,8 @@
     const q = x.q != null ? D.questions[x.q] : null;
     const AI붙인글 = AI붙임(x);
     head(det, DOT[x.group], AI붙인글 ? "AI 답에서 그대로 붙여넣음" : KIND[x.kind], q ? `${toolLine(q)} · 질문 ${q.n}` : null);
-    if (후보.has(x.k)) det.append(다듬기칸(x));               // 맨 위 — 아래에 두면 스크롤해야 보여 지나치기 쉬움 (11/1)
+    if (후보.has(x.k)) det.append(다듬기칸(x));
+    else if (참고딸림.has(x.k)) det.append(다듬기칸(D.sentences[참고딸림.get(x.k)]));   // 참고문헌 줄의 다른 조각을 눌러도 같은 카드               // 맨 위 — 아래에 두면 스크롤해야 보여 지나치기 쉬움 (11/1)
     if (q) { det.append(el("h5", null, "질문")); det.append(el("div", "txt", q.question || "질문 기록 없음")); }
     // 결과물 문장은 왼쪽에 이미 칠해져 보여서 오른쪽엔 다시 안 씀 (11/16 박상진)
     if (q && q.answer) {
