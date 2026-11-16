@@ -516,6 +516,8 @@ def render(d, url):
             출처줄 = f"결과물에 글이 들어간 답 {안밝힘}개 모두 AI가 출처를 밝히지 않음"
         body += [Spacer(1, 6 * X), P(E(출처줄), "note")]
     남은 = []
+    if rc.get("refined"):                             # 제출 전 고침 (11/16) — 좋은 쪽 숫자
+        남은.append(f"제출 전 다듬기에서 짚였다가 학생이 내기 전에 고친 문장 {rc['refined']}개")
     if d.get("rejected"):
         남은.append(f"Trace가 제안했지만 학생이 \"아니다\"라고 고른 연결 {d['rejected']}개")
     if d.get("unsure"):

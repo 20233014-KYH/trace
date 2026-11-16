@@ -1113,10 +1113,11 @@ def create_statement(wid):
         if len((b.get(이름) or "").strip()) > 설명_최대:
             return jsonify(error="bad_request", message=f"{이름} 는 {설명_최대}자까지입니다"), 400
     # v3 ③ 결과물에 들어간 것 — 보고서 문장 수 묶음 (PC 가 셈 · 선택 · 10/12). 숫자만 받는다 (문장 원문은 안 받음)
+    # refined = 제출 전 고침 (출처 보기에서 짚였다가 내기 전에 바뀐 문장 수 · 11/16) — DB 칸을 새로 만들지 않고 이 묶음에
     결과수 = b.get("result_counts")
-    if 결과수 is not None and not (isinstance(결과수, dict) and set(결과수) <= {"total", "ai", "other", "edited", "viewed", "none"}
+    if 결과수 is not None and not (isinstance(결과수, dict) and set(결과수) <= {"total", "ai", "other", "edited", "viewed", "none", "refined"}
                                 and all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 100000 for v in 결과수.values())):
-        return jsonify(error="bad_request", message="result_counts 는 {total · ai · other · edited · viewed · none: 0 이상 정수} 여야 합니다"), 400
+        return jsonify(error="bad_request", message="result_counts 는 {total · ai · other · edited · viewed · none · refined: 0 이상 정수} 여야 합니다"), 400
     # v3 ① 질문 쓰임새 수 (숫자만) · ② 학생이 고른 대표 질문 (최대 3 · 원문은 messages 에 같이 와야 함)
     쓰임키 = {"learn", "fix", "write"}
     쓰임수 = b.get("usage_counts")

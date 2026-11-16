@@ -193,6 +193,40 @@ def open_link():
     return jsonify(ok=True)
 
 
+# ─────────────── 제출 전 고침 N (14번 문서 E · 11/16 용현) ───────────────
+# 출처 보기가 짚은 다듬을 곳 문장을 문서(파일 이름)마다 이 PC 에만 기억한다: ever = 한 번이라도 짚인 문장 · now = 지금 짚인 문장.
+# 내보낼 때 ever 중 지금 문서에 그 문장이 없거나(고쳐 씀 · 지움 · 따옴표 · 인용을 달아 글이 바뀜) 더는 안 짚이는 것 = 고친 문장.
+# [그대로 둠] 한 문장은 계속 짚이므로 안 센다. 서버엔 개수만 간다 (문장 원문 아님).
+def _짚은_경로(wid):
+    return os.path.join(_기록["data_dir"](), "refine-" + re.sub(r"[^\w.-]", "_", wid)[:80] + ".json")
+
+
+@bp.post("/local/source/flags")
+def save_flags():
+    """{work_id, file, flagged: [문장 글]} — 출처 보기가 지금 다듬을 곳으로 짚은 문장"""
+    b = request.get_json(force=True, silent=True) or {}
+    wid, 파일, 짚음 = str(b.get("work_id") or ""), str(b.get("file") or "")[:200], b.get("flagged")
+    if not wid or not 파일 or not isinstance(짚음, list) or not all(isinstance(t, str) for t in 짚음):
+        return jsonify(error="bad_request", message="work_id · file · flagged(글 목록)가 필요해요"), 400
+    짚음 = list(dict.fromkeys(t[:2000] for t in 짚음))[:500]
+    경로 = _짚은_경로(wid)
+    with safefile.lock(경로):
+        d = safefile.read_json(경로, {})
+        d = d if isinstance(d, dict) else {}
+        f = d.setdefault(파일, {})
+        f["ever"] = list(dict.fromkeys((f.get("ever") or []) + 짚음))[-2000:]
+        f["now"] = 짚음
+        safefile.write_json(경로, d, indent=1)
+    return jsonify(ok=True, ever=len(f["ever"]), now=len(짚음))
+
+
+def 고친_수(wid, 파일, 문장들):
+    """그 문서에서 짚였다가 내기 전에 바뀐 문장 수. 문장들 = 지금 문서의 문장 글. 기억이 없으면 0"""
+    f = (safefile.read_json(_짚은_경로(wid), {}) or {}).get(파일) or {}
+    지금, 있는 = set(f.get("now") or []), set(문장들)
+    return sum(1 for t in f.get("ever") or [] if t not in 지금 or t not in 있는)
+
+
 def _열기(wid, name):
     d = next((d for d in _문서_목록(wid) if d["name"] == name), None)
     if not d or not d["exists"]:

@@ -280,7 +280,8 @@
   "other": 0,
   "edited": 1,
   "viewed": 2,
-  "none": 3
+  "none": 3,
+  "refined": 1
  },
  "usage_counts": {
   "learn": 2,

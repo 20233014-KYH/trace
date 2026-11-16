@@ -295,6 +295,7 @@ def _모으기(wid):
               "viewed": 종류.count("viewed"), "none": 종류.count("none")}
     r = {"file": name, "title": d["title"], "confirmed": confirmed, "rejected": rejected, "unsure": unsure,
          "result_counts": 결과수, "questions": 질문칸, "noproc": 종류.count("noproc"),     # B3 쓴 과정 기록 없는 문장 (11/16)
+         "wid": wid, "sent_texts": [x["text"] for x in d["sentences"]],              # 제출 전 고침 N (11/16)
          "usage_counts": {k: sum(1 for q in 질문칸 if q["usage"] == k) for k, _, _ in 쓰임새},
          "sent_base": 보냄, "events": events, "sessions": 세션,
          # 교수 링크 출처 보기를 켜면 이 과제의 질문 · 답 전부가 간다 (김용현 #44 · statement._출처_보기 로 만듦)
@@ -403,9 +404,15 @@ def _보낼_것(r, 초안):
                           "model": m.get("model") or None,
                           **({"mask": [list(x) for x in 가릴_자리(m["text"])]} if i in 일부 else {})}
                          for i, m in messages.items()],
-            "links": links, "result_counts": r["result_counts"],                  # 숫자만 (문장 원문 아님)
+            "links": links, "result_counts": _결과수(r),                          # 숫자만 (문장 원문 아님)
             "usage_counts": r["usage_counts"], "flow": 흐름,                      # v3 ① 숫자만 · ② 고른 질문
             "redactions": [{"session_id": i.split("/", 1)[0], "event_id": i.split("/", 1)[1]} for i in sorted(가림)]}
+
+
+def _결과수(r):
+    """v3 ③ 문장 수 + 제출 전 고침 (출처 보기에서 짚였다가 내기 전에 바뀐 문장 · 14번 문서 E · 11/16). 0 이면 안 넣음"""
+    n = S.고친_수(r["wid"], r["file"], r["sent_texts"])
+    return {**r["result_counts"], **({"refined": n} if n else {})}
 
 
 def _출처_자료(r, 초안, messages, 가림, 일부):
