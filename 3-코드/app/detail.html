@@ -88,7 +88,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     </header>
 
     <div class="body" id="body">
-      <div class="title"><h1 id="t">…</h1><div class="meta" id="meta"></div></div>
+      <div class="title"><h1 id="t"><span class="loading" style="padding:0"><i class="spin"></i></span></h1><div class="meta" id="meta"></div></div>
       <div id="toast"></div>
       <div class="card flow" id="flow"></div>
       <div class="cols">
@@ -96,7 +96,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
           <div style="display:flex;align-items:center;gap:8px"><span class="h-sec" style="flex:none">기록</span>
             <span class="desc" id="rsum" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
             <a class="btn btn-outline btn-sm" id="more-rec" href="#" hidden style="flex:none;white-space:nowrap">기록 이어서 하기</a></div>
-          <div id="rows" style="margin-top:6px"></div>
+          <div id="rows" style="margin-top:6px"><div class="loading"><i class="spin"></i><span>불러오는 중</span></div></div>
           <div class="desc foot">원문은 이 PC 에만 · 기록을 누르면 그때 한 일을 시간 순으로 다시 봐요</div>
         </section>
         <div class="right">

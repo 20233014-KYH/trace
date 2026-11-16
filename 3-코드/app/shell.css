@@ -106,3 +106,8 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
 .steps .step-go{cursor:pointer;border-radius:4px}.steps .step-go:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .next{height:40px;border-radius:10px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;white-space:nowrap;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
 .next:hover{background:#27272a}.next svg{width:16px;height:16px}
+/* 불러오는 중 (11/16) — 도는 동그라미 · 글은 있을 때만 */
+.loading{display:flex;align-items:center;gap:8px;padding:8px 10px;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid #e4e4e7;border-top-color:#71717a;flex:none;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rail .loading span{opacity:0}
