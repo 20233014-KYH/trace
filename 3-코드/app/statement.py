@@ -45,6 +45,7 @@ from core.texthash import sha256_text          # noqa: E402
 from core import settings                      # noqa: E402  기록기·알약과 같은 설정 파일 (10/13)
 from core import safefile                      # noqa: E402  여러 요청이 같은 파일을 읽고 써도 (10/14)
 from core.version import VERSION, parse as parse_version  # noqa: E402  설치판 버전 (새 버전 알림)
+import reseal as 봉인                          # noqa: E402  봉인이 빠진 기록 다시 보내기 (11/16)
 
 PORT = 5079                                     # 기록기 브리지는 5077
 app = Flask(__name__)
@@ -144,6 +145,12 @@ def _서버_부르기(방법, 경로, t, **kw):
         return r.status_code, {"error": "bad_response", "message": f"서버 응답을 읽지 못했습니다 (HTTP {r.status_code})"}
 
 
+def _봉인_다시():
+    """봉인이 빠진 기록(v0.1.18 까지 기록 창을 닫을 때 잘린 것)을 서버에 다시 보낸다 — 로그인돼 있을 때 · 화면은 안 막음 (11/16 · app/reseal.py)"""
+    if _auth().get("token"):
+        봉인.뒤에서(설정["data_dir"], _서버)
+
+
 # ─────────────── 이 PC 의 기록 ───────────────
 def _jsonl(pattern):
     out = []
@@ -219,6 +226,7 @@ def login():
         return jsonify(답), 코드
     # data/ 는 .gitignore — 저장소에 안 올라간다
     safefile.write_json(_auth_path(), {"server": 설정["server"], "token": 답["token"], "user": 답["user"]})
+    _봉인_다시()
     return jsonify(user=답["user"])
 
 
@@ -283,6 +291,7 @@ def oauth_done(p):
         w["error"] = 답.get("message") or "로그인하지 못했어요. 다시 눌러 주세요"
         return _브라우저_안내("로그인하지 못했어요", w["error"], 400)
     safefile.write_json(_auth_path(), {"server": 설정["server"], "token": 답["token"], "user": 답["user"]})
+    _봉인_다시()
     w["done"] = True
     return _브라우저_안내("로그인됐어요", "Trace 앱으로 돌아가세요. 이 탭은 닫아도 돼요.")
 
@@ -571,6 +580,7 @@ def main():
     print(f"Trace 내역서 만들기  {주소}\n  서버 {설정['server']}\n  설정 {설정['config']}\n  기록 {설정['data_dir']}\n  끄려면 Ctrl+C")
     if not a.no_browser:
         threading.Timer(0.8, lambda: webbrowser.open(주소)).start()
+    _봉인_다시()
     app.run(host="127.0.0.1", port=PORT, debug=False)
 
 
