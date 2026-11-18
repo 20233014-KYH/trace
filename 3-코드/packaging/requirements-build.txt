@@ -6,6 +6,7 @@ watchdog
 pynput
 pywebview
 reportlab
+olefile    # 한글(.hwp) 읽기 (core/hwp.py · BSD · 11/18)
 pypdf      # 결과물 PDF 읽기 (core/pdftext.py)
 pywin32 ; sys_platform == "win32"
 psutil  ; sys_platform == "win32"

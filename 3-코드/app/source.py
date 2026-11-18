@@ -29,7 +29,9 @@ from flask import Blueprint, abort, jsonify, request, send_from_directory
 
 from core import match as M, safefile
 from core.docx import read_docx
-from core.pdftext import is_pdf, read_doc   # 결과물이 PDF 여도 (10/15)
+from core.pdftext import is_pdf, read_doc   # 결과물이 PDF 여도 (10/15) · 한글이어도 (11/18)
+from core.hwp import HwpError
+문서_확장자 = (".docx", ".hwpx", ".hwp")      # 기록 · 내용으로 찾는 과제 파일 (11/18 한글)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 bp = Blueprint("source", __name__)
@@ -69,7 +71,7 @@ def source():
         _파일[wid] = (f.filename, f.read())
         _연_이름.pop(wid, None)
     if not (f and wid) and not 문서_준비(wid):
-        return jsonify(error="no_file", message="과제 파일(Word · PDF)을 골라 주세요", files=_기록된_문서(wid)), 400
+        return jsonify(error="no_file", message="과제 파일(Word · 한글 · PDF)을 골라 주세요", files=_기록된_문서(wid)), 400
     return _분석(wid)
 
 
@@ -128,7 +130,8 @@ def _내용으로_찾기(wid):
     best = None
     for path in _후보_파일(t0):
         try:
-            d = M._bigrams(M.norm(" ".join(t for _, t in read_docx(path))))
+            with open(path, "rb") as fh:
+                d = M._bigrams(M.norm(" ".join(t for _, t in read_doc(fh.read()))))      # Word · 한글 (11/18)
         except Exception:
             continue
         c = len(조각 & d) / len(조각)
@@ -145,7 +148,7 @@ def _내용으로_찾기(wid):
 
 
 def _후보_파일(t0, 최대=40):
-    """기록을 시작한 뒤 저장된 .docx — 흔한 자리 두 단계 안쪽까지 · 최근 것부터 최대 40개"""
+    """기록을 시작한 뒤 저장된 .docx · .hwpx · .hwp — 흔한 자리 두 단계 안쪽까지 · 최근 것부터 최대 40개"""
     집 = os.path.expanduser("~")
     자리 = [os.path.join(집, *p) for p in (("Desktop",), ("Documents",), ("Downloads",), ("OneDrive", "Desktop"), ("OneDrive", "Documents"),
                                          ("OneDrive", "바탕 화면"), ("OneDrive", "문서"))]
@@ -158,7 +161,7 @@ def _후보_파일(t0, 최대=40):
                 dirs[:] = []
             dirs[:] = [x for x in dirs if not x.startswith((".", "$")) and x.lower() not in ("node_modules", "appdata")]
             for f in files:
-                if f.lower().endswith(".docx") and not f.startswith("~$"):
+                if f.lower().endswith(문서_확장자) and not f.startswith(("~$", ".~")):
                     p = os.path.join(d, f)
                     try:
                         m = os.path.getmtime(p)
@@ -244,9 +247,12 @@ def _분석(wid):
     name, raw = _파일[wid]
     try:
         paras = read_doc(raw)                           # Word(.docx) 또는 PDF (10/15)
+    except HwpError as e:                               # 암호 · 배포용 한글 문서 — 까닭을 그대로 (11/18)
+        _파일.pop(wid, None)
+        return jsonify(error="bad_file", message=str(e)), 400
     except Exception:
         _파일.pop(wid, None)
-        return jsonify(error="bad_file", message="Word(.docx) · PDF 파일을 읽지 못했습니다"), 400
+        return jsonify(error="bad_file", message="Word(.docx) · 한글(.hwp · .hwpx) · PDF 파일을 읽지 못했습니다"), 400
     if not paras and is_pdf(raw):
         _파일.pop(wid, None)
         return jsonify(error="bad_file", message="글자를 읽을 수 없는 PDF 예요 (스캔한 그림 등) — 원본 Word 파일을 골라 주세요"), 400
@@ -328,14 +334,14 @@ def _문서_목록(wid):
             out.pop(n, None)
     for c in _기록["jsonl"]("context-*.jsonl"):
         m = c.get("meta") or {}
-        if c.get("session_id") in 세션 and c.get("kind") == "doc_path" and m.get("app") == "Word" and m.get("file") and m.get("path"):
+        if c.get("session_id") in 세션 and c.get("kind") == "doc_path" and m.get("app") in ("Word", "한글") and m.get("file") and m.get("path"):
             d = out.setdefault(m["file"], {"name": m["file"], "path": None, "ts": ""})
             if c.get("ts", "") >= d.get("path_ts", ""):            # 같은 이름이 여러 자리 → 가장 최근 자리
                 d.update(path=m["path"], path_ts=c.get("ts", ""))
             d["ts"] = max(d["ts"], c.get("ts", ""))
     docs = sorted(out.values(), key=lambda d: d["ts"], reverse=True)
     for d in docs:
-        d["exists"] = bool(d["path"]) and d["path"].lower().endswith(".docx") and os.path.isfile(d["path"])
+        d["exists"] = bool(d["path"]) and d["path"].lower().endswith(문서_확장자) and os.path.isfile(d["path"])
         d.pop("path_ts", None)
     return docs
 

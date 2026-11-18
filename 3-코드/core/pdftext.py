@@ -89,8 +89,11 @@ def is_pdf(raw):
 
 
 def read_doc(raw):
-    """과제 파일 바이트 → [(style, text)] — PDF 면 read_pdf, 아니면 Word(.docx)"""
+    """과제 파일 바이트 → [(style, text)] — PDF 면 read_pdf · 한글(.hwpx · .hwp)이면 core/hwp (11/18) · 아니면 Word(.docx)"""
     if is_pdf(raw):
         return read_pdf(io.BytesIO(raw))
+    from core import hwp
+    if hwp.is_hwpx(raw) or hwp.is_hwp(raw):
+        return hwp.read_hangul(raw)
     from core.docx import read_docx
     return read_docx(io.BytesIO(raw))
