@@ -341,7 +341,7 @@ def pasted_from_other(events, context):
             if not text.strip():
                 continue
             src = (c["domain"] or c["app"].removesuffix(".exe").removesuffix(".EXE")) if c else ""
-            out.append({"text": text.strip(), "source": src, "category": c["category"] if c else "",
+            out.append({"text": text.strip(), "source": src, "category": c["category"] if c else "", "app": c["app"] if c else "",
                         "copied_at": c["ts"] if c else "", "pasted_at": e["ts"], "file": at.get("file", ""), "where": at.get("where", "")})
     return out
 
@@ -426,6 +426,12 @@ def process_evidence(events, context):
                 꼬리[자리] = n[-1]
     # 조각조각 친 글(" 이 연구는" " 국내외" …)은 문단마다 이어 붙인 것도 친 글로 — 한 조각만으론 문장과 비교가 안 된다 (11/16)
     return {"typed": typed + [t for t in 친문단.values() if t not in typed], "typed_at": typed_at, "noproc": noproc}
+
+
+def _pc_앱(p):
+    """그 붙여넣기를 복사한 곳이 이 PC 의 프로그램(메모장 · 한글 · 텍스트 편집기 …)인가 — 브라우저 · AI 앱 · 모르는 곳은 아님"""
+    app = (p.get("app") or "").lower()
+    return bool(app) and app not in BROWSERS and app.removesuffix(".exe") not in AI_APPS and p.get("category") != "ai"
 
 
 def _붙임_나머지(c, 붙임, 자리시각=()):
@@ -630,7 +636,14 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
                 # AI 답과 거의 그대로(exact) 이어진 문장은 다른 곳 붙여넣기가 '고쳐 씀' 정도로만 닮았을 땐 안 바꾼다
                 # (10/14: 표 칸 "M5 Pro / M5 Max" 가 긴 구글 답 문장과 글자 조각만 겹쳐 '다른 곳' 으로 넘어감)
                 if w["label"] != "none" and (r["label"] != "exact" or w["label"] == "exact"):
-                    r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=others[w["answer"]])
+                    p = others[w["answer"]]
+                    if r["answer"] is not None and r["label"] in ("exact", "edited", "viewed") and _pc_앱(p) and 앞서(r["answer"], p):
+                        # AI 답을 메모장 · 한글 같은 PC 프로그램에 옮겨 고친 뒤 다시 복사해 붙임 → AI 답 연결을 남긴다 (11/18 김용현 맥 시험:
+                        # GPT → 메모장에서 고침 → Word 가 "다른 곳(메모장)에서 붙여넣음" 이 돼 AI 연결이 사라짐 · 한 글자만 고쳐도 세탁됐다).
+                        # 웹사이트에서 복사한 글은 우연히 AI 답과 닮을 수 있어서 그대로 '다른 곳'
+                        r.update(label="exact" if r["label"] == "exact" else "edited", paste={**p, "via": True})
+                    else:
+                        r.update(label="web", full=False, answer=None, sents=None, ai_text=w["ai_text"], paste=p)
             # 붙여넣기 기록 없이 글자만 닮은 제안(그대로 · 보고 씀)을 거른다 (11/16):
             #   ① 답을 물어보기 전에 다 쳐 둔 문장 ② 숫자를 빼면 MIN_CHARS 도 안 되는 줄(학번 · 날짜 · 쪽수) — 숫자 조각만 겹친 것
             if r["paste"] is None and r["label"] in ("exact", "viewed") and r["answer"] is not None and (
