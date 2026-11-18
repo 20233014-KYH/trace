@@ -12,6 +12,7 @@ test_hangul_watch.py — 한글 저장할 때마다 문서 변화 (collector/han
 """
 import io
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -97,6 +98,36 @@ def main():
     검사("⑥ 저장 뒤 다른 창이 앞이어도 마지막 저장을 놓치지 않음", [c["text"] for c in ctx[m:] if c["kind"] == "diff"] == ["저장하고 바로 다른 창으로 감."],
          str([c["text"] for c in ctx[m:]]))
 
+    # ⑦ 자동 저장(.asv) — 저장 안 한 새 문서도 · 그다음 이름을 붙여 저장해도 같은 문서로 이어서 (11/18)
+    asv_dir = os.path.join(d, "Hwp120")
+    os.makedirs(asv_dir)
+    asv = os.path.join(asv_dir, "빈 문서 1.asv")
+    HG._자동저장_파일들 = lambda: [asv] if os.path.exists(asv) else []
+    HG._이름으로_찾기 = lambda name, 최대깊이=2: None
+    w3, ev3, ctx3, _ = 기록기(os.path.join(d, "없음.hwpx"), 시작)
+    w3.current = lambda: ("Claude", "")
+    저장(asv, ["아직 저장 안 한 새 문서의 첫 문단."])
+    w3.한번()
+    검사("⑦ 저장 안 한 새 문서도 자동 저장으로 글 변화 (열 때 있던 글 아님)",
+         [c["kind"] for c in ctx3] == ["diff"] and ctx3[0]["text"] == "아직 저장 안 한 새 문서의 첫 문단." and ctx3[0]["meta"].get("since"),
+         str([(c["kind"], c["text"][:12]) for c in ctx3]))
+    time.sleep(1.1)
+    저장(asv, ["아직 저장 안 한 새 문서의 첫 문단.", "자동 저장 사이에 더 썼다."])
+    w3.한번()
+    검사("⑦ 다음 자동 저장엔 늘어난 문단만", [c["text"] for c in ctx3 if c["kind"] == "diff"][1:] == ["자동 저장 사이에 더 썼다."])
+    w3.한번()
+    검사("⑦ 자동 저장이 그대로면 아무것도 안 냄", len([c for c in ctx3 if c["kind"] == "diff"]) == 2)
+    새이름 = os.path.join(d, "과제.hwpx")
+    저장(새이름, ["아직 저장 안 한 새 문서의 첫 문단.", "자동 저장 사이에 더 썼다.", "이름 붙여 저장하며 한 줄 더."])
+    w3._문서_경로 = lambda title: 새이름
+    w3.current = lambda: ("한컴오피스 한글", "과제.hwpx - 한컴오피스 한글")
+    w3.한번()
+    검사("⑦ 이름 붙여 저장해도 같은 문서 — 새 줄만 · 열 때 있던 글 아님",
+         [c["text"] for c in ctx3 if c["kind"] == "diff"][2:] == ["이름 붙여 저장하며 한 줄 더."] and not any(c["kind"] == "doc_open" for c in ctx3),
+         str([(c["kind"], c["text"][:14]) for c in ctx3]))
+    검사("⑦ 기록 전에 생긴 옛 자동 저장은 안 읽음", (lambda w: (setattr(w, "started_at", time.time() + 3600), w.한번(), len(w._자동) == 0)[-1])(
+        기록기(os.path.join(d, "없음2.hwpx"), 시작)[0]))
+
     q = os.path.join(d, "원래있던.hwpx")
     저장(q, ["전부터 있던 문단."])
     w2, ev2, ctx2, _ = 기록기(q, time.time() + 60)                  # 기록을 켜기 전에 만든 파일
@@ -108,6 +139,7 @@ def main():
                                 HG._제목_파일("빈 문서 1 - 한글")) == ("보고서.hwp", "과제 2.hwpx", ""))
     검사("⑤ 한글 앱 이름 알아보기", all(HG.is_hangul(a) for a in ("Hwp.exe", "한컴오피스 한글", "Hancom Office HWP", "한글"))
          and not any(HG.is_hangul(a) for a in ("Microsoft Word", "WINWORD.EXE", "Google Chrome", "")))
+    shutil.rmtree(d, ignore_errors=True)
     print("  " + "─" * 60 + f"\n  {'✓ 통과' if not 실패 else '✗ 실패'}  ({통과}개 통과 · {실패}개 실패)\n")
     sys.exit(1 if 실패 else 0)
 
