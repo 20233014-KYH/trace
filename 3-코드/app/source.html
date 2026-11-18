@@ -221,7 +221,7 @@
     </div>
   </main>
 </div>
-<input type="file" id="pick" accept=".docx,.pdf" hidden>
+<input type="file" id="pick" accept=".docx,.hwpx,.hwp,.pdf" hidden>
 
 <script src="/ui/shell.js"></script>
 <script src="/ui/win.js"></script>
@@ -250,7 +250,7 @@
     const box = $("doc"); box.textContent = "";
     const e = el("div", "empty");
     e.append(el("h2", null, "과제 파일을 골라 주세요"),
-             el("div", null, "Word(.docx) · PDF 파일 문장마다 어디서 왔는지 이 PC 기록과 이어서 보여 줍니다. 파일은 이 PC 밖으로 나가지 않습니다."));
+             el("div", null, "Word(.docx) · 한글(.hwp · .hwpx) · PDF 파일 문장마다 어디서 왔는지 이 PC 기록과 이어서 보여 줍니다. 파일은 이 PC 밖으로 나가지 않습니다."));
     const d = el("div", "drop");
     d.append(el("div", null, "여기에 끌어다 놓거나"));
     const b = el("button", "btn", "파일 고르기"); b.onclick = () => $("pick").click(); d.append(b);
@@ -318,7 +318,7 @@
     });
     if (files.length) m.append(el("div", "sep"));
     const o = el("button", "other"); o.setAttribute("role", "menuitem");
-    o.append(icon('<path d="M12 5v14M5 12h14"/>'), el("span", "nm", "다른 파일 고르기 (Word · PDF)…"));
+    o.append(icon('<path d="M12 5v14M5 12h14"/>'), el("span", "nm", "다른 파일 고르기 (Word · 한글 · PDF)…"));
     o.onclick = () => { close(); $("pick").click(); };
     if (files.some(d => !d.exists)) m.append(o, el("div", "hint", "위치가 기록되지 않았거나 옮긴 문서는 직접 골라 주세요."));
     else m.append(o);

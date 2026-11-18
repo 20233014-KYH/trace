@@ -27,8 +27,14 @@ def read_docx(path_or_file):
 
 
 def doc_body(path_or_file, name=None):
-    """Word → (제목, [본문 문단]). 제목 서식이 없으면 첫 줄이 짧고 마침표가 없을 때 제목으로 본다."""
-    paras = read_docx(path_or_file)
+    """Word · 한글 · PDF → (제목, [본문 문단]). 제목 서식이 없으면 첫 줄이 짧고 마침표가 없을 때 제목으로 본다."""
+    if isinstance(path_or_file, str):
+        with open(path_or_file, "rb") as f:
+            raw = f.read()
+    else:
+        raw = path_or_file.read()
+    from core.pdftext import read_doc                # Word(.docx) · 한글(.hwpx · .hwp) · PDF (11/18)
+    paras = read_doc(raw)
     heads = [i for i, (st, t) in enumerate(paras) if st.lower() in ("title", "heading1", "제목")]
     if not heads and paras and len(paras[0][1]) <= 60 and not re.search(r"[.!?。]$", paras[0][1]):
         heads = [0]

@@ -302,7 +302,7 @@ def selftest():
         if 빠짐:
             raise FileNotFoundError(", ".join(빠짐))
     검사("원본 파일", 원본)
-    for m in ("flask", "requests", "pyperclip", "watchdog.observers", "reportlab.platypus", "webview", "pypdf"):
+    for m in ("flask", "requests", "pyperclip", "watchdog.observers", "reportlab.platypus", "webview", "pypdf", "olefile"):
         검사(f"라이브러리 {m}", lambda m=m: importlib.import_module(m) and None)
     if os.name == "nt":
         for m in ("win32api", "win32gui", "win32process", "win32com.client", "pythoncom", "psutil", "comtypes.client",
@@ -341,6 +341,17 @@ def selftest():
         assert b[:4] == b"%PDF"
         return f"{len(b) // 1024}KB"
     검사("내역서 PDF (글꼴)", pdf)
+
+    def 한글():                                       # 한글(.hwpx) 읽기 — 묶인 core/hwp 가 열리는지 (11/18)
+        import io
+        import zipfile
+        from core import hwp
+        b = io.BytesIO()
+        with zipfile.ZipFile(b, "w") as z:
+            z.writestr("Contents/section0.xml", '<hs:sec xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section" '
+                       'xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"><hp:p><hp:run><hp:t>한글 시험</hp:t></hp:run></hp:p></hs:sec>')
+        assert hwp.read_hangul(b.getvalue()) == [("", "한글 시험")]
+    검사("한글 파일 읽기", 한글)
 
     글 = f"Trace {VERSION} 자체 시험 — {len(결과) - 실패}개 통과, {실패}개 실패\n" + "\n".join(결과)
     print(글)

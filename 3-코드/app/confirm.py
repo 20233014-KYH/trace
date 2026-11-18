@@ -75,7 +75,7 @@ def _물을_것(wid):
     try:
         paras = read_doc(raw)                           # Word(.docx) · PDF
     except Exception:
-        return {"error": "bad_file", "message": "Word(.docx) 파일을 읽지 못했습니다"}, 400
+        return {"error": "bad_file", "message": "Word(.docx) · 한글(.hwp · .hwpx) · PDF 파일을 읽지 못했습니다"}, 400
     rec = S.과제_기록(wid)
     if not rec:
         return S.NO_RECORDS

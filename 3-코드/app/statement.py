@@ -357,12 +357,12 @@ def analyze():
     """과제 파일 + 이 PC 의 그 과제 기록 → 문장마다 연결 제안. 원문은 화면(같은 PC)으로만 간다."""
     wid, f = request.form.get("work_id", ""), request.files.get("file")
     if not wid or not f:
-        return jsonify(error="bad_request", message="과제와 .docx 파일이 필요합니다"), 400
+        return jsonify(error="bad_request", message="과제와 과제 파일(Word · 한글 · PDF)이 필요합니다"), 400
     try:
         원본 = f.read()                                        # 출처 보기를 켜면 내역서 만들 때 다시 읽는다 (이 PC 메모리에만)
         title, body = doc_body(io.BytesIO(원본), name=f.filename)
     except Exception:
-        return jsonify(error="bad_file", message="Word(.docx) 파일을 읽지 못했습니다"), 400
+        return jsonify(error="bad_file", message="Word(.docx) · 한글(.hwp · .hwpx) · PDF 파일을 읽지 못했습니다"), 400
 
     세션 = _과제별_세션().get(wid, set())
     if not 세션:
