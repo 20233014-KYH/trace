@@ -367,6 +367,9 @@ def process_evidence(events, context):
     붙인 = {id(d) for _, _, ds in paste_groups(events, context) for d in ds}      # 여러 문단 붙여넣기의 나머지 문단까지 (10/14)
     keys = sorted(([e["ts"], int(e.get("count", 0))] for e in events if e.get("type") == "keys" and e.get("app", "").upper() in OFFICE_KEY_APPS),
                   key=lambda k: k[0])
+    # 한글은 저장할 때만 읽어서 글 변화가 저장 사이 글을 한꺼번에 담는다 (collector/hangul.py · meta.since) — 그 사이 한글 키 · 붙여넣기로 가른다 (11/18)
+    한글키 = [(e["ts"], int(e.get("count", 0))) for e in events if e.get("type") == "keys" and _한글앱(e.get("app", ""))]
+    한글붙임 = [(e["ts"], int(e.get("len") or 0)) for e in events if e.get("type") == "paste" and _한글앱(e.get("app", ""))]
     typed, typed_at, noproc = [], [], []          # typed_at = (시각, 글) — 그 글을 친 때 (11/16 · 답보다 먼저 쓴 문장 거르기)
     # 같은 파일을 여러 번 받았으면 하나만 — 받은 곳이 확실한 것(AI 사이트 · 사이트 이름 있음) → 그중 먼저 받은 것 (10/17 · 글이 같아
     # 어느 것에 이어질지는 순서로 정해지는데, 받은 곳을 모르는 앞 기록에 이어져 "Chrome" 으로만 보였다)
@@ -403,6 +406,16 @@ def process_evidence(events, context):
         elif c.get("kind") == "diff" and c.get("text", "").strip() and _붙임_나머지(c, 최근붙임.get((meta.get("file"), meta.get("where"))),
                                                                                  붙인자리.get(meta.get("where"), ())):
             pass        # 붙여넣은 글을 Word 가 두 번에 나눠 읽은 나머지 (11/16 맥 실제 시험: 붙이고 11초 뒤 같은 문단에 겹친 글 41자가 '쓴 과정 기록 없음')
+        elif c.get("kind") == "diff" and c.get("text", "").strip() and meta.get("since"):
+            n, a, b = len(c["text"].strip()), meta["since"], c["ts"]
+            쳤다 = sum(k for t, k in 한글키 if a <= t <= _더하기(b, 12))
+            붙였다 = sum(k for t, k in 한글붙임 if a <= t <= b)
+            if 쳤다 >= max(2, int(max(0, n - 붙였다) * TYPED_KEYS)) and 쳤다 > 0:
+                typed.append(c["text"]); typed_at.append((c["ts"], c["text"]))
+                k = (meta.get("file"), meta.get("where"))
+                친문단[k] = 친문단.get(k, "") + c["text"]
+            elif 붙였다 < n * 0.5:                       # 친 것도 붙인 것도 아닌데 생긴 글 → 쓴 과정 기록 없음
+                noproc.append({"text": c["text"], "how": "nokeys", "ts": c["ts"], "file": meta.get("file", "")})
         elif c.get("kind") == "diff" and c.get("text", "").strip() and (c["ts"], meta.get("where")) not in pastes and id(c) not in 붙인:
             n, got = len(c["text"].strip()), 0
             need = max(2, int(n * TYPED_KEYS))
@@ -426,6 +439,12 @@ def process_evidence(events, context):
                 꼬리[자리] = n[-1]
     # 조각조각 친 글(" 이 연구는" " 국내외" …)은 문단마다 이어 붙인 것도 친 글로 — 한 조각만으론 문장과 비교가 안 된다 (11/16)
     return {"typed": typed + [t for t in 친문단.values() if t not in typed], "typed_at": typed_at, "noproc": noproc}
+
+
+def _한글앱(app):
+    """키 · 붙여넣기 이벤트의 앱이 한글인가 (collector/hangul.is_hangul 과 같은 규칙)"""
+    a = (app or "").lower()
+    return a in ("hwp.exe", "hwp") or "한글" in a or "hancom office hwp" in a or a.startswith("hwp ")
 
 
 def _pc_앱(p):

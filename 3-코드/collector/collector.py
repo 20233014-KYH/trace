@@ -422,6 +422,7 @@ class Collector:
         self._bridge = None
         self._tab = None            # 확장이 알려준 현재 탭 (domain, category, title, browser)
         self._office = None         # Learn 모드 · Word/PPT 맥락 (office.py)
+        self._hangul = None         # 한글 — 저장할 때마다 (hangul.py · 11/18)
         self._desktop = None        # 데스크톱 AI 앱 질문·답 (desktop_ai.py · 10/7)
 
     def describe(self, exe: str, title: str) -> dict:
@@ -504,6 +505,18 @@ class Collector:
                 print(f"  Office 문서 변화 켜짐 (Word · PowerPoint · 숫자{' + 텍스트(PC 에만)' if with_text else '만'})")
             except Exception as e:
                 print(f"  Office 감시 실패 ({e}) — 없이 계속")
+        # 한글(한컴오피스) — 저장할 때마다 문서 파일을 읽어 문단 변화 (collector/hangul.py · 11/18). 내는 것은 Word 와 같은 모양
+        if cfg.get("office", {}).get("enabled", True) and sys.platform in ("win32", "darwin"):
+            try:
+                from hangul import HangulWatcher
+                self._hangul = HangulWatcher(self.sink.emit, lambda: (self._cur[0], self._cur[1]) if self._cur else ("", ""),
+                                             poll_sec=cfg.get("office", {}).get("hangul_poll_sec", 3),
+                                             emit_context=self._on_context if self.capture.get("office", True) else None,
+                                             emit_path=self._on_doc_path, started_at=time.time())
+                self._hangul.start()
+                print("  한글 문서 변화 켜짐 (저장할 때마다)")
+            except Exception as e:
+                print(f"  한글 감시 실패 ({e}) — 없이 계속")
         # 데스크톱 AI 앱(Claude 앱 · ChatGPT 앱) 질문·답 — 윈도우는 UI Automation(desktop_ai.py), 맥은 손쉬운 사용(desktop_ai_mac.py · 10/14).
         # 앱이 앞에 있을 때만 읽고 원문은 PC 에만
         dcfg = cfg.get("desktop_ai", {})
@@ -648,6 +661,8 @@ class Collector:
             print(f"        ↳ {src[0]}({src[1]}) 에서 복사한 것과 같은 해시")
         if self._office:
             self._office.on_paste(exe)
+        if self._hangul:
+            self._hangul.on_paste(exe)
 
     def _on_edit(self, kind: str):
         exe, _ = foreground()
@@ -831,6 +846,8 @@ class Collector:
             self._bridge.shutdown()
         if self._office:
             self._office.stop()
+        if self._hangul:
+            self._hangul.stop()
         if self._desktop:
             self._desktop.stop()
         self.sink.emit({"type": "session_end"})
