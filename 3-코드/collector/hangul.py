@@ -11,6 +11,9 @@ Word 는 실행 중인 프로그램을 몇 초마다 직접 읽지만(office.py 
   · 저장 사이 글 변화엔 meta.since(앞 저장 시각)를 단다 → core/match.process_evidence 가 그 사이 한글 키 입력으로 '직접 친 글' 을 가른다
   · 붙여넣기: 저장 사이에 붙여넣기가 있었으면 가장 많이 늘어난 문단을 붙여넣은 자리로 낸다 (정확한 자리 · 순간은 Word 보다 거침)
 
++ 자동 저장(.asv): 학생이 저장하지 않아도 한글이 몇 분마다 남기는 복구용 사본도 읽는다 — 저장 안 한 새 문서도 (11/18).
+  한글 기본은 10분마다라서, 환경 설정에서 자동 저장 간격을 1분으로 줄이면 Word 처럼 거의 실시간이 된다.
+
 한계 (발표 · 문서에 그대로): 저장할 때만 보므로 저장 전에 지운 글 · 고친 과정은 안 남는다. 웹에서 붙인 글은 '다른 곳' 대신
 '출처 기록 없음' 으로 보일 수 있다 (AI 답에서 붙인 글은 글 내용으로 이어짐).
 """
@@ -43,9 +46,10 @@ class HangulWatcher(OfficeWatcher):
         self.current = current
         self.started_at = started_at or time.time()
         self._본때 = {}             # 경로 → 마지막으로 읽은 파일 시각(mtime)
-        self._읽은때 = {}           # 경로 → 마지막으로 읽은 순간 (ISO · 다음 글 변화의 since)
         self._붙임 = []             # 저장 사이 한글에 붙여넣은 시각들
         self._since = None
+        self._마지막 = None          # 이 문서를 마지막으로 읽은 순간 (ISO) — 저장 · 자동 저장 어느 쪽이든
+        self._자동 = {}             # 자동 저장 파일(.asv) → 마지막으로 읽은 시각(mtime)
         if emit_context:                # 글 변화에 since(앞 저장 시각)를 단다 — 그 사이 키 입력으로 '직접 친 글' 을 가르게
             def 달기(items, 원래=emit_context):
                 for it in items:
@@ -80,6 +84,32 @@ class HangulWatcher(OfficeWatcher):
                     self._tick(path)
             except Exception as e:                        # noqa: BLE001
                 self._note(f"한글 건너뜀: {type(e).__name__}: {str(e)[:80]}")
+        for asv in _자동저장_파일들():
+            try:
+                m = os.path.getmtime(asv)
+                if m >= self.started_at - 5 and self._자동.get(asv) != m:
+                    self._자동[asv] = m
+                    self._자동_저장(asv)
+            except Exception as e:                        # noqa: BLE001 — 한글이 쓰는 중
+                self._note(f"한글 자동 저장 건너뜀: {type(e).__name__}: {str(e)[:80]}")
+
+    # ── 자동 저장(.asv) — 학생이 저장하지 않아도 한글이 몇 분마다 남기는 복구용 사본 (11/18) ──
+    # 맥 한글 12 는 $TMPDIR/Hwp120/<문서 이름>.asv (같은 한글 형식). 저장 안 한 새 문서도 여기 생긴다("빈 문서 1.asv")
+    def _자동_저장(self, asv):
+        줄기 = os.path.splitext(os.path.basename(asv))[0]
+        진짜 = next((p for p in self._본때 if os.path.splitext(os.path.basename(p))[0] == 줄기), None)
+        if 진짜 is None:                                  # 처음 보는 문서 — 저장된 파일이 있으면 그것부터 (그때 글 = 기준)
+            진짜 = next((q for q in (_이름으로_찾기(줄기 + e) for e in EXT) if q), None)
+            if 진짜:
+                self._tick(진짜)
+        with open(asv, "rb") as f:
+            raw = f.read()
+        units = {i: t for i, (_, t) in enumerate(hwp.read_hangul(raw), 1) if i <= 2000}
+        name = os.path.basename(진짜) if 진짜 else 줄기
+        if APP not in self._snap and not 진짜:            # 저장 안 한 새 문서 — 빈 문서에서 시작
+            self._snap[APP] = {"file": name, "units": {}, "saved": False, "stats": {}}
+            self._마지막 = datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds")
+        self._반영(name, units, saved=False)
 
     # ── 지금 열린 문서 위치 ──
     def _문서_경로(self, title):
@@ -104,11 +134,16 @@ class HangulWatcher(OfficeWatcher):
             self.emit_path(APP, name, path)
         처음 = path not in self._본때
         self._본때[path] = m
-        since = self._읽은때.get(path)
-        self._읽은때[path] = _iso()
-        if 처음 and _생긴때(path) >= self.started_at - 5:      # 기록을 켠 뒤 만든 파일 — 빈 문서에서 시작 (쓴 글이 모두 글 변화)
+        if 처음 and _생긴때(path) >= self.started_at - 5 and not (APP in self._snap and self._snap[APP]["units"]):
+            # 기록을 켠 뒤 만든 파일 — 빈 문서에서 시작 (쓴 글이 모두 글 변화) · 자동 저장으로 이미 보던 문서면 그대로 이어서
             self._snap[APP] = {"file": name, "units": {}, "saved": True, "stats": {}}
-            since = datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds")
+            self._마지막 = datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds")
+        self._반영(name, units, saved=True)
+
+    def _반영(self, name, units, saved):
+        """읽은 글 → 앞에 본 글과 비교해 Word 와 같은 이벤트 · 맥락 (저장 · 자동 저장 공통)"""
+        key = (APP, name)
+        since, self._마지막 = self._마지막, _iso()
         stats = {"chars": sum(len(t) for t in units.values()), "paragraphs": len(units)}
         where = None
         if self._붙임 and APP in self._snap:
@@ -118,10 +153,17 @@ class HangulWatcher(OfficeWatcher):
                 where = (f"문단 {늘어난}", units[늘어난])
         self._붙임 = []
         self._since = since
-        self._compare(key, units, True, stats, where, unit_label="문단")
+        self._compare(key, units, saved, stats, where, unit_label="문단")
 
     def _note(self, msg):
         print(f"        · {msg}")
+
+
+def _자동저장_파일들():
+    """한글 자동 저장 사본들 — 임시 폴더의 Hwp*/ *.asv (맥 한글 12: $TMPDIR/Hwp120 · 윈도우는 %TEMP% 아래로 짐작 · 실제 확인 전)"""
+    import glob
+    import tempfile
+    return glob.glob(os.path.join(tempfile.gettempdir(), "Hwp*", "*.asv"))
 
 
 def _iso():
