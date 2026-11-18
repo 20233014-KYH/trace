@@ -551,6 +551,29 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
         t, n = 답시각.get(answer_id), norm(s)
         입력 = [ts for ts, d in 친글 if d in n]
         return bool(t and 입력) and _secs(t, max(입력)) < -5
+    # 답 원문이 줄마다 잘려 있어도(맥 ChatGPT 앱: 굵게 · 기울임마다 줄이 끊김 — "학술지:\n\nComputers\n, 2026, 15(2), 111")
+    # 결과물 문장이 띄어쓰기 · 문장부호를 빼고 답 원문에 **그대로 이어서** 들어 있으면 그 답과 일치 (11/18 김용현 맥 시험:
+    # 손대지 않은 참고문헌 줄 둘이 '붙여넣고 고침' 으로 나옴). 답의 두 줄 이상에 걸칠 때만 — 한 줄 안이면 원래 비교 그대로
+    답원문 = {}
+    for a in answers:
+        ns, offs, pos = [norm(x) for x in split_sentences(a["text"])], [], 0
+        for x in ns:
+            offs.append((pos, pos + len(x)))
+            pos += len(x)
+        답원문[a["id"]] = ("".join(ns), offs, ns)
+
+    def 그대로_들어있음(s, 먼저=None):
+        n = norm(s)
+        if len(n) < MIN_CHARS:
+            return None
+        for k in ([먼저] if 먼저 in 답원문 else []) + [k for k in 답원문 if k != 먼저]:
+            글, offs, ns = 답원문[k]
+            i = 글.find(n)
+            if i >= 0:
+                걸친 = tuple(j for j, (a, b) in enumerate(offs) if a < i + len(n) and b > i)
+                if len(걸친) >= 2:
+                    return k, 걸친, n == "".join(ns[j] for j in 걸친)
+        return None
     wcands = candidates([{"id": k, "text": p["text"]} for k, p in enumerate(others or [])])
     tcands = candidates([{"id": k, "text": t} for k, t in enumerate((proc or {}).get("typed", []))])
     ncands = candidates([{"id": k, "text": x["text"]} for k, x in enumerate((proc or {}).get("noproc", []))])
@@ -602,6 +625,8 @@ def link_document(paragraphs, answers, pasted=None, others=None, proc=None):
         for s in split_sentences(para):
             r = {"text": s, **link_sentence(s, cands), "paste": None}
             r["full"] = r["label"] == "exact" and norm(s) == norm(r["ai_text"])     # 100% 같음 → "일치" · 90~99% → "유사"
+            if r["label"] != "exact" and (hit := 그대로_들어있음(s, r["answer"])):
+                r.update(label="exact", answer=hit[0], sents=hit[1], ai_text=s, full=hit[2])
             if r["label"] != "none" and pasted is not None:
                 r["paste"] = next((pasted_at[(r["answer"], i)] for i in r["sents"] if (r["answer"], i) in pasted_at), None)
                 if r["label"] == "edited" and r["paste"] is None:
