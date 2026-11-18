@@ -104,7 +104,7 @@
           <button class="iconbtn" id="b-howto" type="button" title="안내 닫기" aria-label="안내 닫기"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
         <ol>
           <li><span class="n">1</span><b>과제 만들기</b><span>과제 이름만 넣으면 돼요</span></li>
-          <li><span class="n">2</span><b>기록 켜고 과제하기</b><span>평소처럼 AI 와 Word 로 쓰면 저절로 기록돼요</span></li>
+          <li><span class="n">2</span><b>기록 켜고 과제하기</b><span>평소처럼 AI 와 Word · 한글로 쓰면 저절로 기록돼요</span></li>
           <li><span class="n">3</span><b>출처 보기 · 연결 확인</b><span>내 글 어디가 AI 답에서 왔는지 보고 확인해요</span></li>
           <li><span class="n">4</span><b>내역서 내기</b><span>PDF 나 링크를 과제와 함께 내요</span></li>
         </ol>
@@ -302,7 +302,7 @@
       el("div", "desc", "과제를 하는 동안 AI 를 어떻게 썼는지 Trace 가 기록하고, 마지막에 내역서 한 장으로 만들어 줘요. 점수나 판정은 없어요."));
     const c = el("section", "card"); c.style.overflow = "hidden";
     [["과제 만들기", "과제 이름만 넣으면 돼요. 과목 · 마감은 나중에 넣어도 돼요."],
-     ["기록 켜고 과제하기", "화면 구석에 작은 기록 창이 떠요. 평소처럼 AI 와 Word 로 쓰면 돼요."],
+     ["기록 켜고 과제하기", "화면 구석에 작은 기록 창이 떠요. 평소처럼 AI 와 Word · 한글로 쓰면 돼요."],
      ["출처 보기 · 연결 확인", "내 글 어디가 AI 답에서 왔는지 보고 확인해요."],
      ["내역서 내기", "PDF 나 링크를 과제와 함께 내요. 교수님은 그 한 장만 봐요."]].forEach(([t, s], i) => {
       const r = el("div", "stp" + (i ? "" : " now")), tx = el("div");

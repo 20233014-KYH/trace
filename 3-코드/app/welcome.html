@@ -126,7 +126,7 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
     function () {                                                    // 1 무엇을 기록하나
       head("무엇을 기록하나", "Trace 는 과제하는 동안 AI 를 어떻게 썼는지만 기록해요. 판정하지 않아요.");
       const r = el("div", "rec"), a = el("div", "box"), b = el("div", "box");
-      a.append(el("h3", null, "기록하는 것"), li(IC.yes, "ChatGPT · Claude · Gemini 에 한 질문과 받은 답 (웹 · 앱)"), li(IC.yes, "Word 과제 글이 바뀌는 과정 · 붙여넣은 자리"),
+      a.append(el("h3", null, "기록하는 것"), li(IC.yes, "ChatGPT · Claude · Gemini 에 한 질문과 받은 답 (웹 · 앱)"), li(IC.yes, "Word 과제 글이 바뀌는 과정 · 붙여넣은 자리 · 한글은 저장 · 자동 저장할 때마다"),
                li(IC.yes, "AI 답을 복사해 붙여넣은 기록"), li(IC.yes, "쓰고 있던 창 이름 · 사이트 주소 · 켜고 끈 시각"));
       b.append(el("h3", null, "기록하지 않는 것"), li(IC.no, "화면 사진 · 키보드로 친 글자 하나하나 (몇 번 쳤는지만 셈)"), li(IC.no, "AI 와 상관없는 앱 · 사이트의 내용 (창 이름만)"),
                li(IC.no, "잠깐 멈춤을 누른 동안의 모든 것"), li(IC.no, "API 키 · 주민번호 · 전화번호 (저장 전에 가림)"));
