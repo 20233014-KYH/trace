@@ -81,7 +81,9 @@ def detail():
     items, lanes = [], {"ai": [], "paste": [], "word": [], "pause": []}
     시작 = next((e["ts"] for e in evs if e.get("type") == "session_start"), evs[0]["ts"] if evs else "")
     끝 = next((e["ts"] for e in evs if e.get("type") == "session_end"), "") or (evs[-1]["ts"] if evs else "")
-    문서들 = [c["meta"]["file"] for c in ctx if c.get("kind") in ("doc_path", "doc_open") and (c.get("meta") or {}).get("file")]
+    # 이 기록에서 글이 바뀐 문서 — 있으면 그 문서가 이 기록의 과제 파일. 잠깐 앞에 왔을 뿐인 다른 문서는 '문서 열기' 로만 (11/18 실제 시험)
+    고친문서 = list(dict.fromkeys(e["file"] for e in evs if e.get("type") in ("doc_change", "doc_save") and e.get("file")))
+    문서들 = 고친문서 or [c["meta"]["file"] for c in ctx if c.get("kind") in ("doc_path", "doc_open") and (c.get("meta") or {}).get("file")]
     items.append({"kind": "start", "ts": 시작, "title": "기록 시작", "text": 문서들[0] if 문서들 else "", "tag": None})
 
     # 문서를 처음 볼 때 이미 있던 글 중 **이 과제의 앞선 기록에 없던 글** = 기록 밖에서 바뀐 글 (10/31 · 캔버스 기록 다시 보기 v2.2)
@@ -91,6 +93,10 @@ def detail():
     for c in ctx:
         if c.get("kind") == "doc_open":
             m = c.get("meta") or {}
+            if 고친문서 and m.get("file") not in 고친문서:     # 이 기록에서 고치지 않은 다른 문서 — 기록 밖 변경으로 세지 않음
+                items.append({"kind": "doc", "ts": c["ts"], "title": "문서 열기", "text": f"{m.get('file', '')} · 이 기록에서 고치지 않은 문서",
+                              "tag": None, "more": {"file": m.get("file", ""), "chars": 0, "spots": 0, "first": False, "excerpt": ""}})
+                continue
             새 = [p for p in re.split(r"\n+", c.get("text", "")) if len(M.norm(p)) >= M.MIN_CHARS and not _앞에_있나(p, 앞선글)]
             n = sum(len(p) for p in 새)
             밖["spots"] += len(새); 밖["chars"] += n

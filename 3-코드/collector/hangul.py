@@ -106,9 +106,16 @@ class HangulWatcher(OfficeWatcher):
             raw = f.read()
         units = {i: t for i, (_, t) in enumerate(hwp.read_hangul(raw), 1) if i <= 2000}
         name = os.path.basename(진짜) if 진짜 else 줄기
-        if APP not in self._snap and not 진짜:            # 저장 안 한 새 문서 — 빈 문서에서 시작
-            self._snap[APP] = {"file": name, "units": {}, "saved": False, "stats": {}}
-            self._마지막 = datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds")
+        앞 = self._snap.get(APP)
+        if not 진짜 and 앞 and 앞["units"] and _겹침(units, 앞["units"]) >= 0.5:
+            # 사본 이름이 문서 이름과 달라도("빈 문서 2.asv" ← 그 뒤 '인공지능 보고서.hwpx' 로 저장) 내용이 같으면 그 문서 (11/18 실제 시험)
+            name = 앞["file"]
+        elif APP not in self._snap and not 진짜:
+            if _생긴때(asv) >= self.started_at - 5:       # 기록을 켠 뒤 생긴 사본 = 저장 안 한 새 문서 — 빈 문서에서 시작
+                self._snap[APP] = {"file": name, "units": {}, "saved": False, "stats": {}}
+                self._마지막 = datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds")
+            # 기록 전부터 있던 사본(지난 기록 때 쓰던 문서) — 처음 읽은 글 = 열 때 있던 글 (11/18 실제 시험: 둘째 기록이 2,732자를
+            # 통째로 '새로 생긴 글' 로 봤다). 기준이 없으니 _compare 가 열 때 있던 글로 남긴다
         self._반영(name, units, saved=False)
 
     # ── 지금 열린 문서 위치 ──
@@ -157,6 +164,14 @@ class HangulWatcher(OfficeWatcher):
 
     def _note(self, msg):
         print(f"        · {msg}")
+
+
+def _겹침(a, b):
+    """두 문단 묶음이 얼마나 같은 글인가 — 같은 문단 수 / 큰 쪽 문단 수"""
+    if not a or not b:
+        return 0.0
+    bb = set(b.values())
+    return sum(1 for t in a.values() if t in bb) / max(len(a), len(b))
 
 
 def _자동저장_파일들():

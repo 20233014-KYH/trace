@@ -361,6 +361,11 @@
 
     const box = $("doc"); box.textContent = "";
     box.append(fileRow());
+    if (D.unsaved) {                                     // 한글에 저장 안 한 글 (자동 저장 사본이 더 새로움 · 11/18)
+      const w = el("div", "fwarn"), t = el("div");
+      t.append(el("b", null, "한글에 아직 저장 안 한 글이 있어요. "), "출처 보기와 내역서는 저장된 파일을 읽어요. 한글에서 저장(⌘S · Ctrl+S)하고 여기로 돌아오면 다시 읽어요.");
+      w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/>'), t); box.append(w);
+    }
     if (!D.in_records) box.append(fileWarn());
     else if (D.same_download) {                          // 기록하는 동안 받은 파일과 바이트까지 똑같음 (10/15)
       const g = D.same_download, w = el("div", "fwarn info"), t = el("div");
@@ -558,7 +563,7 @@
     btn.disabled = false;
   }
   // Word 에서 고치고 돌아오면 저장된 최신 내용으로 다시 읽음 (지금 보던 범위 그대로)
-  window.addEventListener("focus", () => { if (다듬는중) { 다듬는중 = false; load(); } });
+  window.addEventListener("focus", () => { if (다듬는중 || (D && D.unsaved)) { 다듬는중 = false; load(); } });   // 저장 안 한 한글 글 → 저장하고 돌아오면 (11/18)
 
   function pick(k, scroll) {
     document.querySelectorAll(".s.on").forEach(e => e.classList.remove("on"));

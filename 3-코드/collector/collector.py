@@ -72,6 +72,15 @@ KST = timezone(timedelta(hours=9))
 SHELL_APPS = {"explorer.exe", "searchhost.exe", "startmenuexperiencehost.exe", "shellexperiencehost.exe"}
 
 
+def _기본_목록():
+    """앱 기본 설정(collector/config.json)의 whitelist_apps — 못 읽으면 빈 목록"""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json"), encoding="utf-8") as f:
+            return json.load(f).get("whitelist_apps", [])
+    except (OSError, ValueError):
+        return []
+
+
 def now_iso() -> str:
     return datetime.now(KST).isoformat(timespec="seconds")
 
@@ -382,7 +391,9 @@ class Collector:
         self.cfg, self.work_id = cfg, work_id
         self.capture = cfg.get("capture") or cfg.get("learn_context") or {}   # learn_context = 옛 이름 (옛 config 호환)
         self.clf = Classifier(os.path.join(HERE, "domains.json"))
-        self.whitelist = {a.lower() for a in cfg.get("whitelist_apps", [])}
+        # 창 제목을 남길 앱 = 내 설정 ∪ 앱 기본값(collector/config.json) — 내 설정(~/trace-config.json)은 예전 목록을 통째로 복사해 둬서
+        # 업데이트로 늘어난 앱(한글 · 11/18)이 안 들어왔다 → 한글 창 제목이 빈칸이라 한글 문서를 못 찾았음
+        self.whitelist = {a.lower() for a in cfg.get("whitelist_apps", [])} | {a.lower() for a in _기본_목록()}
         data_dir = os.path.normpath(os.path.join(HERE, cfg.get("data_dir", "../data")))
         self.session_id = str(uuid.uuid4())
         self.token = load_token(data_dir, cfg.get("server", ""))
@@ -509,7 +520,7 @@ class Collector:
         if cfg.get("office", {}).get("enabled", True) and sys.platform in ("win32", "darwin"):
             try:
                 from hangul import HangulWatcher
-                self._hangul = HangulWatcher(self.sink.emit, lambda: (self._cur[0], self._cur[1]) if self._cur else ("", ""),
+                self._hangul = HangulWatcher(self.sink.emit, foreground,     # 창 제목을 직접 — 문서 파일을 찾는 데만 (체인엔 파일 이름만)
                                              poll_sec=cfg.get("office", {}).get("hangul_poll_sec", 3),
                                              emit_context=self._on_context if self.capture.get("office", True) else None,
                                              emit_path=self._on_doc_path, started_at=time.time())

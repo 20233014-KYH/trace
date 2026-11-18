@@ -266,7 +266,35 @@ def _분석(wid):
     찾음 = _찾은_이름.get(wid) == name                    # 기록된 이름과 달라도 내용으로 찾은 그 파일
     받은 = 받은_파일(raw, context)
     return jsonify(file=name, recorded_files=기록된, recorded_docs=docs, in_records=bool(찾음 or 받은 or _같은_문서(name, 기록된)),
-                   found_by_content=찾음, same_download=받은, sessions=len(세션), **build(paras, msgs, events, context))
+                   found_by_content=찾음, same_download=받은, sessions=len(세션), unsaved=_저장_안_한_한글(wid, name, paras),
+                   **build(paras, msgs, events, context))
+
+
+def _저장_안_한_한글(wid, name, paras):
+    """한글 파일인데 한글이 남긴 자동 저장 사본(.asv)이 그 파일보다 새롭고 내용이 다르면 = 한글에 저장 안 한 글이 있음 (11/18 실제 시험:
+    둘째 기록에서 붙인 글이 한글 창에만 있고 파일엔 없어 출처 보기에 안 보였다). 출처 보기 · 내역서는 저장된 파일을 읽으므로 저장하라고 알린다"""
+    if not name.lower().endswith((".hwp", ".hwpx")):
+        return False
+    자리 = _찾은_목록().get(wid) if os.path.basename(_찾은_목록().get(wid) or "") == name else \
+        next((d["path"] for d in _문서_목록(wid) if d["name"] == name and d["exists"]), None)
+    if not 자리 or not os.path.isfile(자리):
+        return False
+    import glob
+    import tempfile
+    from core import hwp
+    지금 = {t for _, t in paras}
+    파일때 = os.path.getmtime(자리)
+    for asv in glob.glob(os.path.join(tempfile.gettempdir(), "Hwp*", "*.asv")):
+        try:
+            if os.path.getmtime(asv) <= 파일때:
+                continue
+            with open(asv, "rb") as f:
+                사본 = {t for _, t in hwp.read_hangul(f.read())}
+        except Exception:                                # noqa: BLE001 — 한글이 쓰는 중
+            continue
+        if 사본 != 지금 and len(사본 & 지금) >= 0.5 * max(len(지금), 1):
+            return True
+    return False
 
 
 def 받은_파일(raw, context):
@@ -332,9 +360,12 @@ def _문서_목록(wid):
         if not os.path.splitext(n)[1] and any(s2 == sid and os.path.splitext(m)[1] and 처음 >= 끝
                                               for (s2, m), (처음, _) in 본때.items()):
             out.pop(n, None)
+    고친 = bool(out)                                    # 이 과제에서 글이 바뀐 문서가 있나
     for c in _기록["jsonl"]("context-*.jsonl"):
         m = c.get("meta") or {}
         if c.get("session_id") in 세션 and c.get("kind") == "doc_path" and m.get("app") in ("Word", "한글") and m.get("file") and m.get("path"):
+            if 고친 and m["file"] not in out:
+                continue                                 # 기록 중 잠깐 앞에 왔을 뿐 고치지 않은 문서 — 과제 파일이 아님 (11/18 실제 시험: Word 의 다른 과제 문서)
             d = out.setdefault(m["file"], {"name": m["file"], "path": None, "ts": ""})
             if c.get("ts", "") >= d.get("path_ts", ""):            # 같은 이름이 여러 자리 → 가장 최근 자리
                 d.update(path=m["path"], path_ts=c.get("ts", ""))
