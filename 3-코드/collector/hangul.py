@@ -60,15 +60,26 @@ class HangulWatcher(OfficeWatcher):
 
     def run(self):
         while not self._stop.is_set():
-            try:
-                app, title = self.current()
-                if is_hangul(app):
-                    path = self._문서_경로(title)
-                    if path:
-                        self._tick(path)
-            except Exception as e:                        # noqa: BLE001 — 파일을 저장하는 중 · 잠김 등
-                self._note(f"한글 건너뜀: {type(e).__name__}: {str(e)[:80]}")
+            self.한번()
             self._stop.wait(self.poll)
+
+    def 한번(self):
+        """한글이 앞이면 지금 문서를 찾아 보고, 한 번 본 문서는 앞에 없어도 저장됐는지 본다
+        (11/18 실제 한글 맥 시험: ⌘S 하고 2초 안에 다른 창으로 가면 마지막 저장을 놓쳤다 — 그대로 닫으면 마지막 글이 통째로 빠짐)"""
+        try:
+            app, title = self.current()
+            if is_hangul(app):
+                path = self._문서_경로(title)
+                if path:
+                    self._tick(path)
+        except Exception as e:                            # noqa: BLE001 — 파일을 저장하는 중 · 잠김 등
+            self._note(f"한글 건너뜀: {type(e).__name__}: {str(e)[:80]}")
+        for path in list(self._본때):
+            try:
+                if os.path.isfile(path) and os.path.getmtime(path) != self._본때[path]:
+                    self._tick(path)
+            except Exception as e:                        # noqa: BLE001
+                self._note(f"한글 건너뜀: {type(e).__name__}: {str(e)[:80]}")
 
     # ── 지금 열린 문서 위치 ──
     def _문서_경로(self, title):
