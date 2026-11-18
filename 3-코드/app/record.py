@@ -29,7 +29,8 @@ KEYS_GAP = 180          # 키 입력이 이만큼(초) 끊기면 Word 글 줄을
 AI_TAB_SEC = 30         # 브라우저에 붙여넣은 뒤 이 안에 AI 사이트 탭이 열리면 "AI 에 넣음" (구글 AI 모드 · 11/2)
 GROUP_NAME = {"copy": "AI 답과 같음", "edited": "고침", "viewed": "참고함"}   # 출처 보기 범례와 같은 말
 APP_NAME = {"winword.exe": "Word", "code.exe": "VS Code", "hwp.exe": "한글", "powerpnt.exe": "PowerPoint",
-            "excel.exe": "Excel", "notepad.exe": "메모장", "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱"}
+            "excel.exe": "Excel", "notepad.exe": "메모장", "claude.exe": "Claude 앱", "chatgpt.exe": "ChatGPT 앱",
+            "한컴오피스 한글": "한글", "hancom office hwp": "한글", "microsoft word": "Word", "textedit": "텍스트 편집기"}
 
 
 @bp.get("/record")

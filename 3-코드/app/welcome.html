@@ -167,7 +167,7 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
     function () {                                                    // 3 첫 과제 만들기
       head("첫 과제 만들기", "과제 하나에 기록이 여러 번 쌓여요. 과제를 만들고 [기록 시작] 을 누르면 화면 구석에 기록 창이 떠요.");
       const b = el("div", "box");
-      b.append(el("h3", null, "이렇게 써요"), li(IC.yes, "새 과제 만들기 — 이름만 넣으면 돼요"), li(IC.yes, "과제 상세에서 [기록 시작] → 평소처럼 Word · AI 로 과제"),
+      b.append(el("h3", null, "이렇게 써요"), li(IC.yes, "새 과제 만들기 — 이름만 넣으면 돼요"), li(IC.yes, "과제 상세에서 [기록 시작] → 평소처럼 Word · 한글 · AI 로 과제"),
                li(IC.yes, "다 하면 기록 창에서 작업 마치기"), li(IC.yes, "출처 보기 → 연결 확인 → 내역서 PDF 내려받기"));
       $("pane").append(b);
       const later = btn("나중에 할게요", "btn-ghost", () => finish("/home")); later.style.marginLeft = "auto";

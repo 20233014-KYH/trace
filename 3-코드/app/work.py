@@ -343,9 +343,11 @@ def refine():
         켬 = True
     p = _결과물_자리(wid)
     열림 = bool(p) and 설정.get("open_file", _파일_열기)(p)
-    if 열림 and 글:                                               # Word 가 문서를 다 열 때까지 기다려야 해서 따로 — 응답은 바로
+    한글 = bool(p) and p.lower().endswith((".hwp", ".hwpx"))     # 한글은 문장을 찾아 고를 길이 없다 — 파일만 열고 찾기는 학생이 (11/18)
+    앱 = "한글" if 한글 else "Word"
+    if 열림 and 글 and not 한글:                                               # Word 가 문서를 다 열 때까지 기다려야 해서 따로 — 응답은 바로
         threading.Thread(target=설정.get("select_text", _문장_고르기), args=(p, 글), daemon=True).start()
-    말 = ("기록을 켜고 Word 를 열었어요" if 켬 else "Word 를 열었어요") if 열림 else \
+    말 = ((f"기록을 켜고 {앱}을 열었어요" if 켬 else f"{앱}을 열었어요") + (" — 찾기(⌘F · Ctrl+F)로 그 문장을 찾아 고쳐 주세요" if 한글 else "")) if 열림 else \
          ("기록을 켰어요. 결과물 파일을 열어 고쳐 주세요" if 켬 else "결과물 파일을 열어 고쳐 주세요")
     return jsonify(ok=True, started=켬, opened=열림, message=말 + " — 고친 뒤 저장하고 여기로 돌아오면 다시 읽어요")
 

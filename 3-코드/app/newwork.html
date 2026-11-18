@@ -75,8 +75,8 @@ textarea{font:inherit;font-size:13.5px;line-height:1.6;border:1px solid var(--li
             <div class="due"><select class="in" id="due-m" aria-label="마감 월"><option value="">–</option></select>월<select class="in" id="due-d" aria-label="마감 일"><option value="">–</option></select>일<input class="in" id="due-t" type="time" value="23:59" aria-label="마감 시각"></div></div>
         </div>
         <div class="f"><label>과제 파일 <span>(선택)</span></label>
-          <div class="file"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg><span>기록하면서 연 Word 문서가 자동으로 붙어요</span></div>
-          <span class="desc" style="font-size:12px">미리 고르는 것은 준비 중이에요 — 지금은 기록을 켜고 Word 로 과제 파일을 열면 과제 상세에 보입니다.</span></div>
+          <div class="file"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg><span>기록하면서 연 Word · 한글 문서가 자동으로 붙어요</span></div>
+          <span class="desc" style="font-size:12px">미리 고르는 것은 준비 중이에요 — 지금은 기록을 켜고 Word · 한글로 과제 파일을 열면 과제 상세에 보입니다.</span></div>
         <div class="f"><label for="scope">교수가 정한 AI 규칙 <span>(선택)</span></label>
           <button type="button" class="btn btn-outline btn-sm" id="b-scope" style="align-self:flex-start">+ 강의계획서 문구 붙여넣기</button>
           <textarea id="scope" maxlength="2000" placeholder="강의계획서의 AI 사용 규칙을 그대로 붙여넣으세요" hidden></textarea>
@@ -119,7 +119,7 @@ textarea{font:inherit;font-size:13.5px;line-height:1.6;border:1px solid var(--li
   if (!edit) $("nav-new").classList.add("on");
 
   // 기록할 곳 — 지금 Trace 가 읽을 줄 아는 곳 (Edge · 사진은 못 함). 준비 점검 화면이 생기면 실제 상태로 바꿈
-  ["ChatGPT 웹", "Claude 웹", "Gemini 웹", "ChatGPT 앱", "Claude 앱", "Word"].forEach(t => {
+  ["ChatGPT 웹", "Claude 웹", "Gemini 웹", "ChatGPT 앱", "Claude 앱", "Word", "한글"].forEach(t => {
     const s = el("span", "tg2"); s.append(T.icon('<path d="M20 6 9 17l-5-5"/>'), document.createTextNode(t)); $("where").append(s);
   });
 

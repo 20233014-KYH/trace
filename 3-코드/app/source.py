@@ -255,7 +255,7 @@ def _분석(wid):
         return jsonify(error="bad_file", message="Word(.docx) · 한글(.hwp · .hwpx) · PDF 파일을 읽지 못했습니다"), 400
     if not paras and is_pdf(raw):
         _파일.pop(wid, None)
-        return jsonify(error="bad_file", message="글자를 읽을 수 없는 PDF 예요 (스캔한 그림 등) — 원본 Word 파일을 골라 주세요"), 400
+        return jsonify(error="bad_file", message="글자를 읽을 수 없는 PDF 예요 (스캔한 그림 등) — 원본 Word · 한글 파일을 골라 주세요"), 400
     rec = 과제_기록(wid)
     if not rec:
         return NO_RECORDS
@@ -311,17 +311,17 @@ def pc_works():
 
 
 def _기록된_문서(wid):
-    """기록기가 이 과제를 기록하는 동안 본 Word 문서 이름"""
+    """기록기가 이 과제를 기록하는 동안 본 Word · 한글 문서 이름"""
     return sorted(d["name"] for d in _문서_목록(wid))
 
 
 def _문서_목록(wid):
-    """이 과제에서 기록된 Word 문서 → [{"name", "path" | None, "exists", "ts"}] 가장 최근에 본 것부터.
+    """이 과제에서 기록된 Word · 한글 문서 → [{"name", "path" | None, "exists", "ts"}] 가장 최근에 본 것부터.
     이름 = 체인 이벤트(doc_save · doc_change)의 file · 위치 = 기록기가 PC 에만 적어 둔 doc_path (10/11 부터, 없으면 None)"""
     세션 = _기록["sessions"]().get(wid, set())
     out, 본때 = {}, {}                                   # 본때: (세션, 이름) → [처음, 마지막] 시각
     for e in _기록["jsonl"]("events-*.jsonl"):
-        if e.get("session_id") in 세션 and e.get("type") in ("doc_save", "doc_change") and e.get("app") == "Word" and e.get("file"):
+        if e.get("session_id") in 세션 and e.get("type") in ("doc_save", "doc_change") and e.get("app") in ("Word", "한글") and e.get("file"):
             d = out.setdefault(e["file"], {"name": e["file"], "path": None, "ts": ""})
             d["ts"] = max(d["ts"], e.get("ts", ""))
             t = 본때.setdefault((e["session_id"], e["file"]), [e.get("ts", ""), e.get("ts", "")])
