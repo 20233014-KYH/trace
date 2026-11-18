@@ -128,6 +128,32 @@ def main():
     검사("⑦ 기록 전에 생긴 옛 자동 저장은 안 읽음", (lambda w: (setattr(w, "started_at", time.time() + 3600), w.한번(), len(w._자동) == 0)[-1])(
         기록기(os.path.join(d, "없음2.hwpx"), 시작)[0]))
 
+    # ⑧ 11/18 실제 시험 — 기록 전부터 있던 자동 저장 사본은 처음 글 = 열 때 있던 글 (둘째 기록이 2,732자를 새 글로 보던 것)
+    #    · 사본 이름("빈 문서 2")이 문서 이름과 달라도 내용이 같으면 그 문서로
+    asv2 = os.path.join(asv_dir, "빈 문서 2.asv")
+    저장(asv2, ["보고서 제목", "이미 쓴 문단 하나.", "이미 쓴 문단 둘."])
+    HG._자동저장_파일들 = lambda: [asv2]
+    w4, ev4, ctx4, _ = 기록기(os.path.join(d, "없음3.hwpx"), time.time() + 1)     # 사본이 기록보다 먼저 생김
+    w4.current = lambda: ("Claude", "")
+    w4.started_at = os.path.getmtime(asv2) - 1                                 # 바뀐 건 기록 뒤 · 생긴 건 기록 전 (생긴때 흉내)
+    HG._생긴때 = (lambda 원래: (lambda p: 원래(p) - 3600 if p == asv2 else 원래(p)))(HG._생긴때)
+    w4.한번()
+    검사("⑧ 기록 전부터 있던 사본 → 처음 글은 열 때 있던 글 (새 글 아님)", [c["kind"] for c in ctx4] == ["doc_open"], str([c["kind"] for c in ctx4]))
+    진짜 = os.path.join(d, "인공지능 보고서.hwpx")
+    저장(진짜, ["보고서 제목", "이미 쓴 문단 하나.", "이미 쓴 문단 둘."])
+    w4._문서_경로 = lambda title: 진짜
+    w4.current = lambda: ("한컴오피스 한글", "인공지능 보고서.hwpx")
+    w4.한번()
+    w4.current = lambda: ("Claude", "")
+    time.sleep(1.1)
+    저장(asv2, ["보고서 제목", "이미 쓴 문단 하나.", "이미 쓴 문단 둘.", "저장 안 하고 붙인 새 문단."])
+    m4 = len(ctx4)
+    w4.한번()
+    새4 = [c for c in ctx4[m4:] if c["kind"] == "diff"]
+    검사("⑧ 이름이 다른 사본도 내용이 같으면 그 문서 — 새 문단만 · 문서 이름은 진짜 이름",
+         [c["text"] for c in 새4] == ["저장 안 하고 붙인 새 문단."] and 새4[0]["meta"]["file"] == "인공지능 보고서.hwpx",
+         str([(c["text"], c["meta"]["file"]) for c in 새4]))
+
     q = os.path.join(d, "원래있던.hwpx")
     저장(q, ["전부터 있던 문단."])
     w2, ev2, ctx2, _ = 기록기(q, time.time() + 60)                  # 기록을 켜기 전에 만든 파일

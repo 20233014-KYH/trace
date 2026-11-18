@@ -103,7 +103,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
           <section class="card box">
             <div class="hd"><svg viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></svg><span class="h-sec">과제 파일</span></div>
             <div id="docs"></div>
-            <div class="desc" id="docs-d">기록하면서 Word 로 연 문서가 여기에 붙어요.</div>
+            <div class="desc" id="docs-d">기록하면서 Word · 한글로 연 문서가 여기에 붙어요.</div>
           </section>
           <section class="card box">
             <div class="hd"><svg viewBox="0 0 24 24"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span class="h-sec">교수가 정한 AI 규칙</span><button class="btn btn-ghost btn-sm" id="b-rule">고치기</button></div>
@@ -232,10 +232,10 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 
   function docs() {
     const box = $("docs"); box.textContent = "";
-    if (!d.docs.length) { $("docs-d").textContent = "기록하면서 Word 로 연 문서가 여기에 붙어요."; return; }
+    if (!d.docs.length) { $("docs-d").textContent = "기록하면서 Word · 한글로 연 문서가 여기에 붙어요."; return; }
     d.docs.slice(0, 4).forEach(x => {
       const r = el("div", "doc" + (x.exists ? "" : " gone")); r.title = x.exists ? x.name : `${x.name} — 지금은 그 자리에 없어요`;
-      r.append(T.svgFile(), el("b", null, x.name), el("span", "desc", x.exists ? "Word" : "옮겨짐"));
+      r.append(T.svgFile(), el("b", null, x.name), el("span", "desc", x.exists ? (/\.hwpx?$/i.test(x.name) ? "한글" : "Word") : "옮겨짐"));
       box.append(r);
     });
     $("docs-d").textContent = "이 과제를 기록하는 동안 연 문서예요. 출처 보기는 가장 최근 문서로 엽니다.";

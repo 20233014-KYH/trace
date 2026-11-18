@@ -300,7 +300,7 @@ _화면_도움 = ("[설정 열기] → 손쉬운 사용 목록에서 Trace 켜�
 
 _목록 = [("chrome", "Chrome 확장", "ChatGPT · Claude · Gemini 웹 대화"), ("edge", "Edge 확장", "Edge 에서 쓰는 AI 웹 대화"),
         ("gptapp", "ChatGPT 앱", "데스크톱 앱 대화와 복사"), ("claudeapp", "Claude 앱", "데스크톱 앱 대화와 복사"),
-        ("word", "Word", "과제 글이 바뀌는 과정")]
+        ("word", "Word · 한글", "과제 글이 바뀌는 과정")]
 
 
 def _확장_있나(root):

@@ -1309,7 +1309,8 @@ _앱이름 = {"winword.exe": "Word", "microsoft word": "Word", "powerpnt.exe": "
           "excel.exe": "Excel", "microsoft excel": "Excel", "chrome.exe": "Chrome", "google chrome": "Chrome",
           "msedge.exe": "Edge", "microsoft edge": "Edge", "firefox.exe": "Firefox", "firefox": "Firefox", "safari": "Safari",
           "code.exe": "VS Code", "code": "VS Code", "claude.exe": "Claude 앱", "claude": "Claude 앱",
-          "chatgpt.exe": "ChatGPT 앱", "chatgpt": "ChatGPT 앱", "hwp.exe": "한글", "notepad.exe": "메모장"}
+          "chatgpt.exe": "ChatGPT 앱", "chatgpt": "ChatGPT 앱", "hwp.exe": "한글", "notepad.exe": "메모장",
+          "한컴오피스 한글": "한글", "hancom office hwp": "한글"}
 _문서창 = re.compile(r"^(.+?\.(?:docx?|pptx?|xlsx?|hwpx?|txt|md|py|java|c|cpp|js))\b", re.I)
 
 

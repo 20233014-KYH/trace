@@ -298,7 +298,7 @@
     closeMenu = close;
     // 기록기가 위치를 적어 둔 문서(10/11~)는 눌러서 바로 열고, 위치가 없거나 옮겨졌으면 고르는 창
     const files = D.recorded_docs || (D.recorded_files || []).map(n => ({ name: n, known: false, exists: false }));
-    m.append(el("h6", null, files.length ? "이 과제에서 기록된 문서" : "이 과제 기록에 Word 문서가 없습니다"));
+    m.append(el("h6", null, files.length ? "이 과제에서 기록된 문서" : "이 과제 기록에 Word · 한글 문서가 없습니다"));
     files.forEach(d => {
       const n = d.name, it = el("button"); it.setAttribute("role", "menuitem");
       const now = stem(n) === stem(D.file);
@@ -361,6 +361,11 @@
 
     const box = $("doc"); box.textContent = "";
     box.append(fileRow());
+    if (D.unsaved) {                                     // 한글에 저장 안 한 글 (자동 저장 사본이 더 새로움 · 11/18)
+      const w = el("div", "fwarn"), t = el("div");
+      t.append(el("b", null, "한글에 아직 저장 안 한 글이 있어요. "), "출처 보기와 내역서는 저장된 파일을 읽어요. 한글에서 저장(⌘S · Ctrl+S)하고 여기로 돌아오면 다시 읽어요.");
+      w.append(icon('<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/>'), t); box.append(w);
+    }
     if (!D.in_records) box.append(fileWarn());
     else if (D.same_download) {                          // 기록하는 동안 받은 파일과 바이트까지 똑같음 (10/15)
       const g = D.same_download, w = el("div", "fwarn info"), t = el("div");
@@ -499,7 +504,7 @@
       // 참고문헌은 고쳐 쓸 글이 아니다 — 할 일은 "실제로 있는 문헌인지 확인" 하나 (11/18 김용현: 빨간 참고문헌 줄을 어떻게 고치라는 거냐)
       return { 말: [`이 참고문헌은 ${답}에서 왔어요. 고쳐 쓸 필요는 없어요.`,
                     "다만 AI가 만든 참고문헌은 실제로 없는 경우가 있어요. 제목 · 저자 · 연도로 직접 검색해 있는 문헌인지 확인해 보세요 (도서관 · 구글 학술검색 · RISS 등).",
-                    "있으면 [확인했어요] — 다듬을 곳에서 빠져요. 없으면 Word 에서 그 줄을 지우거나 직접 찾은 문헌으로 바꾸세요.",
+                    "있으면 [확인했어요] — 다듬을 곳에서 빠져요. 없으면 문서에서 그 줄을 지우거나 직접 찾은 문헌으로 바꾸세요.",
                     "빨간색은 AI 답에서 왔다는 표시라 확인한 뒤에도 그대로예요."],
                근거: "근거: AI가 만든 참고문헌 중 실제로 없던 것 GPT-4 18% · GPT-3.5 55% (Walters · Wilder 2023)" };
     }
@@ -513,6 +518,7 @@
              근거: "기준: 학술 글쓰기 표절 정의 · 교육부 연구윤리 지침" };
   }
 
+  const 한글문서 = () => /\.hwpx?$/i.test((D && D.file) || "");          // 한글 파일은 문장을 골라 줄 수 없어서 말이 다름 (11/18)
   function 다듬기칸(x) {
     const 종류 = 후보.get(x.k);
     const box = el("div", "fx"), 남 = 남은(), i = 남.indexOf(x.k), 둔 = i < 0;
@@ -536,12 +542,13 @@
     if (종류 === "A5") {                                       // [확인했어요] = 같은 참고문헌 줄(문단)의 다른 조각도 함께
       const ok = el("button", "btn dark", "확인했어요"); ok.type = "button";
       ok.onclick = () => { 둠바꿈(x.text, true); 새로(x.k); };   // 대표 조각만 기억 — 딸린 조각도 같이 옅어짐
-      acts.append(ok, 고치기("Word 에서 이 줄 보기", false));
+      acts.append(ok, 고치기(한글문서() ? "한글로 열기" : "Word 에서 이 줄 보기", false));
     }
     else if (종류 === "A1") acts.append(고치기("문장 다듬기", true), keep);
     else if (종류 === "A3") acts.append(고치기("인용 달기", true), keep);
     else acts.append(고치기("인용 달기", true), 고치기("문장 다듬기", false), keep);
-    box.append(acts, el("p", "hint", "누르면 이 과제 기록이 켜지고 Word 에서 이 문장이 선택돼요 · 고치는 건 직접 해요"), say);
+    box.append(acts, el("p", "hint", 한글문서() ? "누르면 이 과제 기록이 켜지고 한글로 파일이 열려요 · 그 문장은 찾기(⌘F · Ctrl+F)로 · 고치는 건 직접 해요"
+                                              : "누르면 이 과제 기록이 켜지고 Word 에서 이 문장이 선택돼요 · 고치는 건 직접 해요"), say);
     return box;
   }
   function 새로(k) {                                        // 그대로 둠 · 되돌리기 뒤 — 수 · 이동 목록만 다시
@@ -556,7 +563,7 @@
     btn.disabled = false;
   }
   // Word 에서 고치고 돌아오면 저장된 최신 내용으로 다시 읽음 (지금 보던 범위 그대로)
-  window.addEventListener("focus", () => { if (다듬는중) { 다듬는중 = false; load(); } });
+  window.addEventListener("focus", () => { if (다듬는중 || (D && D.unsaved)) { 다듬는중 = false; load(); } });   // 저장 안 한 한글 글 → 저장하고 돌아오면 (11/18)
 
   function pick(k, scroll) {
     document.querySelectorAll(".s.on").forEach(e => e.classList.remove("on"));
