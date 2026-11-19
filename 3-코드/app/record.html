@@ -20,6 +20,9 @@
 .tile b{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;font-variant-numeric:tabular-nums}
 .tile b small{font-size:14px;font-weight:600;color:var(--muted);margin-left:2px}
 .tile span{font-size:12.5px;color:var(--muted)}
+/* AI 화면을 읽지 못한 것 (11/19) — 경고 색 말고 차분한 안내 */
+.readgap{flex:none;padding:10px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.readgap p{margin:0;font-size:13px;line-height:1.55;color:var(--ink2)}.readgap b{font-weight:600;color:var(--ink)}
 .okb{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:12.5px;font-weight:600}
 .okb.wait{background:var(--soft);color:var(--muted);border-color:var(--line)}
 .okb svg{width:14px;height:14px}
@@ -187,6 +190,22 @@
     tile(String(t.pastes), "", "붙여넣기" + (나눔 ? " · " + 나눔 : ""));
     tile(t.typed.toLocaleString(), "자", "키보드로 친 글자");
     tile(String((t.outside || {}).spots || 0), "곳", "기록 밖에서 바뀐 글");
+    읽기_알림(t.read_gaps || []);
+  }
+
+  // AI 화면을 읽지 못한 것 (core/readcheck · 11/19) — "AI 질문 0개" 를 'AI 안 씀' 으로 오해하지 않게 솔직하게
+  function 읽기_알림(gaps) {
+    let box = $("readgap");
+    if (!box) { box = el("div", "readgap"); box.id = "readgap"; $("tiles").after(box); }
+    box.textContent = ""; box.hidden = !gaps.length;
+    gaps.forEach(g => {
+      const p = el("p");
+      p.append(el("b", null, g.kind === "failed" ? `${g.tool} 화면을 읽지 못했어요` : `${g.tool} 은(는) Trace 가 아직 읽지 않는 AI 예요`),
+        document.createTextNode(` · ${hm(g.first)}${g.last !== g.first ? "–" + hm(g.last) : ""} 복사 ${g.copies}번 — ` +
+          (g.kind === "failed" ? "질문 · 답 원문은 남지 않았고, 복사해 붙인 글로만 이어져요. 크롬 확장이 켜져 있는지 · 앱이 최신인지 확인해 주세요."
+                               : "질문 · 답 원문은 남지 않고, 복사해 붙인 글로만 이어져요.")));
+      box.append(p);
+    });
   }
 
   function rows() {
