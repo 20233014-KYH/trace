@@ -65,9 +65,11 @@ def main():
         검사("처음: 붙여넣기로 확실한 것만 연결 · 나머지는 잘 모르겠음",
              d["counts"]["confirmed"] == d["counts"]["auto"] == 3 and d["counts"]["unsure"] == 3 and d["counts"]["rejected"] == 0,
              json.dumps(d["counts"], ensure_ascii=False))
-        검사("내기 전 점검 재료 (B1 · B4 · 11/16) — 확인 전 3 · AI 기록 있음 · 숫자만",
+        검사("내기 전 점검 재료 (B1 · B4 · B5 · 11/16 · 11/18) — 확인 전 3 · AI 기록 있음 · 숫자와 시각만",
              d["pre"]["unsure"] == 3 and d["pre"]["ai"] is True and d["pre"]["dropped"] == 0
-             and all(isinstance(v, (int, bool)) for v in d["pre"].values()), json.dumps(d["pre"]))
+             and all(isinstance(v, (int, bool)) for k, v in d["pre"].items() if k != "outside")
+             and isinstance(d["pre"]["outside"], list)
+             and all(set(g) == {"from", "to", "spots", "chars"} for g in d["pre"]["outside"]), json.dumps(d["pre"]))
         검사("전화번호 · 이메일 찾음 → 기본은 그 부분만 가림 (질문은 그대로 · 10/12)",
              any(f["role"] == "question" and "전화번호 1개" in f["what"] and "이메일 1개" in f["what"] and f["masked"] and not f["hidden"]
                  and "⟦가림:전화번호⟧" in f["preview"] and "010-1234-5678" not in f["preview"] for f in d["found"]))
