@@ -20,6 +20,7 @@ from flask import Blueprint, jsonify, request, send_from_directory
 
 import source as S
 from core import match as M
+from core.readcheck import read_gaps
 from core.pdftext import read_doc
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -243,7 +244,9 @@ def detail():
                  "active_sec": max(0, _초(시작, 끝) - 멈춤초) if 시작 and 끝 else None, "pause_sec": 멈춤초},
         stats={"questions": sum(1 for m in mine if m.get("role") == "question"), "pastes": sum(1 for e in evs if e.get("type") == "paste"),   # 받은 파일은 목록엔 있지만 붙여넣기 수엔 안 셈
                "pastes_ai": len(ai붙), "pastes_other": len(다른붙),
-               "typed": typed, "pause_sec": 멈춤초, "outside": 밖},
+               "typed": typed, "pause_sec": 멈춤초, "outside": 밖,
+               # AI 화면을 읽지 못한 것 — 복사는 했는데 그 AI 의 질문 · 답이 이 기록에 없음 (core/readcheck · 11/19)
+               "read_gaps": [{k: g[k] for k in ("tool", "kind", "copies", "first", "last")} for g in read_gaps(evs, mine)]},
         lanes=lanes, items=items, source=f"/source?work={quote(wid, safe='')}")
 
 

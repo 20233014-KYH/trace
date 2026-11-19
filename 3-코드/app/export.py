@@ -37,6 +37,7 @@ from core.docx import read_docx
 from core.pdftext import read_doc
 from core.summary import work_summary
 from core import prefs, safefile
+from core.readcheck import read_gaps
 from core.texthash import sha256_text
 import confirm as CF
 import source as S
@@ -116,7 +117,9 @@ def export():
                 "hidden": len(가림), "masked": len(일부), "dropped": sum(1 for l in r["confirmed"] if l["answer_id"] in 가림)},
         # 내기 직전 점검 B1 ~ B4 (14번 문서 · 11/16) 의 재료 — 숫자만. 설명 칸이 비었는지는 화면이 치는 대로 본다
         pre={"unsure": r["unsure"], "dropped": sum(1 for l in r["confirmed"] if l["answer_id"] in 가림),
-             "noproc": r["noproc"], "ai": bool(r["all_msgs"])},
+             "noproc": r["noproc"], "ai": bool(r["all_msgs"]),
+             # AI 화면을 읽지 못한 것 (core/readcheck · 11/19) — 도구 이름 · 종류 · 복사 수 · 시각만
+             "read": [{k: g[k] for k in ("tool", "kind", "copies", "first", "last")} for g in read_gaps(r["events"], r["records"][0])]},
         made=(초안.get("made") or {}).get("url") and {k: 초안["made"][k] for k in ("url", "pdf_url", "expires_at", "at")} or None)
 
 
