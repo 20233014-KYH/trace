@@ -10,7 +10,7 @@ export.py — 학생 PC 의 "내역서 내보내기" 화면 (캔버스 7 · 10/1
   ③ 가리기 — 보낼 질문·답에서 전화번호 · 이메일 · 주민번호 · 카드번호 · API 키 모양을 **규칙으로** 찾는다 (AI 안 씀)
              찾기만 하고 정하는 건 학생. 질문은 기본 가림 · 답을 가리면 그 연결은 내역서에서 빠짐 (기본 안 가림)
   ④ 링크 기간 — 7 · 14 · 30일
-맨 위 = 내기 전에 확인할 것 (14번 문서 B1 ~ B4 · 11/16 · 피그마 F-5a) — 빠진 곳만 알려 주고 막지는 않는다
+맨 위 = 내기 전에 확인할 것 (14번 문서 B1 ~ B5 · 11/16 · B5 11/18 · 피그마 F-5a) — 빠진 곳만 알려 주고 막지는 않는다
 [PDF 내려받기] = 서버에 내역서를 만들고(POST /works/<id>/statements) 링크를 받아(POST /statements/<id>/share) PDF 를 연다.
 
 서버로 가는 것 (statement.py /local/statement 와 같은 원칙):
@@ -40,6 +40,7 @@ from core import prefs, safefile
 from core.readcheck import read_gaps
 from core.texthash import sha256_text
 import confirm as CF
+import record as RC
 import source as S
 
 bp = Blueprint("export", __name__)
@@ -119,7 +120,8 @@ def export():
         pre={"unsure": r["unsure"], "dropped": sum(1 for l in r["confirmed"] if l["answer_id"] in 가림),
              "noproc": r["noproc"], "ai": bool(r["all_msgs"]),
              # AI 화면을 읽지 못한 것 (core/readcheck · 11/19) — 도구 이름 · 종류 · 복사 수 · 시각만
-             "read": [{k: g[k] for k in ("tool", "kind", "copies", "first", "last")} for g in read_gaps(r["events"], r["records"][0])]},
+             "read": [{k: g[k] for k in ("tool", "kind", "copies", "first", "last")} for g in read_gaps(r["events"], r["records"][0])],
+             "outside": _기록_밖(r["events"], r["records"][2], r["sessions"])},        # B5 기록을 꺼 둔 동안 바뀐 문단 (11/18)
         made=(초안.get("made") or {}).get("url") and {k: 초안["made"][k] for k in ("url", "pdf_url", "expires_at", "at")} or None)
 
 
@@ -305,6 +307,36 @@ def _모으기(wid):
          "all_msgs": [칸(m) for m in 기록], "docx": raw, "records": (msgs, events, context)}
     _분석[wid] = (표, r)
     return r
+
+
+def _기록_밖(events, context, 세션):
+    """B5 (14번 문서) — 기록을 꺼 둔 동안 바뀐 문단. 둘째 기록부터, 그 기록이 문서를 처음 열었을 때 있던 글 중
+    앞선 기록들에 없던 문단 = 지난 기록이 끝난 뒤 · 이번 기록을 켜기 전에 바뀐 글 (기록 다시 보기의 "기록 밖에서 바뀐 글" 과 같은 규칙 · record.py).
+    첫 기록 전에 있던 글은 B3(쓴 과정 기록 없음)이 맡으니 여기서 세지 않는다.
+    → [{"from": 앞 기록 끝, "to": 이 기록 시작, "spots": 문단 수, "chars": 글자 수}] (시각 순 · 바뀐 것이 있는 틈만)"""
+    시작 = {e["session_id"]: e["ts"] for e in events if e.get("type") == "session_start" and e.get("session_id") in 세션}
+    끝 = {}                                                      # 끝 = session_end, 없으면 그 기록의 마지막 이벤트
+    for s in 시작:
+        evs = [e for e in events if e.get("session_id") == s]
+        끝[s] = next((e["ts"] for e in evs if e.get("type") == "session_end"), max((e.get("ts", "") for e in evs), default=""))
+    순서 = sorted(시작, key=시작.get)
+    out = []
+    for i, sid in enumerate(순서[1:], 1):
+        앞선글 = RC._앞선_기록_글(sid, 세션, events, context)
+        if not 앞선글:
+            continue
+        고친문서 = {e["file"] for e in events if e.get("session_id") == sid and e.get("type") in ("doc_change", "doc_save") and e.get("file")}
+        spots = chars = 0
+        for c in context:
+            if c.get("session_id") != sid or c.get("kind") != "doc_open":
+                continue
+            if 고친문서 and (c.get("meta") or {}).get("file") not in 고친문서:     # 이 기록에서 고치지 않은 다른 문서는 빼고
+                continue
+            새 = [p for p in re.split(r"\n+", c.get("text", "")) if len(M.norm(p)) >= M.MIN_CHARS and not RC._앞에_있나(p, 앞선글)]
+            spots += len(새); chars += sum(len(p) for p in 새)
+        if spots:
+            out.append({"from": 끝.get(순서[i - 1], ""), "to": 시작[sid], "spots": spots, "chars": chars})
+    return out
 
 
 def _기본(k):
