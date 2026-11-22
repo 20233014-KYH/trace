@@ -203,6 +203,11 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     if (p.dropped) out.push([`답을 가려서 문장 ${p.dropped}개의 출처 연결이 내역서에서 빠져요. 개인 정보만 가리고 답은 남길 수도 있어요.`, "가리기 다시 보기",
       () => { open = 3; render(); $("secs").querySelector(".sec.open")?.scrollIntoView({ block: "start", behavior: "smooth" }); }]);
     const 쓰기 = () => { open = 1; render(); const t = $("t-explain_use"); if (t) { t.scrollIntoView({ block: "center", behavior: "smooth" }); t.focus(); } };
+    // AI 화면을 읽지 못한 것 (core/readcheck · 11/19) — 그 대화는 내역서에 안 들어가니 설명 칸으로
+    const 못읽음 = (p.read || []).filter(g => g.kind === "failed"), 안읽음 = (p.read || []).filter(g => g.kind === "unsupported");
+    const 이름들 = gs => [...new Set(gs.map(g => g.tool))].join(" · "), 복사수 = gs => gs.reduce((n, g) => n + g.copies, 0);
+    if (못읽음.length && 빈) out.push([`${이름들(못읽음)} 화면을 읽지 못한 기록이 있어요 (복사 ${복사수(못읽음)}번). 그 대화의 질문 · 답은 내역서에 안 들어가요 — 설명 칸에 어떻게 썼는지 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
+    if (안읽음.length && 빈) out.push([`${이름들(안읽음)} 은(는) Trace 가 아직 읽지 않는 AI 예요 (복사 ${복사수(안읽음)}번). 설명 칸에 어떻게 썼는지 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
     if (p.noproc && 빈) out.push([`쓴 과정 기록이 없는 글이 ${p.noproc}문장 있어요 (예: 다른 컴퓨터에서 쓴 글). 설명 칸에 어디서 썼는지 한 줄 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
     if (p.ai && 빈) out.push(["AI를 쓴 기록이 있는데 설명 칸이 비어 있어요. 어디에 어떻게 썼는지 한두 줄 적어 보세요.", "설명 쓰기", 쓰기]);
     return out;
