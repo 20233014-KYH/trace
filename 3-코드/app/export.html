@@ -69,7 +69,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 .empty{max-width:440px;margin:auto;text-align:center;color:var(--muted);font-size:14px}
 .empty h3{color:var(--ink);font-size:17px;margin:0 0 6px}
 .empty .next{display:inline-flex;padding:0 18px;margin-top:16px}
-/* 내기 전에 확인할 것 (14번 문서 B1 ~ B4 · 피그마 F-5a · 11/16) — 막지 않음 · 버튼은 고칠 곳으로 데려갈 뿐 */
+/* 내기 전에 확인할 것 (14번 문서 B1 ~ B5 · 피그마 F-5a · 11/16 · B5 11/18) — 막지 않음 · 버튼은 고칠 곳으로 데려갈 뿐 */
 .pre{margin:14px 0 6px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--bg)}
 .pre .ph{display:flex;align-items:baseline;gap:8px}.pre .ph b{font-size:15px;font-weight:700}
 .pre .ph span{margin-left:auto;font-size:12px;color:var(--muted)}
@@ -137,7 +137,7 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const { call, el, icon } = TraceShell;
+  const { call, el, icon, hm, md } = TraceShell;
   const wid = new URLSearchParams(location.search).get("work") || "";
   const MAX = 150;
   let D = null, open = 1, showAllQ = false, drawT = null, saveT = null, pend = {};
@@ -194,7 +194,14 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
   function row(title, sub, sw_) { const r = el("div", "row"); const t = el("div", "rt"); t.append(el("b", null, title), el("small", null, sub)); r.append(t, sw_); return r; }
   const until = days => { const d = new Date(Date.now() + days * 864e5); return `${d.getMonth() + 1}/${d.getDate()} 까지`; };
 
-  // ── 내기 전에 확인할 것 (B1 ~ B4) — 설명 칸은 치는 대로 다시 본다 ──
+  // B5 시간 틈 — 같은 날이면 "11/16 14:00 ~ 15:30", 날이 바뀌면 "11/16 14:00 ~ 11/17 09:10"
+  const 틈 = g => {
+    const a = [md(g.from), hm(g.from)].filter(Boolean).join(" "), 같은날 = md(g.from) && md(g.from) === md(g.to);
+    const b = 같은날 ? hm(g.to) : [md(g.to), hm(g.to)].filter(Boolean).join(" ");
+    return a ? `${a} ~ ${b}` : `${b} 전`;
+  };
+
+  // ── 내기 전에 확인할 것 (B1 ~ B5) — 설명 칸은 치는 대로 다시 본다 ──
   function 점검() {
     const p = D.pre || {}, dr = D.draft, 빈 = !(dr.explain_use || "").trim();
     const out = [];
@@ -208,6 +215,12 @@ textarea:focus{outline:none;border-color:var(--edit-d);box-shadow:0 0 0 3px rgba
     const 이름들 = gs => [...new Set(gs.map(g => g.tool))].join(" · "), 복사수 = gs => gs.reduce((n, g) => n + g.copies, 0);
     if (못읽음.length && 빈) out.push([`${이름들(못읽음)} 화면을 읽지 못한 기록이 있어요 (복사 ${복사수(못읽음)}번). 그 대화의 질문 · 답은 내역서에 안 들어가요 — 설명 칸에 어떻게 썼는지 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
     if (안읽음.length && 빈) out.push([`${이름들(안읽음)} 은(는) Trace 가 아직 읽지 않는 AI 예요 (복사 ${복사수(안읽음)}번). 설명 칸에 어떻게 썼는지 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
+    // B5 기록을 꺼 둔 동안 바뀐 문단 (14번 문서 · 11/18) — 둘째 기록부터 · 지난 기록 끝 ~ 이번 기록 시작 사이
+    const 밖 = p.outside || [], 밖수 = 밖.reduce((n, g) => n + g.spots, 0);
+    if (밖수 && 빈) out.push([밖.length === 1
+      ? `기록이 꺼져 있던 ${틈(밖[0])}에 바뀐 문단이 ${밖수}개 있어요. 설명 칸에 어디서 어떻게 고쳤는지 적어 두면 교수님이 알 수 있어요.`
+      : `기록이 꺼져 있던 동안 바뀐 문단이 ${밖수}개 있어요 (${밖.length}번 · 마지막 ${틈(밖[밖.length - 1])}). 설명 칸에 어디서 어떻게 고쳤는지 적어 두면 교수님이 알 수 있어요.`,
+      "설명 쓰기", 쓰기]);
     if (p.noproc && 빈) out.push([`쓴 과정 기록이 없는 글이 ${p.noproc}문장 있어요 (예: 다른 컴퓨터에서 쓴 글). 설명 칸에 어디서 썼는지 한 줄 적어 두면 교수님이 알 수 있어요.`, "설명 쓰기", 쓰기]);
     if (p.ai && 빈) out.push(["AI를 쓴 기록이 있는데 설명 칸이 비어 있어요. 어디에 어떻게 썼는지 한두 줄 적어 보세요.", "설명 쓰기", 쓰기]);
     return out;
