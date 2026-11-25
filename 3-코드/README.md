@@ -1,120 +1,101 @@
-# Trace 코드 — 수집기 · 체인 · 참고 서버 · 뷰어
+# Trace — 시스템 코드
 
-2026-09-20 작성 · API 계약 ③(`../docs/api.md`) 의 **기록기 쪽 동작이 전부 구현되어 있고**, `dev_receiver.py` 가 계약의 서버 쪽을 참고용으로 구현한다. 실제 서버는 `server/`.
+> 결과만 남는 과제에서, 과정을 남긴다.
 
-> ### ⚠️ 2026-09-28 — 이 문서는 아직 옛 기획(Learn·Proof 두 모드) 기준입니다
->
-> 기획이 전면 개정됐습니다: **두 모드를 없애고 기록을 하나로 합침** → `../1-기획/5-기획 수정사항 (2026-09-28).md`
-> **아래 설명은 지금 저장소에 실제로 있는 코드를 정확히 적은 것입니다.** 코드를 아직 안 지웠기 때문입니다.
-> 지울 것과 바꿀 것은 `../1-기획/1-개발 로드맵 (10주·B).md` 3절에 순서대로 있습니다. 요약하면:
->
-> | 지운다 | `/report` · `/chat` · `LearnView` · `ReportView` · `AskBox` · 알약 질문칸 · `--mode` 옵션 |
-> |---|---|
-> | **바꾼다** | `mode` 제거 → Work 에 `ai_scope`(선택 메모, 9/30) · `if mode == "learn"` 분기 해제(항상 수집) · `ai_answer_excerpt` → 원문 |
-> | **그대로** | `core/chain.py` · `derive.py` · 기록기 · 파일 diff · git · Office(텍스트 층은 항상 켬) · 서버 3절 |
->
-> 아래에서 **"Learn 맥락"** 이라고 쓰인 것은 개정 후 **"AI 대화 기록"** 이 되고, 모드와 무관하게 항상 수집됩니다.
+학생이 과제를 하는 동안 AI 사용을 기록하고, 결과물의 문장마다 어디서 왔는지 보여 주는 **PC 앱 · 크롬 확장 · 서버**입니다.
+점수나 확률로 판정하지 않고 기록된 사실만 보여 주며, 원문은 학생 PC에만 둡니다.
+
+창의프로젝트1 · 1팀 김용현 · 박상진 · 최신판 v0.1.26 (2026-11)
+
+| | |
+|---|---|
+| 설치판 내려받기 (Windows · Mac) | https://trace-server-8aa0.onrender.com/download |
+| 교수 화면 데모 (설치 없이) | https://trace-server-8aa0.onrender.com/s/demo |
+| 저장소 | https://github.com/20233014-KYH/trace |
+| 릴리스 (exe · dmg · 크롬 확장 zip) | https://github.com/20233014-KYH/trace/releases |
+
+서버는 무료 플랜이라 한동안 안 쓰면 잠들어, 첫 요청에 30초 ~ 1분 걸립니다.
+
+---
+
+## 1. 어떻게 돌아가나
 
 ```
-collector.py ─ 이벤트 생성 ─ PC에서 체인 해시(core/chain.py) ─ events-날짜.jsonl (로컬 우선)
-             └─ 5초/50건 batch + chain_head ─→ POST /api/sessions/{id}/events ─→ dev_receiver.py (재계산·대조·수신시각)
-             └─ 서버 꺼지면 queue.jsonl 에 순서대로 보관 → 살아나면 재전송 (옛 세션은 옛 세션 id로)
-             └─ 종료 시 POST /api/sessions/{id}/end (root) → 서버 재계산 → 검증 · 앵커 pending
-derive.py  ─ jsonl 또는 서버 이벤트 → session.json (분당 집계 · 붙여넣기 해시 매칭 · stats)
-viewer.html ─ session.json → "한눈에" 화면 (서버 없음)
+학생 PC
+  크롬 확장 (extension/)   ChatGPT · Claude · Gemini 웹의 질문 · 답 · 답에 달린 출처 링크
+  기록기   (collector/)    창 · 복사 · 붙여넣기 · Word / 한글 글이 바뀌는 과정 · 데스크톱 AI 앱
+        │  원문은 이 PC 에만 저장. 서버로는 해시 체인(core/chain.py)만
+        ▼
+  PC 앱    (app/)          출처 잇기(core/match.py) → 출처 보기 · 다듬기 · 연결 확인 · 내역서
+        │  내보낼 때 학생이 고른 대화만, 개인 정보는 가린 뒤
+        ▼
+서버 (server/ · Render + Supabase PostgreSQL)
+  체인을 다시 계산해 PC 쪽과 대조 · 로그인 · 내역서 PDF · 교수 링크
+        ▼
+교수 — 계정 · 설치 없이 링크로 읽기만
 ```
 
-**서버 없이 테스트** (아래 1절) 도 되고, **서버 켜고 테스트** (`0_서버시작.bat` 먼저) 도 된다.
+문장마다 붙는 표시: **AI 답과 일치 및 유사** · **붙여넣고 고침** · **AI 답 참고함** · **다른 곳에서 붙여넣음** · **쓴 과정 기록 없음** · **출처 기록 없음**.
+기록이 없는 곳은 "직접 씀"이 아니라 "출처 기록 없음"으로 둡니다.
 
-## 0. 준비 (한 번)
-- Windows 10/11 · Python 3.10+ (`python --version`)
-- 이 폴더를 아무 데나 두고 `1_기록시작.bat` 더블클릭 → `.venv` 자동 생성 + 패키지 설치 (1~2분)
-- conda 쓰면: `pip install -r requirements.txt` 후 아래 명령을 직접 실행해도 됨
+## 2. 폴더
 
-## 1. 테스트 절차 (30분)
-
-| 단계 | 할 일 | 확인 |
+| 폴더 | 무엇 | 주요 파일 |
 |---|---|---|
-| 0 | (선택) `0_서버시작.bat` — 서버 쪽까지 보려면 | `Trace dev server http://127.0.0.1:5000/api` |
-| 1 | `1_기록시작.bat` 실행 (`--dry-run` 이라 서버 없이 로컬만. 서버로 보내려면 bat 에서 `--dry-run` 을 지움) | 콘솔에 `session_start … h=84935f76`, 창 바꿀 때마다 `window [work] Code.exe …` |
-| 2 | **20분 평소처럼 작업**: PDF/문서 읽기 → 코드나 글 쓰기 → 막히면 Claude/ChatGPT에 묻기 → 답 복사해서 붙여넣기 → 고치기 → 저장. 중간에 Ctrl+Z도 몇 번 | 콘솔에 `keys typed=12 deleted=2`, `copy`, `paste`, `undo` 가 찍힘 |
-| 3 | 콘솔에서 Ctrl+C | `session_end` 후 종료 |
-| 4 | `2_결과보기.bat` 실행 | 콘솔에 요약 숫자, 뷰어 창이 열림 |
-| 5 | 뷰어에 `data\session.json` 끌어다 놓기 | 직접 입력 % / 붙여넣기 % · 레인 그래프 · 핵심 순간 |
+| `app/` | PC 앱 화면 — 로컬 Flask(127.0.0.1:5079) + pywebview 창. 홈 · 새 과제 · 기록 다시 보기 · 출처 보기 · 연결 확인 · 내역서 · 설정 · 기록 창(알약) | `statement.py`(입구) · `source.py` · `record.py` · `confirm.py` · `export.py` · `pill.py` · `updater.py` |
+| `collector/` | 기록기 — 창 · 클립보드 · 키 **횟수**(어떤 키인지는 안 남김) · Word(`office*.py`) · 한글(`hangul.py`) · 데스크톱 AI 앱(`desktop_ai*.py` · `mac_ax.py`) · 개인 정보 가림(`mask.py`) | `collector.py` |
+| `core/` | 앱 · 서버가 같이 쓰는 것 — 해시 체인 · 출처 잇기 · 문서 읽기(`docx.py` · `hwp.py` · `pdftext.py`) · 요약 · AI 화면 읽기 점검(`readcheck.py`) · 버전 | `chain.py` · `match.py` · `version.py` |
+| `server/` | 서버 — 기록 받기 · 체인 대조 · 로그인(구글 · 카카오) · 내역서 PDF(`statement_pdf.py`) · 교수 링크(`static/share.html`) · 내려받기 화면. DB 주소가 없으면 SQLite | `app.py` · `db.py` |
+| `extension/` | 크롬 확장 (Manifest V3) — AI 웹 화면의 질문 · 답 · 출처 링크를 기록기로 | `content.js` · `background.js` |
+| `packaging/` | 설치판 — PyInstaller · 윈도우 Inno Setup · 맥 dmg · 버전별 바뀐 것(`notes/`) | `trace_app.py`(입구) · `trace.spec` · `build.py` |
+| `tests/` | 출처 잇기 · 한글 · 기록 시험, 팀이 실제로 녹화한 시험 자료(`fixtures/`), 출처 잇기 정확도 평가(`eval_match.py`) | |
+| `web/` · `ui/` · `collector/dev_receiver.py` | 9 ~ 10월 초기 시제품 — 지금 앱에서는 쓰지 않음 (기록용으로 남김) | |
 
-명령으로 직접 하면:
-```bat
-.venv\Scripts\python.exe collector\collector.py --dry-run
-.venv\Scripts\python.exe core\derive.py "data\events-*.jsonl" --out data\session.json
-start ui\viewer.html
+저장소 맨 위의 `render.yaml`(서버 배포)과 `.github/workflows/release.yml`(태그를 올리면 윈도우 · 맥 설치판을 묶어 릴리스)도 시스템의 일부입니다.
+
+## 3. 직접 돌려 보기
+
+가장 쉬운 길은 위 **설치판**입니다. 저장소에서 돌리려면 (Python 3.11):
+
+```bash
+pip install -r 3-코드/requirements.txt
+python 3-코드/packaging/trace_app.py            # PC 앱 — 홈 · 출처 보기 · 내역서
+python 3-코드/packaging/trace_app.py record     # 기록 창 + 기록기
+python 3-코드/server/app.py                     # 서버를 이 PC 에서 (http://127.0.0.1:5000/api)
 ```
-데이터 없이 화면만 보려면 뷰어의 [샘플 열기] 또는 `data\sample_session.json`.
 
-## 2. 보고해 줄 것 (이게 테스트의 결과물)
+- PC 앱은 기본으로 인터넷 서버(`core/settings.py`)에 붙습니다.
+- 크롬 확장: `chrome://extensions` → 개발자 모드 → "압축해제된 확장 프로그램을 로드합니다" → `3-코드/extension`
+- 맥은 처음에 손쉬운 사용 · 입력 모니터링 권한을 켜야 기록됩니다.
+- 서버를 인터넷 DB 에 붙일 때만 `server/.env.example` 을 `.env` 로 복사해 채웁니다. 비밀 값은 저장소에 없습니다.
 
-1. `data\session.json` 파일 자체 (기획 쪽에서 목업북 DATA에 넣어봄)
-2. 뷰어 스크린샷 1장
-3. 아래 질문에 한 줄씩
-   - 그래프의 초록(직접 입력) 리듬이 실제로 친 느낌과 맞나? 붙여넣은 순간에 빨강/주황이 맞게 찍혔나?
-   - AI 창에서 복사한 걸 붙였을 때 **빨강(AI 일치)** 으로 나왔나? 아니면 주황? (→ `domains.json`/화이트리스트 문제)
-   - 키 훅이 켜져 있는 걸 알고 작업하니 어떤 기분이었나? (파일럿 학생 반응 예측용 — 솔직하게)
-   - 잘못 잡힌 것: 창 분류가 틀린 앱, 안 잡힌 이벤트, 콘솔 에러
-4. 콘솔 에러가 있었으면 그 줄 복사
+## 4. 시험
 
-## 3. 무엇이 어디에
+각 파일이 "통과 N · 실패 M" 을 출력합니다.
 
-| 파일 | 역할 | 상태 |
-|---|---|---|
-| `collector/collector.py` | 상주 수집기. 활성 창 1초 폴링 · 클립보드 길이+해시 · 유휴 · heartbeat. **이벤트마다 체인 해시(h)** · 로컬 jsonl 먼저 → 5초/50건 batch POST · 오프라인 큐 · 종료 시 봉인 요청. `--mode proof|learn --work W1 --seconds N(테스트)` | 동작 확인 (온라인 봉인 · 오프라인 큐 · 재전송 · 4xx 거절 처리) |
-| `core/chain.py` | 해시 체인 — 수집기·derive·서버가 **같은 함수**를 쓴다. hᵢ = SHA256(hᵢ₋₁‖ts‖type‖summary), heartbeat 제외 | 동작 확인 |
-| `collector/keys.py` | 입력·삭제 **횟수**, Ctrl+V/Z/Y/X 감지. 어떤 키인지는 안 남김 — 파일 자체가 증거 | 동작 확인 |
-| `collector/classify.py` · `domains.json` | exe 이름 → 창 제목 키워드 → 분류(resource/work/ai/other) | 동작 확인 |
-| `collector/file_watch.py` | 감시 폴더 저장 이벤트(옵션, config에서 폴더 지정) | 동작 확인 |
-| `app/pill.py` · `pill.html` | **알약 창 시제품** (pywebview) — 항상 위 · 투명 · 드래그 · 질문칸 → `/chat`. 되는 것·안 되는 것은 `app/README.md` | 동작 확인 (윈도우 · 배율 200%) |
-| `collector/git_watch.py` | **git 커밋·푸시** — 감시 폴더 안 저장소. `commit {repo, hash, branch, files, added, removed}` · `git_push {repo, remote_ref, hash}` 체인, 커밋 메시지는 Learn 맥락(`commit`, source `git`). config `files.git` | 동작 확인 (커밋 · 푸시 · Learn) |
-| `collector/file_diff.py` | **저장 파일 diff — 편집기 무관.** 텍스트 파일이 저장되면 이전 내용과 비교: 숫자(`doc_change` n행 +a/-b · `doc_paste_at`)는 체인, 바뀐 줄은 Learn 맥락(`diff` · `paste_at`, source `editor`). config `files.diff` | 동작 확인 (VS Code · Learn) |
-| `collector/config.json` | 화이트리스트 앱 · keys.enabled(**true**) · 감시 폴더 · `learn_context` 항목 토글(office 포함) | 편집 가능 |
-| `core/derive.py` | jsonl → session.json. 분당 집계 · 붙여넣기 해시 ↔ AI 창 복사 매칭 · **진짜 SHA-256 체인** · 숫자들 | 동작 확인 |
-| `ui/viewer.html` | session.json → 한눈에 화면. 서버 없음 (HTML 한 장) | 동작 확인 |
-| `web/` | 같은 화면의 **React 판** (Vite). `npm run dev` · `/api` 프록시 → 5000. Proof `SessionView` + **Learn `LearnView`**(타임라인+맥락 · Report · 질문칸) — A의 골격에 라우트만 끼운다 | 동작 확인 (샘플 · A 서버) |
-| `tests/` | **derive·chain 픽스처** — `events_basic.jsonl` → `expected_basic.json` 골든. `python tests/test_derive.py`. A 가 서버로 옮길 때 같은 출력이 나오는지 확인 | 통과 |
-| `core/llm.py` | **Learn 의 AI 호출 한 곳** — 리포트(JSON 5항목 · **학생이 열 때 생성**) · Side Chat. 공급자 어댑터: `LLM_PROVIDER=qwen`(교수 추천 9/20 · 알리바바 API · 국제 엔드포인트) · `claude`(비교용) · `fake`(기본, 키 없을 때). 키는 환경변수만 | 동작 확인 (fake) · 실제 키는 A |
-| `collector/office.py` | **Word·PowerPoint 문서 변화** (COM). 활성 문서를 5초마다 보고 — **숫자는 두 모드 공통 이벤트**(`doc_change` +n자/-m자 · `doc_paste_at` 붙여넣은 자리 · `doc_save` 저장 통계, 체인에 들어감), **텍스트는 Learn 맥락**(`diff` · `paste_at`). Proof 에선 글자를 저장하지 않음 | 동작 확인 (Word · PPT · Proof/Learn) |
-| `collector/bridge.py` | **확장 다리** 127.0.0.1:5077 — 확장의 `tab` 이벤트를 체인에 넣고, Learn 모드일 때만 `context` 를 서버로 전달 (Proof 면 403) | 동작 확인 |
-| `extension/` | **Chrome 확장 (MV3) 뼈대** — 탭 전환 → 도메인 → 다리. AI 사이트에서 Learn 맥락(질문·선택·답변 발췌). `extension/README.md` | 탭: 동작 · 맥락: 뼈대 |
-| `collector/dev_receiver.py` | **계약 ③ 참고 서버** (Flask · 메모리). 세션 등록 · batch 수신 → chain.py 로 재계산 → chain_head 대조 · received_at · 지연 판정 · end 에서 root 대조 · GET /sessions/{id} 는 derive 결과 · **`/report` `/chat`** (Learn 만 · 상한 · Proof 403) | 동작 확인 · A의 Backend 기준 |
-
-## 4. 데이터 계약 — 이 두 형식은 유지해 주세요
-
-**원본 이벤트 한 줄** (`events-*.jsonl` · batch 의 `events[]` 원소)
-```json
-{"id":"evt_000012","session_id":"1054ba96-…","ts":"2026-09-20T15:10:01+09:00","source":"collector","type":"keys","count":12,"deleted":2,"app":"Code.exe","category":"work","h":"ae935bc6…"}
+```bash
+python 3-코드/app/test_record.py          # 앱 화면 (app/test_*.py 12개)
+python 3-코드/tests/test_hangul_watch.py  # 한글 기록 (tests/test_*.py 17개)
+python 3-코드/tests/eval_match.py --md    # 출처 잇기 정확도
+python 3-코드/server/test_contract.py     # 서버 계약 (server/test_*.py 10개 · 서버를 먼저 켬)
 ```
-type: `session_start`{mode,work_id} `session_end` `window`{app,title,category} **`tab`{domain,category,title}**(확장) `copy`/`paste`{len,hash,app} `keys`{count,deleted} `undo` `redo` `cut` `file`{action,path,content_hash} **`doc_change`{app,file,where,added,removed} `doc_paste_at`{app,file,where} `doc_save`{app,file,chars,words,slides}**(Office) `idle_start` `idle_end` `heartbeat`(체인 제외·DB 저장 안 함)
-`h` = PC 에서 계산한 체인 해시. 서버는 이걸 믿지 않고 `core/chain.py` 로 재계산해 비교한다. `session_id` 는 클라이언트 UUID.
 
-**session.json** (= 목업북 `DATA.session` = 뷰어 입력 = 나중에 `GET /api/session/<id>` 응답)
-```
-segments[] {s,e,cat,title}   typed[]  deleted[]   pastes[] {m,len,ai,matched,after_typed}   undos[]
-chain[] [ts,type,summary,prev,hash]   root   stats{typed,pasted,pasted_ai,cpm,undo,pauses,…}
-```
-필드 이름을 바꿔야 하면 알려주세요 — 목업북·뷰어가 같이 바뀌어야 합니다.
+설치판은 빌드할 때마다 `trace_app.py --selftest` 로 묶인 것이 다 열리는지 확인합니다.
 
-## 4-1. AI 키 (Learn 만)
-```bat
-set LLM_PROVIDER=qwen
-set DASHSCOPE_API_KEY=sk-…          :: 알리바바 Model Studio 에서 발급. 서버 환경변수에만. 저장소·화면·확장에 절대 넣지 않는다
-0_서버시작.bat
-```
-키가 없으면 `fake` 로 돌아 가짜 리포트를 준다 (화면 개발용). Claude 와 비교하려면 `LLM_PROVIDER=claude` + `ANTHROPIC_API_KEY`.
+## 5. 코드 곳곳에서 지키는 원칙
 
-## 5. 다음 (순서)
-0. A: 서버로 옮긴 derive/chain 이 `tests/test_derive.py` 를 통과하는지 (픽스처 준비됨)
-1. 실데이터로 `domains.json`·화이트리스트 보정
-2. A: `dev_receiver.py` 를 기준으로 진짜 Backend(DB · 인증 · Work) — 엔드포인트·응답 형식은 그대로, 저장만 DB 로. OpenTimestamps 앵커 실제 제출
-3. B: ~~브라우저 확장 뼈대~~ 완료(`extension/`) → 실사용 테스트 · 사이트별 질문 입력창 셀렉터 · `page` 맥락
-4. B: ~~viewer.html → React~~ 완료(`web/`) → A 골격에 결합 · Learn 화면 · 트레이(pystray)
-5. 앱 포장: pywebview 창 + PyInstaller (Could)
+- **판정하지 않는다** — 점수 · 확률 없이 기록된 사실만 보여 준다.
+- **원문은 학생 PC 에** — 서버에는 해시와 학생이 고른 것만. 기록하는 것이 늘면 그 버전 안내에 꼭 적는다.
+- **문장을 대신 써 주지 않는다** — 다듬기는 어디를 · 왜 · 어떻게 고칠지 안내만.
+- **외부 AI API 를 부르지 않는다** — 출처 잇기는 기록과 글자 비교로만. `core/llm.py` · `server/compare_llm.py` 는 초기 비교 실험용이라 설치판에 넣지 않는다.
 
-## 6. 하지 않는 것 (다시 한 번)
-화면 캡처 · 키 내용 · 클립보드 원문 · AI 대화 내용. 점수·등급·AI 확률 계산. 코드 어디에도 없어야 하고, 있으면 기획 위반입니다.
+## 6. 알려진 한계
+
+- ChatGPT · Claude **데스크톱 앱** 답에 달린 출처 링크는 아직 못 읽는다 (웹은 읽음).
+- 한글은 화면 글을 밖에서 읽을 수 없어 저장 · 자동 저장 파일로 기록한다. 윈도우 한글은 시험이 더 필요하다.
+- AI 답을 완전히 다른 말로 바꾼 문장은 놓칠 수 있다 → 단정하지 않고 "출처 기록 없음"으로 둔다.
+- 맥 설치판은 Apple 칩만 지원한다.
+
+## 7. 기술 스택
+
+Python 3.11 · Flask · pywebview · pynput · pywin32 / comtypes(윈도우) · PyObjC(맥) · olefile · pypdf · reportlab · SQLAlchemy · PostgreSQL(Supabase) · gunicorn · Render · Chrome Extension MV3 · PyInstaller · Inno Setup · GitHub Actions
